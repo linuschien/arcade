@@ -11,12 +11,13 @@ Architect, develop, and maintain modular web games hosted within the **Arcade St
 
 ## 📂 Input Sources (Read-Only)
 
-| Source | Path | Role |
+| Source | Path | Role & Origin |
 |---|---|---|
-| **Arcade Bridge Spec** | `src/core/bridge/ArcadeBridge.ts` | Event bus & lifecycle contract between React Host Shell and Phaser engine |
-| **Unified Input Config** | `src/core/input/InputService.ts` | Key mappings for Arcade Stick, Gamepad, and Touch D-Pad |
-| **Game Asset Registry** | `src/games/{game_id}/assets/` | Game-specific sprites, audio, and tilemaps |
-| **React Frontend Workflow** | `.agents/workflows/react-frontend-engineer.md` | Reference for React Host Shell UI container boundaries |
+| **Arcade Bridge Spec** | `src/core/bridge/ArcadeBridge.ts` | **(Host Infrastructure)** Event bus & lifecycle contract between React Host Shell and Phaser engine |
+| **Unified Input Config** | `src/core/input/InputService.ts` | **(Host Infrastructure)** Key mappings for Arcade Stick, Gamepad, and Touch D-Pad |
+| **Game Design Specs** | `docs/01-requirements/games/{game_id}.md` or User Prompt | **(Product Specs)** Game rules, score formulas, level flows, and entity behaviors |
+| **Game Asset Registry** | `src/games/{game_id}/assets/` | **(Design Assets)** Game-specific sprites, audio, tilemaps, and animation manifests |
+| **React Frontend Workflow** | `.agents/workflows/react-frontend-engineer.md` | **(Agent Contract)** Reference for React Host Shell UI container boundaries |
 
 ---
 
@@ -26,9 +27,9 @@ Architect, develop, and maintain modular web games hosted within the **Arcade St
 |---|---|---|
 | **Game Entry Point** | `src/games/{game_id}/index.ts` | Exports `IArcadeGame` implementation and Scene config |
 | **Phaser Scenes** | `src/games/{game_id}/scenes/*.ts` | Render & physics scenes (e.g., `PreloadScene`, `MainGameScene`) |
-| **Pure Logic Modules** | `src/games/{game_id}/logic/*.ts` | Framework-agnostic rules, AI algorithms, grid matrices |
-| **Vitest Unit Tests** | `src/games/{game_id}/__tests__/*.test.ts` | Pure logic unit tests verifying game rules and mechanics |
-| **Asset Preloader** | `src/games/{game_id}/assets/loader.ts` | Namespace-isolated asset loader with explicit cleanup |
+| **Pure Logic Modules** | `src/games/{game_id}/logic/*.ts` | Framework-agnostic rules, AI algorithms, physics models, grid matrices |
+| **Vitest Unit Tests** | `src/games/{game_id}/__tests__/*.test.ts` | Pure logic unit tests verifying game rules, scoring, and mechanics |
+| **Asset Preloader** | `src/games/{game_id}/assets/loader.ts` | Namespace-isolated asset loader with explicit WebGL cleanup |
 
 ---
 
@@ -64,7 +65,7 @@ Architect, develop, and maintain modular web games hosted within the **Arcade St
 ## ⚙️ Execution Protocol
 
 ### Phase 1 — Architecture & Pure Logic Separation
-1. Decouple game rules and data structures (e.g., `TetrisBoard.ts`, `PacmanAI.ts`, `ScoreCalculator.ts`) into pure TypeScript classes completely free of Phaser or DOM dependencies.
+1. Decouple game rules and data structures (e.g., `TetrisBoard.ts`, `PacmanAI.ts`, `ScoreCalculator.ts`, `SpaceShooterPhysics.ts`) into pure TypeScript classes completely free of Phaser or DOM dependencies.
 2. Ensure pure logic classes accept deterministic inputs and return typed state mutations.
 
 ### Phase 2 — Arcade Bridge & Scene Lifecycle Implementation
@@ -72,9 +73,11 @@ Architect, develop, and maintain modular web games hosted within the **Arcade St
 2. Connect `ArcadeBridge` event listeners for `COIN_INSERTED`, `PAUSE_REQUESTED`, and `RESUME_REQUESTED`.
 3. Dispatch `GAME_OVER` events containing final scores and summary data back to the React Host Shell.
 
-### Phase 3 — Grid Alignment & Timestep Control
-1. For grid-based games (Tetris, Pac-Man, Bomberman), calculate position vectors using Tile Center offsets: `(col + 0.5) * tileSize`.
-2. Wrap physics and movement logic in `update(time, delta)` with fixed timestep accumulators or `delta` scaling factors to ensure identical game speed across 60Hz, 120Hz, and 144Hz monitors.
+### Phase 3 — Movement Kinematics, Physics & Timestep Safety (All Genres)
+1. Choose the appropriate movement and collision model based on game genre:
+   - **For Grid / Puzzle Games** (Tetris, Pac-Man, Sokoban, Bomberman): Snap positions strictly to Tile Centers `(col + 0.5) * tileSize` to prevent wall clipping.
+   - **For Action / Shooter / Arcade Games** (Space Invaders, Galaga, Platformers, Fighting): Apply continuous velocity vectors (`vx`, `vy`) and explicit Hitbox/Hurtbox collision volumes.
+2. **Universal Timestep Control**: Wrap all movement and physics step updates in `update(time, delta)` using fixed update accumulator ticks or scale velocity by `delta` seconds. Guarantee framerate independence across 60Hz, 120Hz, and 144Hz displays.
 
 ### Phase 4 — Vitest Unit Testing Execution
 1. Create unit tests for all pure logic modules in `src/games/{game_id}/__tests__/`.
@@ -92,7 +95,8 @@ Architect, develop, and maintain modular web games hosted within the **Arcade St
 - [ ] Pure logic unit tests pass with $\ge 85\%$ test coverage via Vitest.
 - [ ] All asset keys are namespaced with `${game_id}:`.
 - [ ] Scene shutdown & destroy handlers remove all textures, audio, and event listeners from memory.
-- [ ] Game speed is frame-rate independent across variable refresh rate displays.
+- [ ] Game speed is frame-rate independent across variable refresh rate displays (60Hz / 120Hz / 144Hz).
+- [ ] Movement model follows the appropriate Kinematics rule (Grid Tile Center vs Continuous Physics Hitbox).
 - [ ] Bidirectional events with React Host Shell operate seamlessly via `ArcadeBridge`.
 
 ---
