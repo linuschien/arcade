@@ -13,9 +13,12 @@ Architect, develop, and maintain modular web games hosted within the **Arcade St
 
 | Source | Path | Role & Origin |
 |---|---|---|
+| **User Stories & AC** | `docs/01-requirements/user-stories/US-*-{game_id}.md` | **(Product Owner)** Game user stories, acceptance criteria (AC), and happy/edge-case paths |
+| **Domain Glossary** | `docs/01-requirements/glossary.md` | **(Product Owner)** Centralized glossary defining game nouns, state enums, and score terminology |
+| **Game PRD (if present)** | `docs/01-requirements/PRD/{game_id}.md` | **(Product Owner)** High-level Product Requirement Document for the target game |
+| **Behavior Specs** | `docs/02-design-specs/behavior-specs/user/{game_id}.feature` | **(Behavior Architect)** Gherkin BDD scenarios verifying interaction intent |
 | **Arcade Bridge Spec** | `src/core/bridge/ArcadeBridge.ts` | **(Host Infrastructure)** Event bus & lifecycle contract between React Host Shell and Phaser engine |
 | **Unified Input Config** | `src/core/input/InputService.ts` | **(Host Infrastructure)** Key mappings for Arcade Stick, Gamepad, and Touch D-Pad |
-| **Game Design Specs** | `docs/01-requirements/games/{game_id}.md` or User Prompt | **(Product Specs)** Game rules, score formulas, level flows, and entity behaviors |
 | **Game Asset Registry** | `src/games/{game_id}/assets/` | **(Design Assets)** Game-specific sprites, audio, tilemaps, and animation manifests |
 | **React Frontend Workflow** | `.agents/workflows/react-frontend-engineer.md` | **(Agent Contract)** Reference for React Host Shell UI container boundaries |
 
