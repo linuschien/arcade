@@ -72,6 +72,7 @@ Architect, develop, and maintain modular web games hosted within the **Arcade St
 2. Ensure pure logic classes accept deterministic inputs and return typed state mutations.
 
 ### Phase 2 — Arcade Bridge & Scene Lifecycle Implementation
+> **Invoke Skill**: Read `.agents/skills/arcade-game-contract/SKILL.md`. Ensure `src/core/bridge/ArcadeBridge.ts` and `src/core/input/InputService.ts` are imported or copied from the skill resources if missing.
 1. Construct `src/games/{game_id}/index.ts` implementing `IArcadeGame`.
 2. Connect `ArcadeBridge` event listeners for `COIN_INSERTED`, `PAUSE_REQUESTED`, and `RESUME_REQUESTED`.
 3. Dispatch `GAME_OVER` events containing final scores and summary data back to the React Host Shell.
