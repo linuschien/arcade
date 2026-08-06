@@ -1,7 +1,7 @@
 # US-01 街機大廳模組 (Arcade Lobby Module)
 
 ## 背景 (Background)
-Arcade Lobby 是 Arcade Stadium 平台的最上層使用者介面。負責遊戲卡片輪播展示、單局直接扣幣 (Option C)、每日免費與管理員代幣發放扣除、跨裝置控制 (鍵盤/Gamepad/觸控)、CRT 復古濾鏡切換以及前十名 Email 自動結算排行榜視窗顯示。
+Arcade Lobby 是 Arcade Stadium 平台的最上層使用者介面。負責會員權限驗證、遊戲卡片輪播展示、單局直接扣幣 (Option C)、每日免費與管理員代幣發放扣除、跨裝置控制 (鍵盤/Gamepad/觸控)、分頁失焦自動暫停、全域靜音控管、CRT 復古濾鏡切換以及前十名 Email 結算排行榜視窗顯示。
 
 ---
 
@@ -16,7 +16,7 @@ Arcade Lobby 是 Arcade Stadium 平台的最上層使用者介面。負責遊戲
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (Happy Path)**：大廳預設載入包含 Tetris 與 Pac-Man 等遊戲卡片，當玩家切換選焦點時，同步更新背景海報圖片、標題與最高分紀錄。
 - **AC2 (Multi-Device Navigation)**：支援鍵盤 `LEFT`/`RIGHT` 鍵、實體 Gamepad 搖桿/D-Pad 以及手機觸控滑動。
-- **AC3 (Empty State)**：若系統無可用遊戲，顯示「No Games Available」提示警示。
+- **AC3 (Mandatory Auth)**：系統不開放訪客/匿名模式，未登入使用者自動跳轉至登入頁。
 
 ---
 
@@ -32,7 +32,7 @@ Arcade Lobby 是 Arcade Stadium 平台的最上層使用者介面。負責遊戲
 - **AC1 (Atomic Deduction on Start)**：玩家點擊 START 或按鍵啟動遊戲時，系統從帳號錢包原子化扣除 1 枚 Credit，發出掉幣音效，並透過 `ArcadeBridge.emit('COIN_INSERTED', remainingCredits)` 廣播啟動遊戲。
 - **AC2 (Continue Deduction)**：Game Over 畫面 10 秒倒數期間，玩家按下 `C` / `START` 或點擊「CONTINUE (1 Coin)」，系統扣除 1 枚 Credit 恢復生命續關。
 - **AC3 (Zero Credit Block)**：當 Credit $= 0$ 時按下 START 或 CONTINUE，阻擋發射並跳出「OUT OF CREDITS」警示提示。
-- **AC4 (No Refund Complexity)**：因為採用單局啟動即扣機制，玩家隨時中途「返回大廳」皆不涉及未用硬幣殘留或退幣計算問題。
+- **AC4 (No Soft Reset)**：遵循實體街機傳統，遊戲中不提供 Soft Reset 按鈕，離場僅能選擇返回大廳。
 
 ---
 
@@ -96,7 +96,6 @@ Arcade Lobby 是 Arcade Stadium 平台的最上層使用者介面。負責遊戲
 - **AC3 (Consumption Priority)**：當玩家 START 或 CONTINUE 扣幣時，系統扣除優先順序為：
   1. 優先扣除 `Daily Free Credit`（每日免費硬幣）。
   2. 若 `Daily Free Credit` $= 0$，才扣除 `Admin Bonus Credit`（管理員獎勵硬幣）。
-- **AC4 (UI Display)**：大廳 Credit 計數器清晰展示總硬幣數，並可懸浮查看 breakdown（例如：`Total: 15 (Free: 5, Bonus: 10)`）。
 
 ---
 
@@ -105,10 +104,38 @@ Arcade Lobby 是 Arcade Stadium 平台的最上層使用者介面。負責遊戲
 **身份**：街機玩家 (Arcade Player)
 
 > **As a** 街機玩家，  
-> **I want to** 遊戲結束時系統自動將我的得分與登入 Email 上傳至前十名排行榜，  
-> **So that** 我不需要手動輸入暱稱，流程流暢且能在大廳查看 Top 10 最高分榮譽。
+> **I want to** 遊戲結束時系統自動將我的得分與登入 Email 上傳至前十名排行榜，並按 Email 字母排序同分，  
+> **So that** 我不需要手動輸入暱稱，流程流暢且同分時秩序明確。
 
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (Top 10 Rank Display)**：大廳排行榜視窗僅展示得分最高的前 10 名紀錄 (Rank 1~10)。
-- **AC2 (Automatic Email Identifier)**：當 Game Over 觸發，系統自動帶入當前登入 User 的 `email` 欄位（例如：`linus@example.com`），**免除任何手動輸入暱稱或 3 字元代碼彈窗**。
-- **AC3 (Auto Submission on GameOver)**：收到 `ArcadeBridge.on('GAME_OVER', summary)` 事件後，後台自動非同步調用 API 結算。若進入前十名，排行榜面板自動即時刷出更新。
+- **AC2 (Automatic Email Identifier)**：當 Game Over 觸發，系統自動帶入當前登入 User 的 `email` 欄位（例如：`linus@example.com`），免除手動輸入暱稱彈窗。
+- **AC3 (Tie-Breaking Rule by Email)**：若兩位玩家得分相同，**依照 Email 字母順序 (A-Z ASC) 進行排序**。
+
+---
+
+## US-01-08：視窗分頁離開自動暫停機制 (Auto-Pause on Window Blur)
+
+**身份**：街機玩家 (Arcade Player)
+
+> **As a** 街機玩家，  
+> **I want to** 當我切換瀏覽器頁面或視窗失焦時，遊戲自動暫停，  
+> **So that** 我不會因為暫時離開電腦或接電話而意外死亡。
+
+### 驗收條件 (Acceptance Criteria)
+- **AC1 (Window Blur Listener)**：全域監聽 `window.onblur` 與 `document.visibilitychange` 事件。
+- **AC2 (Auto-Pause Event Emission)**：當分頁隱藏 (`document.hidden === true`) 或視窗失焦時，系統自動發送 `ArcadeBridge.emit('PAUSE_REQUESTED')` 暫停遊戲畫面與 Timer，並於恢復焦點時跳出 Pause 選單提示。
+
+---
+
+## US-01-09：全域靜音與音量控制 (Global Master Volume & Mute)
+
+**身份**：街機玩家 (Arcade Player)
+
+> **As a** 街機玩家，  
+> **I want to** 透過大廳頂部的 Master 控制器調節全域音量或一鍵靜音，  
+> **So that** 我能在適當場合控制聲響。
+
+### 驗收條件 (Acceptance Criteria)
+- **AC1 (Master Volume & Mute Toggle)**：UI 頂部提供音量 Slider 與 Mute 鍵。
+- **AC2 (Phaser Audio Sync)**：切換 Mute 時，同步控制大廳背景音與 Phaser WebAudio (`game.sound.mute = true`)。
