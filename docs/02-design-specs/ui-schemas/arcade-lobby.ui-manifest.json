@@ -1,0 +1,453 @@
+{
+  "ui_id": "arcade-lobby",
+  "domain_module": "ArcadePlatform",
+  "root_element": {
+    "id": "arcade-lobby-root",
+    "abstract_type": "Container",
+    "semantic_variant": "page",
+    "label": "Arcade Stadium Game Lobby",
+    "ux_hints": {
+      "principles": ["nielsen:aesthetic", "visual-hierarchy:size"]
+    },
+    "children": [
+      {
+        "id": "lobby-header-bar",
+        "abstract_type": "Section",
+        "semantic_variant": "summary-section",
+        "label": "Platform Navigation Header",
+        "ux_hints": {
+          "principles": ["gestalt:proximity", "f-pattern"]
+        },
+        "children": [
+          {
+            "id": "player-email-badge",
+            "abstract_type": "Metric",
+            "label": "Player Account",
+            "data_ref": "whoami",
+            "behavior_ref": "JIT Provisioning for New Player via GCP IAP Header",
+            "ux_hints": {
+              "principles": ["nielsen:visibility"]
+            }
+          },
+          {
+            "id": "daily-free-credits-metric",
+            "abstract_type": "Metric",
+            "label": "Daily Free Credits",
+            "data_ref": "getUserWalletByPlayerId",
+            "behavior_ref": "Atomic Credit Deduction with Daily Free First Priority",
+            "ux_hints": {
+              "principles": ["nielsen:visibility", "visual-hierarchy:weight"]
+            }
+          },
+          {
+            "id": "admin-bonus-credits-metric",
+            "abstract_type": "Metric",
+            "label": "Admin Bonus Credits",
+            "data_ref": "getUserWalletByPlayerId",
+            "behavior_ref": "Atomic Credit Deduction with Daily Free First Priority",
+            "ux_hints": {
+              "principles": ["nielsen:visibility", "visual-hierarchy:weight"]
+            }
+          },
+          {
+            "id": "crt-filter-switch",
+            "abstract_type": "Switch",
+            "label": "CRT Retro Filter",
+            "behavior_ref": "nielsen:control",
+            "ux_hints": {
+              "principles": ["nielsen:control", "nielsen:flexibility"]
+            }
+          },
+          {
+            "id": "master-mute-switch",
+            "abstract_type": "Switch",
+            "label": "Mute Master Audio",
+            "behavior_ref": "nielsen:control",
+            "ux_hints": {
+              "principles": ["nielsen:control", "nielsen:flexibility"]
+            }
+          },
+          {
+            "id": "open-admin-grant-trigger",
+            "abstract_type": "Trigger",
+            "semantic_variant": "secondary",
+            "label": "Grant Bonus Credits",
+            "behavior_ref": "nielsen:control",
+            "ux_hints": {
+              "principles": ["nielsen:control"],
+              "primary_action_placement": "top-right"
+            },
+            "interactions": [
+              {
+                "on_event": "on_click",
+                "target_id": "admin-grant-credit-modal",
+                "behavior_ref": "nielsen:control"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "game-carousel-section",
+        "abstract_type": "Section",
+        "semantic_variant": "list-section",
+        "label": "Arcade Game Catalog Carousel",
+        "ux_hints": {
+          "principles": ["fitts-law", "gestalt:similarity"]
+        },
+        "children": [
+          {
+            "id": "carousel-heading",
+            "abstract_type": "Heading",
+            "label": "Select Arcade Game",
+            "ux_hints": {
+              "principles": ["visual-hierarchy:size"]
+            }
+          },
+          {
+            "id": "carousel-prev-trigger",
+            "abstract_type": "Trigger",
+            "semantic_variant": "icon",
+            "label": "Previous Game (Left Arrow)",
+            "behavior_ref": "nielsen:control",
+            "ux_hints": {
+              "principles": ["fitts-law", "nielsen:flexibility"]
+            },
+            "interactions": [
+              {
+                "on_event": "on_click",
+                "target_id": "game-card-grid",
+                "behavior_ref": "nielsen:control"
+              }
+            ]
+          },
+          {
+            "id": "carousel-next-trigger",
+            "abstract_type": "Trigger",
+            "semantic_variant": "icon",
+            "label": "Next Game (Right Arrow)",
+            "behavior_ref": "nielsen:control",
+            "ux_hints": {
+              "principles": ["fitts-law", "nielsen:flexibility"]
+            },
+            "interactions": [
+              {
+                "on_event": "on_click",
+                "target_id": "game-card-grid",
+                "behavior_ref": "nielsen:control"
+              }
+            ]
+          },
+          {
+            "id": "game-card-grid",
+            "abstract_type": "Grid",
+            "semantic_variant": "card-grid",
+            "label": "Game Catalog Carousel",
+            "data_ref": "listGameCards",
+            "behavior_ref": "Fetch Game Cards for Lobby Carousel",
+            "ux_hints": {
+              "principles": ["millers-law", "gestalt:similarity", "hicks-law", "visual-hierarchy:size"],
+              "group_size_hint": 5,
+              "max_visible_options": 3
+            },
+            "interactions": [
+              {
+                "on_event": "on_change",
+                "target_id": "top-10-leaderboard-table",
+                "behavior_ref": "Query Top 10 Leaderboard with Score DESC and Email ASC Tie-Breaking"
+              }
+            ],
+            "children": [
+              {
+                "id": "start-game-trigger",
+                "abstract_type": "Trigger",
+                "semantic_variant": "primary",
+                "label": "START (1 Coin)",
+                "data_ref": "deductCredit",
+                "behavior_ref": "Atomic Credit Deduction with Daily Free First Priority",
+                "ux_hints": {
+                  "principles": ["fitts-law", "visual-hierarchy:color"],
+                  "primary_action_placement": "top-right"
+                },
+                "feedback": {
+                  "on_success": {
+                    "type": "toast",
+                    "message_key": "Coin inserted successfully! Launching game..."
+                  },
+                  "on_error": {
+                    "type": "dialog",
+                    "message_key": "Insufficient credits or coin insert failed."
+                  }
+                },
+                "interactions": [
+                  {
+                    "on_event": "on_click",
+                    "target_id": "phaser-game-container",
+                    "behavior_ref": "Increment Play Count on Game Start"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "leaderboard-section",
+        "abstract_type": "Section",
+        "semantic_variant": "list-section",
+        "label": "Per-Game High Score Leaderboard",
+        "ux_hints": {
+          "principles": ["nielsen:visibility", "gestalt:proximity"]
+        },
+        "children": [
+          {
+            "id": "leaderboard-heading",
+            "abstract_type": "Heading",
+            "label": "Top 10 Leaderboard",
+            "ux_hints": {
+              "principles": ["visual-hierarchy:size"]
+            }
+          },
+          {
+            "id": "top-10-leaderboard-table",
+            "abstract_type": "Table",
+            "semantic_variant": "data-table",
+            "label": "Per-Game High Scores",
+            "data_ref": "getTop10Leaderboard",
+            "behavior_ref": "Query Top 10 Leaderboard with Score DESC and Email ASC Tie-Breaking",
+            "columns": [
+              {
+                "field": "rank",
+                "label": "Rank"
+              },
+              {
+                "field": "playerEmail",
+                "label": "Player Email",
+                "sortable": true
+              },
+              {
+                "field": "score",
+                "label": "High Score",
+                "sortable": true,
+                "default_sort": "desc"
+              },
+              {
+                "field": "submittedAt",
+                "label": "Submitted Date",
+                "sortable": true
+              }
+            ],
+            "ux_hints": {
+              "principles": ["millers-law", "fitts-law"],
+              "group_size_hint": 4
+            }
+          }
+        ]
+      },
+      {
+        "id": "phaser-game-container",
+        "abstract_type": "Container",
+        "semantic_variant": "panel",
+        "label": "Game Viewport Frame",
+        "ux_hints": {
+          "principles": ["nielsen:visibility"]
+        },
+        "children": [
+          {
+            "id": "game-control-bar",
+            "abstract_type": "Stack",
+            "semantic_variant": "action-bar",
+            "label": "Game Control Action Bar",
+            "ux_hints": {
+              "principles": ["f-pattern"],
+              "primary_action_placement": "top-right"
+            },
+            "children": [
+              {
+                "id": "pause-game-trigger",
+                "abstract_type": "Trigger",
+                "semantic_variant": "icon",
+                "label": "Pause",
+                "behavior_ref": "nielsen:control",
+                "ux_hints": {
+                  "principles": ["nielsen:control", "fitts-law"]
+                },
+                "interactions": [
+                  {
+                    "on_event": "on_click",
+                    "target_id": "game-pause-modal",
+                    "behavior_ref": "nielsen:control"
+                  }
+                ]
+              },
+              {
+                "id": "return-to-lobby-trigger",
+                "abstract_type": "Trigger",
+                "semantic_variant": "secondary",
+                "label": "Exit to Lobby",
+                "behavior_ref": "nielsen:control",
+                "ux_hints": {
+                  "principles": ["nielsen:control", "nielsen:recovery"]
+                },
+                "interactions": [
+                  {
+                    "on_event": "on_click",
+                    "target_id": "game-carousel-section",
+                    "behavior_ref": "nielsen:control"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "game-pause-modal",
+        "abstract_type": "Overlay",
+        "semantic_variant": "modal",
+        "label": "Game Paused Dialog",
+        "ux_hints": {
+          "principles": ["nielsen:control", "gestalt:closure"]
+        },
+        "children": [
+          {
+            "id": "pause-heading",
+            "abstract_type": "Heading",
+            "label": "GAME PAUSED"
+          },
+          {
+            "id": "resume-game-trigger",
+            "abstract_type": "Trigger",
+            "semantic_variant": "primary",
+            "label": "Resume Game",
+            "behavior_ref": "nielsen:control",
+            "ux_hints": {
+              "principles": ["nielsen:control", "fitts-law"],
+              "primary_action_placement": "top-left"
+            },
+            "interactions": [
+              {
+                "on_event": "on_click",
+                "target_id": "phaser-game-container",
+                "behavior_ref": "nielsen:control"
+              }
+            ]
+          },
+          {
+            "id": "quit-to-lobby-trigger",
+            "abstract_type": "Trigger",
+            "semantic_variant": "secondary",
+            "label": "Quit to Lobby",
+            "behavior_ref": "nielsen:control",
+            "ux_hints": {
+              "principles": ["nielsen:recovery"]
+            },
+            "interactions": [
+              {
+                "on_event": "on_click",
+                "target_id": "game-carousel-section",
+                "behavior_ref": "nielsen:control"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "admin-grant-credit-modal",
+        "abstract_type": "Overlay",
+        "semantic_variant": "modal",
+        "label": "Grant Admin Bonus Credit",
+        "ux_hints": {
+          "principles": ["nielsen:error-prevention", "gestalt:closure"]
+        },
+        "children": [
+          {
+            "id": "grant-form-section",
+            "abstract_type": "Section",
+            "semantic_variant": "form-section",
+            "label": "Grant Credit Form",
+            "children": [
+              {
+                "id": "bonus-credit-amount-field",
+                "abstract_type": "Field",
+                "semantic_variant": "number",
+                "label": "Credit Amount",
+                "behavior_ref": "nielsen:error-prevention",
+                "required": true,
+                "checks": [
+                  {
+                    "type": "min",
+                    "message": "Amount must be at least 1 credit",
+                    "args": {
+                      "min": 1
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "grant-credit-submit-trigger",
+                "abstract_type": "Trigger",
+                "semantic_variant": "primary",
+                "label": "Grant Bonus Credits",
+                "data_ref": "grantAdminCredit",
+                "behavior_ref": "nielsen:feedback",
+                "ux_hints": {
+                  "principles": ["nielsen:feedback"],
+                  "primary_action_placement": "top-right"
+                },
+                "feedback": {
+                  "on_success": {
+                    "type": "toast",
+                    "message_key": "Bonus credits granted successfully!"
+                  },
+                  "on_error": {
+                    "type": "dialog",
+                    "message_key": "Failed to grant bonus credits."
+                  }
+                },
+                "interactions": [
+                  {
+                    "on_event": "on_click",
+                    "target_id": "daily-free-credits-metric",
+                    "behavior_ref": "nielsen:feedback"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "out-of-credits-dialog",
+        "abstract_type": "Overlay",
+        "semantic_variant": "error-dialog",
+        "label": "Out of Credits Warning",
+        "ux_hints": {
+          "principles": ["nielsen:error-prevention", "nielsen:recovery"]
+        },
+        "children": [
+          {
+            "id": "out-of-credits-heading",
+            "abstract_type": "Heading",
+            "label": "OUT OF CREDITS"
+          },
+          {
+            "id": "out-of-credits-text",
+            "abstract_type": "Text",
+            "label": "You have 0 credits remaining. Please wait for the daily 00:00 reset or request admin bonus credits."
+          },
+          {
+            "id": "dismiss-out-of-credits-trigger",
+            "abstract_type": "Trigger",
+            "semantic_variant": "primary",
+            "label": "OK",
+            "behavior_ref": "nielsen:control",
+            "ux_hints": {
+              "primary_action_placement": "top-left"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
