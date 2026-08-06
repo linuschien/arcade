@@ -1,0 +1,31 @@
+service_name: "pacman-game-service"
+architecture: "Hexagonal"
+adapters:
+  - name: "PacmanGameEngineAdapter"
+    type: "Primary"
+    tech: "Phaser 4 + TypeScript (Strict)"
+    stereotype: "<<ClientGameEngine>>"
+    port:
+      interface: "PacmanGameEngine"
+      layer: "domain.ports.input"
+  - name: "PacmanInputAdapter"
+    type: "Primary"
+    tech: "Phaser 4 Input Plugin + InputService"
+    stereotype: "<<InputAdapter>>"
+    port:
+      interface: "InputService"
+      layer: "domain.ports.input"
+  - name: "PacmanStateStoreAdapter"
+    type: "Secondary"
+    tech: "Browser In-Memory State / React Store"
+    stereotype: "<<ClientStateStore>>"
+    port:
+      interface: "PacmanStateStore"
+      layer: "domain.ports.output"
+  - name: "ArcadeBridgeEventPublisherAdapter"
+    type: "Secondary"
+    tech: "ArcadeBridge EventEmitter"
+    stereotype: "<<EventBus>>"
+    port:
+      interface: "ArcadeBridgeEventBus"
+      layer: "domain.ports.output"

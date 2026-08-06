@@ -1,0 +1,31 @@
+service_name: "tetris-game-service"
+architecture: "Hexagonal"
+adapters:
+  - name: "TetrisGameEngineAdapter"
+    type: "Primary"
+    tech: "Phaser 4 + TypeScript (Strict)"
+    stereotype: "<<ClientGameEngine>>"
+    port:
+      interface: "TetrisGameEngine"
+      layer: "domain.ports.input"
+  - name: "TetrisInputAdapter"
+    type: "Primary"
+    tech: "Phaser 4 Input Plugin + InputService"
+    stereotype: "<<InputAdapter>>"
+    port:
+      interface: "InputService"
+      layer: "domain.ports.input"
+  - name: "TetrisStateStoreAdapter"
+    type: "Secondary"
+    tech: "Browser In-Memory State / React Store"
+    stereotype: "<<ClientStateStore>>"
+    port:
+      interface: "TetrisStateStore"
+      layer: "domain.ports.output"
+  - name: "ArcadeBridgeEventPublisherAdapter"
+    type: "Secondary"
+    tech: "ArcadeBridge EventEmitter"
+    stereotype: "<<EventBus>>"
+    port:
+      interface: "ArcadeBridgeEventBus"
+      layer: "domain.ports.output"
