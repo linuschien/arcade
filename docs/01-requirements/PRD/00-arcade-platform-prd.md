@@ -1,21 +1,22 @@
 # PRD-00: Arcade Stadium 平台主機規格 (Arcade Platform PRD)
 
 ## 1. 產品願景 (Product Vision)
-Arcade Stadium 是一個模組化、極致沉浸的 HTML5 Web 大型電玩合輯平台。平台提供流暢的遊戲選擇大廳、單局點擊即扣代幣機制、每日免費與管理員獎勵機制、多裝置控制 (鍵盤/Gamepad手把/手機觸控)、分頁離開自動暫停、全域音量控管、復古 CRT Shader 濾鏡以及前十名 Email 結算高分排行榜，並透過標準化的 `ArcadeBridge` 與 `InputService` 讓任何子遊戲均可熱插拔上架。
+Arcade Stadium 是一個模組化、極致沉浸的 HTML5 Web 大型電玩合輯平台。平台提供流暢的遊戲選擇大廳、單局點擊即扣代幣機制、每日免費與管理員獎勵機制、多裝置控制 (鍵盤/Gamepad手把/手機觸控)、GCP IAP 身份驗證整合、手動與失焦自動暫停、全域音量控管、復古 CRT Shader 濾鏡以及每款遊戲獨立 (Per-Game) 前十名 Email 高分排行榜，並透過標準化的 `ArcadeBridge` 與 `InputService` 讓任何子遊戲均可熱插拔上架。
 
 ---
 
 ## 2. 核心功能模組 (Core Platform Modules)
 
-### 2.1 身份驗證存取與會員權限 (Strict Auth Access)
-- **強制會員登入 (No Guest Access)**：平台僅供已登入會員使用，不開放訪客/匿名模式。未登入者自動重導向至登入頁。
+### 2.1 身份驗證與 GCP IAP 整合 (GCP IAP Authentication)
+- **GCP IAP 託管驗證 (GCP Identity-Aware Proxy)**：登入頁面與 OAuth 認證流程完全託管給 **GCP IAP** 處理。
+- **無縫 Email 身份傳遞**：平台直接讀取 GCP IAP 注入之請求 Header (`X-Goog-Authenticated-User-Email`) 作為已驗證玩家的 Email 身份，完全不需前端自己刻登入頁面。
 
 ### 2.2 遊戲大廳選單 (Arcade Lobby UI)
-- **卡片輪播與預覽**：提供橫向輪播選單，展示各子遊戲的海報 (Cover Art)、歷史最高分、遊玩次數與遊戲簡介。
+- **卡片輪播與預覽**：提供橫向輪播選單，展示各子遊戲的海報 (Cover Art)、該遊戲專屬 Top 10 排行榜、遊玩次數與遊戲簡介。
 - **進入/離開遊戲**：點擊「START」選擇遊戲後，發動原子化扣幣並以流暢動畫掛載對應遊戲之 HTML5 Canvas，背景音樂自動切換。
 
 ### 2.3 跨裝置控制架構 (Multi-Device Control & InputService)
-- **鍵盤控制**：支援 `WASD` / `Arrow Keys` 移動，`Space`/`Enter` 動作與 `C` 鍵投幣/續關。
+- **鍵盤控制**：支援 `WASD` / `Arrow Keys` 移動，`Space`/`Enter` 動作與 `C` 鍵投幣/續關，`ESC`/`P` 鍵暫停。
 - **實體 Gamepad / 街機搖桿**：透過 W3C Gamepad API 自動辨識連線之 USB/藍牙街機搖桿與 Xbox/PlayStation 控制器。
 - **手機/平板虛擬觸控盤**：於行動裝置觸控屏自動渲染 Web 虛擬 D-Pad 與按鈕。
 
@@ -27,15 +28,18 @@ Arcade Stadium 是一個模組化、極致沉浸的 HTML5 Web 大型電玩合輯
 - **管理員獎勵發幣 (Admin Bonus Credits)**：管理員 (Admin) 可透過後台或 API 賦予玩家額外獎勵代幣。管理員獎勵代幣**不受每日重置影響**，且可長期保存。
 - **代幣扣除優先權**：扣除代幣時，優先扣除「每日免費代幣」，免費代幣扣完後才扣除「管理員獎勵代幣」。
 
-### 2.5 視窗失焦自動暫停與全域音效控管 (Auto-Pause & Global Audio)
-- **視窗離開自動暫停 (Auto-Pause on Blur)**：當玩家切換瀏覽器分頁 (Alt+Tab) 或視窗失去焦點 (`window.onblur` / `document.hidden`) 時，系統自動觸發 `ArcadeBridge.emit('PAUSE_REQUESTED')` 暫停遊戲畫面與計時器，防止角色意外死亡。
+### 2.5 手動/失焦暫停與全域音效控管 (Manual & Auto Pause, Global Audio)
+- **手動與失焦自動暫停 (Manual & Auto-Pause)**：
+  - **手動觸發**：玩家可隨時點擊 UI 頂部「Pause」按鈕、按下鍵盤 `ESC`/`P` 或 Gamepad `START`/`PAUSE` 鍵主動手動暫停。
+  - **失焦自動暫停**：當切換分頁 (Alt+Tab) 或視窗失焦 (`window.onblur` / `document.hidden`) 時，自動觸發暫停保護角色。
+  - **廣播機制**：皆透過發送 `ArcadeBridge.emit('PAUSE_REQUESTED')` 暫停遊戲畫面與計時器。
 - **全域音量控制 (Global Master Volume)**：大廳提供 Master Volume 滑桿與靜音 Mute 開關。開關同步控管大廳背景聲與 Phaser 內部 WebAudio (`game.sound.mute`)。
 - **道地街機哲學 (No Soft Reset)**：遵循實體街機傳統，遊戲中**不提供重置 (Reset/Restart)** 按鈕。玩家若表現不佳，必須玩完單局或主動選擇退出回大廳。
 
-### 2.6 前十名高分排行榜 (Top 10 Leaderboard & Email Submission)
-- **前十名限制 (Top 10 Rank Limit)**：各子遊戲排行榜介面**僅顯示前十名 (Top 10)** 最高分紀錄。
-- **自動 Email 帶入 (No Nickname Popup)**：系統自動抓取玩家當前登入之 Email 作為排行榜標示名稱，免除暱稱輸入彈窗。
-- **同分排序規則 (Tie-Breaking Rule)**：若兩位玩家得分相同，**依照玩家 Email 字母順序 (A-Z) 排序**。
+### 2.6 每款遊戲獨立前十名排行榜 (Per-Game Top 10 Leaderboard)
+- **獨立遊戲計算 (Per-Game Top 10)**：排行榜依據子遊戲 `game_id` **獨立計算並展示各遊戲專屬的 Top 10**（例：Tetris 有專屬 Top 10，Pac-Man 有專屬 Top 10）。
+- **GCP IAP Email 自動帶入**：系統自動帶入 GCP IAP 傳入之已認證玩家 Email，免除手動暱稱輸入彈窗。
+- **同分排序規則 (Tie-Breaking Rule)**：若同款遊戲有兩位玩家得分相同，**依照玩家 Email 字母順序 (A-Z ASC) 進行排序**。
 
 ---
 

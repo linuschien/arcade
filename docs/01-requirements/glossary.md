@@ -6,6 +6,7 @@
 
 | 術語 | 英文 / 代碼 | 定義 | 備註 / 約束 |
 |------|------------|------|------------|
+| **GCP IAP 身份認證** | `GCP Identity-Aware Proxy` | Google Cloud 的身份感應代理。託管登入頁面與 OAuth 驗證，並在 Header 注入使用者身份。 | 注入 `X-Goog-Authenticated-User-Email` Header |
 | **街機大廳** | `Arcade Lobby` | Arcade Stadium 平台主頁面，提供遊戲卡片切換、代幣計數與選單操作。 | React Host Shell 渲染 |
 | **代幣 / 點數** | `Credit` / `Coin` | 用於啟動或重試子遊戲的虛擬貨幣。 | 預設投幣 1 次 = -1 Credit |
 | **每日免費代幣** | `Daily Free Credit` | 系統每日自動發放給玩家的免費遊玩硬幣。 | 每日配額 10 枚，每日 00:00 重置，不可跨日累積 |
@@ -57,5 +58,5 @@
 | 術語 | 英文 / 代碼 | 定義 |
 |------|------------|------|
 | **遊戲狀態機** | `Game Flow FSM` | 涵蓋 `UNLOADED`, `LOBBY`, `PLAYING`, `PAUSED`, `GAMEOVER` 的狀態轉移。 |
-| **前十名高分榜** | `Top 10 Leaderboard` | 各遊戲僅展示得分最高的前 10 名玩家紀錄。 | 僅取前 10 名 (Rank 1~10) |
-| **玩家登入 Email** | `User Logged-In Email` | 系統自動作為高分榜識別身份的登入 Email，無須手動輸入暱稱。 | 自動帶入，免輸入 |
+| **單遊戲前十名榜** | `Per-Game Top 10 Leaderboard` | 每款子遊戲 (`game_id`) 獨立展示專屬前十名最高分紀錄。 | 依 `game_id` 獨立計算 |
+| **GCP IAP 認證 Email** | `GCP IAP Authenticated Email` | 經由 GCP IAP 驗證傳入之 User Email，自動作為排行榜識別與發幣標示。 | 由系統標頭自動帶入 |
