@@ -1,7 +1,7 @@
 # US-01 街機大廳模組 (Arcade Lobby Module)
 
 ## 背景 (Background)
-Arcade Lobby 是 Arcade Stadium 平台的最上層使用者介面。負責遊戲卡片輪播展示、單局直接扣幣 (Option C)、每日免費與管理員代幣發放扣除、跨裝置控制 (鍵盤/Gamepad/觸控)、CRT 復古濾鏡切換以及全網排行榜視窗顯示。
+Arcade Lobby 是 Arcade Stadium 平台的最上層使用者介面。負責遊戲卡片輪播展示、單局直接扣幣 (Option C)、每日免費與管理員代幣發放扣除、跨裝置控制 (鍵盤/Gamepad/觸控)、CRT 復古濾鏡切換以及前十名 Email 自動結算排行榜視窗顯示。
 
 ---
 
@@ -97,3 +97,18 @@ Arcade Lobby 是 Arcade Stadium 平台的最上層使用者介面。負責遊戲
   1. 優先扣除 `Daily Free Credit`（每日免費硬幣）。
   2. 若 `Daily Free Credit` $= 0$，才扣除 `Admin Bonus Credit`（管理員獎勵硬幣）。
 - **AC4 (UI Display)**：大廳 Credit 計數器清晰展示總硬幣數，並可懸浮查看 breakdown（例如：`Total: 15 (Free: 5, Bonus: 10)`）。
+
+---
+
+## US-01-07：前十名高分排行榜與 Email 自動結算 (Top 10 Leaderboard & Auto Email Submission)
+
+**身份**：街機玩家 (Arcade Player)
+
+> **As a** 街機玩家，  
+> **I want to** 遊戲結束時系統自動將我的得分與登入 Email 上傳至前十名排行榜，  
+> **So that** 我不需要手動輸入暱稱，流程流暢且能在大廳查看 Top 10 最高分榮譽。
+
+### 驗收條件 (Acceptance Criteria)
+- **AC1 (Top 10 Rank Display)**：大廳排行榜視窗僅展示得分最高的前 10 名紀錄 (Rank 1~10)。
+- **AC2 (Automatic Email Identifier)**：當 Game Over 觸發，系統自動帶入當前登入 User 的 `email` 欄位（例如：`linus@example.com`），**免除任何手動輸入暱稱或 3 字元代碼彈窗**。
+- **AC3 (Auto Submission on GameOver)**：收到 `ArcadeBridge.on('GAME_OVER', summary)` 事件後，後台自動非同步調用 API 結算。若進入前十名，排行榜面板自動即時刷出更新。

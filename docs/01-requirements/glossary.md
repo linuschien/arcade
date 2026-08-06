@@ -48,7 +48,7 @@
 | **紅鬼** | `Blinky (Shadow)` | 直線直接瞄準 Pac-Man 當前網格位置追逐的紅色幽靈。 | 領頭 AI |
 | **粉鬼** | `Pinky (Speedy)` | 瞄準 Pac-Man 前方 4 格預判位置進行伏擊的粉色幽靈。 | 伏擊 AI |
 | **藍鬼** | `Inky (Bashful)` | 依據 Blinky 與 Pac-Man 前方 2 格連線向量延伸雙倍距離計算目標的青色幽靈。 | 包抄 AI |
-| **橘鬼** | `Clyde (Pokey)` | 距離 Pac-Man > 8 格時追逐，$\le 8$ 格時退回左下角巡邏的橘色幽靈。 | 隨機游移 AI |
+| **橘鬼** | `Clyde (Pokey)` | 距離 Pac-Man > 8 格時追逐，$\le 8$ 格時退回左下角 Patrol 點。 | 隨機游移 AI |
 
 ---
 
@@ -57,5 +57,5 @@
 | 術語 | 英文 / 代碼 | 定義 |
 |------|------------|------|
 | **遊戲狀態機** | `Game Flow FSM` | 涵蓋 `UNLOADED`, `LOBBY`, `PLAYING`, `PAUSED`, `GAMEOVER` 的狀態轉移。 |
-| **最高分** | `High Score` | 特定遊戲記錄的最佳分數。 |
-| **最高得分者** | `Top Scorer` | 創造最高分數紀錄的玩家名稱代碼 (例: `AAA`, `LIN`)。 |
+| **前十名高分榜** | `Top 10 Leaderboard` | 各遊戲僅展示得分最高的前 10 名玩家紀錄。 | 僅取前 10 名 (Rank 1~10) |
+| **玩家登入 Email** | `User Logged-In Email` | 系統自動作為高分榜識別身份的登入 Email，無須手動輸入暱稱。 | 自動帶入，免輸入 |
