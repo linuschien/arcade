@@ -37,7 +37,7 @@ paths:
       summary: List Players (Deprecated)
       operationId: listPlayers
       deprecated: true
-      description: Collection GET is deprecated on REST. Please use the GraphQL Gateway query `listPlayers`.
+      description: "Collection GET is deprecated on REST. Please use the GraphQL Gateway query `listPlayers`."
       tags:
         - Player
       responses:
@@ -173,7 +173,7 @@ paths:
       summary: List User Wallets (Deprecated)
       operationId: listUserWallets
       deprecated: true
-      description: Collection GET is deprecated on REST. Please use the GraphQL Gateway.
+      description: "Collection GET is deprecated on REST. Please use the GraphQL Gateway."
       tags:
         - UserWallet
       responses:
@@ -361,7 +361,7 @@ paths:
       summary: List Game Cards (Deprecated)
       operationId: listGameCards
       deprecated: true
-      description: Collection GET is deprecated on REST. Please use the GraphQL Gateway.
+      description: "Collection GET is deprecated on REST. Please use the GraphQL Gateway."
       tags:
         - GameCard
       responses:
@@ -489,7 +489,7 @@ paths:
       summary: List Leaderboard Entries for Game (Deprecated)
       operationId: listLeaderboardEntries
       deprecated: true
-      description: Collection GET is deprecated on REST. Please use GraphQL Gateway `listLeaderboardEntries(gameId: ...)` for Top 10 queries with email tie-breaking.
+      description: "Collection GET is deprecated on REST. Please use GraphQL Gateway `listLeaderboardEntries(gameId: ...)` for Top 10 queries with email tie-breaking."
       tags:
         - LeaderboardEntry
       responses:
