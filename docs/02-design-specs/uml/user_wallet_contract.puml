@@ -1,0 +1,68 @@
+@startuml user_wallet_contract
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+
+package "adapter.in.web.rest" {
+  interface "UserWalletRestController" <<RestController>> {
+    ' --- Custom Actions ---
+    + deductCredit(playerId: UUID, walletId: UUID): ResponseEntity<OperationStatus>
+    + grantAdminCredit(playerId: UUID, walletId: UUID, req: GrantAdminCreditRequest): ResponseEntity<OperationStatus>
+    ' --- Mutations ---
+    + createUserWallet(playerId: UUID, req: UserWalletRequest): ResponseEntity<UserWalletResponse>
+    + updateUserWallet(playerId: UUID, walletId: UUID, req: UserWalletRequest): ResponseEntity<UserWalletResponse>
+    + deleteUserWallet(playerId: UUID, walletId: UUID): ResponseEntity<Void>
+    ' --- Single-resource Query ---
+    + getUserWalletById(playerId: UUID, walletId: UUID): ResponseEntity<UserWalletResponse>
+  }
+}
+
+package "adapter.in.web.graphql" {
+  interface "UserWalletGraphQLResolver" <<GraphQLResolver>> {
+    ' --- Collection / Filtered Queries ---
+    + listUserWallets(filter: WalletFilterInput): List<UserWalletResponse>
+    + getUserWalletByPlayerId(playerId: UUID): UserWalletResponse
+  }
+}
+
+package "application.port.in" {
+  interface "UserWalletCommandService" <<Service>> {
+    + deductCredit(playerId: UUID, walletId: UUID): OperationStatus
+    + grantAdminCredit(playerId: UUID, walletId: UUID, amount: int): OperationStatus
+    + checkAndApplyLazyDailyReset(walletId: UUID): UserWalletResponse
+    + createUserWallet(command: CreateWalletCommand): UserWalletResponse
+    + updateUserWallet(walletId: UUID, command: UpdateWalletCommand): UserWalletResponse
+    + deleteUserWallet(walletId: UUID): void
+  }
+
+  interface "UserWalletQueryService" <<Service>> {
+    + getUserWalletById(walletId: UUID): UserWalletResponse
+    + getUserWalletByPlayerId(playerId: UUID): UserWalletResponse
+    + listUserWallets(filter: WalletFilterInput): List<UserWalletResponse>
+  }
+}
+
+package "adapter.out.persistence" {
+  interface "UserWalletRepository" <<Repository>> {
+    + save(entity: UserWallet): UserWallet
+    + findById(id: UUID): Optional<UserWallet>
+    + findByPlayerId(playerId: UUID): Optional<UserWallet>
+    + findByExample(example: Example<UserWallet>): List<UserWallet>
+    + deleteById(id: UUID): void
+  }
+}
+
+' === Dependency Wiring ===
+"UserWalletRestController"  ..> "UserWalletCommandService" : uses
+"UserWalletRestController"  ..> "UserWalletQueryService"   : uses
+"UserWalletGraphQLResolver" ..> "UserWalletQueryService"   : uses
+"UserWalletCommandService"  ..> "UserWalletRepository"     : uses
+"UserWalletQueryService"    ..> "UserWalletRepository"     : uses
+
+note right of UserWalletRepository
+  Optimistic Locking enforced (@Version integer).
+  Repository MUST verify version field before save during coin deduction transactions.
+end note
+
+@enduml

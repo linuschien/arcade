@@ -1,0 +1,59 @@
+@startuml player_contract
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+
+package "adapter.in.web.rest" {
+  interface "PlayerRestController" <<RestController>> {
+    ' --- JIT Authentication ---
+    + whoami(request: HttpServletRequest): ResponseEntity<PlayerResponse>
+    ' --- Mutations ---
+    + createPlayer(req: PlayerRequest): ResponseEntity<PlayerResponse>
+    + updatePlayer(id: UUID, req: PlayerRequest): ResponseEntity<PlayerResponse>
+    + deletePlayer(id: UUID): ResponseEntity<Void>
+    ' --- Single-resource Query ---
+    + getPlayerById(id: UUID): ResponseEntity<PlayerResponse>
+  }
+}
+
+package "adapter.in.web.graphql" {
+  interface "PlayerGraphQLResolver" <<GraphQLResolver>> {
+    ' --- Collection / Filtered Queries ---
+    + listPlayers(filter: PlayerFilterInput): List<PlayerResponse>
+    + getPlayerById(id: UUID): PlayerResponse
+  }
+}
+
+package "application.port.in" {
+  interface "PlayerCommandService" <<Service>> {
+    + whoami(email: String): PlayerResponse
+    + createPlayer(command: CreatePlayerCommand): PlayerResponse
+    + updatePlayer(id: UUID, command: UpdatePlayerCommand): PlayerResponse
+    + deletePlayer(id: UUID): void
+  }
+
+  interface "PlayerQueryService" <<Service>> {
+    + getPlayerById(id: UUID): PlayerResponse
+    + listPlayers(filter: PlayerFilterInput): List<PlayerResponse>
+  }
+}
+
+package "adapter.out.persistence" {
+  interface "PlayerRepository" <<Repository>> {
+    + save(entity: Player): Player
+    + findById(id: UUID): Optional<Player>
+    + findByGcpIapEmail(email: String): Optional<Player>
+    + findByExample(example: Example<Player>): List<Player>
+    + deleteById(id: UUID): void
+  }
+}
+
+' === Dependency Wiring ===
+"PlayerRestController"  ..> "PlayerCommandService" : uses
+"PlayerRestController"  ..> "PlayerQueryService"   : uses
+"PlayerGraphQLResolver" ..> "PlayerQueryService"   : uses
+"PlayerCommandService"  ..> "PlayerRepository"     : uses
+"PlayerQueryService"    ..> "PlayerRepository"     : uses
+
+@enduml

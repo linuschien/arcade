@@ -1,0 +1,43 @@
+@startuml pacman_game_session_contract
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+
+package "client.game.pacman" {
+  interface "PacmanGameEngine" <<ClientGameEngine>> {
+    + initSession(config: PacmanConfig): void
+    + startSession(): void
+    + pauseSession(): void
+    + resumeSession(): void
+    + destroySession(): void
+    + handleInput(direction: Direction): void
+  }
+
+  interface "PacmanStateStore" <<ClientStateStore>> {
+    + getCurrentScore(): int
+    + getCurrentLevel(): int
+    + getRemainingLives(): int
+    + getGhostStates(): List<GhostState>
+  }
+}
+
+package "client.bridge" {
+  interface "ArcadeBridgeEventBus" <<EventBus>> {
+    + emit(event: "COIN_INSERTED", remainingCredits: int): void
+    + emit(event: "GAME_OVER", summary: GameSummary): void
+    + emit(event: "PAUSE_REQUESTED"): void
+    + on(event: string, listener: Function): void
+  }
+}
+
+"PacmanGameEngine" ..> "PacmanStateStore" : updates
+"PacmanGameEngine" ..> "ArcadeBridgeEventBus" : emits events
+
+note right of PacmanGameEngine
+  HTML5 / Phaser 4 Client-Side In-Memory Game Engine.
+  Executes 60 FPS Pac-Man tile navigation, ghost AI squad (Blinky, Pinky, Inky, Clyde),
+  scatter/chase timers, and frightened power pellet mode in browser memory.
+end note
+
+@enduml

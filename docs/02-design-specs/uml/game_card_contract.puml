@@ -1,0 +1,65 @@
+@startuml game_card_contract
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+
+package "adapter.in.web.rest" {
+  interface "GameCardRestController" <<RestController>> {
+    ' --- Custom Actions ---
+    + incrementPlayCount(gameCardId: UUID): ResponseEntity<OperationStatus>
+    ' --- Mutations (Admin) ---
+    + createGameCard(req: GameCardRequest): ResponseEntity<GameCardResponse>
+    + updateGameCard(gameCardId: UUID, req: GameCardRequest): ResponseEntity<GameCardResponse>
+    + deleteGameCard(gameCardId: UUID): ResponseEntity<Void>
+    ' --- Single-resource Query ---
+    + getGameCardById(gameCardId: UUID): ResponseEntity<GameCardResponse>
+  }
+}
+
+package "adapter.in.web.graphql" {
+  interface "GameCardGraphQLResolver" <<GraphQLResolver>> {
+    ' --- Collection / Filtered Queries ---
+    + listGameCards(filter: GameCardFilterInput): List<GameCardResponse>
+    + getGameCardBySlug(gameId: String): GameCardResponse
+  }
+}
+
+package "application.port.in" {
+  interface "GameCardCommandService" <<Service>> {
+    + incrementPlayCount(gameCardId: UUID): OperationStatus
+    + createGameCard(command: CreateGameCardCommand): GameCardResponse
+    + updateGameCard(gameCardId: UUID, command: UpdateGameCardCommand): GameCardResponse
+    + deleteGameCard(gameCardId: UUID): void
+  }
+
+  interface "GameCardQueryService" <<Service>> {
+    + getGameCardById(gameCardId: UUID): GameCardResponse
+    + getGameCardBySlug(gameId: String): GameCardResponse
+    + listGameCards(filter: GameCardFilterInput): List<GameCardResponse>
+  }
+}
+
+package "adapter.out.persistence" {
+  interface "GameCardRepository" <<Repository>> {
+    + save(entity: GameCard): GameCard
+    + findById(id: UUID): Optional<GameCard>
+    + findByGameId(gameId: String): Optional<GameCard>
+    + findByExample(example: Example<GameCard>): List<GameCard>
+    + deleteById(id: UUID): void
+  }
+}
+
+' === Dependency Wiring ===
+"GameCardRestController"  ..> "GameCardCommandService" : uses
+"GameCardRestController"  ..> "GameCardQueryService"   : uses
+"GameCardGraphQLResolver" ..> "GameCardQueryService"   : uses
+"GameCardCommandService"  ..> "GameCardRepository"     : uses
+"GameCardQueryService"    ..> "GameCardRepository"     : uses
+
+note right of GameCardRepository
+  JpaRepository backed.
+  findByGameId supports human-readable slug lookup (e.g. 'tetris', 'pacman').
+end note
+
+@enduml

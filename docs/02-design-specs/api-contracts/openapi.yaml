@@ -1,0 +1,804 @@
+openapi: 3.2.0
+info:
+  title: Arcade Stadium Platform API
+  description: |
+    RESTful Transport Layer Specification for Arcade Stadium Platform.
+    Enforces UUID path parameters, 409 Conflict optimistic locking handling, and GCP IAP authentication headers.
+    Note: All Collection GET endpoints are deprecated in favor of the GraphQL Gateway.
+  version: 1.0.0
+
+servers:
+  - url: /api/v1
+    description: Production API Server Base Path
+
+paths:
+  /players:
+    post:
+      summary: Create Player Profile
+      operationId: createPlayer
+      tags:
+        - Player
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlayerRequest'
+      responses:
+        '201':
+          description: Player created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+    get:
+      summary: List Players (Deprecated)
+      operationId: listPlayers
+      deprecated: true
+      description: Collection GET is deprecated on REST. Please use the GraphQL Gateway query `listPlayers`.
+      tags:
+        - Player
+      responses:
+        '200':
+          description: Collection query redirected to GraphQL
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlayerResponse'
+
+  /players:whoami:
+    post:
+      summary: GCP IAP Just-In-Time Authentication & Lazy Daily Reset
+      operationId: whoami
+      description: |
+        Reads X-Goog-Authenticated-User-Email header injected by GCP IAP.
+        If player does not exist, automatically provisions a new Player (UUID v4) and associated UserWallet (10 free credits).
+        If player exists, checks if midnight 00:00 passed and lazily resets dailyFreeCredit to 10.
+      tags:
+        - Player
+      parameters:
+        - in: header
+          name: X-Goog-Authenticated-User-Email
+          required: false
+          schema:
+            type: string
+            example: "user@example.com"
+          description: Authenticated player email injected by GCP IAP
+      responses:
+        '200':
+          description: Authenticated player retrieved or lazily reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerResponse'
+        '201':
+          description: New player JIT provisioned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+
+  /players/{playerId}:
+    parameters:
+      - in: path
+        name: playerId
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+    get:
+      summary: Get Player Profile by ID
+      operationId: getPlayerById
+      tags:
+        - Player
+      responses:
+        '200':
+          description: Player found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerResponse'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+    put:
+      summary: Update Player Profile
+      operationId: updatePlayer
+      tags:
+        - Player
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlayerRequest'
+      responses:
+        '200':
+          description: Player updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+    delete:
+      summary: Delete Player Profile
+      operationId: deletePlayer
+      tags:
+        - Player
+      responses:
+        '204':
+          description: Player deleted successfully
+        '404':
+          $ref: '#/components/responses/404NotFound'
+
+  /players/{playerId}/user-wallets:
+    parameters:
+      - in: path
+        name: playerId
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+    post:
+      summary: Create User Wallet for Player
+      operationId: createUserWallet
+      tags:
+        - UserWallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserWalletRequest'
+      responses:
+        '201':
+          description: User wallet created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserWalletResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+    get:
+      summary: List User Wallets (Deprecated)
+      operationId: listUserWallets
+      deprecated: true
+      description: Collection GET is deprecated on REST. Please use the GraphQL Gateway.
+      tags:
+        - UserWallet
+      responses:
+        '200':
+          description: Collection query redirected to GraphQL
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserWalletResponse'
+
+  /players/{playerId}/user-wallets/{userWalletId}:
+    parameters:
+      - in: path
+        name: playerId
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      - in: path
+        name: userWalletId
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: "a3b1c2d3-e4f5-6789-abcd-ef0123456789"
+    get:
+      summary: Get User Wallet
+      operationId: getUserWalletById
+      tags:
+        - UserWallet
+      responses:
+        '200':
+          description: User wallet found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserWalletResponse'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+    put:
+      summary: Sync / Replace User Wallet (Optimistic Locking)
+      operationId: updateUserWallet
+      tags:
+        - UserWallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserWalletRequest'
+      responses:
+        '200':
+          description: User wallet updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserWalletResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+    delete:
+      summary: Delete User Wallet
+      operationId: deleteUserWallet
+      tags:
+        - UserWallet
+      responses:
+        '204':
+          description: User wallet deleted
+        '404':
+          $ref: '#/components/responses/404NotFound'
+
+  /players/{playerId}/user-wallets/{userWalletId}:deductCredit:
+    parameters:
+      - in: path
+        name: playerId
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      - in: path
+        name: userWalletId
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: "a3b1c2d3-e4f5-6789-abcd-ef0123456789"
+    post:
+      summary: Atomic Credit Deduction on Game Start / Continue
+      operationId: deductCredit
+      description: |
+        Deducts 1 credit from wallet for game start or continue.
+        Deduction priority: dailyFreeCredit first, then adminBonusCredit.
+        Performs lazy calendar date reset check prior to deduction.
+      tags:
+        - UserWallet
+      responses:
+        '200':
+          description: Credit deducted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationStatus'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+        '409':
+          $ref: '#/components/responses/409Conflict'
+
+  /players/{playerId}/user-wallets/{userWalletId}:grantAdminCredit:
+    parameters:
+      - in: path
+        name: playerId
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      - in: path
+        name: userWalletId
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: "a3b1c2d3-e4f5-6789-abcd-ef0123456789"
+    post:
+      summary: Grant Admin Bonus Credits
+      operationId: grantAdminCredit
+      tags:
+        - UserWallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: integer
+                  example: 10
+                  description: Amount of bonus credits to grant
+      responses:
+        '200':
+          description: Admin credits granted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationStatus'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+
+  /game-cards:
+    post:
+      summary: Register / Publish Game Card (Admin API)
+      operationId: createGameCard
+      tags:
+        - GameCard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameCardRequest'
+      responses:
+        '201':
+          description: Game card registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameCardResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+    get:
+      summary: List Game Cards (Deprecated)
+      operationId: listGameCards
+      deprecated: true
+      description: Collection GET is deprecated on REST. Please use the GraphQL Gateway.
+      tags:
+        - GameCard
+      responses:
+        '200':
+          description: Collection query redirected to GraphQL
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GameCardResponse'
+
+  /game-cards/{gameCardId}:
+    parameters:
+      - in: path
+        name: gameCardId
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: "98765432-10fe-dcba-9876-543210fedcba"
+    get:
+      summary: Get Game Card Metadata by UUID
+      operationId: getGameCardById
+      tags:
+        - GameCard
+      responses:
+        '200':
+          description: Game card details found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameCardResponse'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+    put:
+      summary: Update Game Card Metadata
+      operationId: updateGameCard
+      tags:
+        - GameCard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameCardRequest'
+      responses:
+        '200':
+          description: Game card updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameCardResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+    delete:
+      summary: Delete Game Card
+      operationId: deleteGameCard
+      tags:
+        - GameCard
+      responses:
+        '204':
+          description: Game card deleted
+        '404':
+          $ref: '#/components/responses/404NotFound'
+
+  /game-cards/{gameCardId}:incrementPlayCount:
+    parameters:
+      - in: path
+        name: gameCardId
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: "98765432-10fe-dcba-9876-543210fedcba"
+    post:
+      summary: Increment Game Total Play Counter
+      operationId: incrementPlayCount
+      tags:
+        - GameCard
+      responses:
+        '200':
+          description: Play counter incremented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationStatus'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+
+  /game-cards/{gameCardId}/leaderboard-entries:
+    parameters:
+      - in: path
+        name: gameCardId
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: "98765432-10fe-dcba-9876-543210fedcba"
+    post:
+      summary: Submit High Score for Game
+      operationId: submitHighScore
+      tags:
+        - LeaderboardEntry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaderboardEntryRequest'
+      responses:
+        '201':
+          description: High score submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardEntryResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+    get:
+      summary: List Leaderboard Entries for Game (Deprecated)
+      operationId: listLeaderboardEntries
+      deprecated: true
+      description: Collection GET is deprecated on REST. Please use GraphQL Gateway `listLeaderboardEntries(gameId: ...)` for Top 10 queries with email tie-breaking.
+      tags:
+        - LeaderboardEntry
+      responses:
+        '200':
+          description: Collection query redirected to GraphQL
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaderboardEntryResponse'
+
+  /game-cards/{gameCardId}/leaderboard-entries/{entryId}:
+    parameters:
+      - in: path
+        name: gameCardId
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: "98765432-10fe-dcba-9876-543210fedcba"
+      - in: path
+        name: entryId
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: "77777777-8888-9999-aaaa-bbbbccccdddd"
+    get:
+      summary: Get Single Leaderboard Entry
+      operationId: getLeaderboardEntryById
+      tags:
+        - LeaderboardEntry
+      responses:
+        '200':
+          description: Entry details found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardEntryResponse'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+    delete:
+      summary: Delete Leaderboard Entry
+      operationId: deleteLeaderboardEntry
+      tags:
+        - LeaderboardEntry
+      responses:
+        '204':
+          description: Leaderboard entry deleted
+        '404':
+          $ref: '#/components/responses/404NotFound'
+
+components:
+  schemas:
+    PlayerRequest:
+      type: object
+      required:
+        - gcpIapEmail
+      properties:
+        gcpIapEmail:
+          type: string
+          format: email
+          example: "linus@example.com"
+          description: GCP IAP Authenticated user email
+
+    PlayerResponse:
+      type: object
+      required:
+        - id
+        - gcpIapEmail
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        gcpIapEmail:
+          type: string
+          format: email
+          example: "linus@example.com"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-08-06T12:00:00Z"
+        wallet:
+          $ref: '#/components/schemas/UserWalletResponse'
+
+    UserWalletRequest:
+      type: object
+      required:
+        - playerId
+      properties:
+        playerId:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        dailyFreeCredit:
+          type: integer
+          example: 10
+        adminBonusCredit:
+          type: integer
+          example: 5
+
+    UserWalletResponse:
+      type: object
+      required:
+        - id
+        - playerId
+        - dailyFreeCredit
+        - adminBonusCredit
+        - totalCredits
+        - lastDailyResetTime
+        - version
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a3b1c2d3-e4f5-6789-abcd-ef0123456789"
+        playerId:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        dailyFreeCredit:
+          type: integer
+          example: 10
+        adminBonusCredit:
+          type: integer
+          example: 5
+        totalCredits:
+          type: integer
+          example: 15
+        lastDailyResetTime:
+          type: string
+          format: date-time
+          example: "2026-08-06T00:00:00Z"
+        version:
+          type: integer
+          example: 1
+
+    GameCardRequest:
+      type: object
+      required:
+        - gameId
+        - title
+        - coverArtUrl
+        - description
+      properties:
+        gameId:
+          type: string
+          example: "tetris"
+          description: Human-readable slug for dynamic module import
+        title:
+          type: string
+          example: "Tetris Classic"
+        coverArtUrl:
+          type: string
+          example: "/assets/covers/tetris.png"
+        description:
+          type: string
+          example: "Classic 7-Bag SRS Tetris puzzle game."
+
+    GameCardResponse:
+      type: object
+      required:
+        - id
+        - gameId
+        - title
+        - coverArtUrl
+        - description
+        - totalPlayCount
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "98765432-10fe-dcba-9876-543210fedcba"
+        gameId:
+          type: string
+          example: "tetris"
+        title:
+          type: string
+          example: "Tetris Classic"
+        coverArtUrl:
+          type: string
+          example: "/assets/covers/tetris.png"
+        description:
+          type: string
+          example: "Classic 7-Bag SRS Tetris puzzle game."
+        totalPlayCount:
+          type: integer
+          example: 1420
+
+    LeaderboardEntryRequest:
+      type: object
+      required:
+        - playerEmail
+        - score
+      properties:
+        playerEmail:
+          type: string
+          format: email
+          example: "linus@example.com"
+        score:
+          type: integer
+          example: 98500
+
+    LeaderboardEntryResponse:
+      type: object
+      required:
+        - id
+        - gameCardId
+        - playerEmail
+        - score
+        - submittedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "77777777-8888-9999-aaaa-bbbbccccdddd"
+        gameCardId:
+          type: string
+          format: uuid
+          example: "98765432-10fe-dcba-9876-543210fedcba"
+        playerEmail:
+          type: string
+          format: email
+          example: "linus@example.com"
+        score:
+          type: integer
+          example: 98500
+        submittedAt:
+          type: string
+          format: date-time
+          example: "2026-08-06T15:30:00Z"
+
+    OperationStatus:
+      type: object
+      required:
+        - success
+        - message
+        - timestamp
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operation completed successfully."
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-08-06T15:32:00Z"
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+        - timestamp
+      properties:
+        code:
+          type: string
+          example: "BAD_REQUEST"
+        message:
+          type: string
+          example: "Invalid request payload format."
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-08-06T15:32:00Z"
+
+    ConflictError:
+      type: object
+      required:
+        - code
+        - message
+        - currentVersion
+        - timestamp
+      properties:
+        code:
+          type: string
+          example: "OPTIMISTIC_LOCK_CONFLICT"
+        message:
+          type: string
+          example: "Resource state modified by another transaction."
+        currentVersion:
+          type: integer
+          example: 3
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-08-06T15:32:00Z"
+
+  responses:
+    400BadRequest:
+      description: Bad request or validation failure
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    404NotFound:
+      description: Requested resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    409Conflict:
+      description: Optimistic locking version conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ConflictError'

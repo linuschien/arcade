@@ -1,0 +1,60 @@
+@startuml leaderboard_entry_contract
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+
+package "adapter.in.web.rest" {
+  interface "LeaderboardEntryRestController" <<RestController>> {
+    ' --- Standard RESTful High Score Creation ---
+    + submitHighScore(gameCardId: UUID, req: LeaderboardEntryRequest): ResponseEntity<LeaderboardEntryResponse>
+    + deleteLeaderboardEntry(gameCardId: UUID, entryId: UUID): ResponseEntity<Void>
+    ' --- Single-resource Query ---
+    + getLeaderboardEntryById(gameCardId: UUID, entryId: UUID): ResponseEntity<LeaderboardEntryResponse>
+  }
+}
+
+package "adapter.in.web.graphql" {
+  interface "LeaderboardEntryGraphQLResolver" <<GraphQLResolver>> {
+    ' --- Per-Game Top 10 Queries with Email Tie-Breaking ---
+    + getTop10Leaderboard(gameId: String): List<LeaderboardEntryResponse>
+    + listLeaderboardEntries(filter: LeaderboardFilterInput): List<LeaderboardEntryResponse>
+  }
+}
+
+package "application.port.in" {
+  interface "LeaderboardEntryCommandService" <<Service>> {
+    + submitHighScore(gameCardId: UUID, command: SubmitScoreCommand): LeaderboardEntryResponse
+    + deleteLeaderboardEntry(entryId: UUID): void
+  }
+
+  interface "LeaderboardEntryQueryService" <<Service>> {
+    + getLeaderboardEntryById(entryId: UUID): LeaderboardEntryResponse
+    + getTop10Leaderboard(gameId: String): List<LeaderboardEntryResponse>
+    + listLeaderboardEntries(filter: LeaderboardFilterInput): List<LeaderboardEntryResponse>
+  }
+}
+
+package "adapter.out.persistence" {
+  interface "LeaderboardEntryRepository" <<Repository>> {
+    + save(entity: LeaderboardEntry): LeaderboardEntry
+    + findById(id: UUID): Optional<LeaderboardEntry>
+    + findTop10ByGameCardIdOrderByScoreDescPlayerEmailAsc(gameCardId: UUID): List<LeaderboardEntry>
+    + findByExample(example: Example<LeaderboardEntry>): List<LeaderboardEntry>
+    + deleteById(id: UUID): void
+  }
+}
+
+' === Dependency Wiring ===
+"LeaderboardEntryRestController"  ..> "LeaderboardEntryCommandService" : uses
+"LeaderboardEntryRestController"  ..> "LeaderboardEntryQueryService"   : uses
+"LeaderboardEntryGraphQLResolver" ..> "LeaderboardEntryQueryService"   : uses
+"LeaderboardEntryCommandService"  ..> "LeaderboardEntryRepository"     : uses
+"LeaderboardEntryQueryService"    ..> "LeaderboardEntryRepository"     : uses
+
+note right of LeaderboardEntryRepository
+  Enforces Per-Game Top 10 ranking rule:
+  Filtered by gameCardId, ordered by score DESC, with tie-breaking by playerEmail ASC.
+end note
+
+@enduml

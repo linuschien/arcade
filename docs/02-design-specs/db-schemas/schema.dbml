@@ -1,0 +1,61 @@
+// Physical Database Schema for Arcade Stadium Platform
+// Format: DBML (Database Markup Language)
+
+Table player {
+  id uuid [pk, note: 'UUID v4 Primary Key']
+  gcp_iap_email varchar [not null, unique, note: 'Email injected via GCP IAP header X-Goog-Authenticated-User-Email']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+  deleted_at timestamp [null]
+
+  Note: 'Platform player account record provisioned via GCP IAP authentication'
+}
+
+Table user_wallet {
+  id uuid [pk, note: 'UUID v4 Primary Key']
+  player_id uuid [not null, unique, note: 'Foreign Key to player.id']
+  daily_free_credit integer [not null, default: 10, note: 'Daily free credits quota, resets to 10 at 00:00 (non-accumulative)']
+  admin_bonus_credit integer [not null, default: 0, note: 'Admin granted bonus credits, non-expiring']
+  last_daily_reset_time timestamp [not null, default: `now()`, note: 'Timestamp of last calendar date reset']
+  version integer [not null, default: 1, note: 'Optimistic locking version for concurrent coin deduction']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+  deleted_at timestamp [null]
+
+  Note: 'Universal player credit wallet maintaining daily free and admin bonus credit balances'
+}
+
+Table game_card {
+  id uuid [pk, note: 'UUID v4 Primary Key']
+  game_id varchar [not null, unique, note: 'Human-readable unique string slug for dynamic module import (e.g. tetris, pacman)']
+  title varchar [not null, note: 'Display title of the arcade game']
+  cover_art_url varchar [not null, note: 'URL path to poster image']
+  description text [null, note: 'Game description and rules']
+  total_play_count integer [not null, default: 0, note: 'Cumulative play counter']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+  deleted_at timestamp [null]
+
+  Note: 'Arcade lobby game catalog metadata'
+}
+
+Table leaderboard_entry {
+  id uuid [pk, note: 'UUID v4 Primary Key']
+  game_card_id uuid [not null, note: 'Foreign Key to game_card.id']
+  player_email varchar [not null, note: 'Email of submitting player (from GCP IAP)']
+  score integer [not null, note: 'Final high score achieved']
+  submitted_at timestamp [not null, default: `now()`, note: 'Score submission timestamp']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+  deleted_at timestamp [null]
+
+  Indexes {
+    (game_card_id, score, player_email) [name: 'idx_leaderboard_rank']
+  }
+
+  Note: 'Per-game high score leaderboard submission entries. Top 10 sorted by score DESC, email ASC'
+}
+
+// Foreign Key Relationships
+Ref: user_wallet.player_id > player.id [delete: cascade]
+Ref: leaderboard_entry.game_card_id > game_card.id [delete: cascade]

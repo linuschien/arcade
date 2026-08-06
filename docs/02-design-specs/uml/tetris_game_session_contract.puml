@@ -1,0 +1,48 @@
+@startuml tetris_game_session_contract
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+
+package "client.game.tetris" {
+  interface "TetrisGameEngine" <<ClientGameEngine>> {
+    + initSession(config: TetrisConfig): void
+    + startSession(): void
+    + pauseSession(): void
+    + resumeSession(): void
+    + destroySession(): void
+    + hardDrop(): void
+    + softDrop(): void
+    + rotatePiece(direction: RotationDirection): void
+    + holdPiece(): void
+  }
+
+  interface "TetrisStateStore" <<ClientStateStore>> {
+    + getCurrentScore(): int
+    + getCurrentLevel(): int
+    + getLinesCleared(): int
+    + getPlayfieldMatrix(): int[][]
+    + getNextQueue(): List<TetrominoType>
+    + getHeldPiece(): TetrominoType
+  }
+}
+
+package "client.bridge" {
+  interface "ArcadeBridgeEventBus" <<EventBus>> {
+    + emit(event: "COIN_INSERTED", remainingCredits: int): void
+    + emit(event: "GAME_OVER", summary: GameSummary): void
+    + emit(event: "PAUSE_REQUESTED"): void
+    + on(event: string, listener: Function): void
+  }
+}
+
+"TetrisGameEngine" ..> "TetrisStateStore" : updates
+"TetrisGameEngine" ..> "ArcadeBridgeEventBus" : emits events
+
+note right of TetrisGameEngine
+  HTML5 / Phaser 4 Client-Side In-Memory Game Engine.
+  Executes 7-Bag random piece generation, SRS wall kicks, 10x20 line clearing,
+  Level 1~15 casual speed curve (200ms cap), and game-over block-out in browser memory.
+end note
+
+@enduml
