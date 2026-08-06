@@ -1,23 +1,25 @@
 # US-02 俄羅斯方塊模組 (Tetris Game Module)
 
 ## 背景 (Background)
-Tetris 是 Arcade Stadium 平台上的第一個益智類子遊戲。本模組規範 7-Bag 隨機生成、Hold 暫存區歷史與經典/現代設定、SRS 移動旋轉、滿行消除、以 Level 1~20 (20G Kill Screen) 為基準的下落加速曲線與 GameOver 結算邏輯。
+Tetris 是 Arcade Stadium 平台上的第一個益智類子遊戲。本模組規範 7-Bag 隨機生成、NEXT 預覽視窗、Hold 暫存區經典/現代設定、SRS 移動旋轉、滿行消除、以 Level 1~15 (平緩休閒 200ms 封頂) 為基準的下落加速曲線與 GameOver 結算邏輯。
 
 ---
 
-## US-02-01：7-Bag 方塊隨機生成與 Hold 區 (7-Bag Generator & Hold Option)
+## US-02-01：7-Bag 方塊隨機生成、NEXT 預覽與 Hold 區 (7-Bag, NEXT Preview & Hold)
 
 **身份**： Tetris 玩家 (Tetris Player)
 
 > **As a** 玩家，  
-> **I want to** 獲得遵循 7-Bag 公平發牌的方塊序列，並能依設定使用 Hold 暫存區與預覽，  
-> **So that** 我能進行戰術規劃與布局，或切換至經典無 Hold 模式考驗極限反應。
+> **I want to** 在畫面右側看到 NEXT 下一個方塊預覽視窗，並能依設定使用 Hold 暫存區，  
+> **So that** 我能進行戰術規劃，或切換至經典模式感受最道地的 1989 懷舊樂趣。
 
 ### 驗收條件 (Acceptance Criteria)
-- **AC1 (7-Bag Generation)**：每次生成 7 個方塊一袋 (I, J, L, O, S, T, Z) 的隨機序列，確保每 7 次落下的方塊種類不重複。
-- **AC2 (Hold Mechanics & Historical Modes)**：
-  - **現代模式 (Modern Standard - 預設)**：支援 Hold 暫存區，按下 `Hold` 鍵置換當前方塊（每顆新生成方塊落期間限交換 1 次）。
-  - **經典模式 (Classic Arcade 1989)**：若玩家於設定開啟「Classic Mode」，**停用 Hold 暫存區功能**，完全還原 1989 NES/Arcade 無 Hold 考驗傳統玩法。
+- **AC1 (7-Bag & NEXT Preview)**：
+  - 採用 7-Bag 隨機袋發牌，確保每 7 次落下方塊種類不重複。
+  - **NEXT 預覽視窗**：經典模式與現代模式**皆顯示 NEXT 視窗**（經典模式顯示下 1 個方塊；現代模式顯示下 1~3 個方塊）。
+- **AC2 (Hold Mechanics & Mode Settings)**：
+  - **現代模式 (Modern Standard - 預設)**：提供 NEXT 預覽、Hold 暫存區（下落期間限交換 1 次）與底部 Ghost 影子預覽。
+  - **經典模式 (Classic Mode)**：提供 NEXT 預覽，但**停用 Hold 暫存區**與底部 Ghost 預覽，還原 1989 年初代實體體驗。
 
 ---
 
@@ -38,13 +40,13 @@ Tetris 是 Arcade Stadium 平台上的第一個益智類子遊戲。本模組規
 
 ---
 
-## US-02-03：滿行消除與 Level 1~20 下落加速曲線 (Line Clear & Level 1~20 Gravity Curve)
+## US-02-03：滿行消除與 Level 1~15 休閒平緩加速曲線 (Line Clear & Casual Level 1~15 Curve)
 
 **身份**： Tetris Player
 
 > **As a** 玩家，  
-> **I want to** 在拼滿一整行 10 個格子時觸發消除與得分，且隨著 Level 提升感受明顯加速與 Level 20 封頂挑戰，  
-> **So that** 遊戲體驗具備經典街機逐漸緊張暴走與極限挑戰的樂趣。
+> **I want to** 在拼滿一整行 10 個格子時觸發消除與得分，且隨著 Level 提升感受平緩適中的速度遞增，  
+> **So that** 遊戲過程輕鬆愉悅，不會因為過度暴走而產生挫折感。
 
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (Single/Double/Triple/Tetris Scoring)**：
@@ -52,14 +54,15 @@ Tetris 是 Arcade Stadium 平台上的第一個益智類子遊戲。本模組規
   - 2 行消除：$+300 \times \text{Level}$ 分
   - 3 行消除：$+500 \times \text{Level}$ 分
   - 4 行消除 (Tetris)：$+800 \times \text{Level}$ 分
-- **AC2 (Level Progression & Speed Curve Table)**：每累積消除 10 行，`Level` $+1$（由 Level 1 提升至上限 Level 20），下落時間間隔 (Drop Interval) 按下表呈指數縮短：
-  - Level 1: $800\text{ms}$ (48 幀/格)
-  - Level 5: $383\text{ms}$ (23 幀/格)
-  - Level 10: $100\text{ms}$ (6 幀/格)
-  - Level 15: $66\text{ms}$ (4 幀/格)
-  - Level 19: $33\text{ms}$ (2 幀/格)
-  - **Level 20 (Max Level / 20G Kill Screen)**: $16.67\text{ms}$ (1 幀/格，瞬降底端)。
-- **AC3 (Max Level Cap & Kill Screen Persistence)**：到達 Level 20 後，等級封頂不再上升，下落速度維持 1 幀/格 (20G)，玩家繼續遊玩直到 Block Out 失敗。
+- **AC2 (Casual Level Progression & Speed Curve Table)**：每累積消除 10 行，`Level` $+1$（由 Level 1 提升至上限 Level 15），下落時間間隔 (Drop Interval) 按平緩休閒曲線遞減：
+  - Level 1: $1,000\text{ms}$ (1.0 秒/格 - 極度輕鬆)
+  - Level 3: $800\text{ms}$ (0.8 秒/格)
+  - Level 5: $600\text{ms}$ (0.6 秒/格)
+  - Level 8: $450\text{ms}$ (0.45 秒/格)
+  - Level 10: $350\text{ms}$ (0.35 秒/格)
+  - Level 12: $250\text{ms}$ (0.25 秒/格)
+  - **Level 15 (Casual Max Cap 封頂)**: $200\text{ms}$ (0.2 秒/格 - 充裕反應時間)。
+- **AC3 (Casual Max Level Cap)**：到達 Level 15 後，等級封頂不再上升，下落速度維持在安全的 $200\text{ms}$ 間隔，玩家可持續遊玩累積高分。
 
 ---
 
