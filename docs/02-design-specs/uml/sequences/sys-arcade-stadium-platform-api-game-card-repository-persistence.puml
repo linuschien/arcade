@@ -1,0 +1,33 @@
+@startuml sys-arcade-stadium-platform-api-game-card-repository-persistence
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+participant "GameCardCommandService / QueryService" as Application <<Service>>
+participant "GameCardRepository" as Repository <<Repository>>
+database "H2 / R2DBC Database" as DB <<Database>>
+
+alt Find GameCard By Human-Readable Slug
+  Application -> Repository : findByGameId("pacman")
+  activate Repository
+  Repository -> DB : SELECT * FROM game_card WHERE game_id = 'pacman'
+  activate DB
+  DB --> Repository : Row Result
+  deactivate DB
+  Repository --> Application : Optional<GameCard>
+  deactivate Repository
+
+else Save / Increment Play Count
+  Application -> Repository : save(gameCard)
+  activate Repository
+  Repository -> DB : UPDATE game_card SET total_play_count = :count WHERE id = :id
+  activate DB
+  DB --> Repository : Row Result
+  deactivate DB
+  Repository --> Application : GameCard
+  deactivate Repository
+end
+
+@enduml

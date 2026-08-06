@@ -1,0 +1,40 @@
+@startuml user-arcade-stadium-platform-api-admin-bonus-credit-granting
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+actor "System Admin" as Actor
+participant "UserWalletRestController" as Primary <<RestController>>
+participant "UserWalletCommandService" as Core <<Service>>
+participant "UserWalletRepository" as SecWallet <<Repository>>
+
+Actor -> Primary : POST /api/v1/players/{playerId}/user-wallets/{walletId}:grantAdminCredit\nBody: { amount: 50 }
+activate Primary
+
+Primary -> Core : grantAdminCredit(playerId, walletId, 50)
+activate Core
+
+Core -> SecWallet : findById(walletId)
+activate SecWallet
+SecWallet --> Core : Optional.of(userWallet)
+deactivate SecWallet
+
+note right of Core
+  Admin Bonus Credit Granting:
+  adminBonusCredit += amount
+end note
+
+Core -> SecWallet : save(userWallet)
+activate SecWallet
+SecWallet --> Core : UserWallet (updated)
+deactivate SecWallet
+
+Core --> Primary : OperationStatus (SUCCESS)
+deactivate Core
+
+Primary --> Actor : 200 OK { status: "SUCCESS", wallet }
+deactivate Primary
+
+@enduml

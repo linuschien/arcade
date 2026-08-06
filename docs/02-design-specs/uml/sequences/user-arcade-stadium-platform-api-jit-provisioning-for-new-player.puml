@@ -1,0 +1,47 @@
+@startuml user-arcade-stadium-platform-api-jit-provisioning-for-new-player
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+actor "Player / Browser" as Actor
+participant "PlayerRestController" as Primary <<RestController>>
+participant "PlayerCommandService" as Core <<Service>>
+participant "PlayerRepository" as SecPlayer <<Repository>>
+participant "UserWalletRepository" as SecWallet <<Repository>>
+
+Actor -> Primary : POST /api/v1/players:whoami\nHeader: X-Goog-Authenticated-User-Email
+activate Primary
+
+Primary -> Core : whoami(iapEmail)
+activate Core
+
+Core -> SecPlayer : findByGcpIapEmail(iapEmail)
+activate SecPlayer
+SecPlayer --> Core : Optional.empty()
+deactivate SecPlayer
+
+alt Player record does NOT exist (JIT Provisioning)
+  Core -> SecPlayer : save(newPlayer)
+  activate SecPlayer
+  SecPlayer --> Core : Player (saved with UUID)
+  deactivate SecPlayer
+
+  Core -> SecWallet : save(newUserWallet)
+  activate SecWallet
+  note right of SecWallet
+    Initializes dailyFreeCredit = 10,
+    adminBonusCredit = 0, lastDailyResetDate = today
+  end note
+  SecWallet --> Core : UserWallet (saved)
+  deactivate SecWallet
+end
+
+Core --> Primary : PlayerResponse (HTTP 201 Created)
+deactivate Core
+
+Primary --> Actor : 201 Created { id, email, wallet }
+deactivate Primary
+
+@enduml

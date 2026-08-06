@@ -1,0 +1,43 @@
+@startuml user-tetris-game-service-gravity-curve-and-level-cap
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+actor "Player" as Player
+participant "TetrisGameEngine" as Engine <<ClientGameEngine>>
+participant "TetrisStateStore" as Store <<ClientStateStore>>
+
+Player -> Engine : hardDrop() / Piece Lock
+activate Engine
+
+alt 1~4 Complete Horizontal Lines Formed
+  Engine -> Engine : Clear 10x20 Playfield Matrix Lines
+  note right of Engine
+    Scoring: Single (100), Double (300),
+    Triple (500), Tetris (800) * level
+  end note
+
+  Engine -> Store : getLinesCleared()
+  activate Store
+  Store --> Engine : int totalLinesCleared
+  deactivate Store
+
+  alt totalLinesCleared >= (currentLevel * 10) AND currentLevel < 15
+    Engine -> Store : getCurrentLevel()
+    activate Store
+    Store --> Engine : int currentLevel (e.g. 1 -> 2)
+    deactivate Store
+
+    Engine -> Engine : Increase Level & Recalculate Gravity Speed Curve
+    note right of Engine
+      Casual Speed Curve:
+      Level 1 (1000ms) down to Level 15 (200ms cap)
+    end note
+  end
+end
+
+deactivate Engine
+
+@enduml

@@ -1,0 +1,29 @@
+@startuml user-pacman-game-service-ghost-ai-squad-modes
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+participant "Game Engine Timer" as Timer
+participant "PacmanGameEngine" as Engine <<ClientGameEngine>>
+participant "PacmanStateStore" as Store <<ClientStateStore>>
+
+Timer -> Engine : startSession()
+activate Engine
+
+loop Scatter / Chase Phase Timer Loop
+  alt Scatter Mode Active (7s)
+    Engine -> Engine : Ghost Squad (Blinky, Pinky, Inky, Clyde)\ntarget respective maze corners
+  else Chase Mode Active (20s)
+    Engine -> Engine : Blinky targets Pac-Man tile\nPinky targets 4 tiles ahead\nInky vector targets\nClyde distance check target
+  end
+
+  Engine -> Store : getGhostStates()
+  activate Store
+  Store --> Engine : List<GhostState>
+  deactivate Store
+end
+deactivate Engine
+
+@enduml

@@ -1,0 +1,54 @@
+@startuml sys-tetris-game-service-state-store-adapter
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+participant "TetrisGameEngine" as Engine <<ClientGameEngine>>
+participant "TetrisStateStore" as Store <<ClientStateStore>>
+participant "React / Browser Store" as Memory <<StateStore>>
+
+Engine -> Store : getCurrentScore()
+activate Store
+Store -> Memory : read score
+Memory --> Store : int score
+Store --> Engine : int score
+deactivate Store
+
+Engine -> Store : getCurrentLevel()
+activate Store
+Store -> Memory : read level
+Memory --> Store : int level
+Store --> Engine : int level
+deactivate Store
+
+Engine -> Store : getLinesCleared()
+activate Store
+Store -> Memory : read linesCleared
+Memory --> Store : int linesCleared
+Store --> Engine : int linesCleared
+deactivate Store
+
+Engine -> Store : getPlayfieldMatrix()
+activate Store
+Store -> Memory : read 10x20 matrix
+Memory --> Store : int[][] matrix
+Store --> Engine : int[][] matrix
+deactivate Store
+
+Engine -> Store : getNextQueue()
+activate Store
+Store -> Memory : read 7-bag next queue
+Memory --> Store : List<TetrominoType>
+Store --> Engine : List<TetrominoType>
+deactivate Store
+
+Engine -> Store : getHeldPiece()
+activate Store
+Store -> Memory : read hold piece slot
+Memory --> Store : TetrominoType
+Store --> Engine : TetrominoType
+deactivate Store
+
+@enduml

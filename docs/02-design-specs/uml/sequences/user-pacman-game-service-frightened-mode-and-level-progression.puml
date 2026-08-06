@@ -1,0 +1,46 @@
+@startuml user-pacman-game-service-frightened-mode-and-level-progression
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+actor "Player" as Player
+participant "PacmanGameEngine" as Engine <<ClientGameEngine>>
+participant "PacmanStateStore" as Store <<ClientStateStore>>
+participant "ArcadeBridgeEventBus" as EventBus <<EventBus>>
+
+Player -> Engine : handleInput(direction)
+activate Engine
+
+alt Pac-Man eats Power Pellet
+  Engine -> Engine : Trigger Frightened Mode (Blue Ghosts, Speed = 50%, Reverse Direction)
+  Engine -> Store : getGhostStates()
+  activate Store
+  Store --> Engine : List<GhostState> (FRIGHTENED)
+  deactivate Store
+
+  loop Collide with Frightened Ghost
+    Engine -> Engine : Eat Ghost (Score += 200 * multiplier: 200, 400, 800, 1600)
+    Engine -> Engine : Return Ghost eyes to Ghost House
+  end
+end
+
+alt All 244 Pellets & Power Pellets Consumed
+  Engine -> Engine : Level Complete
+  Engine -> Store : getCurrentLevel()
+  activate Store
+  Store --> Engine : currentLevel (e.g. 1 -> 2)
+  deactivate Store
+
+  Engine -> Engine : Flash maze, reset board, update level progression
+else Pac-Man dies and remainingLives == 0
+  Engine -> EventBus : emit("GAME_OVER", summary)
+  activate EventBus
+  EventBus --> Engine : Event emitted
+  deactivate EventBus
+end
+
+deactivate Engine
+
+@enduml

@@ -1,0 +1,33 @@
+@startuml sys-arcade-stadium-platform-api-leaderboard-repository-persistence
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+participant "LeaderboardEntryCommandService / QueryService" as Application <<Service>>
+participant "LeaderboardEntryRepository" as Repository <<Repository>>
+database "H2 / R2DBC Database" as DB <<Database>>
+
+alt Query Top 10 Leaderboard Ranking with Tie-Breaking
+  Application -> Repository : findTop10ByGameCardIdOrderByScoreDescPlayerEmailAsc(gameCardId)
+  activate Repository
+  Repository -> DB : SELECT * FROM leaderboard_entry WHERE game_card_id = :gameCardId ORDER BY score DESC, player_email ASC LIMIT 10
+  activate DB
+  DB --> Repository : 10 Leaderboard Rows
+  deactivate DB
+  Repository --> Application : List<LeaderboardEntry>
+  deactivate Repository
+
+else Save New High Score Entry
+  Application -> Repository : save(leaderboardEntry)
+  activate Repository
+  Repository -> DB : INSERT INTO leaderboard_entry (id, game_card_id, player_id, score, player_email, created_at) VALUES (...)
+  activate DB
+  DB --> Repository : Row Result
+  deactivate DB
+  Repository --> Application : LeaderboardEntry
+  deactivate Repository
+end
+
+@enduml

@@ -1,0 +1,38 @@
+@startuml sys-arcade-stadium-platform-api-user-wallet-repository-persistence
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+participant "UserWalletCommandService / QueryService" as Application <<Service>>
+participant "UserWalletRepository" as Repository <<Repository>>
+database "H2 / R2DBC Database" as DB <<Database>>
+
+alt Save UserWallet with Optimistic Locking
+  Application -> Repository : save(userWallet)
+  activate Repository
+  Repository -> DB : UPDATE user_wallet SET daily_free_credit = :df, admin_bonus_credit = :ab, version = version + 1 WHERE id = :id AND version = :version
+  activate DB
+  alt Concurrent update detected (Version Mismatch)
+    DB --> Repository : 0 rows updated (OptimisticLockingFailureException)
+    Repository --> Application : Exception thrown
+  else Successful update
+    DB --> Repository : 1 row updated
+    Repository --> Application : UserWallet
+  end
+  deactivate DB
+  deactivate Repository
+
+else Find UserWallet By Player ID
+  Application -> Repository : findByPlayerId(playerId)
+  activate Repository
+  Repository -> DB : SELECT * FROM user_wallet WHERE player_id = :playerId
+  activate DB
+  DB --> Repository : Row Result
+  deactivate DB
+  Repository --> Application : Optional<UserWallet>
+  deactivate Repository
+end
+
+@enduml

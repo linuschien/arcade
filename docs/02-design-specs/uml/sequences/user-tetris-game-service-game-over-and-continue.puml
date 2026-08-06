@@ -1,0 +1,36 @@
+@startuml user-tetris-game-service-game-over-and-continue
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+actor "Player" as Player
+participant "TetrisGameEngine" as Engine <<ClientGameEngine>>
+participant "TetrisStateStore" as Store <<ClientStateStore>>
+participant "ArcadeBridgeEventBus" as EventBus <<EventBus>>
+
+Player -> Engine : hardDrop() / Spawn Next Piece
+activate Engine
+
+alt Next Piece spawn location is blocked (Block-Out Game Over)
+  Engine -> Engine : Trigger Block-Out Lock
+  Engine -> EventBus : emit("GAME_OVER", summary)
+  activate EventBus
+  EventBus --> Engine : Event emitted
+  deactivate EventBus
+
+  alt Player elects to Continue Game (Insert Coin)
+    EventBus -> Engine : emit("COIN_INSERTED", remainingCredits)
+    activate EventBus
+    EventBus --> Engine : Credit confirmed
+    deactivate EventBus
+
+    Engine -> Engine : Clear top 4 rows of Playfield Matrix
+    Engine -> Engine : resumeSession()
+  end
+end
+
+deactivate Engine
+
+@enduml

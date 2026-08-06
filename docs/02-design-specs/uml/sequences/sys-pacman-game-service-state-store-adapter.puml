@@ -1,0 +1,40 @@
+@startuml sys-pacman-game-service-state-store-adapter
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+participant "PacmanGameEngine" as Engine <<ClientGameEngine>>
+participant "PacmanStateStore" as Store <<ClientStateStore>>
+participant "React / Browser Store" as Memory <<StateStore>>
+
+Engine -> Store : getCurrentScore()
+activate Store
+Store -> Memory : read score
+Memory --> Store : int score
+Store --> Engine : int score
+deactivate Store
+
+Engine -> Store : getCurrentLevel()
+activate Store
+Store -> Memory : read level
+Memory --> Store : int level
+Store --> Engine : int level
+deactivate Store
+
+Engine -> Store : getRemainingLives()
+activate Store
+Store -> Memory : read lives
+Memory --> Store : int lives
+Store --> Engine : int lives
+deactivate Store
+
+Engine -> Store : getGhostStates()
+activate Store
+Store -> Memory : read ghost positions & states
+Memory --> Store : List<GhostState>
+Store --> Engine : List<GhostState>
+deactivate Store
+
+@enduml

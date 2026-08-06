@@ -1,0 +1,53 @@
+@startuml sys-arcade-stadium-platform-api-player-repository-persistence
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+participant "PlayerCommandService / QueryService" as Application <<Service>>
+participant "PlayerRepository" as Repository <<Repository>>
+database "H2 / R2DBC Database" as DB <<Database>>
+
+alt Save Player Entity
+  Application -> Repository : save(playerEntity)
+  activate Repository
+  Repository -> DB : INSERT INTO player / UPDATE player
+  activate DB
+  DB --> Repository : Player Row Data
+  deactivate DB
+  Repository --> Application : Player
+  deactivate Repository
+
+else Find Player By GCP IAP Email
+  Application -> Repository : findByGcpIapEmail(email)
+  activate Repository
+  Repository -> DB : SELECT * FROM player WHERE gcp_iap_email = :email
+  activate DB
+  DB --> Repository : Row Result / Empty
+  deactivate DB
+  Repository --> Application : Optional<Player>
+  deactivate Repository
+
+else Find Player By ID
+  Application -> Repository : findById(id)
+  activate Repository
+  Repository -> DB : SELECT * FROM player WHERE id = :id
+  activate DB
+  DB --> Repository : Row Result
+  deactivate DB
+  Repository --> Application : Optional<Player>
+  deactivate Repository
+
+else Delete Player By ID
+  Application -> Repository : deleteById(id)
+  activate Repository
+  Repository -> DB : DELETE FROM player WHERE id = :id
+  activate DB
+  DB --> Repository : Void
+  deactivate DB
+  Repository --> Application : void
+  deactivate Repository
+end
+
+@enduml

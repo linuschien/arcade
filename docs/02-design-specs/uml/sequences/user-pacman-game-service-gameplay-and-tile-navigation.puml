@@ -1,0 +1,47 @@
+@startuml user-pacman-game-service-gameplay-and-tile-navigation
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+actor "Player" as Player
+participant "PacmanInputAdapter" as Input <<InputAdapter>>
+participant "PacmanGameEngine" as Engine <<ClientGameEngine>>
+participant "PacmanStateStore" as Store <<ClientStateStore>>
+
+Player -> Engine : initSession(config)
+activate Engine
+Engine -> Store : updates initial score, lives (3), level (1)
+deactivate Engine
+
+Player -> Engine : startSession()
+activate Engine
+Engine --> Player : Game session active (60 FPS loop)
+deactivate Engine
+
+loop 60 FPS Navigation Loop
+  Player -> Input : Press Direction Key (UP, DOWN, LEFT, RIGHT)
+  activate Input
+  Input -> Engine : handleInput(direction)
+  activate Engine
+
+  alt Path clear in directional tile
+    Engine -> Engine : Update Pac-Man tile coordinate
+    alt Tile contains pellet
+      Engine -> Store : updates score += 10
+    end
+  else Tile blocked by wall
+    Engine -> Engine : Maintain current position
+  end
+
+  Engine -> Store : getCurrentScore()
+  activate Store
+  Store --> Engine : currentScore
+  deactivate Store
+
+  deactivate Engine
+  deactivate Input
+end
+
+@enduml

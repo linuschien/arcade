@@ -1,0 +1,68 @@
+@startuml user-tetris-game-service-gameplay-and-srs-rotation
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+actor "Player" as Player
+participant "TetrisInputAdapter" as Input <<InputAdapter>>
+participant "TetrisGameEngine" as Engine <<ClientGameEngine>>
+participant "TetrisStateStore" as Store <<ClientStateStore>>
+
+Player -> Engine : initSession(config)
+activate Engine
+Engine -> Store : updates initial score, level (1), cleared lines (0)
+deactivate Engine
+
+Player -> Engine : startSession()
+activate Engine
+Engine --> Player : Game session active (60 FPS loop + Gravity tick)
+deactivate Engine
+
+loop Active Gameplay Operations
+  alt Rotate Piece (SRS Super Rotation System)
+    Player -> Input : Press Rotate Key
+    activate Input
+    Input -> Engine : rotatePiece(CLOCKWISE)
+    activate Engine
+    Engine -> Engine : Apply SRS Wall Kick Data Offset
+    Engine -> Store : getCurrentScore()
+    deactivate Engine
+    deactivate Input
+
+  else Hard Drop
+    Player -> Input : Press Hard Drop Key
+    activate Input
+    Input -> Engine : hardDrop()
+    activate Engine
+    Engine -> Engine : Instantly drop active piece to bottom & lock
+    Engine -> Store : getCurrentScore()
+    deactivate Engine
+    deactivate Input
+
+  else Soft Drop
+    Player -> Input : Press Soft Drop Key
+    activate Input
+    Input -> Engine : softDrop()
+    activate Engine
+    Engine -> Engine : Move active piece down 1 row (score += 1)
+    deactivate Engine
+    deactivate Input
+
+  else Hold Piece
+    Player -> Input : Press Hold Key
+    activate Input
+    Input -> Engine : holdPiece()
+    activate Engine
+    alt Hold slot empty
+      Engine -> Engine : Swap active piece into hold slot & spawn next
+    else Hold slot filled & hold used = false
+      Engine -> Engine : Swap active piece with held piece
+    end
+    deactivate Engine
+    deactivate Input
+  end
+end
+
+@enduml

@@ -1,0 +1,55 @@
+@startuml user-arcade-stadium-platform-api-lazy-daily-credit-reset
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+actor "Player / Browser" as Actor
+participant "PlayerRestController" as Primary <<RestController>>
+participant "PlayerCommandService" as CorePlayer <<Service>>
+participant "UserWalletCommandService" as CoreWallet <<Service>>
+participant "PlayerRepository" as SecPlayer <<Repository>>
+participant "UserWalletRepository" as SecWallet <<Repository>>
+
+Actor -> Primary : POST /api/v1/players:whoami\nHeader: X-Goog-Authenticated-User-Email
+activate Primary
+
+Primary -> CorePlayer : whoami(iapEmail)
+activate CorePlayer
+
+CorePlayer -> SecPlayer : findByGcpIapEmail(iapEmail)
+activate SecPlayer
+SecPlayer --> CorePlayer : Optional.of(existingPlayer)
+deactivate SecPlayer
+
+CorePlayer -> CoreWallet : checkAndApplyLazyDailyReset(walletId)
+activate CoreWallet
+
+CoreWallet -> SecWallet : findById(walletId)
+activate SecWallet
+SecWallet --> CoreWallet : Optional.of(userWallet)
+deactivate SecWallet
+
+alt lastDailyResetDate < currentDate
+  note right of CoreWallet
+    Lazy Daily Credit Reset triggered:
+    Reset dailyFreeCredit = 10,
+    Update lastDailyResetDate = currentDate
+  end note
+  CoreWallet -> SecWallet : save(updatedWallet)
+  activate SecWallet
+  SecWallet --> CoreWallet : UserWallet (updated)
+  deactivate SecWallet
+end
+
+CoreWallet --> CorePlayer : UserWalletResponse
+deactivate CoreWallet
+
+CorePlayer --> Primary : PlayerResponse (HTTP 200 OK)
+deactivate CorePlayer
+
+Primary --> Actor : 200 OK { player, wallet }
+deactivate Primary
+
+@enduml

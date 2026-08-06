@@ -1,0 +1,56 @@
+@startuml user-arcade-stadium-platform-api-per-game-top10-leaderboard
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+actor "Player / Game Client" as Actor
+participant "LeaderboardEntryRestController" as RestPrimary <<RestController>>
+participant "LeaderboardEntryGraphQLResolver" as GqlPrimary <<GraphQLResolver>>
+participant "LeaderboardEntryCommandService" as CommandCore <<Service>>
+participant "LeaderboardEntryQueryService" as QueryCore <<Service>>
+participant "LeaderboardEntryRepository" as SecRepo <<Repository>>
+
+alt Submit High Score (REST API)
+  Actor -> RestPrimary : POST /api/v1/game-cards/{gameCardId}/leaderboard-entries\nBody: { playerId, score }
+  activate RestPrimary
+
+  RestPrimary -> CommandCore : submitHighScore(gameCardId, command)
+  activate CommandCore
+
+  CommandCore -> SecRepo : save(newLeaderboardEntry)
+  activate SecRepo
+  SecRepo --> CommandCore : LeaderboardEntry (saved)
+  deactivate SecRepo
+
+  CommandCore --> RestPrimary : LeaderboardEntryResponse
+  deactivate CommandCore
+
+  RestPrimary --> Actor : 201 Created { id, gameCardId, score }
+  deactivate RestPrimary
+
+else Query Top 10 Leaderboard (GraphQL API)
+  Actor -> GqlPrimary : query { getTop10Leaderboard(gameId: "pacman") }
+  activate GqlPrimary
+
+  GqlPrimary -> QueryCore : getTop10Leaderboard("pacman")
+  activate QueryCore
+
+  QueryCore -> SecRepo : findTop10ByGameCardIdOrderByScoreDescPlayerEmailAsc(gameCardId)
+  activate SecRepo
+  note right of SecRepo
+    Enforces Top 10 ranking rule:
+    Score DESC, Player Email ASC tie-breaker
+  end note
+  SecRepo --> QueryCore : List<LeaderboardEntry> (max 10)
+  deactivate SecRepo
+
+  QueryCore --> GqlPrimary : List<LeaderboardEntryResponse>
+  deactivate QueryCore
+
+  GqlPrimary --> Actor : GraphQL Response [ Top 10 Entries ]
+  deactivate GqlPrimary
+end
+
+@enduml

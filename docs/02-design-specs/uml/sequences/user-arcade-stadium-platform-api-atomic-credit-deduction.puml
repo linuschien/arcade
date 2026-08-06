@@ -1,0 +1,58 @@
+@startuml user-arcade-stadium-platform-api-atomic-credit-deduction
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+actor "Player / Game Host" as Actor
+participant "UserWalletRestController" as Primary <<RestController>>
+participant "UserWalletCommandService" as Core <<Service>>
+participant "UserWalletRepository" as SecWallet <<Repository>>
+
+Actor -> Primary : POST /api/v1/players/{playerId}/user-wallets/{walletId}:deductCredit
+activate Primary
+
+Primary -> Core : deductCredit(playerId, walletId)
+activate Core
+
+Core -> SecWallet : findById(walletId)
+activate SecWallet
+SecWallet --> Core : Optional.of(userWallet)
+deactivate SecWallet
+
+alt dailyFreeCredit > 0
+  note right of Core
+    Deduction Priority 1:
+    dailyFreeCredit -= 1
+  end note
+else adminBonusCredit > 0
+  note right of Core
+    Deduction Priority 2:
+    adminBonusCredit -= 1
+  end note
+else dailyFreeCredit == 0 AND adminBonusCredit == 0
+  note right of Core
+    Insufficient credit balance
+  end note
+  Core --> Primary : OperationStatus (FAILED / 400 Bad Request)
+  Primary --> Actor : 400 Bad Request { error: "Insufficient credit" }
+end
+
+alt Successful Deduction
+  Core -> SecWallet : save(userWallet)
+  activate SecWallet
+  note right of SecWallet
+    Optimistic locking check (@Version)
+  end note
+  SecWallet --> Core : UserWallet (updated)
+  deactivate SecWallet
+
+  Core --> Primary : OperationStatus (SUCCESS)
+  deactivate Core
+
+  Primary --> Actor : 200 OK { status: "SUCCESS", wallet }
+  deactivate Primary
+end
+
+@enduml

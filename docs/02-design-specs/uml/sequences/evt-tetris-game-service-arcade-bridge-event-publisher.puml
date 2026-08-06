@@ -1,0 +1,35 @@
+@startuml evt-tetris-game-service-arcade-bridge-event-publisher
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+participant "TetrisGameEngine / Host Shell" as Core
+participant "ArcadeBridgeEventBus" as EventBus <<EventBus>>
+participant "React Host Shell Subscriber" as Subscriber <<HostShell>>
+
+Subscriber -> EventBus : on("COIN_INSERTED", listener)
+Subscriber -> EventBus : on("GAME_OVER", listener)
+Subscriber -> EventBus : on("PAUSE_REQUESTED", listener)
+
+alt Coin Inserted Event
+  Core -> EventBus : emit("COIN_INSERTED", remainingCredits)
+  activate EventBus
+  EventBus -> Subscriber : invoke listener(remainingCredits)
+  deactivate EventBus
+
+else Pause Requested Event
+  Core -> EventBus : emit("PAUSE_REQUESTED")
+  activate EventBus
+  EventBus -> Subscriber : invoke listener()
+  deactivate EventBus
+
+else Game Over Event
+  Core -> EventBus : emit("GAME_OVER", summary)
+  activate EventBus
+  EventBus -> Subscriber : invoke listener(summary)
+  deactivate EventBus
+end
+
+@enduml

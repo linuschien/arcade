@@ -1,0 +1,50 @@
+@startuml user-arcade-stadium-platform-api-game-card-lobby-catalog-query
+
+!pragma layout smetana
+skinparam packageStyle rectangle
+skinparam defaultFontName Inter
+skinparam sequenceMessageAlign center
+
+actor "Player / Frontend Lobby" as Actor
+participant "GameCardGraphQLResolver" as Primary <<GraphQLResolver>>
+participant "GameCardQueryService" as Core <<Service>>
+participant "GameCardRepository" as SecRepo <<Repository>>
+
+alt Query List of Active Game Cards
+  Actor -> Primary : query { listGameCards(filter) }
+  activate Primary
+
+  Primary -> Core : listGameCards(filter)
+  activate Core
+
+  Core -> SecRepo : findByExample(example)
+  activate SecRepo
+  SecRepo --> Core : List<GameCard>
+  deactivate SecRepo
+
+  Core --> Primary : List<GameCardResponse>
+  deactivate Core
+
+  Primary --> Actor : GraphQL Response [ { gameId, name, ... } ]
+  deactivate Primary
+
+else Query Single Game Card by Slug (e.g. 'pacman' or 'tetris')
+  Actor -> Primary : query { getGameCardBySlug(gameId: "pacman") }
+  activate Primary
+
+  Primary -> Core : getGameCardBySlug("pacman")
+  activate Core
+
+  Core -> SecRepo : findByGameId("pacman")
+  activate SecRepo
+  SecRepo --> Core : Optional.of(gameCard)
+  deactivate SecRepo
+
+  Core --> Primary : GameCardResponse
+  deactivate Core
+
+  Primary --> Actor : GraphQL Response { gameId: "pacman", ... }
+  deactivate Primary
+end
+
+@enduml
