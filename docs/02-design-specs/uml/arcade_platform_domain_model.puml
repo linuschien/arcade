@@ -17,17 +17,12 @@ package "Core Domain" {
         +DateTime lastDailyResetTime
     }
 
-    class GameCard <<ValueObject>> {
+    class GameCard <<Entity>> {
         +String gameId
         +String title
         +String coverArtUrl
         +String description
         +Integer totalPlayCount
-    }
-
-    class GameCatalog <<Entity>> {
-        +String id
-        +DateTime lastUpdated
     }
 
     class LeaderboardEntry <<Entity>> {
@@ -83,10 +78,10 @@ package "Persistence Contracts" {
         +Delete(String id): Boolean
     }
 
-    interface GameCatalogRepository <<Interface>> {
-        +Create(GameCatalog data): GameCatalog
-        +GetById(String id): GameCatalog
-        +Update(String id, GameCatalog delta): GameCatalog
+    interface GameCardRepository <<Interface>> {
+        +Create(GameCard data): GameCard
+        +GetById(String id): GameCard
+        +Update(String id, GameCard delta): GameCard
         +Delete(String id): Boolean
     }
 }
@@ -95,7 +90,6 @@ package "Persistence Contracts" {
 Player "1" *-- "1" UserWallet : "owns wallet"
 Player "1" o-- "*" LeaderboardEntry : "submits high scores"
 Player "1" o-- "1" ArcadeCabinet : "configures settings"
-GameCatalog "1" *-- "1..*" GameCard : "contains catalog items"
 GameCard "1" o-- "1" Leaderboard : "maintains per-game leaderboard"
 Leaderboard "1" *-- "*" LeaderboardEntry : "ranks top scores"
 Player "1" o-- "*" GameSummary : "completes play sessions"

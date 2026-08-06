@@ -10,6 +10,7 @@ package "Core Domain" {
         +Integer currentLevel
         +Integer remainingLives
         +Integer pelletsRemaining
+        +Integer levelFruitSpawnCount
         +GameFlowFsmState gameState <<Enum>>
     }
 
@@ -86,7 +87,7 @@ PacmanGameSession "1" *-- "1" PacMan : "controls player entity"
 PacmanGameSession "1" *-- "4" Ghost : "manages ghost AI squad"
 MazeTileMatrix "1" *-- "240" Pellet : "contains normal pellets (10 pts)"
 MazeTileMatrix "1" *-- "4" PowerPellet : "contains power pellets (50 pts)"
-PacmanGameSession "1" o-- "0..1" FruitItem : "spawns bonus fruit"
+PacmanGameSession "1" o-- "0..1" FruitItem : "renders current active fruit on screen"
 PacmanGameSession "1" o-- "1" LevelSpecification : "configures level rules"
 
 enum GhostPersonality {
@@ -124,5 +125,5 @@ enum FruitType {
 
 note right of MazeTileMatrix : Discrete 28 (width) x 36 (height) Tile grid.\nIncludes side wrap-around tunnels.
 note right of Ghost : Blinky (Direct chase), Pinky (+4 tiles ambush),\nInky (Vector double offset), Clyde (Distance > 8 chase, <= 8 scatter to corner).
-note right of FruitItem : Spawns at grid (13, 20) when remaining pellets drop to 174 (70 eaten) and 74 (170 eaten).\nDespawns after 9.5 seconds if uneaten.
+note right of FruitItem : Per Level, fruit spawns exactly 2 times at grid (13, 20):\n- 1st spawn: when 174 pellets remain (70 eaten)\n- 2nd spawn: when 74 pellets remain (170 eaten)\nOn-screen active fruit instance is 0..1 (despawns after 9.5s if uneaten).
 @enduml
