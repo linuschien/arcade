@@ -1,0 +1,88 @@
+@startuml
+skinparam style strictuml
+title Domain Model - Tetris Game Module
+
+package "Core Domain" {
+    class TetrisGameSession <<Entity>> {
+        +String id
+        +String playerId
+        +Integer currentScore
+        +Integer currentLevel
+        +Integer linesCleared
+        +GameFlowFsmState gameState <<Enum>>
+        +Boolean isModernMode
+    }
+
+    class PlayfieldMatrix <<Entity>> {
+        +String id
+        +Integer width
+        +Integer height
+    }
+
+    class Tetromino <<ValueObject>> {
+        +TetrominoType type <<Enum>>
+        +Integer rotationIndex
+        +Integer posX
+        +Integer posY
+    }
+
+    class SevenBagGenerator <<Entity>> {
+        +String id
+        +Integer bagSequenceIndex
+    }
+
+    class HoldQueue <<ValueObject>> {
+        +TetrominoType heldType <<Enum>>
+        +Boolean canSwapThisFall
+    }
+
+    class GhostPiece <<ValueObject>> {
+        +Integer ghostY
+    }
+
+    class GravityCurve <<ValueObject>> {
+        +Integer currentIntervalMs
+        +Integer levelCap
+    }
+}
+
+package "Persistence Contracts" {
+    interface TetrisGameRepository <<Interface>> {
+        +Create(TetrisGameSession data): TetrisGameSession
+        +GetById(String id): TetrisGameSession
+        +Update(String id, TetrisGameSession delta): TetrisGameSession
+        +Delete(String id): Boolean
+    }
+}
+
+' Relationships: Strong ownership and associations with explicit verb labels and multiplicity
+TetrisGameSession "1" *-- "1" PlayfieldMatrix : "manages active grid"
+TetrisGameSession "1" *-- "1" SevenBagGenerator : "uses 7-bag algorithm"
+TetrisGameSession "1" *-- "1" Tetromino : "controls active piece"
+TetrisGameSession "1" o-- "0..1" HoldQueue : "stores held piece"
+TetrisGameSession "1" o-- "0..1" GhostPiece : "projects drop position"
+TetrisGameSession "1" o-- "1" GravityCurve : "governs gravity drop rate"
+PlayfieldMatrix "1" o-- "*" Tetromino : "stores locked mino blocks"
+
+enum TetrominoType {
+    I
+    J
+    L
+    O
+    S
+    T
+    Z
+}
+
+enum GameFlowFsmState {
+    UNLOADED
+    LOBBY
+    PLAYING
+    PAUSED
+    GAMEOVER
+}
+
+note right of PlayfieldMatrix : Discrete 10 (width) x 20 (height) grid.\nLine Clear triggers score calculations (Single 100xL, Double 300xL, Triple 500xL, Tetris 800xL).
+note right of GravityCurve : Level 1 drop interval = 1000ms. Level increments every 10 lines.\nLevel 15 is casual max cap (200ms cap).
+note right of SevenBagGenerator : Generates SRS Tetrominoes ensuring all 7 types appear once per bag cycle.
+@enduml

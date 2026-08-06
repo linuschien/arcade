@@ -1,0 +1,106 @@
+@startuml
+skinparam style strictuml
+title Domain Model - Arcade Platform Module
+
+package "Core Domain" {
+    class Player <<Entity>> {
+        +String id
+        +String gcpIapEmail
+        +DateTime createdAt
+    }
+
+    class UserWallet <<Entity>> {
+        +String id
+        +String playerId
+        +Integer dailyFreeCredit
+        +Integer adminBonusCredit
+        +DateTime lastDailyResetTime
+    }
+
+    class GameCard <<ValueObject>> {
+        +String gameId
+        +String title
+        +String coverArtUrl
+        +String description
+        +Integer totalPlayCount
+    }
+
+    class GameCatalog <<Entity>> {
+        +String id
+        +DateTime lastUpdated
+    }
+
+    class LeaderboardEntry <<Entity>> {
+        +String id
+        +String gameId
+        +String playerEmail
+        +Integer score
+        +DateTime submittedAt
+    }
+
+    class Leaderboard <<Entity>> {
+        +String id
+        +String gameId
+        +DateTime lastCalculatedAt
+    }
+
+    class GameSummary <<ValueObject>> {
+        +String gameId
+        +String playerEmail
+        +Integer finalScore
+        +Integer maxCombo
+        +Boolean isOneCoinClear
+        +Integer playDurationSeconds
+    }
+
+    class ArcadeCabinet <<ValueObject>> {
+        +String cabinetStyle
+        +Boolean crtFilterEnabled
+        +Decimal masterVolume
+        +Boolean isMuted
+    }
+}
+
+package "Persistence Contracts" {
+    interface PlayerRepository <<Interface>> {
+        +Create(Player data): Player
+        +GetById(String id): Player
+        +Update(String id, Player delta): Player
+        +Delete(String id): Boolean
+    }
+
+    interface UserWalletRepository <<Interface>> {
+        +Create(UserWallet data): UserWallet
+        +GetById(String id): UserWallet
+        +Update(String id, UserWallet delta): UserWallet
+        +Delete(String id): Boolean
+    }
+
+    interface LeaderboardRepository <<Interface>> {
+        +Create(LeaderboardEntry data): LeaderboardEntry
+        +GetById(String id): LeaderboardEntry
+        +Update(String id, LeaderboardEntry delta): LeaderboardEntry
+        +Delete(String id): Boolean
+    }
+
+    interface GameCatalogRepository <<Interface>> {
+        +Create(GameCatalog data): GameCatalog
+        +GetById(String id): GameCatalog
+        +Update(String id, GameCatalog delta): GameCatalog
+        +Delete(String id): Boolean
+    }
+}
+
+' Relationships: Strong ownership and associations with explicit verb labels and multiplicity
+Player "1" *-- "1" UserWallet : "owns wallet"
+Player "1" o-- "*" LeaderboardEntry : "submits high scores"
+Player "1" o-- "1" ArcadeCabinet : "configures settings"
+GameCatalog "1" *-- "1..*" GameCard : "contains catalog items"
+GameCard "1" o-- "1" Leaderboard : "maintains per-game leaderboard"
+Leaderboard "1" *-- "*" LeaderboardEntry : "ranks top scores"
+Player "1" o-- "*" GameSummary : "completes play sessions"
+
+note right of Player : ID MUST be UUID v4. Email injected via GCP IAP Header (X-Goog-Authenticated-User-Email).
+note right of UserWallet : dailyFreeCredit resets to 10 daily at 00:00 (non-accumulative).\nDeduction priority: dailyFreeCredit first, then adminBonusCredit.
+note right of Leaderboard : Per-game Top 10 Leaderboard.\nTie-breaking rule: Sort by playerEmail (A-Z ASC) on equal score.
+@enduml

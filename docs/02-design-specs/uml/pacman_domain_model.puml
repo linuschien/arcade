@@ -1,0 +1,128 @@
+@startuml
+skinparam style strictuml
+title Domain Model - Pac-Man Game Module
+
+package "Core Domain" {
+    class PacmanGameSession <<Entity>> {
+        +String id
+        +String playerId
+        +Integer currentScore
+        +Integer currentLevel
+        +Integer remainingLives
+        +Integer pelletsRemaining
+        +GameFlowFsmState gameState <<Enum>>
+    }
+
+    class PacMan <<Entity>> {
+        +String id
+        +Integer tileX
+        +Integer tileY
+        +Direction currentDirection <<Enum>>
+        +Direction nextBufferedDirection <<Enum>>
+    }
+
+    class Ghost <<Entity>> {
+        +String id
+        +GhostPersonality personality <<Enum>>
+        +GhostMode currentMode <<Enum>>
+        +Integer tileX
+        +Integer tileY
+        +Integer targetTileX
+        +Integer targetTileY
+        +Decimal speedRatio
+    }
+
+    class MazeTileMatrix <<Entity>> {
+        +String id
+        +Integer width
+        +Integer height
+    }
+
+    class Pellet <<ValueObject>> {
+        +Integer tileX
+        +Integer tileY
+        +Integer scoreValue
+        +Boolean isEaten
+    }
+
+    class PowerPellet <<ValueObject>> {
+        +Integer tileX
+        +Integer tileY
+        +Integer scoreValue
+        +Boolean isEaten
+    }
+
+    class FruitItem <<ValueObject>> {
+        +FruitType fruitType <<Enum>>
+        +Integer scoreValue
+        +Integer tileX
+        +Integer tileY
+        +Decimal durationSeconds
+        +Boolean isEaten
+    }
+
+    class LevelSpecification <<ValueObject>> {
+        +Integer levelNumber
+        +FruitType fruitType <<Enum>>
+        +Integer fruitPoints
+        +Decimal ghostSpeedRatio
+        +Decimal frightDurationSeconds
+        +Integer frightFlashCount
+    }
+}
+
+package "Persistence Contracts" {
+    interface PacmanGameRepository <<Interface>> {
+        +Create(PacmanGameSession data): PacmanGameSession
+        +GetById(String id): PacmanGameSession
+        +Update(String id, PacmanGameSession delta): PacmanGameSession
+        +Delete(String id): Boolean
+    }
+}
+
+' Relationships: Strong ownership and associations with explicit verb labels and multiplicity
+PacmanGameSession "1" *-- "1" MazeTileMatrix : "manages maze tile grid"
+PacmanGameSession "1" *-- "1" PacMan : "controls player entity"
+PacmanGameSession "1" *-- "4" Ghost : "manages ghost AI squad"
+MazeTileMatrix "1" *-- "240" Pellet : "contains normal pellets (10 pts)"
+MazeTileMatrix "1" *-- "4" PowerPellet : "contains power pellets (50 pts)"
+PacmanGameSession "1" o-- "0..1" FruitItem : "spawns bonus fruit"
+PacmanGameSession "1" o-- "1" LevelSpecification : "configures level rules"
+
+enum GhostPersonality {
+    BLINKY_SHADOW
+    PINKY_SPEEDY
+    INKY_BASHFUL
+    CLYDE_POKEY
+}
+
+enum GhostMode {
+    CHASE
+    SCATTER
+    FRIGHTENED
+    EATEN_RETURNING
+}
+
+enum Direction {
+    UP
+    DOWN
+    LEFT
+    RIGHT
+    NONE
+}
+
+enum FruitType {
+    CHERRY
+    STRAWBERRY
+    PEACH
+    APPLE
+    PINEAPPLE
+    GALAXIAN
+    BELL
+    KEY
+}
+
+note right of MazeTileMatrix : Discrete 28 (width) x 36 (height) Tile grid.\nIncludes side wrap-around tunnels.
+note right of Ghost : Blinky (Direct chase), Pinky (+4 tiles ambush),\nInky (Vector double offset), Clyde (Distance > 8 chase, <= 8 scatter to corner).
+note right of FruitItem : Spawns at grid (13, 20) when remaining pellets drop to 174 (70 eaten) and 74 (170 eaten).\nDespawns after 9.5 seconds if uneaten.
+@enduml
