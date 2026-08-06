@@ -33,12 +33,6 @@ package "Core Domain" {
         +DateTime submittedAt
     }
 
-    class Leaderboard <<Entity>> {
-        +String id
-        +String gameId
-        +DateTime lastCalculatedAt
-    }
-
     class GameSummary <<ValueObject>> {
         +String gameId
         +String playerEmail
@@ -71,7 +65,7 @@ package "Persistence Contracts" {
         +Delete(String id): Boolean
     }
 
-    interface LeaderboardRepository <<Interface>> {
+    interface LeaderboardEntryRepository <<Interface>> {
         +Create(LeaderboardEntry data): LeaderboardEntry
         +GetById(String id): LeaderboardEntry
         +Update(String id, LeaderboardEntry delta): LeaderboardEntry
@@ -90,11 +84,10 @@ package "Persistence Contracts" {
 Player "1" *-- "1" UserWallet : "owns wallet"
 Player "1" o-- "*" LeaderboardEntry : "submits high scores"
 Player "1" o-- "1" ArcadeCabinet : "configures settings"
-GameCard "1" o-- "1" Leaderboard : "maintains per-game leaderboard"
-Leaderboard "1" *-- "*" LeaderboardEntry : "ranks top scores"
+GameCard "1" o-- "*" LeaderboardEntry : "tracks per-game high scores"
 Player "1" o-- "*" GameSummary : "completes play sessions"
 
 note right of Player : ID MUST be UUID v4. Email injected via GCP IAP Header (X-Goog-Authenticated-User-Email).
 note right of UserWallet : dailyFreeCredit resets to 10 daily at 00:00 (non-accumulative).\nDeduction priority: dailyFreeCredit first, then adminBonusCredit.
-note right of Leaderboard : Per-game Top 10 Leaderboard.\nTie-breaking rule: Sort by playerEmail (A-Z ASC) on equal score.
+note right of LeaderboardEntry : Stores high score submission per game.\nPer-game Top 10 Query: Filter by gameId, order by score DESC, tie-breaking by playerEmail ASC.
 @enduml
