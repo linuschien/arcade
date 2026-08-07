@@ -33,7 +33,7 @@ class PlayerServiceImplTest {
     void setUp() {
         playerRepository = mock(PlayerRepository.class);
         walletRepository = mock(UserWalletRepository.class);
-        playerService = new PlayerServiceImpl(playerRepository, walletRepository);
+        playerService = new PlayerServiceImpl(playerRepository, walletRepository, "guest@arcade-stadium.local");
     }
 
     @Test

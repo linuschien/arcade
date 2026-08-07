@@ -1,6 +1,9 @@
 server:
   port: 8080
 
+arcade:
+  guest-email: guest@arcade-stadium.local
+
 spring:
   application:
     name: arcade-backend

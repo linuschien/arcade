@@ -8,6 +8,7 @@ import com.arcade.stadium.domain.dto.*;
 import com.arcade.stadium.domain.exception.ResourceNotFoundException;
 import com.arcade.stadium.domain.model.Player;
 import com.arcade.stadium.domain.model.UserWallet;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.stereotype.Service;
@@ -25,16 +26,21 @@ public class PlayerServiceImpl implements PlayerCommandService, PlayerQueryServi
 
     private final PlayerRepository playerRepository;
     private final UserWalletRepository walletRepository;
+    private final String defaultGuestEmail;
 
-    public PlayerServiceImpl(PlayerRepository playerRepository, UserWalletRepository walletRepository) {
+    public PlayerServiceImpl(
+            PlayerRepository playerRepository,
+            UserWalletRepository walletRepository,
+            @Value("${arcade.guest-email:guest@arcade-stadium.local}") String defaultGuestEmail) {
         this.playerRepository = playerRepository;
         this.walletRepository = walletRepository;
+        this.defaultGuestEmail = defaultGuestEmail;
     }
 
     @Override
     @Transactional
     public Mono<PlayerResponse> whoami(String email) {
-        String effectiveEmail = (email != null && !email.isBlank()) ? email : "guest@arcade-stadium.local";
+        String effectiveEmail = (email != null && !email.isBlank()) ? email : defaultGuestEmail;
 
         return playerRepository.findByGcpIapEmail(effectiveEmail)
                 .flatMap(player -> walletRepository.findByPlayerId(player.id())
