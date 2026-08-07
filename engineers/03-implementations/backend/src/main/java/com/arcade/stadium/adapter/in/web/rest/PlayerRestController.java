@@ -14,6 +14,9 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
+import com.arcade.stadium.infrastructure.security.AdminOnly;
+import com.arcade.stadium.infrastructure.security.UserAuthentication;
+
 @RestController
 @RequestMapping("/api/v1")
 public class PlayerRestController {
@@ -29,22 +32,31 @@ public class PlayerRestController {
     @PostMapping("/players:whoami")
     public Mono<ResponseEntity<PlayerResponse>> whoami(
             @RequestHeader(name = "X-Goog-Authenticated-User-Email", required = false) String iapEmail) {
-        return playerCommandService.whoami(iapEmail)
-                .map(ResponseEntity::ok);
+        if (iapEmail != null && !iapEmail.isBlank()) {
+            return playerCommandService.whoami(iapEmail).map(ResponseEntity::ok);
+        }
+        return Mono.deferContextual(ctx -> {
+            UserAuthentication auth = ctx.getOrDefault(UserAuthentication.class, UserAuthentication.ANONYMOUS);
+            return playerCommandService.whoami(auth.email())
+                    .map(ResponseEntity::ok);
+        });
     }
 
+    @AdminOnly
     @PostMapping("/players")
     public Mono<ResponseEntity<PlayerResponse>> createPlayer(@Valid @RequestBody PlayerRequest request) {
         return playerCommandService.createPlayer(new CreatePlayerCommand(request.gcpIapEmail()))
                 .map(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 
+    @AdminOnly
     @GetMapping("/players/{playerId}")
     public Mono<ResponseEntity<PlayerResponse>> getPlayerById(@PathVariable UUID playerId) {
         return playerQueryService.getPlayerById(playerId)
                 .map(ResponseEntity::ok);
     }
 
+    @AdminOnly
     @PutMapping("/players/{playerId}")
     public Mono<ResponseEntity<PlayerResponse>> updatePlayer(
             @PathVariable UUID playerId,
@@ -53,6 +65,7 @@ public class PlayerRestController {
                 .map(ResponseEntity::ok);
     }
 
+    @AdminOnly
     @DeleteMapping("/players/{playerId}")
     public Mono<ResponseEntity<Void>> deletePlayer(@PathVariable UUID playerId) {
         return playerCommandService.deletePlayer(playerId)

@@ -26,27 +26,26 @@ public class PlayerServiceImpl implements PlayerCommandService, PlayerQueryServi
 
     private final PlayerRepository playerRepository;
     private final UserWalletRepository walletRepository;
-    private final String defaultGuestEmail;
 
     public PlayerServiceImpl(
             PlayerRepository playerRepository,
-            UserWalletRepository walletRepository,
-            @Value("${arcade.guest-email:guest@arcade-stadium.local}") String defaultGuestEmail) {
+            UserWalletRepository walletRepository) {
         this.playerRepository = playerRepository;
         this.walletRepository = walletRepository;
-        this.defaultGuestEmail = defaultGuestEmail;
     }
 
     @Override
     @Transactional
     public Mono<PlayerResponse> whoami(String email) {
-        String effectiveEmail = (email != null && !email.isBlank()) ? email : defaultGuestEmail;
+        if (email == null || email.isBlank()) {
+            return Mono.error(new IllegalArgumentException("Email must not be null or blank"));
+        }
 
-        return playerRepository.findByGcpIapEmail(effectiveEmail)
+        return playerRepository.findByGcpIapEmail(email)
                 .flatMap(player -> walletRepository.findByPlayerId(player.id())
                         .flatMap(wallet -> checkAndApplyLazyReset(wallet))
                         .map(wallet -> mapToResponse(player, wallet)))
-                .switchIfEmpty(Mono.defer(() -> provisionNewPlayer(effectiveEmail)));
+                .switchIfEmpty(Mono.defer(() -> provisionNewPlayer(email)));
     }
 
     private Mono<PlayerResponse> provisionNewPlayer(String email) {

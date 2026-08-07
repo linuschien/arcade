@@ -3,6 +3,8 @@ server:
 
 arcade:
   guest-email: guest@arcade-stadium.local
+  admin-emails:
+    - linus.chien@gmail.com
 
 spring:
   application:

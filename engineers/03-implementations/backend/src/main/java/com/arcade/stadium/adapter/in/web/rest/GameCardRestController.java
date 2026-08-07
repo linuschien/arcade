@@ -11,6 +11,8 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
+import com.arcade.stadium.infrastructure.security.AdminOnly;
+
 @RestController
 @RequestMapping("/api/v1/game-cards")
 public class GameCardRestController {
@@ -23,6 +25,7 @@ public class GameCardRestController {
         this.gameCardQueryService = gameCardQueryService;
     }
 
+    @AdminOnly
     @PostMapping
     public Mono<ResponseEntity<GameCardResponse>> createGameCard(@Valid @RequestBody GameCardRequest request) {
         return gameCardCommandService.createGameCard(new CreateGameCardCommand(request.gameId(), request.title(), request.coverArtUrl(), request.description()))
@@ -35,6 +38,7 @@ public class GameCardRestController {
                 .map(ResponseEntity::ok);
     }
 
+    @AdminOnly
     @PutMapping("/{gameCardId}")
     public Mono<ResponseEntity<GameCardResponse>> updateGameCard(
             @PathVariable UUID gameCardId,
@@ -43,6 +47,7 @@ public class GameCardRestController {
                 .map(ResponseEntity::ok);
     }
 
+    @AdminOnly
     @DeleteMapping("/{gameCardId}")
     public Mono<ResponseEntity<Void>> deleteGameCard(@PathVariable UUID gameCardId) {
         return gameCardCommandService.deleteGameCard(gameCardId)

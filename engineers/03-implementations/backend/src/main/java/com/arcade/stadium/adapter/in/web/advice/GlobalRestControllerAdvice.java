@@ -13,10 +13,20 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
 
+import com.arcade.stadium.domain.exception.ForbiddenException;
+import com.arcade.stadium.domain.exception.InsufficientCreditsException;
+
 @RestControllerAdvice
 public class GlobalRestControllerAdvice {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalRestControllerAdvice.class);
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex) {
+        log.warn("Access forbidden: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of("FORBIDDEN", ex.getMessage()));
+    }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
