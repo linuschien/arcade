@@ -26,7 +26,7 @@ public class PlayerRestController {
         this.playerQueryService = playerQueryService;
     }
 
-    @PostMapping(path = {"/players:whoami", "/players/:whoami", "/players/whoami"})
+    @PostMapping("/players:whoami")
     public Mono<ResponseEntity<PlayerResponse>> whoami(
             @RequestHeader(name = "X-Goog-Authenticated-User-Email", required = false) String iapEmail) {
         return playerCommandService.whoami(iapEmail)

@@ -56,7 +56,7 @@ public class UserWalletRestController {
                 .then(Mono.just(ResponseEntity.noContent().build()));
     }
 
-    @PostMapping(path = {"/{userWalletId}:deductCredit", "/{userWalletId}/:deductCredit"})
+    @PostMapping("/{userWalletId}:deductCredit")
     public Mono<ResponseEntity<OperationStatus>> deductCredit(
             @PathVariable UUID playerId,
             @PathVariable UUID userWalletId) {
@@ -64,7 +64,7 @@ public class UserWalletRestController {
                 .map(ResponseEntity::ok);
     }
 
-    @PostMapping(path = {"/{userWalletId}:grantAdminCredit", "/{userWalletId}/:grantAdminCredit"})
+    @PostMapping("/{userWalletId}:grantAdminCredit")
     public Mono<ResponseEntity<OperationStatus>> grantAdminCredit(
             @PathVariable UUID playerId,
             @PathVariable UUID userWalletId,
