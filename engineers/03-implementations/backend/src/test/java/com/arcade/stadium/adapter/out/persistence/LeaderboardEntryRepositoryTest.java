@@ -23,7 +23,7 @@ class LeaderboardEntryRepositoryTest {
     @Test
     void testTop10OrderByScoreDescPlayerEmailAsc() {
         Instant now = Instant.now();
-        GameCard card = new GameCard(null, "pacman", "Pac-Man Classic", "/covers/pacman.png", "Pac-Man game", 0, now, now, null);
+        GameCard card = new GameCard(null, "pacman-test", "Pac-Man Classic Test", "/covers/pacman.png", "Pac-Man game", 0, now, now, null);
 
         gameCardRepository.save(card)
                 .flatMapMany(savedCard -> {

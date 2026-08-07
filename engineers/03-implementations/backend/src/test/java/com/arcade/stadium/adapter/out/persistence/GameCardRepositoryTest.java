@@ -19,18 +19,18 @@ class GameCardRepositoryTest {
     @Test
     void testSaveAndFindByGameIdSlug() {
         Instant now = Instant.now();
-        GameCard card = new GameCard(null, "tetris", "Tetris Classic", "/covers/tetris.png", "Tetris game", 0, now, now, null);
+        GameCard card = new GameCard(null, "tetris-test", "Tetris Classic Test", "/covers/tetris.png", "Tetris game", 0, now, now, null);
 
         gameCardRepository.save(card)
                 .as(StepVerifier::create)
                 .consumeNextWith(saved -> assertNotNull(saved.id()))
                 .verifyComplete();
 
-        gameCardRepository.findByGameId("tetris")
+        gameCardRepository.findByGameId("tetris-test")
                 .as(StepVerifier::create)
                 .consumeNextWith(found -> {
-                    assertEquals("tetris", found.gameId());
-                    assertEquals("Tetris Classic", found.title());
+                    assertEquals("tetris-test", found.gameId());
+                    assertEquals("Tetris Classic Test", found.title());
                 })
                 .verifyComplete();
     }
