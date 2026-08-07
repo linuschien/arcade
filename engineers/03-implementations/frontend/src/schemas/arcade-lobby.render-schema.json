@@ -1,0 +1,414 @@
+{
+  "root": "arcade-lobby-root",
+  "elements": {
+    "arcade-lobby-root": {
+      "type": "Container:page",
+      "props": {
+        "id": "arcade-lobby-root",
+        "label": "Arcade Stadium Game Lobby"
+      },
+      "children": [
+        "lobby-header-bar",
+        "game-carousel-section",
+        "leaderboard-section",
+        "phaser-game-container",
+        "game-pause-modal",
+        "admin-grant-credit-modal",
+        "out-of-credits-dialog"
+      ]
+    },
+    "lobby-header-bar": {
+      "type": "div",
+      "props": {
+        "id": "lobby-header-bar",
+        "className": "flex flex-wrap items-center justify-between gap-4 p-4 bg-slate-900 border border-slate-800 rounded-xl shadow-lg"
+      },
+      "children": [
+        "player-email-badge",
+        "daily-free-credits-metric",
+        "admin-bonus-credits-metric",
+        "crt-filter-switch",
+        "master-mute-switch",
+        "open-admin-grant-trigger"
+      ]
+    },
+    "player-email-badge": {
+      "type": "MetricCard",
+      "props": {
+        "id": "player-email-badge",
+        "label": "Player Account",
+        "value": { "$bindState": "/user/email" },
+        "unit": ""
+      },
+      "children": []
+    },
+    "daily-free-credits-metric": {
+      "type": "MetricCard",
+      "props": {
+        "id": "daily-free-credits-metric",
+        "label": "Daily Free Credits",
+        "value": { "$bindState": "/wallet/dailyFreeCredit" },
+        "unit": "Coins"
+      },
+      "children": []
+    },
+    "admin-bonus-credits-metric": {
+      "type": "MetricCard",
+      "props": {
+        "id": "admin-bonus-credits-metric",
+        "label": "Admin Bonus Credits",
+        "value": { "$bindState": "/wallet/adminBonusCredit" },
+        "unit": "Coins"
+      },
+      "children": []
+    },
+    "crt-filter-switch": {
+      "type": "Switch",
+      "props": {
+        "id": "crt-filter-switch",
+        "name": "crt-filter-switch",
+        "label": "CRT Retro Filter",
+        "checked": { "$bindState": "/settings/crtEnabled" },
+        "checks": null,
+        "validateOn": null
+      },
+      "on": {
+        "change": [
+          { "action": "executeBehavior", "params": { "ref": "ToggleCRT", "id": "crt-filter-switch" } }
+        ]
+      },
+      "children": []
+    },
+    "master-mute-switch": {
+      "type": "Switch",
+      "props": {
+        "id": "master-mute-switch",
+        "name": "master-mute-switch",
+        "label": "Mute Master Audio",
+        "checked": { "$bindState": "/settings/masterMuted" },
+        "checks": null,
+        "validateOn": null
+      },
+      "on": {
+        "change": [
+          { "action": "executeBehavior", "params": { "ref": "ToggleMute", "id": "master-mute-switch" } }
+        ]
+      },
+      "children": []
+    },
+    "open-admin-grant-trigger": {
+      "type": "Button",
+      "props": {
+        "id": "open-admin-grant-trigger",
+        "label": "Grant Bonus Credits",
+        "variant": "secondary",
+        "disabled": null
+      },
+      "on": {
+        "press": [
+          { "action": "openModal", "params": { "id": "admin-grant-credit-modal" } }
+        ]
+      },
+      "children": []
+    },
+    "game-carousel-section": {
+      "type": "div",
+      "props": {
+        "id": "game-carousel-section",
+        "className": "space-y-4"
+      },
+      "children": [
+        "carousel-heading",
+        "carousel-prev-trigger",
+        "carousel-next-trigger",
+        "game-card-grid"
+      ]
+    },
+    "carousel-heading": {
+      "type": "Heading",
+      "props": {
+        "id": "carousel-heading",
+        "text": "Select Arcade Game",
+        "level": "h2"
+      },
+      "children": []
+    },
+    "carousel-prev-trigger": {
+      "type": "Button",
+      "props": {
+        "id": "carousel-prev-trigger",
+        "label": "◀ Previous",
+        "variant": "secondary",
+        "disabled": null
+      },
+      "on": {
+        "press": [
+          { "action": "executeBehavior", "params": { "ref": "PrevGame", "id": "carousel-prev-trigger" } }
+        ]
+      },
+      "children": []
+    },
+    "carousel-next-trigger": {
+      "type": "Button",
+      "props": {
+        "id": "carousel-next-trigger",
+        "label": "Next ▶",
+        "variant": "secondary",
+        "disabled": null
+      },
+      "on": {
+        "press": [
+          { "action": "executeBehavior", "params": { "ref": "NextGame", "id": "carousel-next-trigger" } }
+        ]
+      },
+      "children": []
+    },
+    "game-card-grid": {
+      "type": "GameCardCarousel",
+      "props": {
+        "id": "game-card-grid",
+        "label": "Game Catalog Carousel",
+        "games": { "$bindState": "/data/listGameCards" },
+        "activeGameId": { "$bindState": "/activeGameId" }
+      },
+      "children": ["start-game-trigger"]
+    },
+    "start-game-trigger": {
+      "type": "Button",
+      "props": {
+        "id": "start-game-trigger",
+        "label": "START (1 Coin)",
+        "variant": "primary",
+        "disabled": null
+      },
+      "on": {
+        "press": [
+          { "action": "executeBehavior", "params": { "ref": "DeductCredit", "id": "start-game-trigger" } }
+        ]
+      },
+      "children": []
+    },
+    "leaderboard-section": {
+      "type": "div",
+      "props": {
+        "id": "leaderboard-section",
+        "className": "space-y-4"
+      },
+      "children": [
+        "leaderboard-heading",
+        "top-10-leaderboard-table"
+      ]
+    },
+    "leaderboard-heading": {
+      "type": "Heading",
+      "props": {
+        "id": "leaderboard-heading",
+        "text": "Top 10 Leaderboard",
+        "level": "h2"
+      },
+      "children": []
+    },
+    "top-10-leaderboard-table": {
+      "type": "Table",
+      "props": {
+        "id": "top-10-leaderboard-table",
+        "columns": ["Rank", "Player Email", "High Score", "Submitted Date"],
+        "rows": { "$bindState": "/data/top10Leaderboard" },
+        "caption": null
+      },
+      "children": []
+    },
+    "phaser-game-container": {
+      "type": "div",
+      "props": {
+        "id": "phaser-game-container",
+        "className": "p-4 bg-slate-900 border border-slate-800 rounded-xl"
+      },
+      "children": ["game-control-bar"]
+    },
+    "game-control-bar": {
+      "type": "Stack",
+      "props": {
+        "id": "game-control-bar",
+        "direction": "horizontal",
+        "gap": "md",
+        "align": "center",
+        "justify": "between",
+        "className": null
+      },
+      "children": ["pause-game-trigger", "return-to-lobby-trigger"]
+    },
+    "pause-game-trigger": {
+      "type": "Button",
+      "props": {
+        "id": "pause-game-trigger",
+        "label": "Pause",
+        "variant": "secondary",
+        "disabled": null
+      },
+      "on": {
+        "press": [
+          { "action": "openModal", "params": { "id": "game-pause-modal" } }
+        ]
+      },
+      "children": []
+    },
+    "return-to-lobby-trigger": {
+      "type": "Button",
+      "props": {
+        "id": "return-to-lobby-trigger",
+        "label": "Exit to Lobby",
+        "variant": "secondary",
+        "disabled": null
+      },
+      "on": {
+        "press": [
+          { "action": "executeBehavior", "params": { "ref": "ReturnToLobby", "id": "return-to-lobby-trigger" } }
+        ]
+      },
+      "children": []
+    },
+    "game-pause-modal": {
+      "type": "Dialog",
+      "props": {
+        "id": "game-pause-modal",
+        "title": "GAME PAUSED",
+        "description": null,
+        "openPath": "/modals/game-pause-modal"
+      },
+      "visible": { "$state": "/modals/game-pause-modal" },
+      "children": ["pause-heading", "resume-game-trigger", "quit-to-lobby-trigger"]
+    },
+    "pause-heading": {
+      "type": "Heading",
+      "props": {
+        "id": "pause-heading",
+        "text": "GAME PAUSED",
+        "level": "h2"
+      },
+      "children": []
+    },
+    "resume-game-trigger": {
+      "type": "Button",
+      "props": {
+        "id": "resume-game-trigger",
+        "label": "Resume Game",
+        "variant": "primary",
+        "disabled": null
+      },
+      "on": {
+        "press": [
+          { "action": "executeBehavior", "params": { "ref": "ResumeGame", "id": "resume-game-trigger" } }
+        ]
+      },
+      "children": []
+    },
+    "quit-to-lobby-trigger": {
+      "type": "Button",
+      "props": {
+        "id": "quit-to-lobby-trigger",
+        "label": "Quit to Lobby",
+        "variant": "secondary",
+        "disabled": null
+      },
+      "on": {
+        "press": [
+          { "action": "executeBehavior", "params": { "ref": "ReturnToLobby", "id": "quit-to-lobby-trigger" } }
+        ]
+      },
+      "children": []
+    },
+    "admin-grant-credit-modal": {
+      "type": "Dialog",
+      "props": {
+        "id": "admin-grant-credit-modal",
+        "title": "Grant Admin Bonus Credit",
+        "description": null,
+        "openPath": "/modals/admin-grant-credit-modal"
+      },
+      "visible": { "$state": "/modals/admin-grant-credit-modal" },
+      "children": ["grant-form-section"]
+    },
+    "grant-form-section": {
+      "type": "div",
+      "props": {
+        "id": "grant-form-section",
+        "className": "space-y-4"
+      },
+      "children": ["bonus-credit-amount-field", "grant-credit-submit-trigger"]
+    },
+    "bonus-credit-amount-field": {
+      "type": "Input",
+      "props": {
+        "id": "bonus-credit-amount-field",
+        "label": "Credit Amount",
+        "name": "bonus-credit-amount-field",
+        "type": "number",
+        "placeholder": "Enter bonus credit amount (e.g. 10)",
+        "value": { "$bindState": "/form/bonus-credit-amount-field" },
+        "checks": null,
+        "validateOn": null
+      },
+      "children": []
+    },
+    "grant-credit-submit-trigger": {
+      "type": "Button",
+      "props": {
+        "id": "grant-credit-submit-trigger",
+        "label": "Grant Bonus Credits",
+        "variant": "primary",
+        "disabled": null
+      },
+      "on": {
+        "press": [
+          { "action": "executeBehavior", "params": { "ref": "GrantAdminCredit", "id": "grant-credit-submit-trigger" } }
+        ]
+      },
+      "children": []
+    },
+    "out-of-credits-dialog": {
+      "type": "Dialog",
+      "props": {
+        "id": "out-of-credits-dialog",
+        "title": "OUT OF CREDITS",
+        "description": "You have 0 credits remaining. Please wait for the daily 00:00 reset or request admin bonus credits.",
+        "openPath": "/modals/out-of-credits-dialog"
+      },
+      "visible": { "$state": "/modals/out-of-credits-dialog" },
+      "children": ["out-of-credits-heading", "out-of-credits-text", "dismiss-out-of-credits-trigger"]
+    },
+    "out-of-credits-heading": {
+      "type": "Heading",
+      "props": {
+        "id": "out-of-credits-heading",
+        "text": "OUT OF CREDITS",
+        "level": "h2"
+      },
+      "children": []
+    },
+    "out-of-credits-text": {
+      "type": "Text",
+      "props": {
+        "id": "out-of-credits-text",
+        "text": "You have 0 credits remaining. Please wait for the daily 00:00 reset or request admin bonus credits.",
+        "variant": "body"
+      },
+      "children": []
+    },
+    "dismiss-out-of-credits-trigger": {
+      "type": "Button",
+      "props": {
+        "id": "dismiss-out-of-credits-trigger",
+        "label": "OK",
+        "variant": "primary",
+        "disabled": null
+      },
+      "on": {
+        "press": [
+          { "action": "executeBehavior", "params": { "ref": "DismissOutOfCredits", "id": "dismiss-out-of-credits-trigger" } }
+        ]
+      },
+      "children": []
+    }
+  }
+}
