@@ -40,28 +40,10 @@ public class GameCardServiceImpl implements GameCardCommandService, GameCardQuer
         if (playerId == null) {
             return Mono.error(new IllegalArgumentException("playerId must not be null"));
         }
-        return gameCardRepository.findById(gameCardId)
-                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Game card not found with id: " + gameCardId)))
-                .flatMap(card -> playerQueryService.getPlayerById(playerId)
-                        .flatMap(playerResp ->
-                                walletCommandService.deductCredit(playerResp.id(), playerResp.wallet().id())
-                                        .then(Mono.defer(() -> {
-                                            GameCard updated = new GameCard(
-                                                    card.id(),
-                                                    card.gameId(),
-                                                    card.title(),
-                                                    card.coverArtUrl(),
-                                                    card.description(),
-                                                    card.totalPlayCount() + 1,
-                                                    card.createdAt(),
-                                                    Instant.now(),
-                                                    card.deletedAt()
-                                            );
-                                            return gameCardRepository.save(updated);
-                                        }))
-                                        .map(saved -> OperationStatus.ok("Coin inserted and play counter incremented."))
-                        )
-                );
+        return playerQueryService.getPlayerById(playerId)
+                .flatMap(playerResp -> walletCommandService.deductCredit(playerResp.id(), playerResp.wallet().id()))
+                .then(Mono.defer(() -> incrementPlayCount(gameCardId)))
+                .map(status -> OperationStatus.ok("Coin inserted and play counter incremented."));
     }
 
     @Override
