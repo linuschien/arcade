@@ -251,45 +251,6 @@ paths:
         '404':
           $ref: '#/components/responses/404NotFound'
 
-  /players/{playerId}/user-wallets/{userWalletId}:deductCredit:
-    parameters:
-      - in: path
-        name: playerId
-        required: true
-        schema:
-          type: string
-          format: uuid
-          example: "550e8400-e29b-41d4-a716-446655440000"
-      - in: path
-        name: userWalletId
-        required: true
-        schema:
-          type: string
-          format: uuid
-          example: "a3b1c2d3-e4f5-6789-abcd-ef0123456789"
-    post:
-      summary: Atomic Credit Deduction on Game Start / Continue
-      operationId: deductCredit
-      description: |
-        Deducts 1 credit from wallet for game start or continue.
-        Deduction priority: dailyFreeCredit first, then adminBonusCredit.
-        Performs lazy calendar date reset check prior to deduction.
-      tags:
-        - UserWallet
-      responses:
-        '200':
-          description: Credit deducted successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OperationStatus'
-        '400':
-          $ref: '#/components/responses/400BadRequest'
-        '404':
-          $ref: '#/components/responses/404NotFound'
-        '409':
-          $ref: '#/components/responses/409Conflict'
-
   /players/{playerId}/user-wallets/{userWalletId}:grantAdminCredit:
     parameters:
       - in: path
@@ -472,30 +433,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          $ref: '#/components/responses/404NotFound'
-
-  /game-cards/{gameCardId}:incrementPlayCount:
-    parameters:
-      - in: path
-        name: gameCardId
-        required: true
-        schema:
-          type: string
-          format: uuid
-          example: "98765432-10fe-dcba-9876-543210fedcba"
-    post:
-      summary: Increment Game Total Play Counter
-      operationId: incrementPlayCount
-      tags:
-        - GameCard
-      responses:
-        '200':
-          description: Play counter incremented
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OperationStatus'
         '404':
           $ref: '#/components/responses/404NotFound'
 

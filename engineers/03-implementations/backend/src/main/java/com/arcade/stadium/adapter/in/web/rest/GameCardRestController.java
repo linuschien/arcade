@@ -56,10 +56,4 @@ public class GameCardRestController {
         return gameCardCommandService.insertCoin(gameCardId, request.playerId())
                 .map(ResponseEntity::ok);
     }
-
-    @PostMapping("/{gameCardId}:incrementPlayCount")
-    public Mono<ResponseEntity<OperationStatus>> incrementPlayCount(@PathVariable UUID gameCardId) {
-        return gameCardCommandService.incrementPlayCount(gameCardId)
-                .map(ResponseEntity::ok);
-    }
 }

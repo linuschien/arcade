@@ -108,51 +108,6 @@ class UserWalletRestControllerTest {
     }
 
     @Test
-    void testDeductCreditSuccess() {
-        UUID playerId = UUID.randomUUID();
-        UUID walletId = UUID.randomUUID();
-
-        when(walletCommandService.deductCredit(playerId, walletId)).thenReturn(Mono.just(OperationStatus.ok("Credit deducted successfully.")));
-
-        webTestClient.post()
-                .uri("/api/v1/players/{playerId}/user-wallets/{walletId}:deductCredit", playerId, walletId)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.success").isEqualTo(true);
-    }
-
-    @Test
-    void testDeductCreditInsufficientCredits() {
-        UUID playerId = UUID.randomUUID();
-        UUID walletId = UUID.randomUUID();
-
-        when(walletCommandService.deductCredit(playerId, walletId)).thenReturn(Mono.error(new InsufficientCreditsException("OUT OF CREDITS")));
-
-        webTestClient.post()
-                .uri("/api/v1/players/{playerId}/user-wallets/{walletId}:deductCredit", playerId, walletId)
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody()
-                .jsonPath("$.code").isEqualTo("BAD_REQUEST");
-    }
-
-    @Test
-    void testDeductCreditOptimisticLockConflict() {
-        UUID playerId = UUID.randomUUID();
-        UUID walletId = UUID.randomUUID();
-
-        when(walletCommandService.deductCredit(playerId, walletId)).thenReturn(Mono.error(new OptimisticLockConflictException("Conflict", 2)));
-
-        webTestClient.post()
-                .uri("/api/v1/players/{playerId}/user-wallets/{walletId}:deductCredit", playerId, walletId)
-                .exchange()
-                .expectStatus().isEqualTo(409)
-                .expectBody()
-                .jsonPath("$.code").isEqualTo("OPTIMISTIC_LOCK_CONFLICT");
-    }
-
-    @Test
     void testGrantAdminCredit() {
         UUID playerId = UUID.randomUUID();
         UUID walletId = UUID.randomUUID();

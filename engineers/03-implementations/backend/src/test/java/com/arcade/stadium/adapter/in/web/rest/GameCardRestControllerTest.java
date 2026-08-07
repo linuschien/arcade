@@ -97,13 +97,16 @@ class GameCardRestControllerTest {
     }
 
     @Test
-    void testIncrementPlayCount() {
+    void testInsertCoin() {
         UUID cardId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
 
-        when(gameCardCommandService.incrementPlayCount(cardId)).thenReturn(Mono.just(OperationStatus.ok("Play counter incremented.")));
+        when(gameCardCommandService.insertCoin(cardId, playerId)).thenReturn(Mono.just(OperationStatus.ok("Coin inserted.")));
 
         webTestClient.post()
-                .uri("/api/v1/game-cards/{gameCardId}:incrementPlayCount", cardId)
+                .uri("/api/v1/game-cards/{gameCardId}:insertCoin", cardId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new com.arcade.stadium.domain.dto.InsertCoinRequest(playerId))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
