@@ -1,8 +1,3 @@
-DROP TABLE IF EXISTS leaderboard_entry;
-DROP TABLE IF EXISTS user_wallet;
-DROP TABLE IF EXISTS game_card;
-DROP TABLE IF EXISTS player;
-
 CREATE TABLE player (
     id UUID PRIMARY KEY,
     gcp_iap_email VARCHAR(255) NOT NULL UNIQUE,
