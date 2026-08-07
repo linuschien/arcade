@@ -1,0 +1,36 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: arcade-backend
+
+  r2dbc:
+    url: r2dbc:h2:mem:///arcadedb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+    properties:
+      schema: public
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+  graphql:
+    graphiql:
+      enabled: true
+      path: /graphiql
+    cors:
+      allowed-origins: "*"
+
+  web:
+    resources:
+      static-locations: file:../frontend/dist,classpath:/static/
+
+logging:
+  level:
+    root: INFO
+    com.arcade.stadium: DEBUG
+    org.springframework.r2dbc: DEBUG
+    org.springframework.graphql: DEBUG

@@ -1,0 +1,79 @@
+# Arcade Stadium Platform GraphQL Schema (Read-Only Gateway)
+
+type Query {
+    # Player collection & lookup
+    listPlayers(filter: PlayerFilterInput): [PlayerResponse!]!
+    getPlayerById(id: ID!): PlayerResponse
+
+    # User Wallet collection & lookup
+    listUserWallets(filter: WalletFilterInput): [UserWalletResponse!]!
+    getUserWalletByPlayerId(playerId: ID!): UserWalletResponse
+
+    # Game Card collection & lookup
+    listGameCards(filter: GameCardFilterInput): [GameCardResponse!]!
+    getGameCardBySlug(gameId: String!): GameCardResponse
+
+    # Leaderboard Top 10 & filtered queries
+    getTop10Leaderboard(gameId: String!): [LeaderboardEntryResponse!]!
+    listLeaderboardEntries(filter: LeaderboardFilterInput): [LeaderboardEntryResponse!]!
+}
+
+# --- Types ---
+
+type PlayerResponse {
+    id: ID!
+    gcpIapEmail: String!
+    createdAt: String!
+    wallet: UserWalletResponse
+}
+
+type UserWalletResponse {
+    id: ID!
+    playerId: ID!
+    dailyFreeCredit: Int!
+    adminBonusCredit: Int!
+    totalCredits: Int!
+    lastDailyResetTime: String!
+    version: Int!
+}
+
+type GameCardResponse {
+    id: ID!
+    gameId: String!
+    title: String!
+    coverArtUrl: String!
+    description: String
+    totalPlayCount: Int!
+}
+
+type LeaderboardEntryResponse {
+    id: ID!
+    gameCardId: ID!
+    playerEmail: String!
+    score: Int!
+    submittedAt: String!
+}
+
+# --- Filter Inputs ---
+
+input PlayerFilterInput {
+    id: ID
+    gcpIapEmail: String
+}
+
+input WalletFilterInput {
+    id: ID
+    playerId: ID
+}
+
+input GameCardFilterInput {
+    id: ID
+    gameId: String
+    title: String
+}
+
+input LeaderboardFilterInput {
+    id: ID
+    gameCardId: ID
+    playerEmail: String
+}
