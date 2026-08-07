@@ -11,6 +11,9 @@ import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
+import com.arcade.stadium.infrastructure.security.AdminOnly;
+
+@AdminOnly
 @Controller
 public class UserWalletGraphQLResolver {
 
