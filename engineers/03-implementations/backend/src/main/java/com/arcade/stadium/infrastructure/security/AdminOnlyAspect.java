@@ -21,7 +21,7 @@ public class AdminOnlyAspect {
 
         if (Mono.class.isAssignableFrom(returnType)) {
             return Mono.deferContextual(ctx -> {
-                UserAuthentication auth = ctx.getOrDefault(UserAuthentication.class, UserAuthentication.ANONYMOUS);
+                UserAuthentication auth = ctx.get(UserAuthentication.class);
                 if (!auth.isAdmin()) {
                     return Mono.error(new ForbiddenException("Access denied: Admin privileges required for email: " + auth.email()));
                 }
@@ -33,7 +33,7 @@ public class AdminOnlyAspect {
             });
         } else if (Flux.class.isAssignableFrom(returnType)) {
             return Flux.deferContextual(ctx -> {
-                UserAuthentication auth = ctx.getOrDefault(UserAuthentication.class, UserAuthentication.ANONYMOUS);
+                UserAuthentication auth = ctx.get(UserAuthentication.class);
                 if (!auth.isAdmin()) {
                     return Flux.error(new ForbiddenException("Access denied: Admin privileges required for email: " + auth.email()));
                 }

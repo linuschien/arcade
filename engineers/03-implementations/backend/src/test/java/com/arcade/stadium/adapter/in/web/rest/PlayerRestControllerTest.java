@@ -30,6 +30,7 @@ class PlayerRestControllerTest {
         playerQueryService = mock(PlayerQueryService.class);
         PlayerRestController controller = new PlayerRestController(playerCommandService, playerQueryService);
         webTestClient = WebTestClient.bindToController(controller)
+                .webFilter(new com.arcade.stadium.infrastructure.security.AuthenticationWebFilter("guest@arcade-stadium.local", java.util.List.of("linus.chien@gmail.com")))
                 .controllerAdvice(new GlobalRestControllerAdvice())
                 .build();
     }

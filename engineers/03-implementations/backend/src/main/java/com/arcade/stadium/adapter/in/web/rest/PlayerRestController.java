@@ -30,13 +30,9 @@ public class PlayerRestController {
     }
 
     @PostMapping("/players:whoami")
-    public Mono<ResponseEntity<PlayerResponse>> whoami(
-            @RequestHeader(name = "X-Goog-Authenticated-User-Email", required = false) String iapEmail) {
-        if (iapEmail != null && !iapEmail.isBlank()) {
-            return playerCommandService.whoami(iapEmail).map(ResponseEntity::ok);
-        }
+    public Mono<ResponseEntity<PlayerResponse>> whoami() {
         return Mono.deferContextual(ctx -> {
-            UserAuthentication auth = ctx.getOrDefault(UserAuthentication.class, UserAuthentication.ANONYMOUS);
+            UserAuthentication auth = ctx.get(UserAuthentication.class);
             return playerCommandService.whoami(auth.email())
                     .map(ResponseEntity::ok);
         });
