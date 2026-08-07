@@ -1,20 +1,17 @@
 package com.arcade.stadium.adapter.out.persistence;
 
-import com.arcade.stadium.adapter.out.persistence.config.UuidCallback;
 import com.arcade.stadium.domain.model.Player;
 import com.arcade.stadium.domain.model.UserWallet;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.context.SpringBootTest;
 import reactor.test.StepVerifier;
 
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DataR2dbcTest
-@Import(UuidCallback.class)
+@SpringBootTest
 class UserWalletRepositoryTest {
 
     @Autowired
