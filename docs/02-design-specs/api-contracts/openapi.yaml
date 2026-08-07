@@ -430,6 +430,49 @@ paths:
         '404':
           $ref: '#/components/responses/404NotFound'
 
+  /game-cards/{gameCardId}:insertCoin:
+    parameters:
+      - in: path
+        name: gameCardId
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: "98765432-10fe-dcba-9876-543210fedcba"
+    post:
+      summary: Insert Coin & Play Game (Atomic Credit Deduction and Play Counter Increment)
+      operationId: insertCoin
+      description: |
+        Atomically deducts 1 credit from the player's wallet and increments total_play_count for the target game card.
+      tags:
+        - GameCard
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                playerId:
+                  type: string
+                  format: uuid
+                  example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Coin inserted and play counter incremented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationStatus'
+        '400':
+          description: Insufficient credits or invalid player
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/404NotFound'
+
   /game-cards/{gameCardId}:incrementPlayCount:
     parameters:
       - in: path

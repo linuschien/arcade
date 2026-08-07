@@ -10,6 +10,7 @@ import java.util.UUID;
 
 public interface GameCardCommandService {
     Mono<OperationStatus> incrementPlayCount(UUID gameCardId);
+    Mono<OperationStatus> insertCoin(UUID gameCardId, UUID playerId, String iapEmail);
     Mono<GameCardResponse> createGameCard(CreateGameCardCommand command);
     Mono<GameCardResponse> updateGameCard(UUID gameCardId, UpdateGameCardCommand command);
     Mono<Void> deleteGameCard(UUID gameCardId);

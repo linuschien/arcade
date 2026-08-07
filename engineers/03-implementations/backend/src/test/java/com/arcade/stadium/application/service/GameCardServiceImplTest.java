@@ -20,15 +20,50 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.arcade.stadium.application.port.in.PlayerCommandService;
+import com.arcade.stadium.application.port.in.PlayerQueryService;
+import com.arcade.stadium.application.port.in.UserWalletCommandService;
+import com.arcade.stadium.domain.dto.PlayerResponse;
+import com.arcade.stadium.domain.dto.UserWalletResponse;
+import com.arcade.stadium.domain.dto.OperationStatus;
+
 class GameCardServiceImplTest {
 
     private GameCardRepository gameCardRepository;
+    private PlayerCommandService playerCommandService;
+    private PlayerQueryService playerQueryService;
+    private UserWalletCommandService walletCommandService;
     private GameCardServiceImpl gameCardService;
 
     @BeforeEach
     void setUp() {
         gameCardRepository = mock(GameCardRepository.class);
-        gameCardService = new GameCardServiceImpl(gameCardRepository);
+        playerCommandService = mock(PlayerCommandService.class);
+        playerQueryService = mock(PlayerQueryService.class);
+        walletCommandService = mock(UserWalletCommandService.class);
+        gameCardService = new GameCardServiceImpl(
+                gameCardRepository, playerCommandService, playerQueryService, walletCommandService);
+    }
+
+    @Test
+    void testInsertCoin() {
+        UUID cardId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+        UUID walletId = UUID.randomUUID();
+        Instant now = Instant.now();
+        GameCard card = new GameCard(cardId, "tetris", "Tetris", "/covers/tetris.png", "Tetris game", 5, now, now, null);
+        UserWalletResponse walletResp = new UserWalletResponse(walletId, playerId, 9, 0, 9, now, 1);
+        PlayerResponse playerResp = new PlayerResponse(playerId, "test@arcade.com", now, walletResp);
+
+        when(gameCardRepository.findById(cardId)).thenReturn(Mono.just(card));
+        when(playerQueryService.getPlayerById(playerId)).thenReturn(Mono.just(playerResp));
+        when(walletCommandService.deductCredit(playerId, walletId)).thenReturn(Mono.just(OperationStatus.ok("Deducted")));
+        when(gameCardRepository.save(any(GameCard.class))).thenAnswer(inv -> Mono.just(inv.getArgument(0)));
+
+        gameCardService.insertCoin(cardId, playerId, null)
+                .as(StepVerifier::create)
+                .consumeNextWith(status -> assertTrue(status.success()))
+                .verifyComplete();
     }
 
     @Test

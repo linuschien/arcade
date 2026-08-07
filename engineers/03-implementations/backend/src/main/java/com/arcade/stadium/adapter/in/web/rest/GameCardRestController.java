@@ -49,6 +49,16 @@ public class GameCardRestController {
                 .then(Mono.just(ResponseEntity.noContent().build()));
     }
 
+    @PostMapping("/{gameCardId}:insertCoin")
+    public Mono<ResponseEntity<OperationStatus>> insertCoin(
+            @PathVariable UUID gameCardId,
+            @RequestBody(required = false) InsertCoinRequest request,
+            @RequestHeader(name = "X-Goog-Authenticated-User-Email", required = false) String iapEmail) {
+        UUID playerId = (request != null) ? request.playerId() : null;
+        return gameCardCommandService.insertCoin(gameCardId, playerId, iapEmail)
+                .map(ResponseEntity::ok);
+    }
+
     @PostMapping("/{gameCardId}:incrementPlayCount")
     public Mono<ResponseEntity<OperationStatus>> incrementPlayCount(@PathVariable UUID gameCardId) {
         return gameCardCommandService.incrementPlayCount(gameCardId)
