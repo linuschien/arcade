@@ -1,11 +1,10 @@
 package com.arcade.stadium.application.service;
 
+import com.arcade.stadium.application.port.in.PlayerQueryService;
+import com.arcade.stadium.application.port.in.UserWalletCommandService;
 import com.arcade.stadium.adapter.out.persistence.GameCardRepository;
 import com.arcade.stadium.application.port.in.GameCardCommandService;
 import com.arcade.stadium.application.port.in.GameCardQueryService;
-import com.arcade.stadium.application.port.in.PlayerCommandService;
-import com.arcade.stadium.application.port.in.PlayerQueryService;
-import com.arcade.stadium.application.port.in.UserWalletCommandService;
 import com.arcade.stadium.domain.dto.*;
 import com.arcade.stadium.domain.exception.ResourceNotFoundException;
 import com.arcade.stadium.domain.model.GameCard;
@@ -23,49 +22,46 @@ import java.util.UUID;
 public class GameCardServiceImpl implements GameCardCommandService, GameCardQueryService {
 
     private final GameCardRepository gameCardRepository;
-    private final PlayerCommandService playerCommandService;
     private final PlayerQueryService playerQueryService;
     private final UserWalletCommandService walletCommandService;
 
     public GameCardServiceImpl(
             GameCardRepository gameCardRepository,
-            PlayerCommandService playerCommandService,
             PlayerQueryService playerQueryService,
             UserWalletCommandService walletCommandService) {
         this.gameCardRepository = gameCardRepository;
-        this.playerCommandService = playerCommandService;
         this.playerQueryService = playerQueryService;
         this.walletCommandService = walletCommandService;
     }
 
     @Override
     @Transactional
-    public Mono<OperationStatus> insertCoin(UUID gameCardId, UUID playerId, String iapEmail) {
+    public Mono<OperationStatus> insertCoin(UUID gameCardId, UUID playerId) {
+        if (playerId == null) {
+            return Mono.error(new IllegalArgumentException("playerId must not be null"));
+        }
         return gameCardRepository.findById(gameCardId)
                 .switchIfEmpty(Mono.error(new ResourceNotFoundException("Game card not found with id: " + gameCardId)))
-                .flatMap(card -> {
-                    Mono<PlayerResponse> playerMono = (playerId != null)
-                            ? playerQueryService.getPlayerById(playerId)
-                            : playerCommandService.whoami(iapEmail);
-                    return playerMono.flatMap(playerResp ->
-                            walletCommandService.deductCredit(playerResp.id(), playerResp.wallet().id())
-                                    .then(Mono.defer(() -> {
-                                        GameCard updated = new GameCard(
-                                                card.id(),
-                                                card.gameId(),
-                                                card.title(),
-                                                card.coverArtUrl(),
-                                                card.description(),
-                                                card.totalPlayCount() + 1,
-                                                card.createdAt(),
-                                                Instant.now(),
-                                                card.deletedAt()
-                                        );
-                                        return gameCardRepository.save(updated);
-                                    }))
-                                    .map(saved -> OperationStatus.ok("Coin inserted and play counter incremented."))
-                    );
-                });
+                .flatMap(card -> playerQueryService.getPlayerById(playerId)
+                        .flatMap(playerResp ->
+                                walletCommandService.deductCredit(playerResp.id(), playerResp.wallet().id())
+                                        .then(Mono.defer(() -> {
+                                            GameCard updated = new GameCard(
+                                                    card.id(),
+                                                    card.gameId(),
+                                                    card.title(),
+                                                    card.coverArtUrl(),
+                                                    card.description(),
+                                                    card.totalPlayCount() + 1,
+                                                    card.createdAt(),
+                                                    Instant.now(),
+                                                    card.deletedAt()
+                                            );
+                                            return gameCardRepository.save(updated);
+                                        }))
+                                        .map(saved -> OperationStatus.ok("Coin inserted and play counter incremented."))
+                        )
+                );
     }
 
     @Override

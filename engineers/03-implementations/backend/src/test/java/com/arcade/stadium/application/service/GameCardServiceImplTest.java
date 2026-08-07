@@ -30,7 +30,6 @@ import com.arcade.stadium.domain.dto.OperationStatus;
 class GameCardServiceImplTest {
 
     private GameCardRepository gameCardRepository;
-    private PlayerCommandService playerCommandService;
     private PlayerQueryService playerQueryService;
     private UserWalletCommandService walletCommandService;
     private GameCardServiceImpl gameCardService;
@@ -38,11 +37,10 @@ class GameCardServiceImplTest {
     @BeforeEach
     void setUp() {
         gameCardRepository = mock(GameCardRepository.class);
-        playerCommandService = mock(PlayerCommandService.class);
         playerQueryService = mock(PlayerQueryService.class);
         walletCommandService = mock(UserWalletCommandService.class);
         gameCardService = new GameCardServiceImpl(
-                gameCardRepository, playerCommandService, playerQueryService, walletCommandService);
+                gameCardRepository, playerQueryService, walletCommandService);
     }
 
     @Test
@@ -60,7 +58,7 @@ class GameCardServiceImplTest {
         when(walletCommandService.deductCredit(playerId, walletId)).thenReturn(Mono.just(OperationStatus.ok("Deducted")));
         when(gameCardRepository.save(any(GameCard.class))).thenAnswer(inv -> Mono.just(inv.getArgument(0)));
 
-        gameCardService.insertCoin(cardId, playerId, null)
+        gameCardService.insertCoin(cardId, playerId)
                 .as(StepVerifier::create)
                 .consumeNextWith(status -> assertTrue(status.success()))
                 .verifyComplete();

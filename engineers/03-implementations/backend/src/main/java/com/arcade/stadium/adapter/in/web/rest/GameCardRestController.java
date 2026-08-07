@@ -52,10 +52,8 @@ public class GameCardRestController {
     @PostMapping("/{gameCardId}:insertCoin")
     public Mono<ResponseEntity<OperationStatus>> insertCoin(
             @PathVariable UUID gameCardId,
-            @RequestBody(required = false) InsertCoinRequest request,
-            @RequestHeader(name = "X-Goog-Authenticated-User-Email", required = false) String iapEmail) {
-        UUID playerId = (request != null) ? request.playerId() : null;
-        return gameCardCommandService.insertCoin(gameCardId, playerId, iapEmail)
+            @Valid @RequestBody InsertCoinRequest request) {
+        return gameCardCommandService.insertCoin(gameCardId, request.playerId())
                 .map(ResponseEntity::ok);
     }
 

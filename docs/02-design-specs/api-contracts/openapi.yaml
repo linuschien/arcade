@@ -447,11 +447,13 @@ paths:
       tags:
         - GameCard
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - playerId
               properties:
                 playerId:
                   type: string
