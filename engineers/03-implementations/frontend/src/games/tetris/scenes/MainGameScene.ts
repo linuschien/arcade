@@ -10,6 +10,7 @@ import { TetrisBoard, MODERN_CONFIG } from '../logic/TetrisBoard';
 import { TETROMINOES, TetrominoType } from '../logic/Tetromino';
 import { InputService, PlayerIndex, ArcadeAction } from '@/core/input/InputService';
 import { ArcadeBridge } from '@/core/bridge/ArcadeBridge';
+import { TetrisAudioService } from '../audio/TetrisAudioService';
 
 export class MainGameScene extends Phaser.Scene {
   private board!: TetrisBoard;
@@ -59,6 +60,7 @@ export class MainGameScene extends Phaser.Scene {
     this.pieceGraphics = this.add.graphics();
 
     this.createUI();
+    TetrisAudioService.startBgm(1);
 
     // Scene teardown event registration
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.onShutdown, this);
@@ -172,6 +174,7 @@ export class MainGameScene extends Phaser.Scene {
     // 1. Hard Drop (BUTTON_A)
     if (isJustPressed(ArcadeAction.BUTTON_A)) {
       this.board.hardDrop(false);
+      TetrisAudioService.playHardDrop();
       const fullLines = this.board.getFullLineIndices();
       if (fullLines.length > 0) {
         this.isClearingLines = true;
@@ -191,6 +194,7 @@ export class MainGameScene extends Phaser.Scene {
     // 2. Rotate CW (BUTTON_B or UP)
     if (isJustPressed(ArcadeAction.BUTTON_B) || isJustPressed(ArcadeAction.UP)) {
       if (this.board.rotateCw()) {
+        TetrisAudioService.playRotate();
         this.lockTimerAccumulator = 0; // Reset lock delay on successful move/rotation
       }
     }
@@ -198,6 +202,7 @@ export class MainGameScene extends Phaser.Scene {
     // 3. Hold Swap (BUTTON_C)
     if (isJustPressed(ArcadeAction.BUTTON_C)) {
       if (this.board.hold()) {
+        TetrisAudioService.playRotate();
         this.lockTimerAccumulator = 0;
       }
     }
@@ -219,11 +224,17 @@ export class MainGameScene extends Phaser.Scene {
 
     if (leftDown) {
       if (this.moveLeftTimer === 0) {
-        if (this.board.moveLeft()) this.lockTimerAccumulator = 0;
+        if (this.board.moveLeft()) {
+          TetrisAudioService.playMove();
+          this.lockTimerAccumulator = 0;
+        }
       }
       this.moveLeftTimer += delta;
       if (this.moveLeftTimer >= this.DAS_DELAY + this.ARR_SPEED) {
-        if (this.board.moveLeft()) this.lockTimerAccumulator = 0;
+        if (this.board.moveLeft()) {
+          TetrisAudioService.playMove();
+          this.lockTimerAccumulator = 0;
+        }
         this.moveLeftTimer = this.DAS_DELAY;
       }
     } else {
@@ -232,11 +243,17 @@ export class MainGameScene extends Phaser.Scene {
 
     if (rightDown) {
       if (this.moveRightTimer === 0) {
-        if (this.board.moveRight()) this.lockTimerAccumulator = 0;
+        if (this.board.moveRight()) {
+          TetrisAudioService.playMove();
+          this.lockTimerAccumulator = 0;
+        }
       }
       this.moveRightTimer += delta;
       if (this.moveRightTimer >= this.DAS_DELAY + this.ARR_SPEED) {
-        if (this.board.moveRight()) this.lockTimerAccumulator = 0;
+        if (this.board.moveRight()) {
+          TetrisAudioService.playMove();
+          this.lockTimerAccumulator = 0;
+        }
         this.moveRightTimer = this.DAS_DELAY;
       }
     } else {
@@ -306,6 +323,8 @@ export class MainGameScene extends Phaser.Scene {
       return;
     }
 
+    TetrisAudioService.playLineClear(lines.length);
+
     const currentLevel = this.board.getScoreCalculator().getState().level;
     // Classic Arcade/NES style: Flash speed scales with Level
     // Level 1 = 80ms/blink, Level 15 = 35ms/blink
@@ -343,6 +362,9 @@ export class MainGameScene extends Phaser.Scene {
   private onBoardMutation(): void {
     const scoreState = this.board.getScoreCalculator().getState();
 
+    // Update BGM Tempo based on Level
+    TetrisAudioService.updateBgmTempo(scoreState.level);
+
     // Emit score update event to ArcadeBridge
     ArcadeBridge.emit('SCORE_UPDATED', scoreState);
 
@@ -353,6 +375,8 @@ export class MainGameScene extends Phaser.Scene {
 
     // Check Game Over condition
     if (this.board.isGameOver()) {
+      TetrisAudioService.stopBgm();
+      TetrisAudioService.playGameOver();
       this.gameOverText.setVisible(true);
 
       const elapsedSeconds = Math.round(this.time.now / 1000 - this.startTimeSeconds);
@@ -461,9 +485,16 @@ export class MainGameScene extends Phaser.Scene {
 
   public setPauseState(paused: boolean): void {
     this.isPaused = paused;
+    if (paused) {
+      TetrisAudioService.stopBgm();
+    } else {
+      TetrisAudioService.startBgm(this.board.getScoreCalculator().getState().level);
+    }
   }
 
   private onShutdown(): void {
+    TetrisAudioService.stopBgm();
+
     this.events.off(Phaser.Scenes.Events.SHUTDOWN, this.onShutdown, this);
     this.events.off(Phaser.Scenes.Events.DESTROY, this.onShutdown, this);
 

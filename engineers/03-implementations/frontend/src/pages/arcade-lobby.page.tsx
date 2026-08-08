@@ -11,6 +11,7 @@ import { useGrantAdminCredit } from '@/hooks/use-grantAdminCredit';
 import { useSubmitHighScore } from '@/hooks/use-submitHighScore';
 import { ArcadeBridge, IArcadeGame } from '@/core/bridge/ArcadeBridge';
 import { createGameInstance } from '@/games';
+import { SoundEngine } from '@/core/audio/SoundEngine';
 
 export interface ArcadeLobbyPageProps {
   store?: any;
@@ -66,6 +67,11 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
   const isAudioEnabled = store.get('/settings/audioEnabled') ?? !store.get('/settings/masterMuted');
   const isPlaying = store.get('/game/isPlaying') ?? false;
   const isPauseModalOpen = store.get('/modals/game-pause-modal') ?? false;
+
+  // Sync audio mute state with SoundEngine
+  useEffect(() => {
+    SoundEngine.setMuted(!isAudioEnabled);
+  }, [isAudioEnabled]);
 
   const activeGameInstanceRef = useRef<IArcadeGame | null>(null);
 
