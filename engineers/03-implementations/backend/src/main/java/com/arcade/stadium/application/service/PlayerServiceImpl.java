@@ -21,6 +21,9 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
+import java.util.List;
+
 @Service
 public class PlayerServiceImpl implements PlayerCommandService, PlayerQueryService {
 
@@ -156,6 +159,6 @@ public class PlayerServiceImpl implements PlayerCommandService, PlayerQueryServi
                     wallet.version() != null ? wallet.version() : 1
             );
         }
-        return new PlayerResponse(player.id(), player.gcpIapEmail(), player.createdAt(), walletResp);
+        return new PlayerResponse(player.id(), player.gcpIapEmail(), false, player.createdAt(), walletResp);
     }
 }

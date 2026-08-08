@@ -23,6 +23,7 @@ type Query {
 type PlayerResponse {
     id: ID!
     gcpIapEmail: String!
+    isAdmin: Boolean!
     createdAt: String!
     wallet: UserWalletResponse
 }

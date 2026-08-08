@@ -51,7 +51,7 @@ class GameCardServiceImplTest {
         Instant now = Instant.now();
         GameCard card = new GameCard(cardId, "tetris", "Tetris", "/covers/tetris.png", "Tetris game", 5, now, now, null);
         UserWalletResponse walletResp = new UserWalletResponse(walletId, playerId, 9, 0, 9, now, 1);
-        PlayerResponse playerResp = new PlayerResponse(playerId, "test@arcade.com", now, walletResp);
+        PlayerResponse playerResp = new PlayerResponse(playerId, "test@arcade.com", false, now, walletResp);
 
         when(gameCardRepository.findById(cardId)).thenReturn(Mono.just(card));
         when(playerQueryService.getPlayerById(playerId)).thenReturn(Mono.just(playerResp));

@@ -28,7 +28,7 @@ class PlayerGraphQLResolverTest {
 
     @Test
     void testListPlayers() {
-        PlayerResponse player = new PlayerResponse(UUID.randomUUID(), "gql@test.com", Instant.now(), null);
+        PlayerResponse player = new PlayerResponse(UUID.randomUUID(), "gql@test.com", false, Instant.now(), null);
         when(playerQueryService.listPlayers(null)).thenReturn(Flux.just(player));
 
         resolver.listPlayers(null)
@@ -40,7 +40,7 @@ class PlayerGraphQLResolverTest {
     @Test
     void testGetPlayerById() {
         UUID id = UUID.randomUUID();
-        PlayerResponse player = new PlayerResponse(id, "gql@test.com", Instant.now(), null);
+        PlayerResponse player = new PlayerResponse(id, "gql@test.com", false, Instant.now(), null);
         when(playerQueryService.getPlayerById(id)).thenReturn(Mono.just(player));
 
         resolver.getPlayerById(id)

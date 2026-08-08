@@ -34,7 +34,7 @@ public class PlayerRestController {
         return Mono.deferContextual(ctx -> {
             UserAuthentication auth = ctx.get(UserAuthentication.class);
             return playerCommandService.whoami(auth.email())
-                    .map(ResponseEntity::ok);
+                    .map(resp -> ResponseEntity.ok(resp.withAdmin(auth.isAdmin())));
         });
     }
 

@@ -51,6 +51,7 @@ class PlayerServiceImplTest {
                 .consumeNextWith(resp -> {
                     assertEquals(playerId, resp.id());
                     assertEquals("existing@test.com", resp.gcpIapEmail());
+                    assertFalse(resp.isAdmin());
                     assertNotNull(resp.wallet());
                     assertEquals(10, resp.wallet().dailyFreeCredit());
                 })

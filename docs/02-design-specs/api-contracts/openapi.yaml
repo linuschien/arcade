@@ -543,6 +543,7 @@ components:
       required:
         - id
         - gcpIapEmail
+        - isAdmin
         - createdAt
       properties:
         id:
@@ -553,6 +554,10 @@ components:
           type: string
           format: email
           example: "linus@example.com"
+        isAdmin:
+          type: boolean
+          example: false
+          description: Whether user has administrative privileges
         createdAt:
           type: string
           format: date-time

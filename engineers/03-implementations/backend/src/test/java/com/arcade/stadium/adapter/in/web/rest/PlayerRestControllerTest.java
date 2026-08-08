@@ -40,7 +40,7 @@ class PlayerRestControllerTest {
         UUID playerId = UUID.randomUUID();
         Instant now = Instant.now();
         UserWalletResponse wallet = new UserWalletResponse(UUID.randomUUID(), playerId, 10, 0, 10, now, 1);
-        PlayerResponse response = new PlayerResponse(playerId, "test@example.com", now, wallet);
+        PlayerResponse response = new PlayerResponse(playerId, "test@example.com", false, now, wallet);
 
         when(playerCommandService.whoami("test@example.com")).thenReturn(Mono.just(response));
 
