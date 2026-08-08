@@ -37,8 +37,11 @@ export default function GameCardCarousel({
   let gamesList: GameCardItem[] = [];
   let currentActiveId: string = 'tetris';
   let leaderboardRows: any[] = [];
+  let currentUserEmail: string = '';
 
   if (store) {
+    currentUserEmail = store.get('/user/email') || '';
+
     if (typeof rawGames === 'object' && rawGames !== null && '$bindState' in rawGames) {
       gamesList = store.get(rawGames.$bindState) || [];
     } else if (typeof rawGames === 'string' && rawGames.startsWith('/')) {
@@ -138,13 +141,31 @@ export default function GameCardCarousel({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50">
-                  {leaderboardRows.map((row: any, idx: number) => (
-                    <tr key={idx} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-1 font-bold text-amber-400">#{row[0] || idx + 1}</td>
-                      <td className="py-1 text-slate-200 truncate max-w-[130px]">{row[1]}</td>
-                      <td className="py-1 text-right font-mono text-emerald-400 font-bold">{row[2]}</td>
-                    </tr>
-                  ))}
+                  {leaderboardRows.map((row: any, idx: number) => {
+                    const isSelf =
+                      currentUserEmail &&
+                      row[1] &&
+                      currentUserEmail.trim().toLowerCase() === String(row[1]).trim().toLowerCase();
+
+                    return (
+                      <tr
+                        key={idx}
+                        className={`transition-colors ${
+                          isSelf ? 'bg-indigo-950/80 font-bold' : 'hover:bg-slate-800/40'
+                        }`}
+                      >
+                        <td className={`py-1 font-bold ${isSelf ? 'text-cyan-300' : 'text-amber-400'}`}>
+                          #{row[0] || idx + 1}
+                        </td>
+                        <td className={`py-1 truncate max-w-[140px] ${isSelf ? 'text-cyan-300 font-bold' : 'text-slate-200'}`}>
+                          {row[1]}
+                        </td>
+                        <td className={`py-1 text-right font-mono font-bold ${isSelf ? 'text-cyan-300' : 'text-emerald-400'}`}>
+                          {row[2]}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -143,6 +143,38 @@ describe('ArcadeLobbyPage Unit Tests', () => {
     expect(await screen.findByText('98500')).toBeInTheDocument();
   });
 
+  it('highlights current user record in leaderboard', async () => {
+    const user = userEvent.setup();
+    const testStore = createStateStore({
+      user: { email: 'linus@example.com', id: '550e8400' },
+      wallet: { dailyFreeCredit: 10, adminBonusCredit: 5, totalCredits: 15, id: 'a3b1' },
+      settings: { crtEnabled: false, masterMuted: false },
+      data: {
+        listGameCards: [],
+        top10Leaderboard: [
+          ['1', 'linus@example.com', '99900', '2026-08-08'],
+          ['2', 'alice@example.com', '88800', '2026-08-08'],
+        ],
+      },
+      activeGameId: 'tetris',
+      modals: {},
+    });
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <ArcadeLobbyPage store={testStore} />
+      </QueryClientProvider>
+    );
+
+    const showLeaderboardBtn = screen.getByRole('button', { name: /Top 10 Leaderboard/i });
+    await user.click(showLeaderboardBtn);
+
+    const selfCells = await screen.findAllByText('linus@example.com');
+    expect(selfCells.length).toBeGreaterThanOrEqual(2);
+    expect(selfCells[1]).toHaveClass('text-cyan-300');
+  });
+
   // Pattern 3 — Modal Open + executeBehavior
   it('Pattern 3: opens admin grant modal when button clicked', async () => {
     const user = userEvent.setup();
