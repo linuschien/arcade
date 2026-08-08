@@ -1,6 +1,34 @@
--- Flyway Migration V2: Seed Initial Arcade Game Cards (Tetris & Pac-Man)
+-- Flyway Migration V2: Seed Initial Arcade Game Cards (Tetris & Pac-Man) & Top 10 Leaderboard Entries
 
 INSERT INTO game_card (id, game_id, title, cover_art_url, description, total_play_count, created_at, updated_at)
 VALUES 
 ('98765432-10fe-dcba-9876-543210fedcba', 'tetris', 'Tetris Classic', '/assets/covers/tetris.png', 'Classic 7-Bag SRS Tetris puzzle game.', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 ('87654321-10fe-dcba-9876-543210fedcba', 'pacman', 'Pac-Man Classic', '/assets/covers/pacman.png', 'Classic arcade maze navigation & ghost evasion game.', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- Seed Initial Top 10 Leaderboard Entries for Tetris Classic (Reasonable Score Range: 1,200 ~ 12,500)
+INSERT INTO leaderboard_entry (id, game_card_id, player_email, score, submitted_at, created_at, updated_at)
+VALUES
+('a1111111-1111-4111-a111-111111111101', '98765432-10fe-dcba-9876-543210fedcba', 'hyper.stacker@arcade.com', 12500, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('a1111111-1111-4111-a111-111111111102', '98765432-10fe-dcba-9876-543210fedcba', 'matrix.master@arcade.com', 10800, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('a1111111-1111-4111-a111-111111111103', '98765432-10fe-dcba-9876-543210fedcba', 'tspin.god@arcade.com', 9200, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('a1111111-1111-4111-a111-111111111104', '98765432-10fe-dcba-9876-543210fedcba', 'block.ninja@arcade.com', 8100, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('a1111111-1111-4111-a111-111111111105', '98765432-10fe-dcba-9876-543210fedcba', 'retro.gamer99@arcade.com', 6900, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('a1111111-1111-4111-a111-111111111106', '98765432-10fe-dcba-9876-543210fedcba', 'line.clearer@arcade.com', 5400, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('a1111111-1111-4111-a111-111111111107', '98765432-10fe-dcba-9876-543210fedcba', 'pixel.pro@arcade.com', 4200, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('a1111111-1111-4111-a111-111111111108', '98765432-10fe-dcba-9876-543210fedcba', 'combo.king@arcade.com', 3100, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('a1111111-1111-4111-a111-111111111109', '98765432-10fe-dcba-9876-543210fedcba', 'speed.demon@arcade.com', 2000, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('a1111111-1111-4111-a111-111111111110', '98765432-10fe-dcba-9876-543210fedcba', 'arcade.fanatic@arcade.com', 1200, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- Seed Initial Top 10 Leaderboard Entries for Pac-Man Classic (Reasonable Score Range: 800 ~ 8,500)
+INSERT INTO leaderboard_entry (id, game_card_id, player_email, score, submitted_at, created_at, updated_at)
+VALUES
+('b2222222-2222-4222-b222-222222222201', '87654321-10fe-dcba-9876-543210fedcba', 'pac.champion@arcade.com', 8500, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('b2222222-2222-4222-b222-222222222202', '87654321-10fe-dcba-9876-543210fedcba', 'ghost.hunter@arcade.com', 7200, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('b2222222-2222-4222-b222-222222222203', '87654321-10fe-dcba-9876-543210fedcba', 'dot.eater@arcade.com', 6100, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('b2222222-2222-4222-b222-222222222204', '87654321-10fe-dcba-9876-543210fedcba', 'blinky.dodge@arcade.com', 5300, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('b2222222-2222-4222-b222-222222222205', '87654321-10fe-dcba-9876-543210fedcba', 'cherry.collector@arcade.com', 4500, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('b2222222-2222-4222-b222-222222222206', '87654321-10fe-dcba-9876-543210fedcba', 'maze.runner@arcade.com', 3600, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('b2222222-2222-4222-b222-222222222207', '87654321-10fe-dcba-9876-543210fedcba', 'power.pellet@arcade.com', 2800, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('b2222222-2222-4222-b222-222222222208', '87654321-10fe-dcba-9876-543210fedcba', 'retro.chaz@arcade.com', 2100, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('b2222222-2222-4222-b222-222222222209', '87654321-10fe-dcba-9876-543210fedcba', 'arcade.hero@arcade.com', 1400, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('b2222222-2222-4222-b222-222222222210', '87654321-10fe-dcba-9876-543210fedcba', 'waka.waka@arcade.com', 800, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
