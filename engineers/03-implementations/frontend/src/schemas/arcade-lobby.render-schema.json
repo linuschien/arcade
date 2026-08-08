@@ -18,6 +18,7 @@
     },
     "lobby-header-bar": {
       "type": "div",
+      "visible": { "$state": "/game/isLobbyVisible" },
       "props": {
         "id": "lobby-header-bar",
         "className": "flex flex-wrap items-center justify-between gap-4 p-4 bg-slate-900 border border-slate-800 rounded-xl shadow-lg"
@@ -247,7 +248,7 @@
         "gap": "md",
         "align": "center",
         "justify": "between",
-        "className": null
+        "className": "p-2 bg-slate-950/80 backdrop-blur-md rounded-lg border border-slate-800 mb-4 transition-all opacity-80 hover:opacity-100"
       },
       "children": ["return-to-lobby-trigger", "pause-game-trigger"]
     },
