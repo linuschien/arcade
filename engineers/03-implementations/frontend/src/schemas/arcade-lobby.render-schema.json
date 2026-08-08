@@ -370,35 +370,17 @@
       "type": "Dialog",
       "props": {
         "id": "out-of-credits-dialog",
-        "title": "OUT OF CREDITS",
-        "description": "You have 0 credits remaining. Please wait for the daily 00:00 reset or request admin bonus credits.",
+        "title": "🪙 Out of Credits",
+        "description": "You have 0 coins remaining! Credits reset daily at 00:00 UTC, or ask an admin for bonus credits.",
         "openPath": "/modals/out-of-credits-dialog"
       },
-      "children": ["out-of-credits-heading", "out-of-credits-text", "dismiss-out-of-credits-trigger"]
-    },
-    "out-of-credits-heading": {
-      "type": "Heading",
-      "props": {
-        "id": "out-of-credits-heading",
-        "text": "OUT OF CREDITS",
-        "level": "h2"
-      },
-      "children": []
-    },
-    "out-of-credits-text": {
-      "type": "Text",
-      "props": {
-        "id": "out-of-credits-text",
-        "text": "You have 0 credits remaining. Please wait for the daily 00:00 reset or request admin bonus credits.",
-        "variant": "body"
-      },
-      "children": []
+      "children": ["dismiss-out-of-credits-trigger"]
     },
     "dismiss-out-of-credits-trigger": {
       "type": "Button",
       "props": {
         "id": "dismiss-out-of-credits-trigger",
-        "label": "OK",
+        "label": "👍 OK, Understood",
         "variant": "primary",
         "disabled": null
       },

@@ -396,7 +396,7 @@ describe('ArcadeLobbyPage Unit Tests', () => {
       </QueryClientProvider>
     );
 
-    const okBtn = await screen.findByRole('button', { name: /^OK$/i });
+    const okBtn = await screen.findByRole('button', { name: /OK/i });
     await user.click(okBtn);
 
     expect(zeroStore.get('/modals/out-of-credits-dialog')).toBe(false);
