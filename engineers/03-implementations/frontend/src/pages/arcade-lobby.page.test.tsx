@@ -489,7 +489,7 @@ describe('ArcadeLobbyPage Unit Tests', () => {
       </QueryClientProvider>
     );
 
-    const returnBtn = await screen.findByRole('button', { name: /Exit to Lobby/i });
+    const returnBtn = await screen.findByRole('button', { name: /Exit/i });
     await user.click(returnBtn);
   });
 

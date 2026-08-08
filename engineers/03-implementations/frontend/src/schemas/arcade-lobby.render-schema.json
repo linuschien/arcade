@@ -288,7 +288,7 @@
       "type": "Button",
       "props": {
         "id": "return-to-lobby-trigger",
-        "label": "🏛️ Exit to Lobby",
+        "label": "🏛️ Exit",
         "variant": "secondary",
         "disabled": null,
         "className": "cursor-pointer shadow-md hover:bg-slate-800 transition-colors"
