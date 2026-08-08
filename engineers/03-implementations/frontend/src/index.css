@@ -32,6 +32,44 @@ input:disabled {
   cursor: not-allowed !important;
 }
 
+/* Radix Switch Track & Thumb explicit styling for Tailwind CSS v4 */
+[data-slot="switch"] {
+  width: 2.25rem !important;
+  height: 1.25rem !important;
+  padding: 2px !important;
+  border-radius: 9999px !important;
+  transition: background-color 0.2s ease-in-out !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+  margin-left: 0.75rem !important;
+}
+
+[data-slot="switch"][data-state="unchecked"] {
+  background-color: #334155 !important; /* Slate-700 dark track background when OFF */
+}
+
+[data-slot="switch"][data-state="checked"] {
+  background-color: #2563eb !important; /* Blue-600 vibrant track background when ON */
+}
+
+[data-slot="switch-thumb"] {
+  width: 1rem !important;
+  height: 1rem !important;
+  border-radius: 9999px !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+  transition: transform 0.2s ease-in-out !important;
+}
+
+[data-slot="switch"][data-state="unchecked"] [data-slot="switch-thumb"] {
+  transform: translateX(0px) !important;
+}
+
+[data-slot="switch"][data-state="checked"] [data-slot="switch-thumb"] {
+  transform: translateX(1rem) !important;
+}
+
 /* CRT Retro Scanline Filter Effect */
 .crt-overlay {
   position: fixed;

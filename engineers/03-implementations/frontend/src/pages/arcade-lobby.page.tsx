@@ -22,6 +22,7 @@ const defaultStore = createStateStore({
   settings: {
     crtEnabled: localStorage.getItem('arcade_crt_enabled') === 'true',
     masterMuted: false,
+    audioEnabled: true,
     crtLabel: localStorage.getItem('arcade_crt_enabled') === 'true' ? '📺 CRT: ON' : '📺 CRT: OFF',
     muteLabel: '🔊 Audio: ON',
   },
@@ -57,12 +58,13 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
   }, [store]);
 
   const isCrtEnabled = store.get('/settings/crtEnabled');
-  const isMuted = store.get('/settings/masterMuted');
+  const isAudioEnabled = store.get('/settings/audioEnabled') ?? !store.get('/settings/masterMuted');
 
   useEffect(() => {
     store.set('/settings/crtLabel', isCrtEnabled ? '📺 CRT: ON' : '📺 CRT: OFF');
-    store.set('/settings/muteLabel', isMuted ? '🔇 Audio: OFF' : '🔊 Audio: ON');
-  }, [isCrtEnabled, isMuted, store]);
+    store.set('/settings/muteLabel', isAudioEnabled ? '🔊 Audio: ON' : '🔇 Audio: OFF');
+    store.set('/settings/masterMuted', !isAudioEnabled);
+  }, [isCrtEnabled, isAudioEnabled, store]);
 
   // Queries
   const { data: whoamiData } = useWhoami();
@@ -135,7 +137,8 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
         }
 
         case 'ToggleMute': {
-          // Store state already updated by Switch setChecked binding
+          const isAudioEnabled = store.get('/settings/audioEnabled');
+          store.set('/settings/masterMuted', !isAudioEnabled);
           break;
         }
 

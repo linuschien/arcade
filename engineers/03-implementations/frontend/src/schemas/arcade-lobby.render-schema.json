@@ -85,7 +85,7 @@
         "id": "master-mute-switch",
         "name": "master-mute-switch",
         "label": { "$bindState": "/settings/muteLabel" },
-        "checked": { "$bindState": "/settings/masterMuted" },
+        "checked": { "$bindState": "/settings/audioEnabled" },
         "checks": null,
         "validateOn": null
       },
