@@ -21,10 +21,14 @@ export class TetrisGame implements IArcadeGame {
 
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
-      width: 800,
-      height: 720,
       parent: parent,
       backgroundColor: '#020617',
+      scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: 800,
+        height: 720,
+      },
       scene: [PreloadScene, MainGameScene],
       physics: {
         default: 'arcade',

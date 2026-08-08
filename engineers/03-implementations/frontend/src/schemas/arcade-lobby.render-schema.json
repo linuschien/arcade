@@ -235,7 +235,7 @@
       "type": "div",
       "props": {
         "id": "phaser-game-container",
-        "className": "p-4 bg-slate-900 border border-slate-800 rounded-xl"
+        "className": "p-3 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl flex flex-col justify-between items-center w-full h-[calc(100vh-1.5rem)] overflow-hidden"
       },
       "visible": { "$state": "/game/isPlaying" },
       "children": ["game-control-bar", "phaser-game-canvas-container"]
@@ -244,7 +244,7 @@
       "type": "div",
       "props": {
         "id": "phaser-game-canvas-container",
-        "className": "w-full flex justify-center items-center rounded-lg overflow-hidden my-2"
+        "className": "w-full flex-1 flex justify-center items-center rounded-lg overflow-hidden my-1"
       },
       "children": []
     },
@@ -256,7 +256,7 @@
         "gap": "md",
         "align": "center",
         "justify": "between",
-        "className": "p-2 bg-slate-950/80 backdrop-blur-md rounded-lg border border-slate-800 mb-4 transition-all opacity-80 hover:opacity-100"
+        "className": "w-full shrink-0 flex items-center justify-between gap-4 p-2.5 bg-slate-950/80 backdrop-blur-md rounded-xl border border-slate-800 shadow-md"
       },
       "children": ["return-to-lobby-trigger", "pause-game-trigger"]
     },
@@ -266,7 +266,8 @@
         "id": "pause-game-trigger",
         "label": "⏸️ Pause",
         "variant": "secondary",
-        "disabled": null
+        "disabled": null,
+        "className": "cursor-pointer shadow-md hover:bg-slate-800 transition-colors"
       },
       "on": {
         "press": [
@@ -281,7 +282,8 @@
         "id": "return-to-lobby-trigger",
         "label": "🏛️ Exit to Lobby",
         "variant": "secondary",
-        "disabled": null
+        "disabled": null,
+        "className": "cursor-pointer shadow-md hover:bg-slate-800 transition-colors"
       },
       "on": {
         "press": [

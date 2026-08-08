@@ -360,7 +360,11 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
 
   return (
     <JSONUIProvider store={store} handlers={handlers} registry={componentRegistry}>
-      <div className="relative min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
+      <div
+        className={`relative bg-slate-950 text-slate-100 font-sans antialiased ${
+          isPlaying ? 'h-screen max-h-screen overflow-hidden flex flex-col justify-center' : 'min-h-screen'
+        }`}
+      >
         {isCrtEnabled && <div className="crt-overlay" aria-hidden="true" />}
 
         {toastMessage && (
