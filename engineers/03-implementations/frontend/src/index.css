@@ -13,6 +13,25 @@ body {
   padding: 0;
 }
 
+/* Interactive elements pointer cursor */
+button,
+[role="button"],
+[role="switch"],
+input[type="button"],
+input[type="submit"],
+a,
+label[for],
+select {
+  cursor: pointer !important;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+[role="switch"][aria-disabled="true"],
+input:disabled {
+  cursor: not-allowed !important;
+}
+
 /* CRT Retro Scanline Filter Effect */
 .crt-overlay {
   position: fixed;
