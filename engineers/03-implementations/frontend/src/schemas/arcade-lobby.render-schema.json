@@ -119,10 +119,20 @@
         "className": "space-y-4"
       },
       "children": [
-        "carousel-heading",
-        "carousel-prev-trigger",
-        "carousel-next-trigger",
+        "carousel-header-bar",
         "game-card-grid"
+      ]
+    },
+    "carousel-header-bar": {
+      "type": "div",
+      "props": {
+        "id": "carousel-header-bar",
+        "className": "flex items-center justify-between gap-4"
+      },
+      "children": [
+        "carousel-prev-trigger",
+        "carousel-heading",
+        "carousel-next-trigger"
       ]
     },
     "carousel-heading": {
@@ -130,7 +140,8 @@
       "props": {
         "id": "carousel-heading",
         "text": "Select Arcade Game",
-        "level": "h2"
+        "level": "h2",
+        "className": "text-center font-bold text-xl text-white"
       },
       "children": []
     },
