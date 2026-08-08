@@ -238,7 +238,15 @@
         "className": "p-4 bg-slate-900 border border-slate-800 rounded-xl"
       },
       "visible": { "$state": "/game/isPlaying" },
-      "children": ["game-control-bar"]
+      "children": ["game-control-bar", "phaser-game-canvas-container"]
+    },
+    "phaser-game-canvas-container": {
+      "type": "div",
+      "props": {
+        "id": "phaser-game-canvas-container",
+        "className": "w-full flex justify-center items-center rounded-lg overflow-hidden my-2"
+      },
+      "children": []
     },
     "game-control-bar": {
       "type": "Stack",

@@ -1,5 +1,4 @@
-// AUTO-GENERATED - Arcade Lobby Controller Page
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Renderer, JSONUIProvider, createStateStore } from '@json-render/react';
 import { componentRegistry } from '@/json-render/component-registry';
 import spec from '@/schemas/arcade-lobby.render-schema.json';
@@ -9,7 +8,8 @@ import { useListGameCards } from '@/hooks/use-listGameCards';
 import { useGetTop10Leaderboard } from '@/hooks/use-getTop10Leaderboard';
 import { useDeductCredit } from '@/hooks/use-deductCredit';
 import { useGrantAdminCredit } from '@/hooks/use-grantAdminCredit';
-import { ArcadeBridge } from '@/core/bridge/ArcadeBridge';
+import { ArcadeBridge, IArcadeGame } from '@/core/bridge/ArcadeBridge';
+import { createTetrisGame } from '@/games/tetris';
 
 export interface ArcadeLobbyPageProps {
   store?: any;
@@ -65,9 +65,48 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
   const isAudioEnabled = store.get('/settings/audioEnabled') ?? !store.get('/settings/masterMuted');
   const isPlaying = store.get('/game/isPlaying') ?? false;
 
+  const activeGameInstanceRef = useRef<IArcadeGame | null>(null);
+
   useEffect(() => {
     store.set('/game/isLobbyVisible', !isPlaying);
+
+    if (isPlaying) {
+      const activeGameId = store.get('/activeGameId') || 'tetris';
+      const timer = setTimeout(() => {
+        if (activeGameId === 'tetris' && !activeGameInstanceRef.current) {
+          const container = document.getElementById('phaser-game-canvas-container');
+          if (container) {
+            activeGameInstanceRef.current = createTetrisGame(container);
+          }
+        }
+      }, 50);
+
+      return () => {
+        clearTimeout(timer);
+      };
+    } else {
+      if (activeGameInstanceRef.current) {
+        activeGameInstanceRef.current.destroyGame();
+        activeGameInstanceRef.current = null;
+      }
+    }
   }, [isPlaying, store]);
+
+  useEffect(() => {
+    const unsubGameOver = ArcadeBridge.on('GAME_OVER', (summary: any) => {
+      const score = summary?.score ?? 0;
+      showToast(`🏆 Game Over! Final Score: ${score}`);
+      setTimeout(() => {
+        if (activeGameInstanceRef.current) {
+          activeGameInstanceRef.current.destroyGame();
+          activeGameInstanceRef.current = null;
+        }
+        store.set('/game/isPlaying', false);
+        store.set('/game/isLobbyVisible', true);
+      }, 3000);
+    });
+    return unsubGameOver;
+  }, [store]);
 
   useEffect(() => {
     store.set('/settings/crtLabel', isCrtEnabled ? '📺 CRT: ON' : '📺 CRT: OFF');
@@ -240,6 +279,10 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
         }
 
         case 'ReturnToLobby': {
+          if (activeGameInstanceRef.current) {
+            activeGameInstanceRef.current.destroyGame();
+            activeGameInstanceRef.current = null;
+          }
           ArcadeBridge.emit('RESUME_REQUESTED');
           store.set('/modals/game-pause-modal', false);
           store.set('/game/isPlaying', false);
