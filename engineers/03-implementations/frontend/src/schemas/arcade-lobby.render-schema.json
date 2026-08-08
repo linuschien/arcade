@@ -323,7 +323,7 @@
       "props": {
         "id": "admin-grant-credit-modal",
         "title": "✨ Grant Admin Bonus Credits",
-        "description": "Specify the number of bonus credits to issue to this player account.",
+        "description": "Enter bonus coins amount to grant.",
         "openPath": "/modals/admin-grant-credit-modal"
       },
       "children": ["grant-form-section"]
