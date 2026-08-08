@@ -113,6 +113,7 @@
     },
     "game-carousel-section": {
       "type": "div",
+      "visible": { "$state": "/game/isLobbyVisible" },
       "props": {
         "id": "game-carousel-section",
         "className": "space-y-4"
@@ -237,13 +238,13 @@
         "justify": "between",
         "className": null
       },
-      "children": ["pause-game-trigger", "return-to-lobby-trigger"]
+      "children": ["return-to-lobby-trigger", "pause-game-trigger"]
     },
     "pause-game-trigger": {
       "type": "Button",
       "props": {
         "id": "pause-game-trigger",
-        "label": "Pause",
+        "label": "⏸️ Pause",
         "variant": "secondary",
         "disabled": null
       },
@@ -258,7 +259,7 @@
       "type": "Button",
       "props": {
         "id": "return-to-lobby-trigger",
-        "label": "Exit to Lobby",
+        "label": "🚪 Exit to Lobby",
         "variant": "secondary",
         "disabled": null
       },
@@ -273,11 +274,11 @@
       "type": "Dialog",
       "props": {
         "id": "game-pause-modal",
-        "title": "GAME PAUSED",
-        "description": null,
+        "title": "⏸️ GAME PAUSED",
+        "description": "Take a breather! Your arcade session is safely frozen.",
         "openPath": "/modals/game-pause-modal"
       },
-      "children": ["pause-heading", "resume-game-trigger", "quit-to-lobby-trigger"]
+      "children": ["resume-game-trigger", "quit-to-lobby-trigger"]
     },
     "pause-heading": {
       "type": "Heading",
@@ -292,7 +293,7 @@
       "type": "Button",
       "props": {
         "id": "resume-game-trigger",
-        "label": "Resume Game",
+        "label": "▶️ Resume Game",
         "variant": "primary",
         "disabled": null
       },
@@ -307,7 +308,7 @@
       "type": "Button",
       "props": {
         "id": "quit-to-lobby-trigger",
-        "label": "Quit to Lobby",
+        "label": "🚪 Quit to Lobby",
         "variant": "secondary",
         "disabled": null
       },

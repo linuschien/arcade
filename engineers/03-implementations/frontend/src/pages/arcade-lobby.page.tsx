@@ -44,6 +44,7 @@ const defaultStore = createStateStore({
   },
   game: {
     isPlaying: false,
+    isLobbyVisible: true,
   },
 });
 
@@ -62,6 +63,11 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
 
   const isCrtEnabled = store.get('/settings/crtEnabled');
   const isAudioEnabled = store.get('/settings/audioEnabled') ?? !store.get('/settings/masterMuted');
+  const isPlaying = store.get('/game/isPlaying') ?? false;
+
+  useEffect(() => {
+    store.set('/game/isLobbyVisible', !isPlaying);
+  }, [isPlaying, store]);
 
   useEffect(() => {
     store.set('/settings/crtLabel', isCrtEnabled ? '📺 CRT: ON' : '📺 CRT: OFF');
@@ -190,6 +196,7 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
           try {
             await deductCreditMutation.mutateAsync({ gameCardId, playerId });
             store.set('/game/isPlaying', true);
+            store.set('/game/isLobbyVisible', false);
             ArcadeBridge.emit('COIN_INSERTED', totalCredits - 1);
             showToast('Coin inserted successfully! Launching game...');
           } catch (err: any) {
@@ -236,6 +243,7 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
           ArcadeBridge.emit('RESUME_REQUESTED');
           store.set('/modals/game-pause-modal', false);
           store.set('/game/isPlaying', false);
+          store.set('/game/isLobbyVisible', true);
           break;
         }
 
