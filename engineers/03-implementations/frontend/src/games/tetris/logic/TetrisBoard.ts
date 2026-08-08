@@ -176,7 +176,7 @@ export class TetrisBoard {
   /**
    * Hard Drop: instantly drops active piece to lowest valid position and locks down.
    */
-  public hardDrop(): number {
+  public hardDrop(autoClear: boolean = true): number {
     if (!this.activePiece || this.isGameOverState) return 0;
 
     const ghostY = this.getGhostY();
@@ -187,7 +187,7 @@ export class TetrisBoard {
       this.scoreCalculator.addHardDrop(dropDistance);
     }
 
-    this.lockCurrentPiece();
+    this.lockCurrentPiece(autoClear);
     return dropDistance;
   }
 
@@ -254,7 +254,7 @@ export class TetrisBoard {
   /**
    * Locks current active piece into playfield matrix and checks line clears.
    */
-  public lockCurrentPiece(): number {
+  public lockCurrentPiece(autoClear: boolean = true): number {
     if (!this.activePiece) return 0;
 
     const matrix = TETROMINOES[this.activePiece.type].matrices[this.activePiece.rotation];
@@ -272,13 +272,34 @@ export class TetrisBoard {
       }
     }
 
-    const linesCleared = this.clearLines();
     this.activePiece = null;
 
+    if (autoClear) {
+      const linesCleared = this.clearLines();
+      if (!this.isGameOverState) {
+        this.spawnNextPiece();
+      }
+      return linesCleared;
+    }
+
+    return this.getFullLineIndices().length;
+  }
+
+  public getFullLineIndices(): number[] {
+    const fullRows: number[] = [];
+    for (let r = 0; r < TetrisBoard.ROWS; r++) {
+      if (this.grid[r].every((cell) => cell !== 0)) {
+        fullRows.push(r);
+      }
+    }
+    return fullRows;
+  }
+
+  public clearLinesAndSpawn(): number {
+    const linesCleared = this.clearLines();
     if (!this.isGameOverState) {
       this.spawnNextPiece();
     }
-
     return linesCleared;
   }
 

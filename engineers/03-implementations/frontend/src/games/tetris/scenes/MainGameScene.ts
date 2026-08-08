@@ -42,6 +42,7 @@ export class MainGameScene extends Phaser.Scene {
   private startTimeSeconds: number = 0;
   private isPaused: boolean = false;
   private isModernMode: boolean = true;
+  private isClearingLines: boolean = false;
 
   constructor() {
     super({ key: `${GAME_ID}:MainGameScene` });
@@ -152,7 +153,7 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    if (this.isPaused || this.board.isGameOver()) return;
+    if (this.isPaused || this.board.isGameOver() || this.isClearingLines) return;
 
     this.handleInput(delta);
     this.handleGravity(delta);
@@ -170,8 +171,20 @@ export class MainGameScene extends Phaser.Scene {
 
     // 1. Hard Drop (BUTTON_A)
     if (isJustPressed(ArcadeAction.BUTTON_A)) {
-      this.board.hardDrop();
-      this.onBoardMutation();
+      this.board.hardDrop(false);
+      const fullLines = this.board.getFullLineIndices();
+      if (fullLines.length > 0) {
+        this.isClearingLines = true;
+        this.renderState();
+        this.triggerLineClearAnimation(fullLines, () => {
+          this.board.clearLinesAndSpawn();
+          this.isClearingLines = false;
+          this.onBoardMutation();
+        });
+      } else {
+        this.board.clearLinesAndSpawn();
+        this.onBoardMutation();
+      }
       return;
     }
 
@@ -235,13 +248,30 @@ export class MainGameScene extends Phaser.Scene {
     if (downDown) {
       this.softDropTimer += delta;
       if (this.softDropTimer >= 50) {
+        this.softDropTimer = 0;
         if (this.board.softDrop()) {
           this.lockTimerAccumulator = 0;
         }
-        this.softDropTimer = 0;
       }
     } else {
       this.softDropTimer = 0;
+    }
+  }
+
+  private onPieceLock(): void {
+    this.board.lockCurrentPiece(false);
+    const fullLines = this.board.getFullLineIndices();
+    if (fullLines.length > 0) {
+      this.isClearingLines = true;
+      this.renderState();
+      this.triggerLineClearAnimation(fullLines, () => {
+        this.board.clearLinesAndSpawn();
+        this.isClearingLines = false;
+        this.onBoardMutation();
+      });
+    } else {
+      this.board.clearLinesAndSpawn();
+      this.onBoardMutation();
     }
   }
 
@@ -263,12 +293,51 @@ export class MainGameScene extends Phaser.Scene {
       this.lockTimerAccumulator += delta;
       if (this.lockTimerAccumulator >= this.LOCK_DELAY_MS) {
         this.lockTimerAccumulator = 0;
-        this.board.lockCurrentPiece();
-        this.onBoardMutation();
+        this.onPieceLock();
       }
     } else {
       this.lockTimerAccumulator = 0;
     }
+  }
+
+  private triggerLineClearAnimation(lines: number[], onComplete?: () => void): void {
+    if (lines.length === 0) {
+      if (onComplete) onComplete();
+      return;
+    }
+
+    const currentLevel = this.board.getScoreCalculator().getState().level;
+    // Classic Arcade/NES style: Flash speed scales with Level
+    // Level 1 = 80ms/blink, Level 15 = 35ms/blink
+    const blinkInterval = Math.max(35, 80 - (currentLevel - 1) * 3);
+    const totalBlinks = 3; // Flashes 3 times (On -> Off -> On -> Off -> On -> Off)
+
+    const flashGraphics = this.add.graphics();
+    let toggleCount = 0;
+
+    this.time.addEvent({
+      delay: blinkInterval,
+      repeat: totalBlinks * 2 - 1,
+      callback: () => {
+        flashGraphics.clear();
+        toggleCount++;
+        // Odd ticks: draw bright white highlight; Even ticks: clear (transparent)
+        if (toggleCount % 2 === 1) {
+          flashGraphics.fillStyle(0xffffff, 0.95);
+          lines.forEach((r) => {
+            const px = this.BOARD_OFFSET_X;
+            const py = this.BOARD_OFFSET_Y + r * this.TILE_SIZE;
+            flashGraphics.fillRect(px, py, TetrisBoard.COLS * this.TILE_SIZE, this.TILE_SIZE);
+          });
+        }
+      },
+    });
+
+    // Cleanup graphics object after all blinks complete
+    this.time.delayedCall(blinkInterval * totalBlinks * 2 + 20, () => {
+      flashGraphics.destroy();
+      if (onComplete) onComplete();
+    });
   }
 
   private onBoardMutation(): void {
