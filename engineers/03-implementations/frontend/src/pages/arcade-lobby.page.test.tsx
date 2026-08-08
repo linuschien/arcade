@@ -136,7 +136,7 @@ describe('ArcadeLobbyPage Unit Tests', () => {
   it('Pattern 2: renders leaderboard rows when store data is populated', async () => {
     const user = userEvent.setup();
     renderPage();
-    const showLeaderboardBtn = screen.getByRole('button', { name: /Show Top 10 Leaderboard/i });
+    const showLeaderboardBtn = screen.getByRole('button', { name: /Top 10 Leaderboard/i });
     await user.click(showLeaderboardBtn);
 
     expect(await screen.findByText('alice@example.com')).toBeInTheDocument();
