@@ -67,7 +67,7 @@
       "props": {
         "id": "crt-filter-switch",
         "name": "crt-filter-switch",
-        "label": "📺 CRT Retro Filter",
+        "label": { "$bindState": "/settings/crtLabel" },
         "checked": { "$bindState": "/settings/crtEnabled" },
         "checks": null,
         "validateOn": null
@@ -84,7 +84,7 @@
       "props": {
         "id": "master-mute-switch",
         "name": "master-mute-switch",
-        "label": "🔊 Mute Master Audio",
+        "label": { "$bindState": "/settings/muteLabel" },
         "checked": { "$bindState": "/settings/masterMuted" },
         "checks": null,
         "validateOn": null

@@ -22,6 +22,8 @@ const defaultStore = createStateStore({
   settings: {
     crtEnabled: localStorage.getItem('arcade_crt_enabled') === 'true',
     masterMuted: false,
+    crtLabel: localStorage.getItem('arcade_crt_enabled') === 'true' ? '📺 CRT: ON' : '📺 CRT: OFF',
+    muteLabel: '🔊 Audio: ON',
   },
   data: {
     listGameCards: [],
@@ -53,6 +55,14 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
     });
     return unsub;
   }, [store]);
+
+  const isCrtEnabled = store.get('/settings/crtEnabled');
+  const isMuted = store.get('/settings/masterMuted');
+
+  useEffect(() => {
+    store.set('/settings/crtLabel', isCrtEnabled ? '📺 CRT: ON' : '📺 CRT: OFF');
+    store.set('/settings/muteLabel', isMuted ? '🔇 Audio: OFF' : '🔊 Audio: ON');
+  }, [isCrtEnabled, isMuted, store]);
 
   // Queries
   const { data: whoamiData } = useWhoami();
@@ -224,7 +234,6 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
   };
 
   const handlers = propHandlers || defaultHandlers;
-  const isCrtEnabled = store.get('/settings/crtEnabled');
 
   return (
     <JSONUIProvider store={store} handlers={handlers} registry={componentRegistry}>

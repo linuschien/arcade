@@ -186,10 +186,10 @@ describe('ArcadeLobbyPage Unit Tests', () => {
     );
 
     // Toggle CRT & Mute
-    const crtSwitch = await screen.findByRole('switch', { name: /CRT Retro Filter/i });
+    const crtSwitch = await screen.findByRole('switch', { name: /CRT/i });
     await user.click(crtSwitch);
 
-    const muteSwitch = await screen.findByRole('switch', { name: /Mute Master Audio/i });
+    const muteSwitch = await screen.findByRole('switch', { name: /Audio/i });
     await user.click(muteSwitch);
 
     // Carousel buttons
