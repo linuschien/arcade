@@ -16,15 +16,18 @@ export interface ArcadeLobbyPageProps {
   handlers?: any;
 }
 
+const isCrtInitial = localStorage.getItem('arcade_crt_enabled') === 'true';
+const isAudioInitial = localStorage.getItem('arcade_audio_enabled') !== 'false';
+
 const defaultStore = createStateStore({
   user: { email: '', id: '' },
   wallet: { dailyFreeCredit: 0, adminBonusCredit: 0, totalCredits: 0, id: '' },
   settings: {
-    crtEnabled: localStorage.getItem('arcade_crt_enabled') === 'true',
-    masterMuted: false,
-    audioEnabled: true,
-    crtLabel: localStorage.getItem('arcade_crt_enabled') === 'true' ? '📺 CRT: ON' : '📺 CRT: OFF',
-    muteLabel: '🔊 Audio: ON',
+    crtEnabled: isCrtInitial,
+    masterMuted: !isAudioInitial,
+    audioEnabled: isAudioInitial,
+    crtLabel: isCrtInitial ? '📺 CRT: ON' : '📺 CRT: OFF',
+    muteLabel: isAudioInitial ? '🔊 Audio: ON' : '🔇 Audio: OFF',
   },
   data: {
     listGameCards: [],
@@ -64,6 +67,12 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
     store.set('/settings/crtLabel', isCrtEnabled ? '📺 CRT: ON' : '📺 CRT: OFF');
     store.set('/settings/muteLabel', isAudioEnabled ? '🔊 Audio: ON' : '🔇 Audio: OFF');
     store.set('/settings/masterMuted', !isAudioEnabled);
+    if (isCrtEnabled !== undefined) {
+      localStorage.setItem('arcade_crt_enabled', String(!!isCrtEnabled));
+    }
+    if (isAudioEnabled !== undefined) {
+      localStorage.setItem('arcade_audio_enabled', String(!!isAudioEnabled));
+    }
   }, [isCrtEnabled, isAudioEnabled, store]);
 
   // Queries
