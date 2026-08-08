@@ -151,7 +151,7 @@ describe('ArcadeLobbyPage Unit Tests', () => {
     );
     expect(store.get('/modals/admin-grant-credit-modal')).toBe(true);
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
-    expect(await screen.findByText('Grant Admin Bonus Credit')).toBeInTheDocument();
+    expect(await screen.findByText(/Grant Admin Bonus Credit/i)).toBeInTheDocument();
   });
 
   it('Pattern 3: triggers executeBehavior on DeductCredit START button press', async () => {
@@ -225,7 +225,7 @@ describe('ArcadeLobbyPage Unit Tests', () => {
       </QueryClientProvider>
     );
 
-    const submitBtn = await screen.findByRole('button', { name: /Grant Bonus Credits/i });
+    const submitBtn = await screen.findByRole('button', { name: /Issue Bonus Credits|Grant Bonus Credits/i });
     await user.click(submitBtn);
     expect(screen.getByText(/Amount must be at least 1 credit/i)).toBeInTheDocument();
   });
@@ -249,7 +249,7 @@ describe('ArcadeLobbyPage Unit Tests', () => {
       </QueryClientProvider>
     );
 
-    const submitBtn = await screen.findByRole('button', { name: /Grant Bonus Credits/i });
+    const submitBtn = await screen.findByRole('button', { name: /Issue Bonus Credits|Grant Bonus Credits/i });
     await user.click(submitBtn);
     await waitFor(() => {
       expect(screen.getByText(/Bonus credits granted successfully!/i)).toBeInTheDocument();
@@ -284,7 +284,7 @@ describe('ArcadeLobbyPage Unit Tests', () => {
       </QueryClientProvider>
     );
 
-    const submitBtn = await screen.findByRole('button', { name: /Grant Bonus Credits/i });
+    const submitBtn = await screen.findByRole('button', { name: /Issue Bonus Credits|Grant Bonus Credits/i });
     await user.click(submitBtn);
 
     await waitFor(() => {

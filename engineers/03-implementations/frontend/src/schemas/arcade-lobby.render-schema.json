@@ -322,8 +322,8 @@
       "type": "Dialog",
       "props": {
         "id": "admin-grant-credit-modal",
-        "title": "Grant Admin Bonus Credit",
-        "description": null,
+        "title": "✨ Grant Admin Bonus Credits",
+        "description": "Specify the number of bonus credits to issue to this player account.",
         "openPath": "/modals/admin-grant-credit-modal"
       },
       "children": ["grant-form-section"]
@@ -332,7 +332,7 @@
       "type": "div",
       "props": {
         "id": "grant-form-section",
-        "className": "space-y-4"
+        "className": "space-y-4 pt-2"
       },
       "children": ["bonus-credit-amount-field", "grant-credit-submit-trigger"]
     },
@@ -340,10 +340,10 @@
       "type": "Input",
       "props": {
         "id": "bonus-credit-amount-field",
-        "label": "Credit Amount",
+        "label": "Credit Amount (Coins)",
         "name": "bonus-credit-amount-field",
         "type": "number",
-        "placeholder": "Enter bonus credit amount (e.g. 10)",
+        "placeholder": "e.g. 5",
         "value": { "$bindState": "/form/bonus-credit-amount-field" },
         "checks": null,
         "validateOn": null
@@ -354,7 +354,7 @@
       "type": "Button",
       "props": {
         "id": "grant-credit-submit-trigger",
-        "label": "Grant Bonus Credits",
+        "label": "🎁 Issue Bonus Credits",
         "variant": "primary",
         "disabled": null
       },
