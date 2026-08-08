@@ -270,7 +270,7 @@
       "type": "Button",
       "props": {
         "id": "return-to-lobby-trigger",
-        "label": "🚪 Exit to Lobby",
+        "label": "🏛️ Exit to Lobby",
         "variant": "secondary",
         "disabled": null
       },
@@ -319,7 +319,7 @@
       "type": "Button",
       "props": {
         "id": "quit-to-lobby-trigger",
-        "label": "🚪 Quit to Lobby",
+        "label": "🏛️ Quit to Lobby",
         "variant": "secondary",
         "disabled": null
       },
