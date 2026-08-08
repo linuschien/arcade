@@ -36,10 +36,12 @@ export class MainGameScene extends Phaser.Scene {
   private scoreText!: Phaser.GameObjects.Text;
   private levelText!: Phaser.GameObjects.Text;
   private linesText!: Phaser.GameObjects.Text;
+  private modeText!: Phaser.GameObjects.Text;
   private gameOverText!: Phaser.GameObjects.Text;
 
   private startTimeSeconds: number = 0;
   private isPaused: boolean = false;
+  private isModernMode: boolean = true;
 
   constructor() {
     super({ key: `${GAME_ID}:MainGameScene` });
@@ -97,6 +99,14 @@ export class MainGameScene extends Phaser.Scene {
     this.add.text(nextX + 45, nextY + 10, 'NEXT', {
       fontSize: '18px',
       color: '#94a3b8',
+      fontStyle: 'bold',
+    });
+
+    // Mode Text Indicator (Left Side below Hold)
+    this.add.text(40, 200, 'MODE (Press M)', { fontSize: '12px', color: '#64748b' });
+    this.modeText = this.add.text(40, 218, 'MODERN', {
+      fontSize: '16px',
+      color: '#a855f7',
       fontStyle: 'bold',
     });
 
@@ -177,6 +187,17 @@ export class MainGameScene extends Phaser.Scene {
       if (this.board.hold()) {
         this.lockTimerAccumulator = 0;
       }
+    }
+
+    // 4. Mode Switch (BUTTON_D or Key M)
+    if (isJustPressed(ArcadeAction.BUTTON_D)) {
+      this.isModernMode = !this.isModernMode;
+      const newConfig = this.isModernMode
+        ? { enableHold: true, enableGhost: true, nextPreviewCount: 3 }
+        : { enableHold: false, enableGhost: false, nextPreviewCount: 1 };
+      this.board.reset(newConfig);
+      this.modeText.setText(this.isModernMode ? 'MODERN' : 'CLASSIC 1989');
+      this.lockTimerAccumulator = 0;
     }
 
     // 4. Horizontal Movement (LEFT / RIGHT) with DAS / ARR

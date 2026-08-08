@@ -62,6 +62,10 @@ class InputServiceImpl {
     c: ArcadeAction.BUTTON_C,
     ShiftLeft: ArcadeAction.BUTTON_C,
     ShiftRight: ArcadeAction.BUTTON_C,
+
+    // Mode Switch (M / BUTTON_D)
+    KeyM: ArcadeAction.BUTTON_D,
+    m: ArcadeAction.BUTTON_D,
   };
 
   constructor() {
