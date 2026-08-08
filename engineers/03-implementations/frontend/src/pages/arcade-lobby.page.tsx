@@ -42,6 +42,15 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
   const store = propStore || defaultStore;
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Subscribe to store updates to re-render when store state changes (CRT, Mute, Modals)
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const unsub = store.subscribe(() => {
+      setTick((t) => t + 1);
+    });
+    return unsub;
+  }, [store]);
+
   // Queries
   const { data: whoamiData } = useWhoami();
   const { data: gameCardsData } = useListGameCards();
@@ -108,15 +117,12 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
       switch (ref) {
         case 'ToggleCRT': {
           const current = store.get('/settings/crtEnabled');
-          const next = !current;
-          store.set('/settings/crtEnabled', next);
-          localStorage.setItem('arcade_crt_enabled', String(next));
+          localStorage.setItem('arcade_crt_enabled', String(current));
           break;
         }
 
         case 'ToggleMute': {
-          const current = store.get('/settings/masterMuted');
-          store.set('/settings/masterMuted', !current);
+          // Store state already updated by Switch setChecked binding
           break;
         }
 

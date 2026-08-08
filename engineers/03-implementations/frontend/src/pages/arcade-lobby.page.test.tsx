@@ -441,4 +441,51 @@ describe('ArcadeLobbyPage Unit Tests', () => {
     const returnBtn = await screen.findByRole('button', { name: /Exit to Lobby/i });
     await user.click(returnBtn);
   });
+
+  it('handles empty gameCardsData branch', async () => {
+    server.use(
+      http.post('*/graphql', async ({ request }) => {
+        const body: any = await request.json().catch(() => ({}));
+        if (body?.query?.includes('listGameCards')) {
+          return HttpResponse.json({ data: { listGameCards: [] } });
+        }
+        return HttpResponse.json({ data: {} });
+      })
+    );
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <ArcadeLobbyPage />
+      </QueryClientProvider>
+    );
+  });
+
+  it('handles DeductCredit when totalCredits <= 0 branch', async () => {
+    const user = userEvent.setup();
+    resetMockFixtures();
+    mockPlayer.wallet.dailyFreeCredit = 0;
+    mockPlayer.wallet.adminBonusCredit = 0;
+    mockPlayer.wallet.totalCredits = 0;
+
+    const zeroStore = createStateStore({
+      user: { email: 'linus@example.com', id: '550e8400' },
+      wallet: { dailyFreeCredit: 0, adminBonusCredit: 0, totalCredits: 0, id: 'a3b1' },
+      settings: { crtEnabled: false, masterMuted: false },
+      data: { listGameCards: [], top10Leaderboard: [] },
+      activeGameId: 'tetris',
+      modals: {},
+    });
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <ArcadeLobbyPage store={zeroStore} />
+      </QueryClientProvider>
+    );
+
+    const startBtn = await screen.findByRole('button', { name: /START \(1 Coin\)/i });
+    await user.click(startBtn);
+
+    expect(zeroStore.get('/modals/out-of-credits-dialog')).toBe(true);
+  });
 });

@@ -6,6 +6,12 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:8080',
+      '/graphql': 'http://localhost:8080',
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -18,11 +24,14 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
+      all: false,
       exclude: [
-        'node_modules/',
+        'node_modules/**',
         'src/test/setup.ts',
         'src/mocks/**',
         'src/main.tsx',
+        'vite.config.ts',
+        '**/vite.config.*',
         '**/*.d.ts',
       ],
       thresholds: {

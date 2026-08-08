@@ -2,7 +2,7 @@ import { http, HttpResponse } from 'msw';
 import { mockLeaderboardEntries, mockGameCards, mockPlayer } from '../fixtures';
 
 export const leaderboardHandlers = [
-  http.post('http://localhost/graphql', async ({ request }) => {
+  http.post('*/graphql', async ({ request }) => {
     const body: any = await request.json().catch(() => ({}));
     const query = body?.query || '';
 

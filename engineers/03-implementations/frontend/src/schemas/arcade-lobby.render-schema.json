@@ -67,7 +67,7 @@
       "props": {
         "id": "crt-filter-switch",
         "name": "crt-filter-switch",
-        "label": "CRT Retro Filter",
+        "label": "📺 CRT Retro Filter",
         "checked": { "$bindState": "/settings/crtEnabled" },
         "checks": null,
         "validateOn": null
@@ -84,7 +84,7 @@
       "props": {
         "id": "master-mute-switch",
         "name": "master-mute-switch",
-        "label": "Mute Master Audio",
+        "label": "🔊 Mute Master Audio",
         "checked": { "$bindState": "/settings/masterMuted" },
         "checks": null,
         "validateOn": null
@@ -100,7 +100,7 @@
       "type": "Button",
       "props": {
         "id": "open-admin-grant-trigger",
-        "label": "Grant Bonus Credits",
+        "label": "✨ Grant Bonus Credits",
         "variant": "secondary",
         "disabled": null
       },
