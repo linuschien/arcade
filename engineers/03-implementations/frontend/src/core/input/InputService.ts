@@ -1,6 +1,7 @@
 /**
  * InputService.ts
  * Unified Input Abstraction for Arcade Cabinets, Gamepads, Keyboards, and Touch D-Pads.
+ * Automatically binds DOM Keyboard listeners for standard WASD / Arrow keys.
  */
 
 export enum PlayerIndex {
@@ -28,6 +29,66 @@ export interface InputVector {
 
 class InputServiceImpl {
   private actionState: Map<string, boolean> = new Map();
+  private isListening: boolean = false;
+
+  private readonly keyMap: Record<string, ArcadeAction> = {
+    // Directional Movement
+    ArrowLeft: ArcadeAction.LEFT,
+    KeyA: ArcadeAction.LEFT,
+    a: ArcadeAction.LEFT,
+
+    ArrowRight: ArcadeAction.RIGHT,
+    KeyD: ArcadeAction.RIGHT,
+    d: ArcadeAction.RIGHT,
+
+    ArrowDown: ArcadeAction.DOWN,
+    KeyS: ArcadeAction.DOWN,
+    s: ArcadeAction.DOWN,
+
+    // Rotation (Up / W / X)
+    ArrowUp: ArcadeAction.UP,
+    KeyW: ArcadeAction.UP,
+    w: ArcadeAction.UP,
+    KeyX: ArcadeAction.BUTTON_B,
+    x: ArcadeAction.BUTTON_B,
+
+    // Hard Drop (Space / J)
+    Space: ArcadeAction.BUTTON_A,
+    ' ': ArcadeAction.BUTTON_A,
+    KeyJ: ArcadeAction.BUTTON_A,
+
+    // Hold Piece (C / Shift)
+    KeyC: ArcadeAction.BUTTON_C,
+    c: ArcadeAction.BUTTON_C,
+    ShiftLeft: ArcadeAction.BUTTON_C,
+    ShiftRight: ArcadeAction.BUTTON_C,
+  };
+
+  constructor() {
+    this.setupKeyboardListeners();
+  }
+
+  private setupKeyboardListeners(): void {
+    if (typeof window === 'undefined' || this.isListening) return;
+    this.isListening = true;
+
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      const action = this.keyMap[e.code] || this.keyMap[e.key];
+      if (action) {
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', ' '].includes(e.code) || ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+          e.preventDefault();
+        }
+        this.setActionState(PlayerIndex.P1, action, true);
+      }
+    });
+
+    window.addEventListener('keyup', (e: KeyboardEvent) => {
+      const action = this.keyMap[e.code] || this.keyMap[e.key];
+      if (action) {
+        this.setActionState(PlayerIndex.P1, action, false);
+      }
+    });
+  }
 
   private getKey(player: PlayerIndex, action: ArcadeAction): string {
     return `${player}:${action}`;
