@@ -128,7 +128,7 @@ export default function GameCardCarousel({
           </div>
 
           {leaderboardRows && leaderboardRows.length > 0 ? (
-            <div className="overflow-x-auto max-h-56 overflow-y-auto custom-scrollbar">
+            <div className="w-full">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-800 text-slate-400">
@@ -140,9 +140,9 @@ export default function GameCardCarousel({
                 <tbody className="divide-y divide-slate-800/50">
                   {leaderboardRows.map((row: any, idx: number) => (
                     <tr key={idx} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-1.5 font-bold text-amber-400">#{row[0] || idx + 1}</td>
-                      <td className="py-1.5 text-slate-200 truncate max-w-[130px]">{row[1]}</td>
-                      <td className="py-1.5 text-right font-mono text-emerald-400 font-bold">{row[2]}</td>
+                      <td className="py-1 font-bold text-amber-400">#{row[0] || idx + 1}</td>
+                      <td className="py-1 text-slate-200 truncate max-w-[130px]">{row[1]}</td>
+                      <td className="py-1 text-right font-mono text-emerald-400 font-bold">{row[2]}</td>
                     </tr>
                   ))}
                 </tbody>
