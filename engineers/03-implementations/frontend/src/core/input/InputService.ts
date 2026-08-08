@@ -1,7 +1,7 @@
 /**
  * InputService.ts
  * Unified Input Abstraction for Arcade Cabinets, Gamepads, Keyboards, and Touch D-Pads.
- * Automatically binds DOM Keyboard listeners for standard WASD / Arrow keys.
+ * Binds DOM Keyboard listeners AND HTML5 Gamepad API polling for Bluetooth/USB controllers.
  */
 
 export enum PlayerIndex {
@@ -30,6 +30,7 @@ export interface InputVector {
 class InputServiceImpl {
   private actionState: Map<string, boolean> = new Map();
   private isListening: boolean = false;
+  private isGamepadPollingStarted: boolean = false;
 
   private readonly keyMap: Record<string, ArcadeAction> = {
     // Joystick / D-Pad Directions
@@ -71,6 +72,7 @@ class InputServiceImpl {
 
   constructor() {
     this.setupKeyboardListeners();
+    this.startGamepadPolling();
   }
 
   private setupKeyboardListeners(): void {
@@ -93,6 +95,72 @@ class InputServiceImpl {
         this.setActionState(PlayerIndex.P1, action, false);
       }
     });
+  }
+
+  /**
+   * HTML5 Gamepad API polling loop for Bluetooth & USB controllers.
+   */
+  private startGamepadPolling(): void {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined' || this.isGamepadPollingStarted) return;
+    this.isGamepadPollingStarted = true;
+
+    const pollGamepad = () => {
+      try {
+        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+        const gp = gamepads[0] || gamepads[1]; // Active controller
+
+        if (gp && gp.connected) {
+          // Standard Gamepad Layout D-Pad Buttons
+          const dUp = gp.buttons[12]?.pressed ?? false;
+          const dDown = gp.buttons[13]?.pressed ?? false;
+          const dLeft = gp.buttons[14]?.pressed ?? false;
+          const dRight = gp.buttons[15]?.pressed ?? false;
+
+          // Analog Stick Axes (Left Stick Deadzone 0.4)
+          const axisX = gp.axes[0] || 0;
+          const axisY = gp.axes[1] || 0;
+          const stickLeft = axisX < -0.4;
+          const stickRight = axisX > 0.4;
+          const stickUp = axisY < -0.4;
+          const stickDown = axisY > 0.4;
+
+          this.setActionState(PlayerIndex.P1, ArcadeAction.LEFT, dLeft || stickLeft);
+          this.setActionState(PlayerIndex.P1, ArcadeAction.RIGHT, dRight || stickRight);
+          this.setActionState(PlayerIndex.P1, ArcadeAction.UP, dUp || stickUp);
+          this.setActionState(PlayerIndex.P1, ArcadeAction.DOWN, dDown || stickDown);
+
+          // Standard Action Buttons
+          // Button 0 (A / Cross) -> BUTTON_A
+          // Button 1 (B / Circle) -> BUTTON_B
+          // Button 2 (X / Square) -> BUTTON_C
+          // Button 3 (Y / Triangle) -> BUTTON_D
+          // Button 4 (L1 / LB) -> BUTTON_C
+          // Button 5 (R1 / RB) -> BUTTON_B
+          // Button 9 (Start / Options) -> START
+          const btnA = gp.buttons[0]?.pressed ?? false;
+          const btnB = gp.buttons[1]?.pressed ?? false;
+          const btnX = gp.buttons[2]?.pressed ?? false;
+          const btnY = gp.buttons[3]?.pressed ?? false;
+          const btnLB = gp.buttons[4]?.pressed ?? false;
+          const btnRB = gp.buttons[5]?.pressed ?? false;
+          const btnStart = gp.buttons[9]?.pressed ?? false;
+
+          this.setActionState(PlayerIndex.P1, ArcadeAction.BUTTON_A, btnA);
+          this.setActionState(PlayerIndex.P1, ArcadeAction.BUTTON_B, btnB || btnRB);
+          this.setActionState(PlayerIndex.P1, ArcadeAction.BUTTON_C, btnX || btnLB);
+          this.setActionState(PlayerIndex.P1, ArcadeAction.BUTTON_D, btnY);
+          if (btnStart) {
+            this.setActionState(PlayerIndex.P1, ArcadeAction.START, true);
+          }
+        }
+      } catch (err) {
+        // Ignore gamepad poll errors in non-standard environments
+      }
+
+      requestAnimationFrame(pollGamepad);
+    };
+
+    requestAnimationFrame(pollGamepad);
   }
 
   private getKey(player: PlayerIndex, action: ArcadeAction): string {
