@@ -3,6 +3,7 @@
 export const mockPlayer: any = {
   id: '550e8400-e29b-41d4-a716-446655440000',
   gcpIapEmail: 'linus@example.com',
+  isAdmin: true,
   createdAt: '2026-08-06T12:00:00Z',
   wallet: {
     id: 'a3b1c2d3-e4f5-6789-abcd-ef0123456789',

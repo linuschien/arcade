@@ -98,6 +98,7 @@
     },
     "open-admin-grant-trigger": {
       "type": "Button",
+      "visible": { "$state": "/user/isAdmin" },
       "props": {
         "id": "open-admin-grant-trigger",
         "label": "✨ Grant Bonus Credits",

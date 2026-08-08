@@ -17,6 +17,7 @@ export interface UserWalletResponse {
 export interface PlayerResponse {
   id: string;
   gcpIapEmail: string;
+  isAdmin?: boolean;
   createdAt: string;
   wallet?: UserWalletResponse;
 }

@@ -154,6 +154,19 @@ describe('ArcadeLobbyPage Unit Tests', () => {
     expect(await screen.findByText(/Grant Admin Bonus Credit/i)).toBeInTheDocument();
   });
 
+  it('hides admin grant button when player is not admin', async () => {
+    server.use(
+      http.post(/\/api\/v1\/players:whoami/, () => {
+        return HttpResponse.json({ ...mockPlayer, isAdmin: false });
+      })
+    );
+
+    renderPage();
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /Grant Bonus Credits/i })).not.toBeInTheDocument();
+    });
+  });
+
   it('Pattern 3: triggers executeBehavior on DeductCredit START button press', async () => {
     const user = userEvent.setup();
     renderPage();

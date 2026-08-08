@@ -20,7 +20,7 @@ const isCrtInitial = localStorage.getItem('arcade_crt_enabled') === 'true';
 const isAudioInitial = localStorage.getItem('arcade_audio_enabled') !== 'false';
 
 const defaultStore = createStateStore({
-  user: { email: '', id: '' },
+  user: { email: '', id: '', isAdmin: false },
   wallet: { dailyFreeCredit: 0, adminBonusCredit: 0, totalCredits: 0, id: '' },
   settings: {
     crtEnabled: isCrtInitial,
@@ -91,6 +91,7 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
     if (whoamiData) {
       store.set('/user/email', whoamiData.gcpIapEmail);
       store.set('/user/id', whoamiData.id);
+      store.set('/user/isAdmin', whoamiData.isAdmin ?? false);
       if (whoamiData.wallet) {
         store.set('/wallet/dailyFreeCredit', whoamiData.wallet.dailyFreeCredit);
         store.set('/wallet/adminBonusCredit', whoamiData.wallet.adminBonusCredit);
