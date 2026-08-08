@@ -8,6 +8,7 @@ import { useListGameCards } from '@/hooks/use-listGameCards';
 import { useGetTop10Leaderboard } from '@/hooks/use-getTop10Leaderboard';
 import { useDeductCredit } from '@/hooks/use-deductCredit';
 import { useGrantAdminCredit } from '@/hooks/use-grantAdminCredit';
+import { useSubmitHighScore } from '@/hooks/use-submitHighScore';
 import { ArcadeBridge, IArcadeGame } from '@/core/bridge/ArcadeBridge';
 import { createTetrisGame } from '@/games/tetris';
 
@@ -64,16 +65,28 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
   const isCrtEnabled = store.get('/settings/crtEnabled');
   const isAudioEnabled = store.get('/settings/audioEnabled') ?? !store.get('/settings/masterMuted');
   const isPlaying = store.get('/game/isPlaying') ?? false;
+  const isPauseModalOpen = store.get('/modals/game-pause-modal') ?? false;
 
   const activeGameInstanceRef = useRef<IArcadeGame | null>(null);
 
+  // Queries & Mutations
+  const { data: whoamiData } = useWhoami();
+  const { data: gameCardsData } = useListGameCards();
+  const [activeGameId, setActiveGameId] = useState<string>('tetris');
+  const { data: leaderboardData } = useGetTop10Leaderboard(activeGameId);
+
+  const deductCreditMutation = useDeductCredit();
+  const grantAdminCreditMutation = useGrantAdminCredit();
+  const submitHighScoreMutation = useSubmitHighScore();
+
+  // Mount/Unmount Game Instance
   useEffect(() => {
     store.set('/game/isLobbyVisible', !isPlaying);
 
     if (isPlaying) {
-      const activeGameId = store.get('/activeGameId') || 'tetris';
+      const targetGameId = store.get('/activeGameId') || 'tetris';
       const timer = setTimeout(() => {
-        if (activeGameId === 'tetris' && !activeGameInstanceRef.current) {
+        if (targetGameId === 'tetris' && !activeGameInstanceRef.current) {
           const container = document.getElementById('phaser-game-canvas-container');
           if (container) {
             activeGameInstanceRef.current = createTetrisGame(container);
@@ -92,10 +105,62 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
     }
   }, [isPlaying, store]);
 
+  // Sync Pause Modal state with Game Loop
   useEffect(() => {
-    const unsubGameOver = ArcadeBridge.on('GAME_OVER', (summary: any) => {
+    if (isPlaying) {
+      if (isPauseModalOpen) {
+        ArcadeBridge.emit('PAUSE_REQUESTED');
+      } else {
+        ArcadeBridge.emit('RESUME_REQUESTED');
+      }
+    }
+  }, [isPauseModalOpen, isPlaying]);
+
+  // Auto-pause when tab/window loses focus
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const triggerAutoPause = () => {
+      if (store.get('/game/isPlaying') && !store.get('/modals/game-pause-modal')) {
+        ArcadeBridge.emit('PAUSE_REQUESTED');
+        store.set('/modals/game-pause-modal', true);
+      }
+    };
+
+    const handleBlur = () => triggerAutoPause();
+    const handleVisibilityChange = () => {
+      if (document.hidden) triggerAutoPause();
+    };
+
+    window.addEventListener('blur', handleBlur);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('blur', handleBlur);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isPlaying, store]);
+
+  // Game Over handling & Score Submission
+  useEffect(() => {
+    const unsubGameOver = ArcadeBridge.on('GAME_OVER', async (summary: any) => {
       const score = summary?.score ?? 0;
-      showToast(`🏆 Game Over! Final Score: ${score}`);
+      const playerEmail = store.get('/user/email') || whoamiData?.gcpIapEmail || 'guest@arcade-stadium.local';
+      const currentActiveId = store.get('/activeGameId') || activeGameId;
+      const games = store.get('/data/listGameCards') || gameCardsData || [];
+      const activeGameObj = games.find((g: any) => g.gameId === currentActiveId);
+      const gameCardId = activeGameObj?.id || '98765432-10fe-dcba-9876-543210fedcba';
+
+      showToast(`🏆 Game Over! Submitting score: ${score}...`);
+
+      try {
+        await submitHighScoreMutation.mutateAsync({ gameCardId, playerEmail, score });
+        showToast(`🏆 Game Over! Final Score ${score} submitted to Leaderboard!`);
+      } catch (err: any) {
+        console.warn('Score submission warning:', err);
+        showToast(`🏆 Game Over! Final Score: ${score}`);
+      }
+
       setTimeout(() => {
         if (activeGameInstanceRef.current) {
           activeGameInstanceRef.current.destroyGame();
@@ -105,8 +170,9 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
         store.set('/game/isLobbyVisible', true);
       }, 3000);
     });
+
     return unsubGameOver;
-  }, [store]);
+  }, [store, whoamiData, gameCardsData, activeGameId, submitHighScoreMutation]);
 
   useEffect(() => {
     store.set('/settings/crtLabel', isCrtEnabled ? '📺 CRT: ON' : '📺 CRT: OFF');
@@ -119,17 +185,6 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
       localStorage.setItem('arcade_audio_enabled', String(!!isAudioEnabled));
     }
   }, [isCrtEnabled, isAudioEnabled, store]);
-
-  // Queries
-  const { data: whoamiData } = useWhoami();
-  const { data: gameCardsData } = useListGameCards();
-  
-  const [activeGameId, setActiveGameId] = useState<string>('tetris');
-  const { data: leaderboardData } = useGetTop10Leaderboard(activeGameId);
-
-  // Mutations
-  const deductCreditMutation = useDeductCredit();
-  const grantAdminCreditMutation = useGrantAdminCredit();
 
   // Sync state to store on API responses
   useEffect(() => {
