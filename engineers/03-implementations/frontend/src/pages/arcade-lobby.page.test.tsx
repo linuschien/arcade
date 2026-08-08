@@ -128,13 +128,17 @@ describe('ArcadeLobbyPage Unit Tests', () => {
   it('Pattern 1: renders lobby headings and primary controls', async () => {
     renderPage();
     expect(await screen.findByText('Select Arcade Game')).toBeInTheDocument();
-    expect(await screen.findByText('Top 10 Leaderboard')).toBeInTheDocument();
+    expect(await screen.findByText(/Top 10 Leaderboard/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /START/i })).toBeInTheDocument();
   });
 
   // Pattern 2 — Query (store-based data)
   it('Pattern 2: renders leaderboard rows when store data is populated', async () => {
+    const user = userEvent.setup();
     renderPage();
+    const showLeaderboardBtn = screen.getByRole('button', { name: /Show Top 10 Leaderboard/i });
+    await user.click(showLeaderboardBtn);
+
     expect(await screen.findByText('alice@example.com')).toBeInTheDocument();
     expect(await screen.findByText('98500')).toBeInTheDocument();
   });

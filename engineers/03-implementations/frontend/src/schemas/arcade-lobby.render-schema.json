@@ -10,7 +10,6 @@
       "children": [
         "lobby-header-bar",
         "game-carousel-section",
-        "leaderboard-section",
         "phaser-game-container",
         "game-pause-modal",
         "admin-grant-credit-modal",
