@@ -32,7 +32,7 @@ class InputServiceImpl {
   private isListening: boolean = false;
 
   private readonly keyMap: Record<string, ArcadeAction> = {
-    // Directional Movement
+    // Joystick / D-Pad Directions
     ArrowLeft: ArcadeAction.LEFT,
     KeyA: ArcadeAction.LEFT,
     a: ArcadeAction.LEFT,
@@ -45,25 +45,26 @@ class InputServiceImpl {
     KeyS: ArcadeAction.DOWN,
     s: ArcadeAction.DOWN,
 
-    // Rotation (Up / W / X)
     ArrowUp: ArcadeAction.UP,
     KeyW: ArcadeAction.UP,
     w: ArcadeAction.UP,
-    KeyX: ArcadeAction.BUTTON_B,
-    x: ArcadeAction.BUTTON_B,
 
-    // Hard Drop (Space / J)
+    // Primary Action Button (Button A)
     Space: ArcadeAction.BUTTON_A,
     ' ': ArcadeAction.BUTTON_A,
     KeyJ: ArcadeAction.BUTTON_A,
 
-    // Hold Piece (C / Shift)
+    // Secondary Action Button (Button B)
+    KeyX: ArcadeAction.BUTTON_B,
+    x: ArcadeAction.BUTTON_B,
+
+    // Tertiary Utility Button (Button C)
     KeyC: ArcadeAction.BUTTON_C,
     c: ArcadeAction.BUTTON_C,
     ShiftLeft: ArcadeAction.BUTTON_C,
     ShiftRight: ArcadeAction.BUTTON_C,
 
-    // Mode Switch (M / BUTTON_D)
+    // Mode / Auxiliary Button (Button D)
     KeyM: ArcadeAction.BUTTON_D,
     m: ArcadeAction.BUTTON_D,
   };

@@ -10,7 +10,7 @@ import { useDeductCredit } from '@/hooks/use-deductCredit';
 import { useGrantAdminCredit } from '@/hooks/use-grantAdminCredit';
 import { useSubmitHighScore } from '@/hooks/use-submitHighScore';
 import { ArcadeBridge, IArcadeGame } from '@/core/bridge/ArcadeBridge';
-import { createTetrisGame } from '@/games/tetris';
+import { createGameInstance } from '@/games';
 
 export interface ArcadeLobbyPageProps {
   store?: any;
@@ -86,10 +86,13 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
     if (isPlaying) {
       const targetGameId = store.get('/activeGameId') || 'tetris';
       const timer = setTimeout(() => {
-        if (targetGameId === 'tetris' && !activeGameInstanceRef.current) {
+        if (!activeGameInstanceRef.current) {
           const container = document.getElementById('phaser-game-canvas-container');
           if (container) {
-            activeGameInstanceRef.current = createTetrisGame(container);
+            const game = createGameInstance(targetGameId, container);
+            if (game) {
+              activeGameInstanceRef.current = game;
+            }
           }
         }
       }, 50);
