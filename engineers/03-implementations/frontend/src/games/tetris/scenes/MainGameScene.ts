@@ -27,7 +27,7 @@ export class MainGameScene extends Phaser.Scene {
 
   // Visual offsets & dimensions
   private readonly TILE_SIZE: number = 32;
-  private readonly BOARD_OFFSET_X: number = 220;
+  private readonly BOARD_OFFSET_X: number = 240;
   private readonly BOARD_OFFSET_Y: number = 40;
 
   // Graphics and text UI elements
@@ -84,7 +84,7 @@ export class MainGameScene extends Phaser.Scene {
     );
 
     // 2. Draw Hold Box (Left Side)
-    const holdX = 40;
+    const holdX = 60;
     const holdY = 40;
     this.gridGraphics.strokeRect(holdX, holdY, 140, 140);
     this.add.text(holdX + 45, holdY + 10, 'HOLD', {
@@ -94,7 +94,7 @@ export class MainGameScene extends Phaser.Scene {
     });
 
     // 3. Draw NEXT Preview Box (Right Side)
-    const nextX = 580;
+    const nextX = 600;
     const nextY = 40;
     this.gridGraphics.strokeRect(nextX, nextY, 140, 340);
     this.add.text(nextX + 45, nextY + 10, 'NEXT', {
@@ -104,15 +104,15 @@ export class MainGameScene extends Phaser.Scene {
     });
 
     // Mode Text Indicator (Left Side below Hold)
-    this.add.text(40, 200, 'MODE (Press M)', { fontSize: '12px', color: '#64748b' });
-    this.modeText = this.add.text(40, 218, 'MODERN', {
+    this.add.text(60, 200, 'MODE (Press M)', { fontSize: '12px', color: '#64748b' });
+    this.modeText = this.add.text(60, 218, 'MODERN', {
       fontSize: '16px',
       color: '#a855f7',
       fontStyle: 'bold',
     });
 
     // 4. Score, Level, Lines HUD (Right Side below NEXT)
-    const hudX = 580;
+    const hudX = 600;
     const hudY = 400;
 
     this.add.text(hudX, hudY, 'SCORE', { fontSize: '14px', color: '#64748b' });
@@ -418,13 +418,13 @@ export class MainGameScene extends Phaser.Scene {
     // 4. Draw Hold Piece Preview
     const holdPiece = this.board.getHoldPiece();
     if (holdPiece) {
-      this.drawMiniPiece(holdPiece, 60, 80);
+      this.drawMiniPiece(holdPiece, 80, 80);
     }
 
     // 5. Draw NEXT Queue Preview
     const nextQueue = this.board.getNextQueue();
     nextQueue.forEach((type, idx) => {
-      this.drawMiniPiece(type, 600, 80 + idx * 90);
+      this.drawMiniPiece(type, 620, 80 + idx * 90);
     });
   }
 
