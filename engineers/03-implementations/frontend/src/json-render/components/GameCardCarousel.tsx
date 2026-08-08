@@ -58,17 +58,17 @@ export default function GameCardCarousel({
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col md:flex-row gap-6 items-center shadow-xl">
-      <div className="w-full md:w-1/2 aspect-video bg-slate-800 rounded-lg overflow-hidden relative flex items-center justify-center border border-slate-700">
+      <div className="w-full md:w-1/2 aspect-video bg-slate-950 rounded-lg overflow-hidden relative flex items-center justify-center border border-slate-800 shadow-md">
         {activeGame?.coverArtUrl ? (
           <img
             src={activeGame.coverArtUrl}
             alt={activeGame.title || 'Game Cover'}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover rounded-lg"
           />
         ) : (
           <div className="text-slate-500 font-mono text-sm">NO COVER ART</div>
         )}
-        <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-amber-400 text-xs px-2.5 py-1 rounded-full font-semibold border border-amber-500/30">
+        <div className="absolute bottom-2 right-2 z-20 bg-black/80 backdrop-blur-md text-amber-400 text-xs px-2.5 py-1 rounded-full font-semibold border border-amber-500/30 shadow-lg">
           🎮 Plays: {activeGame?.totalPlayCount ?? 0}
         </div>
       </div>
