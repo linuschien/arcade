@@ -177,7 +177,7 @@
       "type": "Button",
       "props": {
         "id": "start-game-trigger",
-        "label": "START (1 Coin)",
+        "label": "🪙 START (1 Coin)",
         "variant": "primary",
         "disabled": null
       },
@@ -224,6 +224,7 @@
         "id": "phaser-game-container",
         "className": "p-4 bg-slate-900 border border-slate-800 rounded-xl"
       },
+      "visible": { "$state": "/game/isPlaying" },
       "children": ["game-control-bar"]
     },
     "game-control-bar": {

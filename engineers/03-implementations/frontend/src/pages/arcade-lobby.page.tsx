@@ -36,6 +36,9 @@ const defaultStore = createStateStore({
   form: {
     'bonus-credit-amount-field': 5,
   },
+  game: {
+    isPlaying: false,
+  },
 });
 
 export default function ArcadeLobbyPage({ store: propStore, handlers: propHandlers }: ArcadeLobbyPageProps) {
@@ -159,6 +162,7 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
 
           try {
             await deductCreditMutation.mutateAsync({ gameCardId, playerId });
+            store.set('/game/isPlaying', true);
             ArcadeBridge.emit('COIN_INSERTED', totalCredits - 1);
             showToast('Coin inserted successfully! Launching game...');
           } catch (err: any) {
@@ -204,6 +208,7 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
         case 'ReturnToLobby': {
           ArcadeBridge.emit('RESUME_REQUESTED');
           store.set('/modals/game-pause-modal', false);
+          store.set('/game/isPlaying', false);
           break;
         }
 
