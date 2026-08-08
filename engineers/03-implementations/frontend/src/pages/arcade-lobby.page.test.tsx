@@ -150,6 +150,8 @@ describe('ArcadeLobbyPage Unit Tests', () => {
       expect.objectContaining({ id: 'admin-grant-credit-modal' })
     );
     expect(store.get('/modals/admin-grant-credit-modal')).toBe(true);
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(await screen.findByText('Grant Admin Bonus Credit')).toBeInTheDocument();
   });
 
   it('Pattern 3: triggers executeBehavior on DeductCredit START button press', async () => {

@@ -62,7 +62,7 @@ function adapt(Comp: ComponentType<any>): ComponentType<any> {
       // Evaluate bindings passed from Renderer
       if (bindings) {
         Object.entries(bindings).forEach(([key, val]: [string, any]) => {
-          if (val !== undefined && val !== null && key !== 'openPath') {
+          if (val !== undefined && val !== null) {
             if (typeof val === 'string' && val.startsWith('/')) {
               resolvedProps[key] = store.get(val);
             } else if (typeof val === 'object' && val !== null && '$bindState' in val) {

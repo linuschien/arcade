@@ -129,8 +129,12 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
 
   // Controller Action Handlers
   const defaultHandlers = {
-    openModal: ({ id }: { id: string }) => {
-      store.set(`/modals/${id}`, true);
+    openModal: (params: any) => {
+      const modalId = typeof params === 'string' ? params : (params?.id || params?.modalId || params?.path || '');
+      if (modalId) {
+        const path = modalId.startsWith('/') ? modalId : `/modals/${modalId}`;
+        store.set(path, true);
+      }
     },
 
     executeBehavior: async ({ ref, id }: { ref: string; id?: string }) => {

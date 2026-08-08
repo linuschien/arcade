@@ -277,7 +277,6 @@
         "description": null,
         "openPath": "/modals/game-pause-modal"
       },
-      "visible": { "$state": "/modals/game-pause-modal" },
       "children": ["pause-heading", "resume-game-trigger", "quit-to-lobby-trigger"]
     },
     "pause-heading": {
@@ -327,7 +326,6 @@
         "description": null,
         "openPath": "/modals/admin-grant-credit-modal"
       },
-      "visible": { "$state": "/modals/admin-grant-credit-modal" },
       "children": ["grant-form-section"]
     },
     "grant-form-section": {
@@ -375,7 +373,6 @@
         "description": "You have 0 credits remaining. Please wait for the daily 00:00 reset or request admin bonus credits.",
         "openPath": "/modals/out-of-credits-dialog"
       },
-      "visible": { "$state": "/modals/out-of-credits-dialog" },
       "children": ["out-of-credits-heading", "out-of-credits-text", "dismiss-out-of-credits-trigger"]
     },
     "out-of-credits-heading": {

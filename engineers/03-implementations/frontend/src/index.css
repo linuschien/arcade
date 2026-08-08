@@ -70,6 +70,61 @@ input:disabled {
   transform: translateX(1rem) !important;
 }
 
+/* Radix Dialog Content & Overlay Tailwind v4 Positioning & Appearance Fix */
+[data-slot="dialog-portal"] {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999 !important;
+}
+
+[data-slot="dialog-overlay"] {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99998 !important;
+  background-color: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+[data-slot="dialog-content"] {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 99999 !important;
+  width: calc(100% - 2rem) !important;
+  max-width: 32rem !important;
+  background-color: #0f172a !important;
+  border: 1px solid #334155 !important;
+  border-radius: 0.75rem !important;
+  padding: 1.5rem !important;
+  color: #f8fafc !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75) !important;
+}
+
+[data-slot="dialog-title"] {
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+}
+
+[data-slot="dialog-description"] {
+  font-size: 0.875rem !important;
+  color: #94a3b8 !important;
+  margin-top: 0.25rem !important;
+}
+
+[data-slot="dialog-close"] {
+  position: absolute !important;
+  top: 1rem !important;
+  right: 1rem !important;
+  color: #94a3b8 !important;
+  cursor: pointer !important;
+}
+
+[data-slot="dialog-close"]:hover {
+  color: #ffffff !important;
+}
+
 /* CRT Retro Scanline Filter Effect */
 .crt-overlay {
   position: fixed;
@@ -78,7 +133,7 @@ input:disabled {
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  z-index: 9999;
+  z-index: 999;
   background: linear-gradient(
     rgba(18, 16, 16, 0) 50%,
     rgba(0, 0, 0, 0.25) 50%
