@@ -315,17 +315,20 @@ export class MainGameScene extends Phaser.Scene {
 
     const active = this.board.getActivePiece();
     if (active) {
-      // 2. Draw Ghost Piece
-      const ghostY = this.board.getGhostY();
       const matrix = TETROMINOES[active.type].matrices[active.rotation];
 
-      for (let r = 0; r < matrix.length; r++) {
-        for (let c = 0; c < matrix[r].length; c++) {
-          if (matrix[r][c] !== 0) {
-            const gx = this.BOARD_OFFSET_X + (active.x + c) * this.TILE_SIZE;
-            const gy = this.BOARD_OFFSET_Y + (ghostY + r) * this.TILE_SIZE;
-            this.pieceGraphics.lineStyle(2, 0x94a3b8, 0.6);
-            this.pieceGraphics.strokeRect(gx + 2, gy + 2, this.TILE_SIZE - 4, this.TILE_SIZE - 4);
+      // 2. Draw Ghost Piece (if enabled by mode config)
+      if (this.board.getModeConfig().enableGhost) {
+        const ghostY = this.board.getGhostY();
+
+        for (let r = 0; r < matrix.length; r++) {
+          for (let c = 0; c < matrix[r].length; c++) {
+            if (matrix[r][c] !== 0) {
+              const gx = this.BOARD_OFFSET_X + (active.x + c) * this.TILE_SIZE;
+              const gy = this.BOARD_OFFSET_Y + (ghostY + r) * this.TILE_SIZE;
+              this.pieceGraphics.lineStyle(2, 0x94a3b8, 0.6);
+              this.pieceGraphics.strokeRect(gx + 2, gy + 2, this.TILE_SIZE - 4, this.TILE_SIZE - 4);
+            }
           }
         }
       }

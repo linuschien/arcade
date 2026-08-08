@@ -343,6 +343,10 @@ export class TetrisBoard {
     return this.isGameOverState;
   }
 
+  public getModeConfig(): TetrisModeConfig {
+    return this.modeConfig;
+  }
+
   public reset(modeConfig?: TetrisModeConfig): void {
     if (modeConfig) {
       this.modeConfig = modeConfig;
