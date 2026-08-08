@@ -258,7 +258,15 @@
         "justify": "between",
         "className": "w-full shrink-0 flex items-center justify-between gap-4 p-2.5 bg-slate-950/80 backdrop-blur-md rounded-xl border border-slate-800 shadow-md"
       },
-      "children": ["return-to-lobby-trigger", "pause-game-trigger"]
+      "children": ["return-to-lobby-trigger", "active-game-title-badge", "pause-game-trigger"]
+    },
+    "active-game-title-badge": {
+      "type": "GameIdBadge",
+      "props": {
+        "id": "active-game-title-badge",
+        "gameId": { "$bindState": "/activeGameId" }
+      },
+      "children": []
     },
     "pause-game-trigger": {
       "type": "Button",

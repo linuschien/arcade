@@ -7,6 +7,7 @@ import type { ComponentType } from 'react';
 // Import custom components from the components directory (one component per file)
 import MetricCard from './components/MetricCard';
 import GameCardCarousel from './components/GameCardCarousel';
+import GameIdBadge from './components/GameIdBadge';
 
 // ── Adapter: ComponentRenderProps → BaseComponentProps ──────────────────────
 function adapt(Comp: ComponentType<any>): ComponentType<any> {
@@ -105,6 +106,7 @@ export const componentRegistry: Record<string, ComponentType<any>> = {
   // ── 3. Custom composites (imported from src/json-render/components/) ─────
   MetricCard: adapt(MetricCard),
   GameCardCarousel: adapt(GameCardCarousel),
+  GameIdBadge: adapt(GameIdBadge),
 
   // ── 4. Native HTML passthrough ───────────────────────────────────────────
   div: ({ element, children }: any) =>
