@@ -301,14 +301,18 @@ export class MainGameScene extends Phaser.Scene {
           if (!isWallTile(c - 1, r)) {
             x1 = x + inset; // Outer corner
           } else if (isWallTile(c - 1, r) && !isWallTile(c - 1, r - 1)) {
-            x1 = x - inset; // Inner T/L corner
+            x1 = x; // Straight horizontal wall continuation
+          } else if (isWallTile(c - 1, r) && isWallTile(c - 1, r - 1)) {
+            x1 = x - inset; // T-junction: extend LEFT to meet vertical bar at x - inset
           }
 
           let x2 = x + s;
           if (!isWallTile(c + 1, r)) {
             x2 = x + s - inset; // Outer corner
           } else if (isWallTile(c + 1, r) && !isWallTile(c + 1, r - 1)) {
-            x2 = x + s + inset; // Inner T/L corner
+            x2 = x + s; // Straight horizontal wall continuation
+          } else if (isWallTile(c + 1, r) && isWallTile(c + 1, r - 1)) {
+            x2 = x + s + inset; // T-junction: extend RIGHT to meet vertical bar at x + s + inset
           }
           drawLine(x1 - 1, y + inset, x2 + 1, y + inset);
         }
@@ -319,14 +323,18 @@ export class MainGameScene extends Phaser.Scene {
           if (!isWallTile(c - 1, r)) {
             x1 = x + inset; // Outer corner
           } else if (isWallTile(c - 1, r) && !isWallTile(c - 1, r + 1)) {
-            x1 = x - inset; // Inner T/L corner
+            x1 = x; // Straight horizontal wall continuation
+          } else if (isWallTile(c - 1, r) && isWallTile(c - 1, r + 1)) {
+            x1 = x - inset; // T-junction: extend LEFT to meet vertical bar at x - inset
           }
 
           let x2 = x + s;
           if (!isWallTile(c + 1, r)) {
             x2 = x + s - inset; // Outer corner
           } else if (isWallTile(c + 1, r) && !isWallTile(c + 1, r + 1)) {
-            x2 = x + s + inset; // Inner T/L corner
+            x2 = x + s; // Straight horizontal wall continuation
+          } else if (isWallTile(c + 1, r) && isWallTile(c + 1, r + 1)) {
+            x2 = x + s + inset; // T-junction: extend RIGHT to meet vertical bar at x + s + inset
           }
           drawLine(x1 - 1, y + s - inset, x2 + 1, y + s - inset);
         }
@@ -337,14 +345,18 @@ export class MainGameScene extends Phaser.Scene {
           if (!isWallTile(c, r - 1)) {
             y1 = y + inset; // Outer corner
           } else if (isWallTile(c, r - 1) && !isWallTile(c - 1, r - 1)) {
-            y1 = y - inset; // Inner T/L corner
+            y1 = y; // Straight vertical wall continuation
+          } else if (isWallTile(c, r - 1) && isWallTile(c - 1, r - 1)) {
+            y1 = y - inset; // T-junction: extend UP to meet horizontal bar at y - inset
           }
 
           let y2 = y + s;
           if (!isWallTile(c, r + 1)) {
             y2 = y + s - inset; // Outer corner
           } else if (isWallTile(c, r + 1) && !isWallTile(c - 1, r + 1)) {
-            y2 = y + s + inset; // Inner T/L corner
+            y2 = y + s; // Straight vertical wall continuation
+          } else if (isWallTile(c, r + 1) && isWallTile(c - 1, r + 1)) {
+            y2 = y + s + inset; // T-junction: extend DOWN to meet horizontal bar at y + s + inset
           }
           drawLine(x + inset, y1 - 1, x + inset, y2 + 1);
         }
@@ -355,14 +367,18 @@ export class MainGameScene extends Phaser.Scene {
           if (!isWallTile(c, r - 1)) {
             y1 = y + inset; // Outer corner
           } else if (isWallTile(c, r - 1) && !isWallTile(c + 1, r - 1)) {
-            y1 = y - inset; // Inner T/L corner
+            y1 = y; // Straight vertical wall continuation
+          } else if (isWallTile(c, r - 1) && isWallTile(c + 1, r - 1)) {
+            y1 = y - inset; // T-junction: extend UP to meet horizontal bar at y - inset
           }
 
           let y2 = y + s;
           if (!isWallTile(c, r + 1)) {
             y2 = y + s - inset; // Outer corner
           } else if (isWallTile(c, r + 1) && !isWallTile(c + 1, r + 1)) {
-            y2 = y + s + inset; // Inner T/L corner
+            y2 = y + s; // Straight vertical wall continuation
+          } else if (isWallTile(c, r + 1) && isWallTile(c + 1, r + 1)) {
+            y2 = y + s + inset; // T-junction: extend DOWN to meet horizontal bar at y + s + inset
           }
           drawLine(x + s - inset, y1 - 1, x + s - inset, y2 + 1);
         }
