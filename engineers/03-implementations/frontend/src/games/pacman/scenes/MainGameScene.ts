@@ -263,63 +263,64 @@ export class MainGameScene extends Phaser.Scene {
       }
     }
 
-    // Helper to check if a grid cell is a wall
     const isWallTile = (col: number, row: number): boolean => {
       if (row < 0 || row >= MAZE_ROWS || col < 0 || col >= MAZE_COLS) return true;
       return grid[row][col] === TileType.WALL;
     };
 
-    // 2. Pass 1: Draw outer royal-blue boundary strokes along non-wall edges
-    this.mazeGraphics.lineStyle(2, 0x1d4ed8, 1); // Royal Blue outer line
+    const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
+      if (typeof this.mazeGraphics.lineBetween === 'function') {
+        this.mazeGraphics.lineBetween(x1, y1, x2, y2);
+      }
+    };
+
+    const s = DEFAULT_TILE_SIZE;
+
+    // 2. Pass 1: Draw outer royal-blue boundary strokes with extended corner joins
+    this.mazeGraphics.lineStyle(2, 0x1d4ed8, 1);
     for (let r = 0; r < MAZE_ROWS; r++) {
       for (let c = 0; c < MAZE_COLS; c++) {
         if (grid[r][c] !== TileType.WALL) continue;
 
-        const x = this.offsetX + c * DEFAULT_TILE_SIZE;
-        const y = this.offsetY + r * DEFAULT_TILE_SIZE;
-        const s = DEFAULT_TILE_SIZE;
-
-        const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
-          if (typeof this.mazeGraphics.lineBetween === 'function') {
-            this.mazeGraphics.lineBetween(x1, y1, x2, y2);
-          }
-        };
+        const x = this.offsetX + c * s;
+        const y = this.offsetY + r * s;
 
         // Top edge
         if (!isWallTile(c, r - 1)) {
-          drawLine(x, y, x + s, y);
+          const x1 = !isWallTile(c - 1, r) ? x : x - 1;
+          const x2 = !isWallTile(c + 1, r) ? x + s : x + s + 1;
+          drawLine(x1, y, x2, y);
         }
         // Bottom edge
         if (!isWallTile(c, r + 1)) {
-          drawLine(x, y + s, x + s, y + s);
+          const x1 = !isWallTile(c - 1, r) ? x : x - 1;
+          const x2 = !isWallTile(c + 1, r) ? x + s : x + s + 1;
+          drawLine(x1, y + s, x2, y + s);
         }
         // Left edge
         if (!isWallTile(c - 1, r)) {
-          drawLine(x, y, x, y + s);
+          const y1 = !isWallTile(c, r - 1) ? y : y - 1;
+          const y2 = !isWallTile(c, r + 1) ? y + s : y + s + 1;
+          drawLine(x, y1, x, y2);
         }
         // Right edge
         if (!isWallTile(c + 1, r)) {
-          drawLine(x + s, y, x + s, y + s);
+          const y1 = !isWallTile(c, r - 1) ? y : y - 1;
+          const y2 = !isWallTile(c, r + 1) ? y + s : y + s + 1;
+          drawLine(x + s, y1, x + s, y2);
         }
       }
     }
 
-    // 3. Pass 2: Draw inset neon-blue parallel strokes for 1980 arcade double-line glow effect
-    this.mazeGraphics.lineStyle(1.5, 0x3b82f6, 1); // Bright Neon Blue inner line
+    // 3. Pass 2: Draw inset neon-blue parallel strokes with seamless corner joins
+    this.mazeGraphics.lineStyle(1.5, 0x3b82f6, 1);
     const inset = 3;
     for (let r = 0; r < MAZE_ROWS; r++) {
       for (let c = 0; c < MAZE_COLS; c++) {
         if (grid[r][c] !== TileType.WALL) continue;
 
-        const x = this.offsetX + c * DEFAULT_TILE_SIZE;
-        const y = this.offsetY + r * DEFAULT_TILE_SIZE;
-        const s = DEFAULT_TILE_SIZE;
-
-        const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
-          if (typeof this.mazeGraphics.lineBetween === 'function') {
-            this.mazeGraphics.lineBetween(x1, y1, x2, y2);
-          }
-        };
+        const x = this.offsetX + c * s;
+        const y = this.offsetY + r * s;
 
         // Top inset
         if (!isWallTile(c, r - 1)) {
@@ -556,6 +557,9 @@ export class MainGameScene extends Phaser.Scene {
       if (ghost.mode !== GhostMode.EATEN) {
         ghost.mode = GhostMode.FRIGHTENED;
         ghost.sprite.setTexture('pacman:ghost_frightened');
+        if (typeof ghost.sprite.setDisplaySize === 'function') {
+          ghost.sprite.setDisplaySize(28, 28);
+        }
       }
     });
   }
@@ -574,6 +578,9 @@ export class MainGameScene extends Phaser.Scene {
         this.ghosts.forEach((g) => {
           if (g.mode === GhostMode.FRIGHTENED) {
             g.sprite.setTexture(isWhite ? 'pacman:ghost_frightened_flash' : 'pacman:ghost_frightened');
+            if (typeof g.sprite.setDisplaySize === 'function') {
+              g.sprite.setDisplaySize(28, 28);
+            }
           }
         });
       }
@@ -587,6 +594,9 @@ export class MainGameScene extends Phaser.Scene {
             const currentPhaseMode = this.getCurrentPhaseMode();
             g.mode = currentPhaseMode;
             g.sprite.setTexture(`pacman:ghost_${g.type.toLowerCase()}`);
+            if (typeof g.sprite.setDisplaySize === 'function') {
+              g.sprite.setDisplaySize(28, 28);
+            }
           }
         });
       }
@@ -682,6 +692,9 @@ export class MainGameScene extends Phaser.Scene {
           // REVIVE GHOST: Always restore to ORIGINAL CHARACTER COLOR and normal SCATTER/CHASE mode!
           ghost.mode = this.getCurrentPhaseMode();
           ghost.sprite.setTexture(`pacman:ghost_${ghost.type.toLowerCase()}`);
+          if (typeof ghost.sprite.setDisplaySize === 'function') {
+            ghost.sprite.setDisplaySize(28, 28);
+          }
           ghost.x = houseCenterX;
           ghost.y = houseCenterY;
           ghost.homeBaseX = houseCenterX;
@@ -800,6 +813,10 @@ export class MainGameScene extends Phaser.Scene {
         this.fruitSprite.setVisible(true);
       }
 
+      if (typeof this.fruitSprite.setDisplaySize === 'function') {
+        this.fruitSprite.setDisplaySize(28, 28);
+      }
+
       // Fruit Flash Hint: Flash during first 1.5s (remainingTimeSec >= 8.0s) and final 2.0s (remainingTimeSec <= 2.0s)
       const timer = activeFruit.remainingTimeSec;
       const isFlashingPeriod = (timer >= 8.0 || timer <= 2.0);
@@ -845,6 +862,9 @@ export class MainGameScene extends Phaser.Scene {
           PacmanAudioService.playEatGhost();
           ghost.mode = GhostMode.EATEN;
           ghost.sprite.setTexture('pacman:ghost_eyes');
+          if (typeof ghost.sprite.setDisplaySize === 'function') {
+            ghost.sprite.setDisplaySize(28, 28);
+          }
 
           // Show floating score popup at ghost location
           this.showFloatingScore(ghost.x, ghost.y, ghostScore, '#38bdf8');

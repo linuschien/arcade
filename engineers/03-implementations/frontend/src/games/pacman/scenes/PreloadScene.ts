@@ -1,6 +1,7 @@
 /**
  * PreloadScene.ts
  * Generates and preloads all namespaced textures ('pacman:*') procedurally.
+ * Features authentic ghost scalloped wavy skirts and rich fruit textures.
  */
 
 import Phaser from 'phaser';
@@ -92,6 +93,22 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
+    // Helper to draw authentic ghost body with 3 scalloped wavy skirt tentacles
+    const drawGhostBodyWithSkirt = (gfx: Phaser.GameObjects.Graphics, color: number) => {
+      gfx.fillStyle(color, 1);
+      gfx.fillCircle(10, 8, 8);
+      gfx.fillRect(2, 8, 16, 7);
+
+      // 3 Scalloped Wavy Feet at the bottom skirt
+      if (typeof (gfx as any).fillTriangle === 'function') {
+        (gfx as any).fillTriangle(2, 15, 4.6, 19, 7.3, 15);
+        (gfx as any).fillTriangle(7.3, 15, 10, 19, 12.7, 15);
+        (gfx as any).fillTriangle(12.7, 15, 15.4, 19, 18, 15);
+      } else {
+        gfx.fillRect(2, 15, 16, 3);
+      }
+    };
+
     // 4. Ghost Textures (Blinky, Pinky, Inky, Clyde)
     const ghostColors: Array<{ key: string; color: number }> = [
       { key: 'pacman:ghost_blinky', color: 0xef4444 }, // Red
@@ -103,9 +120,7 @@ export class PreloadScene extends Phaser.Scene {
     ghostColors.forEach(({ key, color }) => {
       if (!this.textures.exists(key)) {
         const gfx = this.make.graphics({ x: 0, y: 0 });
-        gfx.fillStyle(color, 1);
-        gfx.fillCircle(10, 8, 8);
-        gfx.fillRect(2, 8, 16, 10);
+        drawGhostBodyWithSkirt(gfx, color);
 
         // Eyes
         gfx.fillStyle(0xffffff, 1);
@@ -123,9 +138,8 @@ export class PreloadScene extends Phaser.Scene {
     // 5. Frightened Ghost (Blue)
     if (!this.textures.exists('pacman:ghost_frightened')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
-      gfx.fillStyle(0x1d4ed8, 1);
-      gfx.fillCircle(10, 8, 8);
-      gfx.fillRect(2, 8, 16, 10);
+      drawGhostBodyWithSkirt(gfx, 0x1d4ed8);
+
       gfx.fillStyle(0xfde047, 1);
       gfx.fillCircle(6, 6, 2);
       gfx.fillCircle(14, 6, 2);
@@ -136,9 +150,8 @@ export class PreloadScene extends Phaser.Scene {
     // 6. Frightened Flashing Ghost (White)
     if (!this.textures.exists('pacman:ghost_frightened_flash')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
-      gfx.fillStyle(0xf8fafc, 1);
-      gfx.fillCircle(10, 8, 8);
-      gfx.fillRect(2, 8, 16, 10);
+      drawGhostBodyWithSkirt(gfx, 0xf8fafc);
+
       gfx.fillStyle(0xef4444, 1);
       gfx.fillCircle(6, 6, 2);
       gfx.fillCircle(14, 6, 2);
@@ -184,10 +197,10 @@ export class PreloadScene extends Phaser.Scene {
       if (!this.textures.exists(key)) {
         const gfx = this.make.graphics({ x: 0, y: 0 });
         gfx.fillStyle(0xef4444, 1);
-        gfx.fillCircle(8, 8, 7);
+        gfx.fillCircle(10, 11, 7);
         gfx.fillStyle(0x22c55e, 1);
-        gfx.fillRect(7, 1, 2, 4);
-        gfx.generateTexture(key, 16, 16);
+        gfx.fillRect(9, 2, 2, 5);
+        gfx.generateTexture(key, 20, 20);
         gfx.destroy();
       }
     });

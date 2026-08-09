@@ -14,6 +14,7 @@ describe('PreloadScene Unit Tests', () => {
       fillStyle: vi.fn().mockReturnThis(),
       fillCircle: vi.fn().mockReturnThis(),
       fillRect: vi.fn().mockReturnThis(),
+      fillTriangle: vi.fn().mockReturnThis(),
       generateTexture: vi.fn().mockReturnThis(),
       destroy: vi.fn().mockReturnThis(),
     };
