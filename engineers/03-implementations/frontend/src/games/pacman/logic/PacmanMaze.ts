@@ -78,7 +78,7 @@ export const PACMAN_ASCII_MAP: string[] = [
   "     #.##### ## #####.#     ", // Row 12: Upper T-bar horizontal wall
   "     #.##          ##.#     ", // Row 13: OPEN horizontal exit corridor for ghosts (cols 9-18)
   "######.## ###--### ##.######", // Row 14: Ghost House Roof & Pink Gate
-  "      .   # HHHHH#   .      ", // Row 15: Tunnel Row (Wrap Teleport)
+  "      .   #HHHHHH#   .      ", // Row 15: Tunnel Row (Wrap Teleport)
   "######.## #HHHHHH# ##.######", // Row 16: Ghost House Middle
   "     #.## ######## ##.#     ", // Row 17: Ghost House Bottom Wall
   "     #.##          ##.#     ", // Row 18: Corridor below Ghost House
