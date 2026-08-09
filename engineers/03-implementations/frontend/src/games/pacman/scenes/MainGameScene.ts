@@ -157,9 +157,9 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private resetEntityPositions(): void {
-    // Pacman Start Position: Tile (13, 23) - Authentic Arcade Pacman Start Corridor
+    // Pacman Start Position: Tile (13.5, 23) - Centered in 2-tile wide central corridor (col 13 & 14)
     this.pacmanGridPos = { col: 13, row: 23 };
-    const worldPos = PacmanMaze.tileToWorld(13, 23, DEFAULT_TILE_SIZE);
+    const worldPos = PacmanMaze.tileToWorld(13.5, 23, DEFAULT_TILE_SIZE);
     this.pacmanX = this.offsetX + worldPos.x;
     this.pacmanY = this.offsetY + worldPos.y;
     this.currentDirection = Direction.LEFT;
@@ -276,7 +276,7 @@ export class MainGameScene extends Phaser.Scene {
 
     const s = DEFAULT_TILE_SIZE;
 
-    // 2. Pass 1: Draw outer royal-blue boundary strokes with extended corner joins
+    // 2. Pass 1: Outer Royal Blue Boundary Line (#1d4ed8)
     this.mazeGraphics.lineStyle(2, 0x1d4ed8, 1);
     for (let r = 0; r < MAZE_ROWS; r++) {
       for (let c = 0; c < MAZE_COLS; c++) {
@@ -312,7 +312,7 @@ export class MainGameScene extends Phaser.Scene {
       }
     }
 
-    // 3. Pass 2: Draw inset neon-blue parallel strokes with seamless corner joins
+    // 3. Pass 2: Inset Neon Blue Line (#3b82f6) with 100% Seamless Outer AND Inner (T-shape/L-shape) Corner Joins
     this.mazeGraphics.lineStyle(1.5, 0x3b82f6, 1);
     const inset = 3;
     for (let r = 0; r < MAZE_ROWS; r++) {
@@ -322,28 +322,75 @@ export class MainGameScene extends Phaser.Scene {
         const x = this.offsetX + c * s;
         const y = this.offsetY + r * s;
 
-        // Top inset
+        // Top inset line
         if (!isWallTile(c, r - 1)) {
-          const x1 = isWallTile(c - 1, r) ? x : x + inset;
-          const x2 = isWallTile(c + 1, r) ? x + s : x + s - inset;
+          let x1 = x;
+          if (!isWallTile(c - 1, r)) {
+            x1 = x + inset; // Outer corner
+          } else if (isWallTile(c - 1, r) && !isWallTile(c - 1, r - 1)) {
+            x1 = x - inset; // Inner T/L corner
+          }
+
+          let x2 = x + s;
+          if (!isWallTile(c + 1, r)) {
+            x2 = x + s - inset; // Outer corner
+          } else if (isWallTile(c + 1, r) && !isWallTile(c + 1, r - 1)) {
+            x2 = x + s + inset; // Inner T/L corner
+          }
           drawLine(x1, y + inset, x2, y + inset);
         }
-        // Bottom inset
+
+        // Bottom inset line
         if (!isWallTile(c, r + 1)) {
-          const x1 = isWallTile(c - 1, r) ? x : x + inset;
-          const x2 = isWallTile(c + 1, r) ? x + s : x + s - inset;
+          let x1 = x;
+          if (!isWallTile(c - 1, r)) {
+            x1 = x + inset; // Outer corner
+          } else if (isWallTile(c - 1, r) && !isWallTile(c - 1, r + 1)) {
+            x1 = x - inset; // Inner T/L corner
+          }
+
+          let x2 = x + s;
+          if (!isWallTile(c + 1, r)) {
+            x2 = x + s - inset; // Outer corner
+          } else if (isWallTile(c + 1, r) && !isWallTile(c + 1, r + 1)) {
+            x2 = x + s + inset; // Inner T/L corner
+          }
           drawLine(x1, y + s - inset, x2, y + s - inset);
         }
-        // Left inset
+
+        // Left inset line
         if (!isWallTile(c - 1, r)) {
-          const y1 = isWallTile(c, r - 1) ? y : y + inset;
-          const y2 = isWallTile(c, r + 1) ? y + s : y + s - inset;
+          let y1 = y;
+          if (!isWallTile(c, r - 1)) {
+            y1 = y + inset; // Outer corner
+          } else if (isWallTile(c, r - 1) && !isWallTile(c - 1, r - 1)) {
+            y1 = y - inset; // Inner T/L corner
+          }
+
+          let y2 = y + s;
+          if (!isWallTile(c, r + 1)) {
+            y2 = y + s - inset; // Outer corner
+          } else if (isWallTile(c, r + 1) && !isWallTile(c - 1, r + 1)) {
+            y2 = y + s + inset; // Inner T/L corner
+          }
           drawLine(x + inset, y1, x + inset, y2);
         }
-        // Right inset
+
+        // Right inset line
         if (!isWallTile(c + 1, r)) {
-          const y1 = isWallTile(c, r - 1) ? y : y + inset;
-          const y2 = isWallTile(c, r + 1) ? y + s : y + s - inset;
+          let y1 = y;
+          if (!isWallTile(c, r - 1)) {
+            y1 = y + inset; // Outer corner
+          } else if (isWallTile(c, r - 1) && !isWallTile(c + 1, r - 1)) {
+            y1 = y - inset; // Inner T/L corner
+          }
+
+          let y2 = y + s;
+          if (!isWallTile(c, r + 1)) {
+            y2 = y + s - inset; // Outer corner
+          } else if (isWallTile(c, r + 1) && !isWallTile(c + 1, r + 1)) {
+            y2 = y + s + inset; // Inner T/L corner
+          }
           drawLine(x + s - inset, y1, x + s - inset, y2);
         }
       }
@@ -806,7 +853,7 @@ export class MainGameScene extends Phaser.Scene {
 
     if (activeFruit) {
       if (!this.fruitSprite) {
-        const worldPos = PacmanMaze.tileToWorld(FRUIT_SPAWN_TILE.col, FRUIT_SPAWN_TILE.row, DEFAULT_TILE_SIZE);
+        const worldPos = PacmanMaze.tileToWorld(13.5, FRUIT_SPAWN_TILE.row, DEFAULT_TILE_SIZE);
         const key = `pacman:fruit_${activeFruit.type.toLowerCase()}`;
         this.fruitSprite = this.add.sprite(this.offsetX + worldPos.x, this.offsetY + worldPos.y, key);
       } else {
@@ -828,13 +875,13 @@ export class MainGameScene extends Phaser.Scene {
         this.fruitSprite.setVisible(true);
       }
 
-      // Pac-Man eat fruit check
-      if (this.pacmanGridPos.col === FRUIT_SPAWN_TILE.col && this.pacmanGridPos.row === FRUIT_SPAWN_TILE.row) {
+      // Pac-Man eat fruit check: triggers when Pac-Man enters row 20 in central corridor (col 13 or 14)
+      if (this.pacmanGridPos.row === FRUIT_SPAWN_TILE.row && (this.pacmanGridPos.col === 13 || this.pacmanGridPos.col === 14)) {
         const fruitScore = this.gameState.consumeFruit();
         PacmanAudioService.playEatFruit();
 
         if (fruitScore) {
-          const worldPos = PacmanMaze.tileToWorld(FRUIT_SPAWN_TILE.col, FRUIT_SPAWN_TILE.row, DEFAULT_TILE_SIZE);
+          const worldPos = PacmanMaze.tileToWorld(13.5, FRUIT_SPAWN_TILE.row, DEFAULT_TILE_SIZE);
           this.showFloatingScore(this.offsetX + worldPos.x, this.offsetY + worldPos.y, fruitScore, '#fde047');
         }
 
