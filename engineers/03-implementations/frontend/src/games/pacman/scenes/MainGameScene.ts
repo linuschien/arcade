@@ -578,10 +578,9 @@ export class MainGameScene extends Phaser.Scene {
         const distToHomeCenter = Phaser.Math.Distance.Between(ghost.x, ghost.y, houseCenterX, houseCenterY);
 
         if (distToHomeCenter < 14 || (ghost.gridPos.col === 13 && ghost.gridPos.row === 16)) {
-          // REVIVE GHOST: Reset texture, set houseState = HOME, and rest for 2.0 seconds inside house!
-          ghost.mode = (this.frightenedTimeSec > 0) ? GhostMode.FRIGHTENED : this.getCurrentPhaseMode();
-          const texKey = (this.frightenedTimeSec > 0) ? 'pacman:ghost_frightened' : `pacman:ghost_${ghost.type.toLowerCase()}`;
-          ghost.sprite.setTexture(texKey);
+          // REVIVE GHOST: Always restore to ORIGINAL CHARACTER COLOR and normal SCATTER/CHASE mode!
+          ghost.mode = this.getCurrentPhaseMode();
+          ghost.sprite.setTexture(`pacman:ghost_${ghost.type.toLowerCase()}`);
           ghost.x = houseCenterX;
           ghost.y = houseCenterY;
           ghost.homeBaseX = houseCenterX;
@@ -593,12 +592,8 @@ export class MainGameScene extends Phaser.Scene {
           return;
         }
 
-        // Eaten ghost target door (13, 14) first while outside to avoid wall bumping
-        if (ghost.gridPos.col === 13 && (ghost.gridPos.row === 14 || ghost.gridPos.row === 15)) {
-          ghost.targetTile = { col: 13, row: 16 }; // Inside house center
-        } else {
-          ghost.targetTile = { col: 13, row: 14 }; // Door entrance outside house
-        }
+        // Target tile inside house center (13, 16)
+        ghost.targetTile = { col: 13, row: 16 };
       }
 
       // 3. Tile Center Steering
@@ -609,15 +604,19 @@ export class MainGameScene extends Phaser.Scene {
 
       if (dist < 4) {
         const isEaten = ghost.mode === GhostMode.EATEN;
-        ghost.direction = GhostAI.getNextDirection(
-          this.maze,
-          ghost.gridPos,
-          ghost.direction,
-          ghost.targetTile,
-          allowGatePass,
-          false,
-          isEaten
-        );
+        if (isEaten && ghost.gridPos.col === 13 && ghost.gridPos.row === 14) {
+          ghost.direction = Direction.DOWN;
+        } else {
+          ghost.direction = GhostAI.getNextDirection(
+            this.maze,
+            ghost.gridPos,
+            ghost.direction,
+            ghost.targetTile,
+            allowGatePass,
+            false,
+            isEaten
+          );
+        }
       }
 
       // 4. Move Ghost

@@ -134,7 +134,7 @@ export class PacmanMaze {
    */
   private computeHomeBfsDistance(): void {
     const doorCol = 13;
-    const doorRow = 14;
+    const doorRow = 16;
 
     this.homeBfsDistance = Array.from({ length: MAZE_ROWS }, () =>
       Array(MAZE_COLS).fill(Infinity)
