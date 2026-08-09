@@ -1,6 +1,6 @@
 /**
  * PacmanMaze.ts
- * 28x36 Discrete Grid Matrix, Movement Kinematics & Pellet Management.
+ * 28x33 Discrete Grid Matrix, Movement Kinematics & Pellet Management.
  */
 
 export enum TileType {
@@ -47,17 +47,16 @@ export const OPPOSITE_DIRECTIONS: Record<Direction, Direction> = {
 };
 
 export const MAZE_COLS = 28;
-export const MAZE_ROWS = 36;
+export const MAZE_ROWS = 33;
 export const DEFAULT_TILE_SIZE = 20;
+export const TUNNEL_ROW = 13;
 
-// 28x36 Classic Pac-Man Layout (0=EMPTY, 1=WALL, 2=PELLET, 3=POWER_PELLET, 4=GHOST_HOUSE, 5=GHOST_GATE)
-// 36 rows total. Exactly 244 pellets (240 normal pellets + 4 power pellets).
+// 28x33 Arcade Pac-Man Layout (0=EMPTY, 1=WALL, 2=PELLET, 3=POWER_PELLET, 4=GHOST_HOUSE, 5=GHOST_GATE)
+// Exactly 244 total pellets (240 normal pellets + 4 power pellets).
 const MAZE_LAYOUT_RAW: number[][] = [
-  // Row 0-2: Header / score area
+  // Row 0: Top wall border
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  // Row 3-10: Top maze section
+  // Row 1-8: Top maze section
   [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
   [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
   [1,3,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,3,1],
@@ -66,18 +65,18 @@ const MAZE_LAYOUT_RAW: number[][] = [
   [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1],
   [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1],
   [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
-  // Row 11-19: Middle section (Ghost House & Tunnels)
+  // Row 9-17: Middle section (Ghost House & Tunnels)
   [1,1,1,1,1,1,2,1,1,1,1,1,0,1,1,0,1,1,1,1,1,2,1,1,1,1,1,1],
   [1,1,1,1,1,1,2,1,1,1,1,1,0,1,1,0,1,1,1,1,1,2,1,1,1,1,1,1],
   [1,1,1,1,1,1,2,1,1,2,0,0,0,0,0,0,0,0,2,1,1,2,1,1,1,1,1,1],
   [1,1,1,1,1,1,2,1,1,0,1,1,1,5,5,1,1,1,0,1,1,2,1,1,1,1,1,1],
-  [0,0,0,0,0,0,2,0,0,0,1,4,4,4,4,4,4,1,0,0,0,2,0,0,0,0,0,0],
+  [0,0,0,0,0,0,2,0,0,0,1,4,4,4,4,4,4,1,0,0,0,2,0,0,0,0,0,0], // Row 13: Tunnel Row
   [1,1,1,1,1,1,2,1,1,0,1,4,4,4,4,4,4,1,0,1,1,2,1,1,1,1,1,1],
   [1,1,1,1,1,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,1,1,1,1,1],
-  [1,1,1,1,1,1,2,1,1,2,0,0,0,0,0,0,0,0,0,1,1,2,1,1,1,1,1,1],
+  [1,1,1,1,1,1,2,1,1,2,0,0,0,0,0,0,0,0,2,1,1,2,1,1,1,1,1,1],
   [1,1,1,1,1,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,1,1,1,1,1],
-  // Row 20-29: Bottom section
-  [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
+  // Row 18-28: Bottom section
+  [1,2,2,2,2,2,2,2,2,2,2,2,0,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
   [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
   [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
   [1,3,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,3,1],
@@ -85,15 +84,15 @@ const MAZE_LAYOUT_RAW: number[][] = [
   [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1],
   [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
   [1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1], // Row 26: Pacman Start Path Row!
   [1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1],
-  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-  // Row 30-35: Footer / bottom border
   [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  // Row 29: Bottom maze wall
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  // Row 30-32: Footer UI space
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 ];
 
 export class PacmanMaze {
@@ -143,7 +142,7 @@ export class PacmanMaze {
   public getTile(col: number, row: number): TileType {
     if (row < 0 || row >= MAZE_ROWS || col < 0 || col >= MAZE_COLS) {
       // Tunnel row exception
-      if (row === 15 && (col < 0 || col >= MAZE_COLS)) {
+      if (row === TUNNEL_ROW && (col < 0 || col >= MAZE_COLS)) {
         return TileType.EMPTY;
       }
       return TileType.WALL;
@@ -153,7 +152,7 @@ export class PacmanMaze {
 
   public isWall(col: number, row: number, allowGhostGate: boolean = false): boolean {
     // Tunnel row horizontally wrapping
-    if (row === 15 && (col < 0 || col >= MAZE_COLS)) {
+    if (row === TUNNEL_ROW && (col < 0 || col >= MAZE_COLS)) {
       return false;
     }
     const tile = this.getTile(col, row);

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { GhostAI, GhostType } from '../logic/GhostAI';
 import { Direction, PacmanMaze, GridPos } from '../logic/PacmanMaze';
 
@@ -40,9 +40,6 @@ describe('GhostAI Unit Tests', () => {
   });
 
   it('should calculate Inky target (Vector Intercept based on Blinky)', () => {
-    // Pacman at (10, 10), facing RIGHT. Pivot = Pacman + 2 = (12, 10).
-    // Blinky at (5, 5).
-    // Inky Target = Pivot * 2 - Blinky = (24 - 5, 20 - 5) = (19, 15).
     const target = GhostAI.calculateTargetTile(
       GhostType.INKY,
       pacmanPos,
@@ -64,7 +61,7 @@ describe('GhostAI Unit Tests', () => {
     );
     expect(targetFar).toEqual(pacmanPos);
 
-    // When distance <= 8 tiles, target = Patrol Point (0, 35)
+    // When distance <= 8 tiles, target = Patrol Point (0, 32)
     const targetNear = GhostAI.calculateTargetTile(
       GhostType.CLYDE,
       pacmanPos,
@@ -72,7 +69,7 @@ describe('GhostAI Unit Tests', () => {
       blinkyPos,
       clydePosNear
     );
-    expect(targetNear).toEqual({ col: 0, row: 35 });
+    expect(targetNear).toEqual({ col: 0, row: 32 });
   });
 
   it('should select next direction avoiding 180-degree reverses', () => {
@@ -81,7 +78,6 @@ describe('GhostAI Unit Tests', () => {
     const currentDir = Direction.RIGHT;
     const targetTile: GridPos = { col: 10, row: 1 };
 
-    // From (1,1) moving RIGHT, going LEFT is opposite (180 turn), so it should pick RIGHT or valid non-wall direction
     const nextDir = GhostAI.getNextDirection(maze, currentPos, currentDir, targetTile);
     expect(nextDir).not.toBe(Direction.LEFT);
   });

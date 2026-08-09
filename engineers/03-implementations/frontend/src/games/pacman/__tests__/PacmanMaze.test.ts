@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PacmanMaze, TileType, MAZE_COLS, MAZE_ROWS } from '../logic/PacmanMaze';
+import { PacmanMaze, TileType, MAZE_COLS, MAZE_ROWS, TUNNEL_ROW } from '../logic/PacmanMaze';
 
 describe('PacmanMaze Unit Tests', () => {
   let maze: PacmanMaze;
@@ -8,7 +8,7 @@ describe('PacmanMaze Unit Tests', () => {
     maze = new PacmanMaze();
   });
 
-  it('should initialize a 28x36 grid with 244 total pellets', () => {
+  it('should initialize a 28x33 grid with 244 total pellets', () => {
     const grid = maze.getGrid();
     expect(grid.length).toBe(MAZE_ROWS);
     expect(grid[0].length).toBe(MAZE_COLS);
@@ -30,10 +30,10 @@ describe('PacmanMaze Unit Tests', () => {
     // Outer border is wall
     expect(maze.isWall(0, 0)).toBe(true);
     // Open path tile
-    expect(maze.isWall(1, 3)).toBe(false);
+    expect(maze.isWall(1, 1)).toBe(false);
     // Tunnel row horizontal wrap
-    expect(maze.isWall(-1, 15)).toBe(false);
-    expect(maze.isWall(MAZE_COLS, 15)).toBe(false);
+    expect(maze.isWall(-1, TUNNEL_ROW)).toBe(false);
+    expect(maze.isWall(MAZE_COLS, TUNNEL_ROW)).toBe(false);
   });
 
   it('should wrap tunnel column indices correctly', () => {
@@ -43,16 +43,16 @@ describe('PacmanMaze Unit Tests', () => {
   });
 
   it('should consume pellets and update pellet counters', () => {
-    // Tile (1, 3) is a pellet (row 3 col 1)
+    // Tile (1, 1) is a pellet (row 1 col 1)
     const initialRemaining = maze.getRemainingPelletCount();
-    const consumed = maze.consumePellet(1, 3);
+    const consumed = maze.consumePellet(1, 1);
 
     expect(consumed).toBe(TileType.PELLET);
     expect(maze.getRemainingPelletCount()).toBe(initialRemaining - 1);
     expect(maze.getEatenPelletCount()).toBe(1);
 
     // Consuming empty tile returns EMPTY
-    const emptyConsumed = maze.consumePellet(1, 3);
+    const emptyConsumed = maze.consumePellet(1, 1);
     expect(emptyConsumed).toBe(TileType.EMPTY);
     expect(maze.getRemainingPelletCount()).toBe(initialRemaining - 1);
   });

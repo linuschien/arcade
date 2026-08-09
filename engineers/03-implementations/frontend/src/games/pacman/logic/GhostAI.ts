@@ -22,11 +22,11 @@ export enum GhostMode {
 export const GHOST_CORNER_TARGETS: Record<GhostType, GridPos> = {
   [GhostType.BLINKY]: { col: 27, row: 0 },
   [GhostType.PINKY]: { col: 0, row: 0 },
-  [GhostType.INKY]: { col: 27, row: 35 },
-  [GhostType.CLYDE]: { col: 0, row: 35 },
+  [GhostType.INKY]: { col: 27, row: 32 },
+  [GhostType.CLYDE]: { col: 0, row: 32 },
 };
 
-export const GHOST_HOUSE_RESPAWN: GridPos = { col: 13, row: 15 };
+export const GHOST_HOUSE_RESPAWN: GridPos = { col: 13, row: 13 };
 
 export interface GhostState {
   type: GhostType;

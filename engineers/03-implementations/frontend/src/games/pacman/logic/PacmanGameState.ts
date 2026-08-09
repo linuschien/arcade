@@ -15,7 +15,7 @@ export enum PlayState {
   GAME_OVER = 'GAME_OVER',
 }
 
-export const FRUIT_SPAWN_TILE: GridPos = { col: 13, row: 20 };
+export const FRUIT_SPAWN_TILE: GridPos = { col: 13, row: 18 };
 export const FRUIT_DURATION_SEC = 9.5;
 
 export interface ActiveFruit {
