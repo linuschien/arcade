@@ -38,11 +38,11 @@ describe('PreloadScene Unit Tests', () => {
     scene.preload();
 
     expect((scene as any).make.graphics).toHaveBeenCalled();
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pacman:player', 20, 20);
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pacman:ghost_blinky', 20, 20);
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pacman:ghost_frightened', 20, 20);
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pacman:pellet', 6, 6);
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pacman:power_pellet', 12, 12);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pacman:player', 32, 32);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pacman:ghost_blinky', 32, 32);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pacman:ghost_frightened', 32, 32);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pacman:pellet', 8, 8);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pacman:power_pellet', 18, 18);
   });
 
   it('should transition to MainGameScene on create', () => {

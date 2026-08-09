@@ -15,6 +15,7 @@ import { PacmanAudioService } from '../audio/PacmanAudioService';
 
 const SPEED_PACMAN_BASE = 130; // Pixels per second
 const SPEED_GHOST_BASE = 120;  // Pixels per second
+const CHARACTER_SPRITE_SIZE = 34; // Scaled to fill 35px visual corridor width
 
 export enum GhostHouseState {
   HOME = 'HOME',
@@ -176,7 +177,7 @@ export class MainGameScene extends Phaser.Scene {
       this.pacmanSprite.setVisible(true);
     }
     if (typeof this.pacmanSprite.setDisplaySize === 'function') {
-      this.pacmanSprite.setDisplaySize(28, 28);
+      this.pacmanSprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
     }
 
     // Ghost Start Configurations: Timed House Exits & Bouncing Home Position
@@ -232,7 +233,7 @@ export class MainGameScene extends Phaser.Scene {
         ghost.sprite.setVisible(true);
       }
       if (typeof ghost.sprite.setDisplaySize === 'function') {
-        ghost.sprite.setDisplaySize(28, 28);
+        ghost.sprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
       }
     });
 
@@ -275,46 +276,15 @@ export class MainGameScene extends Phaser.Scene {
     };
 
     const s = DEFAULT_TILE_SIZE;
+    const INSET_RATIO = 0.35; // 35% of tile size = 7px inset for 21px tile
+    const inset = Math.round(s * INSET_RATIO);
 
-    // 2. Pass 1: Outer Royal Blue Boundary Line (#1d4ed8)
-    this.mazeGraphics.lineStyle(2, 0x1d4ed8, 1);
-    for (let r = 0; r < MAZE_ROWS; r++) {
-      for (let c = 0; c < MAZE_COLS; c++) {
-        if (grid[r][c] !== TileType.WALL) continue;
+    // Render single neon blue boundary line inset by INSET_RATIO (7px).
+    // This expands visual corridor width to 35px, shrinks 2-tile walls to 28px,
+    // and keeps 1-tile walls (ghost house) crisp at 7px.
+    // Endpoints extend by 1px to ensure 100% gapless stroke overlaps across all corners and tile joins.
+    this.mazeGraphics.lineStyle(2, 0x1d6ef5, 1);
 
-        const x = this.offsetX + c * s;
-        const y = this.offsetY + r * s;
-
-        // Top edge
-        if (!isWallTile(c, r - 1)) {
-          const x1 = !isWallTile(c - 1, r) ? x : x - 1;
-          const x2 = !isWallTile(c + 1, r) ? x + s : x + s + 1;
-          drawLine(x1, y, x2, y);
-        }
-        // Bottom edge
-        if (!isWallTile(c, r + 1)) {
-          const x1 = !isWallTile(c - 1, r) ? x : x - 1;
-          const x2 = !isWallTile(c + 1, r) ? x + s : x + s + 1;
-          drawLine(x1, y + s, x2, y + s);
-        }
-        // Left edge
-        if (!isWallTile(c - 1, r)) {
-          const y1 = !isWallTile(c, r - 1) ? y : y - 1;
-          const y2 = !isWallTile(c, r + 1) ? y + s : y + s + 1;
-          drawLine(x, y1, x, y2);
-        }
-        // Right edge
-        if (!isWallTile(c + 1, r)) {
-          const y1 = !isWallTile(c, r - 1) ? y : y - 1;
-          const y2 = !isWallTile(c, r + 1) ? y + s : y + s + 1;
-          drawLine(x + s, y1, x + s, y2);
-        }
-      }
-    }
-
-    // 3. Pass 2: Inset Neon Blue Line (#3b82f6) with 100% Seamless Outer AND Inner (T-shape/L-shape) Corner Joins
-    this.mazeGraphics.lineStyle(1.5, 0x3b82f6, 1);
-    const inset = 3;
     for (let r = 0; r < MAZE_ROWS; r++) {
       for (let c = 0; c < MAZE_COLS; c++) {
         if (grid[r][c] !== TileType.WALL) continue;
@@ -337,7 +307,7 @@ export class MainGameScene extends Phaser.Scene {
           } else if (isWallTile(c + 1, r) && !isWallTile(c + 1, r - 1)) {
             x2 = x + s + inset; // Inner T/L corner
           }
-          drawLine(x1, y + inset, x2, y + inset);
+          drawLine(x1 - 1, y + inset, x2 + 1, y + inset);
         }
 
         // Bottom inset line
@@ -355,7 +325,7 @@ export class MainGameScene extends Phaser.Scene {
           } else if (isWallTile(c + 1, r) && !isWallTile(c + 1, r + 1)) {
             x2 = x + s + inset; // Inner T/L corner
           }
-          drawLine(x1, y + s - inset, x2, y + s - inset);
+          drawLine(x1 - 1, y + s - inset, x2 + 1, y + s - inset);
         }
 
         // Left inset line
@@ -373,7 +343,7 @@ export class MainGameScene extends Phaser.Scene {
           } else if (isWallTile(c, r + 1) && !isWallTile(c - 1, r + 1)) {
             y2 = y + s + inset; // Inner T/L corner
           }
-          drawLine(x + inset, y1, x + inset, y2);
+          drawLine(x + inset, y1 - 1, x + inset, y2 + 1);
         }
 
         // Right inset line
@@ -391,7 +361,7 @@ export class MainGameScene extends Phaser.Scene {
           } else if (isWallTile(c, r + 1) && !isWallTile(c + 1, r + 1)) {
             y2 = y + s + inset; // Inner T/L corner
           }
-          drawLine(x + s - inset, y1, x + s - inset, y2);
+          drawLine(x + s - inset, y1 - 1, x + s - inset, y2 + 1);
         }
       }
     }
@@ -414,9 +384,15 @@ export class MainGameScene extends Phaser.Scene {
         const key = `${c},${r}`;
         if (val === TileType.PELLET) {
           const sprite = this.add.sprite(x, y, 'pacman:pellet');
+          if (typeof sprite.setDisplaySize === 'function') {
+            sprite.setDisplaySize(8, 8);
+          }
           this.pelletSprites.set(key, sprite);
         } else if (val === TileType.POWER_PELLET) {
           const sprite = this.add.sprite(x, y, 'pacman:power_pellet');
+          if (typeof sprite.setDisplaySize === 'function') {
+            sprite.setDisplaySize(18, 18);
+          }
           this.pelletSprites.set(key, sprite);
         }
       }
@@ -552,7 +528,7 @@ export class MainGameScene extends Phaser.Scene {
     const closeTex = this.textures.exists('pacman:player_closed') ? 'pacman:player_closed' : 'pacman:player';
     this.pacmanSprite.setTexture(this.isMouthOpen ? openTex : closeTex);
     if (typeof this.pacmanSprite.setDisplaySize === 'function') {
-      this.pacmanSprite.setDisplaySize(28, 28);
+      this.pacmanSprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
     }
 
     // Direction Rotation Angles
@@ -605,7 +581,7 @@ export class MainGameScene extends Phaser.Scene {
         ghost.mode = GhostMode.FRIGHTENED;
         ghost.sprite.setTexture('pacman:ghost_frightened');
         if (typeof ghost.sprite.setDisplaySize === 'function') {
-          ghost.sprite.setDisplaySize(28, 28);
+          ghost.sprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
         }
       }
     });
@@ -626,7 +602,7 @@ export class MainGameScene extends Phaser.Scene {
           if (g.mode === GhostMode.FRIGHTENED) {
             g.sprite.setTexture(isWhite ? 'pacman:ghost_frightened_flash' : 'pacman:ghost_frightened');
             if (typeof g.sprite.setDisplaySize === 'function') {
-              g.sprite.setDisplaySize(28, 28);
+              g.sprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
             }
           }
         });
@@ -642,7 +618,7 @@ export class MainGameScene extends Phaser.Scene {
             g.mode = currentPhaseMode;
             g.sprite.setTexture(`pacman:ghost_${g.type.toLowerCase()}`);
             if (typeof g.sprite.setDisplaySize === 'function') {
-              g.sprite.setDisplaySize(28, 28);
+              g.sprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
             }
           }
         });
@@ -740,7 +716,7 @@ export class MainGameScene extends Phaser.Scene {
           ghost.mode = this.getCurrentPhaseMode();
           ghost.sprite.setTexture(`pacman:ghost_${ghost.type.toLowerCase()}`);
           if (typeof ghost.sprite.setDisplaySize === 'function') {
-            ghost.sprite.setDisplaySize(28, 28);
+            ghost.sprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
           }
           ghost.x = houseCenterX;
           ghost.y = houseCenterY;
@@ -828,7 +804,7 @@ export class MainGameScene extends Phaser.Scene {
         ghost.sprite.setTexture(frameKey);
       }
       if (typeof ghost.sprite.setDisplaySize === 'function') {
-        ghost.sprite.setDisplaySize(28, 28);
+        ghost.sprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
       }
     });
   }
@@ -882,7 +858,7 @@ export class MainGameScene extends Phaser.Scene {
       }
 
       if (typeof this.fruitSprite.setDisplaySize === 'function') {
-        this.fruitSprite.setDisplaySize(28, 28);
+        this.fruitSprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
       }
 
       // Fruit Flash Hint: Flash during first 1.5s (remainingTimeSec >= 8.0s) and final 2.0s (remainingTimeSec <= 2.0s)
@@ -931,7 +907,7 @@ export class MainGameScene extends Phaser.Scene {
           ghost.mode = GhostMode.EATEN;
           ghost.sprite.setTexture('pacman:ghost_eyes');
           if (typeof ghost.sprite.setDisplaySize === 'function') {
-            ghost.sprite.setDisplaySize(28, 28);
+            ghost.sprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
           }
 
           // Show floating score popup at ghost location
