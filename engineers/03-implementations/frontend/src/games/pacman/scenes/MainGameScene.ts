@@ -71,8 +71,8 @@ export class MainGameScene extends Phaser.Scene {
   private lifeSprites: Phaser.GameObjects.Sprite[] = [];
 
   private isPausedState: boolean = false;
-  private offsetX: number = 106; // Center 588px grid inside 800px canvas width
-  private offsetY: number = 0;   // 36 rows * 21px = 756px height fits canvas perfectly
+  private offsetX: number = 6; // Center 588px grid inside 600px canvas width
+  private offsetY: number = 0; // 33 rows * 21px = 693px height fits canvas perfectly
 
   constructor() {
     super({ key: 'pacman:MainGameScene' });
@@ -125,14 +125,14 @@ export class MainGameScene extends Phaser.Scene {
 
   private createUI(): void {
     // Top-Left: LEVEL text
-    this.levelText = this.add.text(20, 8, 'LEVEL 1', {
+    this.levelText = this.add.text(16, 8, 'LEVEL 1', {
       fontFamily: 'monospace',
       fontSize: '18px',
       color: '#facc15',
     });
 
     // Top-Center: Score text
-    this.scoreText = this.add.text(400, 8, '1UP: 0', {
+    this.scoreText = this.add.text(300, 8, '1UP: 0', {
       fontFamily: 'monospace',
       fontSize: '18px',
       color: '#ffffff',
@@ -141,7 +141,7 @@ export class MainGameScene extends Phaser.Scene {
     // Top-Right: Pac-Man Lives Icons (Max 5 reserve life icons, compact 18x18px size)
     this.lifeSprites = [];
     for (let i = 0; i < 5; i++) {
-      const icon = this.add.sprite(770 - i * 22, 18, 'pacman:player_open');
+      const icon = this.add.sprite(580 - i * 22, 18, 'pacman:player_open');
       if (typeof icon.setDisplaySize === 'function') {
         icon.setDisplaySize(18, 18);
       }
@@ -152,7 +152,7 @@ export class MainGameScene extends Phaser.Scene {
       this.lifeSprites.push(icon);
     }
 
-    this.statusText = this.add.text(400, 430, 'READY!', {
+    this.statusText = this.add.text(300, 400, 'READY!', {
       fontFamily: 'monospace',
       fontSize: '32px',
       color: '#fde047',

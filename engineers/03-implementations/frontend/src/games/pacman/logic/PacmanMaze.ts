@@ -48,12 +48,12 @@ export const OPPOSITE_DIRECTIONS: Record<Direction, Direction> = {
 };
 
 export const MAZE_COLS = 28;
-export const MAZE_ROWS = 36;
+export const MAZE_ROWS = 33;
 export const DEFAULT_TILE_SIZE = 21;
 export const TUNNEL_ROW = 15;
 
 /**
- * Authentic 1980 Namco Arcade Pac-Man ASCII Map (28 columns x 36 rows)
+ * Authentic 1980 Namco Arcade Pac-Man ASCII Map (28 columns x 33 rows)
  * Legend:
  * '#' = Wall
  * '.' = Pellet
@@ -96,9 +96,6 @@ export const PACMAN_ASCII_MAP: string[] = [
   "############################", // Row 30: Bottom Outer Wall Border
   "                            ", // Row 31: Footer UI Space
   "                            ", // Row 32: Footer UI Space
-  "                            ", // Row 33: Footer UI Space
-  "                            ", // Row 34: Footer UI Space
-  "                            ", // Row 35: Footer UI Space
 ];
 
 function parseAsciiMap(map: string[]): number[][] {
