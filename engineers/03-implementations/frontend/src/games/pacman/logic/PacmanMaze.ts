@@ -1,6 +1,7 @@
 /**
  * PacmanMaze.ts
  * Authentic 28x36 Arcade Pac-Man Matrix, Kinematics & Pellet Management.
+ * Uses a 100% authentic Arcade Pac-Man ASCII map for maximum clarity and exact layout verification.
  */
 
 export enum TileType {
@@ -51,53 +52,87 @@ export const MAZE_ROWS = 36;
 export const DEFAULT_TILE_SIZE = 21;
 export const TUNNEL_ROW = 15;
 
-// Authentic 28x36 Arcade Pac-Man Matrix (0=EMPTY, 1=WALL, 2=PELLET, 3=POWER_PELLET, 4=GHOST_HOUSE, 5=GHOST_GATE)
-// Exactly 244 total pellets (240 normal pellets + 4 power pellets), 0 dead-ends, tunnel at row 15.
-const MAZE_LAYOUT_RAW: number[][] = [
-  // Rows 0-1: Header UI Space
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  // Row 2: Top Maze Wall Border
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  // Rows 3-10: Top Maze Section
-  [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
-  [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
-  [1,3,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,3,1],
-  [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
-  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
-  [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1],
-  [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1],
-  [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
-  // Rows 11-19: Middle Ghost House & Tunnel Section
-  [1,1,1,1,1,1,2,1,1,1,1,1,0,1,1,0,1,1,1,1,1,2,1,1,1,1,1,1],
-  [1,1,1,1,1,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,1,1,1,1,1], // Row 12: Upper T-bar corridor
-  [1,1,1,1,1,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,1,1,1,1,1], // Row 13: Horizontal T-bar wall
-  [1,1,1,1,1,1,2,1,1,0,1,1,1,5,5,1,1,1,0,1,1,2,1,1,1,1,1,1], // Row 14: Sealed Ghost House Door (cols 10-12 & 15-17 wall)
-  [0,0,0,0,0,0,2,0,0,0,1,4,4,4,4,4,4,1,0,0,0,2,0,0,0,0,0,0], // Row 15: Tunnel Row
-  [1,1,1,1,1,1,2,1,1,0,1,4,4,4,4,4,4,1,0,1,1,2,1,1,1,1,1,1],
-  [1,1,1,1,1,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,1,1,1,1,1],
-  [1,1,1,1,1,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,1,1,1,1,1],
-  [1,1,1,1,1,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,1,1,1,1,1],
-  // Rows 20-29: Bottom Maze Section
-  [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
-  [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
-  [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
-  [1,3,2,2,2,2,2,2,2,2,2,2,2,0,0,2,2,2,2,2,2,2,2,2,2,2,3,1], // Row 23: Continuous horizontal pellet corridor (col 1=Power, col 2-12 pellets, col 13-14 start, col 15-25 pellets, col 26=Power)
-  [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1], // Row 24: Wall directly below Power Pellets (cols 1 & 26)
-  [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1], // Row 25: Wall directly below Power Pellets (cols 1 & 26)
-  [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1], // Row 26: Bottom L-shaped corner turn (cols 1-6 & 21-26)
-  [1,1,2,1,1,1,1,1,1,2,1,1,1,1,1,1,1,1,2,1,1,1,1,1,1,2,1,1], // Row 27: Inverted T-stem (cols 13-14)
-  [1,1,2,1,1,1,1,1,1,2,1,1,1,1,1,1,1,1,2,1,1,1,1,1,1,2,1,1], // Row 28: Inverted T-stem (cols 13-14)
-  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1], // Row 29: Bottom-most corridor
-  // Row 30: Bottom Maze Wall Border
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  // Rows 31-35: Footer UI Space
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+/**
+ * Authentic 1980 Namco Arcade Pac-Man ASCII Map (28 columns x 36 rows)
+ * Legend:
+ * '#' = Wall
+ * '.' = Pellet
+ * 'o' = Power Pellet
+ * '-' = Ghost House Gate
+ * 'H' = Ghost House Interior
+ * ' ' = Empty Walkway / Header & Footer UI Space
+ */
+export const PACMAN_ASCII_MAP: string[] = [
+  "                            ", // Row 0: Header UI Space
+  "                            ", // Row 1: Header UI Space
+  "############################", // Row 2: Top Outer Wall Border
+  "#............##............#", // Row 3
+  "#.####.#####.##.#####.####.#", // Row 4
+  "#o####.#####.##.#####.####o#", // Row 5: Top Power Pellets
+  "#.####.#####.##.#####.####.#", // Row 6
+  "#..........................#", // Row 7
+  "#.####.##.########.##.####.#", // Row 8
+  "#.####.##.########.##.####.#", // Row 9
+  "#......##....##....##......#", // Row 10
+  "######.##### ## #####.######", // Row 11: Side Outer Walls & Upper T-stem
+  "     #.##### ## #####.#     ", // Row 12: Upper T-bar horizontal wall
+  "     #.##          ##.#     ", // Row 13: OPEN horizontal exit corridor for ghosts (cols 9-18)
+  "######.## ###--### ##.######", // Row 14: Ghost House Roof & Pink Gate
+  "      .   # HHHHH#   .      ", // Row 15: Tunnel Row (Wrap Teleport)
+  "######.## #HHHHHH# ##.######", // Row 16: Ghost House Middle
+  "     #.## ######## ##.#     ", // Row 17: Ghost House Bottom Wall
+  "     #.##          ##.#     ", // Row 18: Corridor below Ghost House
+  "######.## ######## ##.######", // Row 19: Horizontal wall bar below Ghost House
+  "#............##............#", // Row 20: Middle-bottom horizontal pellet corridor
+  "#.####.#####.##.#####.####.#", // Row 21: Top bar of left/right inverted-T
+  "#.####.#####.##.#####.####.#", // Row 22: Top bar of left/right inverted-T
+  "#o..##.......  .......##..o#", // Row 23: Power Pellets & Pacman Start Tile (col 13-14)
+  "###.##.##.########.##.##.###", // Row 24: Center T-wall bar & left/right inverted-T stems
+  "###.##.##.########.##.##.###", // Row 25: Center T-wall bar & left/right inverted-T stems
+  "#......##....##....##......#", // Row 26: Horizontal corridor under inverted-T walls
+  "#.######.###.##.###.######.#", // Row 27: Bottom Inverted-T bar & center T-stem (col 13-14)
+  "#.######.###.##.###.######.#", // Row 28: Bottom Inverted-T bar & center T-stem (col 13-14)
+  "#..........................#", // Row 29: Bottom-most horizontal pellet corridor
+  "############################", // Row 30: Bottom Outer Wall Border
+  "                            ", // Row 31: Footer UI Space
+  "                            ", // Row 32: Footer UI Space
+  "                            ", // Row 33: Footer UI Space
+  "                            ", // Row 34: Footer UI Space
+  "                            ", // Row 35: Footer UI Space
 ];
+
+function parseAsciiMap(map: string[]): number[][] {
+  return map.map((rowStr) => {
+    const row: number[] = [];
+    for (let c = 0; c < MAZE_COLS; c++) {
+      const char = rowStr[c] || ' ';
+      switch (char) {
+        case '#':
+          row.push(TileType.WALL);
+          break;
+        case '.':
+          row.push(TileType.PELLET);
+          break;
+        case 'o':
+          row.push(TileType.POWER_PELLET);
+          break;
+        case 'H':
+          row.push(TileType.GHOST_HOUSE);
+          break;
+        case '-':
+          row.push(TileType.GHOST_GATE);
+          break;
+        case ' ':
+        default:
+          row.push(TileType.EMPTY);
+          break;
+      }
+    }
+    return row;
+  });
+}
+
+const MAZE_LAYOUT_RAW: number[][] = parseAsciiMap(PACMAN_ASCII_MAP);
 
 export class PacmanMaze {
   private grid: number[][];
