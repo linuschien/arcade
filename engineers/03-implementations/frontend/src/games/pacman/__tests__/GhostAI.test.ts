@@ -61,7 +61,7 @@ describe('GhostAI Unit Tests', () => {
     );
     expect(targetFar).toEqual(pacmanPos);
 
-    // When distance <= 8 tiles, target = Patrol Point (0, 32)
+    // When distance <= 8 tiles, target = Patrol Point (0, 35)
     const targetNear = GhostAI.calculateTargetTile(
       GhostType.CLYDE,
       pacmanPos,
@@ -69,14 +69,14 @@ describe('GhostAI Unit Tests', () => {
       blinkyPos,
       clydePosNear
     );
-    expect(targetNear).toEqual({ col: 0, row: 32 });
+    expect(targetNear).toEqual({ col: 0, row: 35 });
   });
 
   it('should select next direction avoiding 180-degree reverses', () => {
     const maze = new PacmanMaze();
-    const currentPos: GridPos = { col: 1, row: 1 };
+    const currentPos: GridPos = { col: 1, row: 3 };
     const currentDir = Direction.RIGHT;
-    const targetTile: GridPos = { col: 10, row: 1 };
+    const targetTile: GridPos = { col: 10, row: 3 };
 
     const nextDir = GhostAI.getNextDirection(maze, currentPos, currentDir, targetTile);
     expect(nextDir).not.toBe(Direction.LEFT);

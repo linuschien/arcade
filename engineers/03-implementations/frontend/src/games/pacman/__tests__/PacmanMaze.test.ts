@@ -8,7 +8,7 @@ describe('PacmanMaze Unit Tests', () => {
     maze = new PacmanMaze();
   });
 
-  it('should initialize a 28x33 grid with 244 total pellets', () => {
+  it('should initialize an authentic 28x36 grid with 244 total pellets', () => {
     const grid = maze.getGrid();
     expect(grid.length).toBe(MAZE_ROWS);
     expect(grid[0].length).toBe(MAZE_COLS);
@@ -17,20 +17,20 @@ describe('PacmanMaze Unit Tests', () => {
   });
 
   it('should calculate tile to world and world to tile coordinates accurately', () => {
-    const world = PacmanMaze.tileToWorld(13, 20, 20);
+    const world = PacmanMaze.tileToWorld(13, 29, 20);
     expect(world.x).toBe(13.5 * 20); // 270
-    expect(world.y).toBe(20.5 * 20); // 410
+    expect(world.y).toBe(29.5 * 20); // 590
 
     const tile = PacmanMaze.worldToTile(world.x, world.y, 20);
     expect(tile.col).toBe(13);
-    expect(tile.row).toBe(20);
+    expect(tile.row).toBe(29);
   });
 
   it('should detect wall collisions and ghost gate rules', () => {
-    // Outer border is wall
-    expect(maze.isWall(0, 0)).toBe(true);
+    // Outer border at row 2 is wall
+    expect(maze.isWall(0, 2)).toBe(true);
     // Open path tile
-    expect(maze.isWall(1, 1)).toBe(false);
+    expect(maze.isWall(1, 3)).toBe(false);
     // Tunnel row horizontal wrap
     expect(maze.isWall(-1, TUNNEL_ROW)).toBe(false);
     expect(maze.isWall(MAZE_COLS, TUNNEL_ROW)).toBe(false);
@@ -43,16 +43,16 @@ describe('PacmanMaze Unit Tests', () => {
   });
 
   it('should consume pellets and update pellet counters', () => {
-    // Tile (1, 1) is a pellet (row 1 col 1)
+    // Tile (1, 3) is a pellet
     const initialRemaining = maze.getRemainingPelletCount();
-    const consumed = maze.consumePellet(1, 1);
+    const consumed = maze.consumePellet(1, 3);
 
     expect(consumed).toBe(TileType.PELLET);
     expect(maze.getRemainingPelletCount()).toBe(initialRemaining - 1);
     expect(maze.getEatenPelletCount()).toBe(1);
 
     // Consuming empty tile returns EMPTY
-    const emptyConsumed = maze.consumePellet(1, 1);
+    const emptyConsumed = maze.consumePellet(1, 3);
     expect(emptyConsumed).toBe(TileType.EMPTY);
     expect(maze.getRemainingPelletCount()).toBe(initialRemaining - 1);
   });

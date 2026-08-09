@@ -1,9 +1,9 @@
 /**
  * GhostAI.ts
- * AI Targeting Formulas & Direction Selection for Blinky, Pinky, Inky, and Clyde.
+ * AI Targeting Formulas and Pathfinding for Blinky, Pinky, Inky, and Clyde.
  */
 
-import { GridPos, Direction, DIRECTION_VECTORS, OPPOSITE_DIRECTIONS, PacmanMaze } from './PacmanMaze';
+import { PacmanMaze, Direction, DIRECTION_VECTORS, OPPOSITE_DIRECTIONS, GridPos } from './PacmanMaze';
 
 export enum GhostType {
   BLINKY = 'Blinky', // Red
@@ -22,24 +22,23 @@ export enum GhostMode {
 export const GHOST_CORNER_TARGETS: Record<GhostType, GridPos> = {
   [GhostType.BLINKY]: { col: 27, row: 0 },
   [GhostType.PINKY]: { col: 0, row: 0 },
-  [GhostType.INKY]: { col: 27, row: 32 },
-  [GhostType.CLYDE]: { col: 0, row: 32 },
+  [GhostType.INKY]: { col: 27, row: 35 },
+  [GhostType.CLYDE]: { col: 0, row: 35 },
 };
 
-export const GHOST_HOUSE_RESPAWN: GridPos = { col: 13, row: 13 };
+export const GHOST_HOUSE_RESPAWN: GridPos = { col: 13, row: 16 };
 
 export interface GhostState {
   type: GhostType;
   mode: GhostMode;
-  gridPos: GridPos;
-  direction: Direction;
-  targetPos: GridPos;
-  speedRatio: number;
+  pos: GridPos;
+  dir: Direction;
+  targetTile: GridPos;
 }
 
 export class GhostAI {
   /**
-   * Calculate Target Tile in Chase Mode based on PRD-02 / BDD specs.
+   * Calculate Target Tile for Ghost AI based on character role.
    */
   public static calculateTargetTile(
     ghostType: GhostType,
@@ -48,15 +47,15 @@ export class GhostAI {
     blinkyPos: GridPos,
     clydePos: GridPos
   ): GridPos {
-    const dirVector = DIRECTION_VECTORS[pacmanDir] || { col: 0, row: 0 };
+    const dirVector = DIRECTION_VECTORS[pacmanDir] || DIRECTION_VECTORS[Direction.LEFT];
 
     switch (ghostType) {
       case GhostType.BLINKY:
-        // Target = Pacman.tilePosition
+        // Target = Pacman Current Tile (Direct Pursuit)
         return { ...pacmanPos };
 
       case GhostType.PINKY:
-        // Target = Pacman.tilePosition + Pacman.direction * 4
+        // Target = Pacman.tilePosition + 4 tiles in facing direction (Ambush)
         return {
           col: pacmanPos.col + dirVector.col * 4,
           row: pacmanPos.row + dirVector.row * 4,
@@ -96,6 +95,7 @@ export class GhostAI {
     currentPos: GridPos,
     currentDir: Direction,
     targetTile: GridPos,
+    allowGhostGate: boolean = false,
     allowReverse: boolean = false
   ): Direction {
     const validDirs: Direction[] = [Direction.UP, Direction.LEFT, Direction.DOWN, Direction.RIGHT];
@@ -114,7 +114,7 @@ export class GhostAI {
       const nextCol = currentPos.col + vec.col;
       const nextRow = currentPos.row + vec.row;
 
-      if (!maze.isWall(nextCol, nextRow, true)) {
+      if (!maze.isWall(nextCol, nextRow, allowGhostGate)) {
         const dx = nextCol - targetTile.col;
         const dy = nextRow - targetTile.row;
         const distSq = dx * dx + dy * dy;
