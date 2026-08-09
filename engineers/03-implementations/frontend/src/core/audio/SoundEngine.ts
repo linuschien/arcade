@@ -15,6 +15,7 @@ export interface ToneOptions {
 class SoundEngineImpl {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
+  private isExplicitlyPaused: boolean = false;
 
   private getContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
@@ -24,10 +25,32 @@ class SoundEngineImpl {
         this.ctx = new AudioCtx();
       }
     }
-    if (this.ctx && this.ctx.state === 'suspended') {
+    if (this.ctx && this.ctx.state === 'suspended' && !this.isExplicitlyPaused) {
       this.ctx.resume();
     }
     return this.ctx;
+  }
+
+  public suspend(): void {
+    this.isExplicitlyPaused = true;
+    if (this.ctx && this.ctx.state === 'running') {
+      try {
+        this.ctx.suspend();
+      } catch {
+        // Ignore
+      }
+    }
+  }
+
+  public resume(): void {
+    this.isExplicitlyPaused = false;
+    if (this.ctx && this.ctx.state === 'suspended') {
+      try {
+        this.ctx.resume();
+      } catch {
+        // Ignore
+      }
+    }
   }
 
   public setMuted(muted: boolean): void {

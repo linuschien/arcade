@@ -41,6 +41,7 @@ describe('MainGameScene Unit Tests', () => {
 
     mockEvents = {
       once: vi.fn(),
+      on: vi.fn(),
     };
 
     mockTextures = {

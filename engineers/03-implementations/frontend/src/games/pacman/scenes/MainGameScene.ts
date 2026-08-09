@@ -91,6 +91,20 @@ export class MainGameScene extends Phaser.Scene {
     // Start in READY state for full 3.7s Intro Theme music playback
     this.startReadyStateIntro();
 
+    // Listen for scene pause/resume events (e.g. window tab blur / refocus)
+    if (typeof this.events?.on === 'function') {
+      this.events.on(Phaser.Scenes.Events.PAUSE, () => {
+        PacmanAudioService.stopSiren();
+        SoundEngine.suspend();
+      });
+      this.events.on(Phaser.Scenes.Events.RESUME, () => {
+        SoundEngine.resume();
+        if (this.gameState.getPlayState() === PlayState.PLAYING) {
+          PacmanAudioService.startSiren(this.frightenedTimeSec > 0);
+        }
+      });
+    }
+
     // Teardown event listeners
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleTeardown, this);
     this.events.once(Phaser.Scenes.Events.DESTROY, this.handleTeardown, this);
@@ -117,9 +131,13 @@ export class MainGameScene extends Phaser.Scene {
       this.statusText.setText('PAUSED');
       this.statusText.setVisible(true);
       PacmanAudioService.stopSiren();
+      SoundEngine.suspend();
     } else {
       this.statusText.setVisible(false);
-      PacmanAudioService.startSiren(this.frightenedTimeSec > 0);
+      SoundEngine.resume();
+      if (this.gameState.getPlayState() === PlayState.PLAYING) {
+        PacmanAudioService.startSiren(this.frightenedTimeSec > 0);
+      }
     }
   }
 
