@@ -809,6 +809,27 @@ export class MainGameScene extends Phaser.Scene {
       const newTile = PacmanMaze.worldToTile(ghost.x - this.offsetX, ghost.y - this.offsetY, DEFAULT_TILE_SIZE);
       ghost.gridPos = { col: PacmanMaze.wrapTunnelCol(newTile.col), row: newTile.row };
       ghost.sprite.setPosition(ghost.x, ghost.y);
+
+      // 5. Ghost Skirt Flutter Walking Animation (Frame 0 & 1)
+      const animFrame = Math.floor(timeMs * 0.007) % 2;
+      let frameKey = '';
+
+      if (ghost.mode === GhostMode.EATEN) {
+        frameKey = 'pacman:ghost_eyes';
+      } else if (ghost.mode === GhostMode.FRIGHTENED) {
+        const isFlashing = this.frightenedTimeSec <= 2.0 && Math.floor(this.frightenedFlashSec * 6) % 2 === 0;
+        const prefix = isFlashing ? 'pacman:ghost_frightened_flash' : 'pacman:ghost_frightened';
+        frameKey = `${prefix}_${animFrame}`;
+      } else {
+        frameKey = `pacman:ghost_${ghost.type.toLowerCase()}_${animFrame}`;
+      }
+
+      if (this.textures.exists(frameKey)) {
+        ghost.sprite.setTexture(frameKey);
+      }
+      if (typeof ghost.sprite.setDisplaySize === 'function') {
+        ghost.sprite.setDisplaySize(28, 28);
+      }
     });
   }
 

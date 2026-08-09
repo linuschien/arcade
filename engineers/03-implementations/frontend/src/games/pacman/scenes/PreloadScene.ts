@@ -1,7 +1,7 @@
 /**
  * PreloadScene.ts
  * Generates and preloads all namespaced textures ('pacman:*') procedurally.
- * Features authentic ghost scalloped wavy skirts and rich fruit textures.
+ * Features authentic 2-frame ghost skirt flutter walking animations and rich fruit textures.
  */
 
 import Phaser from 'phaser';
@@ -93,71 +93,97 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // Helper to draw authentic ghost body with 3 scalloped wavy skirt tentacles
-    const drawGhostBodyWithSkirt = (gfx: Phaser.GameObjects.Graphics, color: number) => {
+    // Helper to draw authentic ghost body with 2-frame animated scalloped wavy skirt
+    const drawGhostBodyWithSkirt = (gfx: Phaser.GameObjects.Graphics, color: number, frame: number = 0) => {
       gfx.fillStyle(color, 1);
       gfx.fillCircle(10, 8, 8);
       gfx.fillRect(2, 8, 16, 7);
 
-      // 3 Scalloped Wavy Feet at the bottom skirt
       if (typeof (gfx as any).fillTriangle === 'function') {
-        (gfx as any).fillTriangle(2, 15, 4.6, 19, 7.3, 15);
-        (gfx as any).fillTriangle(7.3, 15, 10, 19, 12.7, 15);
-        (gfx as any).fillTriangle(12.7, 15, 15.4, 19, 18, 15);
+        if (frame === 0) {
+          // 3 Scalloped Wavy Feet (Frame 0 - Pattern A)
+          (gfx as any).fillTriangle(2, 15, 4.6, 19, 7.3, 15);
+          (gfx as any).fillTriangle(7.3, 15, 10, 19, 12.7, 15);
+          (gfx as any).fillTriangle(12.7, 15, 15.4, 19, 18, 15);
+        } else {
+          // 4 Scalloped Wavy Feet (Frame 1 - Pattern B Shifted Ripple)
+          (gfx as any).fillTriangle(2, 15, 3.5, 18, 5, 15);
+          (gfx as any).fillTriangle(5, 15, 7.5, 18, 10, 15);
+          (gfx as any).fillTriangle(10, 15, 12.5, 18, 15, 15);
+          (gfx as any).fillTriangle(15, 15, 17.5, 18, 18, 15);
+        }
       } else {
         gfx.fillRect(2, 15, 16, 3);
       }
     };
 
-    // 4. Ghost Textures (Blinky, Pinky, Inky, Clyde)
-    const ghostColors: Array<{ key: string; color: number }> = [
-      { key: 'pacman:ghost_blinky', color: 0xef4444 }, // Red
-      { key: 'pacman:ghost_pinky', color: 0xf472b6 },  // Pink
-      { key: 'pacman:ghost_inky', color: 0x06b6d4 },   // Cyan
-      { key: 'pacman:ghost_clyde', color: 0xf97316 },  // Orange
+    // 4. Ghost Textures with 2-Frame Skirt Animation (Blinky, Pinky, Inky, Clyde)
+    const ghostColors: Array<{ baseKey: string; color: number }> = [
+      { baseKey: 'pacman:ghost_blinky', color: 0xef4444 }, // Red
+      { baseKey: 'pacman:ghost_pinky', color: 0xf472b6 },  // Pink
+      { baseKey: 'pacman:ghost_inky', color: 0x06b6d4 },   // Cyan
+      { baseKey: 'pacman:ghost_clyde', color: 0xf97316 },  // Orange
     ];
 
-    ghostColors.forEach(({ key, color }) => {
+    ghostColors.forEach(({ baseKey, color }) => {
+      [0, 1].forEach((frame) => {
+        const key = `${baseKey}_${frame}`;
+        if (!this.textures.exists(key)) {
+          const gfx = this.make.graphics({ x: 0, y: 0 });
+          drawGhostBodyWithSkirt(gfx, color, frame);
+
+          // Eyes
+          gfx.fillStyle(0xffffff, 1);
+          gfx.fillCircle(6, 6, 3);
+          gfx.fillCircle(14, 6, 3);
+          gfx.fillStyle(0x1e3a8a, 1);
+          gfx.fillCircle(6, 6, 1.5);
+          gfx.fillCircle(14, 6, 1.5);
+
+          gfx.generateTexture(key, 20, 20);
+          if (frame === 0 && !this.textures.exists(baseKey)) {
+            gfx.generateTexture(baseKey, 20, 20);
+          }
+          gfx.destroy();
+        }
+      });
+    });
+
+    // 5. Frightened Ghost (Blue) 2-Frame Animation
+    [0, 1].forEach((frame) => {
+      const key = `pacman:ghost_frightened_${frame}`;
       if (!this.textures.exists(key)) {
         const gfx = this.make.graphics({ x: 0, y: 0 });
-        drawGhostBodyWithSkirt(gfx, color);
+        drawGhostBodyWithSkirt(gfx, 0x1d4ed8, frame);
 
-        // Eyes
-        gfx.fillStyle(0xffffff, 1);
-        gfx.fillCircle(6, 6, 3);
-        gfx.fillCircle(14, 6, 3);
-        gfx.fillStyle(0x1e3a8a, 1);
-        gfx.fillCircle(6, 6, 1.5);
-        gfx.fillCircle(14, 6, 1.5);
-
+        gfx.fillStyle(0xfde047, 1);
+        gfx.fillCircle(6, 6, 2);
+        gfx.fillCircle(14, 6, 2);
         gfx.generateTexture(key, 20, 20);
+        if (frame === 0 && !this.textures.exists('pacman:ghost_frightened')) {
+          gfx.generateTexture('pacman:ghost_frightened', 20, 20);
+        }
         gfx.destroy();
       }
     });
 
-    // 5. Frightened Ghost (Blue)
-    if (!this.textures.exists('pacman:ghost_frightened')) {
-      const gfx = this.make.graphics({ x: 0, y: 0 });
-      drawGhostBodyWithSkirt(gfx, 0x1d4ed8);
+    // 6. Frightened Flashing Ghost (White) 2-Frame Animation
+    [0, 1].forEach((frame) => {
+      const key = `pacman:ghost_frightened_flash_${frame}`;
+      if (!this.textures.exists(key)) {
+        const gfx = this.make.graphics({ x: 0, y: 0 });
+        drawGhostBodyWithSkirt(gfx, 0xf8fafc, frame);
 
-      gfx.fillStyle(0xfde047, 1);
-      gfx.fillCircle(6, 6, 2);
-      gfx.fillCircle(14, 6, 2);
-      gfx.generateTexture('pacman:ghost_frightened', 20, 20);
-      gfx.destroy();
-    }
-
-    // 6. Frightened Flashing Ghost (White)
-    if (!this.textures.exists('pacman:ghost_frightened_flash')) {
-      const gfx = this.make.graphics({ x: 0, y: 0 });
-      drawGhostBodyWithSkirt(gfx, 0xf8fafc);
-
-      gfx.fillStyle(0xef4444, 1);
-      gfx.fillCircle(6, 6, 2);
-      gfx.fillCircle(14, 6, 2);
-      gfx.generateTexture('pacman:ghost_frightened_flash', 20, 20);
-      gfx.destroy();
-    }
+        gfx.fillStyle(0xef4444, 1);
+        gfx.fillCircle(6, 6, 2);
+        gfx.fillCircle(14, 6, 2);
+        gfx.generateTexture(key, 20, 20);
+        if (frame === 0 && !this.textures.exists('pacman:ghost_frightened_flash')) {
+          gfx.generateTexture('pacman:ghost_frightened_flash', 20, 20);
+        }
+        gfx.destroy();
+      }
+    });
 
     // 7. Eaten Ghost Eyes
     if (!this.textures.exists('pacman:ghost_eyes')) {
