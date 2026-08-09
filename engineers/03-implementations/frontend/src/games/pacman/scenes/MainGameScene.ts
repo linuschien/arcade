@@ -27,6 +27,8 @@ interface GhostEntity {
   mode: GhostMode;
   houseState: GhostHouseState;
   exitDelaySec: number;
+  homeBaseX: number;
+  homeBaseY: number;
   x: number;
   y: number;
   gridPos: GridPos;
@@ -41,10 +43,12 @@ export class MainGameScene extends Phaser.Scene {
 
   private pacmanX: number = 0;
   private pacmanY: number = 0;
-  private pacmanGridPos: GridPos = { col: 13, row: 29 };
+  private pacmanGridPos: GridPos = { col: 13, row: 26 };
   private currentDirection: Direction = Direction.NONE;
   private queuedDirection: Direction = Direction.NONE;
   private pacmanSprite!: Phaser.GameObjects.Sprite;
+  private chompTimerMs: number = 0;
+  private isMouthOpen: boolean = true;
 
   private ghosts: Map<GhostType, GhostEntity> = new Map();
 
@@ -142,22 +146,24 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private resetEntityPositions(): void {
-    // Pacman Start Position: Tile (13, 29) - Open Path Corridor Under Ghost House
-    this.pacmanGridPos = { col: 13, row: 29 };
-    const worldPos = PacmanMaze.tileToWorld(13, 29, DEFAULT_TILE_SIZE);
+    // Pacman Start Position: Tile (13, 26) - Authentic Arcade Pacman Start Corridor
+    this.pacmanGridPos = { col: 13, row: 26 };
+    const worldPos = PacmanMaze.tileToWorld(13, 26, DEFAULT_TILE_SIZE);
     this.pacmanX = this.offsetX + worldPos.x;
     this.pacmanY = this.offsetY + worldPos.y;
     this.currentDirection = Direction.LEFT;
     this.queuedDirection = Direction.LEFT;
 
     if (!this.pacmanSprite) {
-      this.pacmanSprite = this.add.sprite(this.pacmanX, this.pacmanY, 'pacman:player');
+      this.pacmanSprite = this.add.sprite(this.pacmanX, this.pacmanY, 'pacman:player_open');
     } else {
+      this.pacmanSprite.setTexture('pacman:player_open');
+      this.pacmanSprite.setRotation(Math.PI); // Facing LEFT
       this.pacmanSprite.setPosition(this.pacmanX, this.pacmanY);
       this.pacmanSprite.setVisible(true);
     }
 
-    // Ghost Start Configurations: Timed House Exits
+    // Ghost Start Configurations: Timed House Exits & Bouncing Home Position
     const ghostConfigs: Array<{
       type: GhostType;
       startCol: number;
@@ -185,6 +191,8 @@ export class MainGameScene extends Phaser.Scene {
           mode: GhostMode.SCATTER,
           houseState,
           exitDelaySec,
+          homeBaseX: gx,
+          homeBaseY: gy,
           x: gx,
           y: gy,
           gridPos: { col: startCol, row: startRow },
@@ -197,6 +205,8 @@ export class MainGameScene extends Phaser.Scene {
         ghost.mode = GhostMode.SCATTER;
         ghost.houseState = houseState;
         ghost.exitDelaySec = exitDelaySec;
+        ghost.homeBaseX = gx;
+        ghost.homeBaseY = gy;
         ghost.x = gx;
         ghost.y = gy;
         ghost.gridPos = { col: startCol, row: startRow };
@@ -261,7 +271,7 @@ export class MainGameScene extends Phaser.Scene {
     }
   }
 
-  public update(_time: number, deltaMs: number): void {
+  public update(time: number, deltaMs: number): void {
     if (this.isPausedState || this.gameState.getPlayState() !== PlayState.PLAYING) {
       return;
     }
@@ -270,9 +280,9 @@ export class MainGameScene extends Phaser.Scene {
     this.gameState.addPlayTime(deltaSec);
 
     this.handleInputQueries();
-    this.updatePacmanPosition(deltaSec);
+    this.updatePacmanPosition(deltaSec, deltaMs);
     this.updateGhostFSM(deltaSec);
-    this.updateGhostsPosition(deltaSec);
+    this.updateGhostsPosition(deltaSec, time);
     this.updateFruit(deltaSec);
     this.checkCollisions();
     this.updateUI();
@@ -290,7 +300,7 @@ export class MainGameScene extends Phaser.Scene {
     }
   }
 
-  private updatePacmanPosition(deltaSec: number): void {
+  private updatePacmanPosition(deltaSec: number, deltaMs: number): void {
     const tileCenter = PacmanMaze.tileToWorld(this.pacmanGridPos.col, this.pacmanGridPos.row, DEFAULT_TILE_SIZE);
     const worldCenterX = this.offsetX + tileCenter.x;
     const worldCenterY = this.offsetY + tileCenter.y;
@@ -328,6 +338,7 @@ export class MainGameScene extends Phaser.Scene {
     }
 
     // 3. Move Pac-Man in current direction with precise wall stopping at tile center
+    let isMoving = false;
     if (this.currentDirection !== Direction.NONE) {
       const speed = SPEED_PACMAN_BASE * deltaSec;
       const moveVec = DIRECTION_VECTORS[this.currentDirection];
@@ -348,9 +359,12 @@ export class MainGameScene extends Phaser.Scene {
         if (moveVec.row > 0) this.pacmanY = Math.min(newY, worldCenterY);
         else if (moveVec.row < 0) this.pacmanY = Math.max(newY, worldCenterY);
         else this.pacmanY = newY;
+
+        isMoving = (this.pacmanX !== worldCenterX || this.pacmanY !== worldCenterY);
       } else {
         this.pacmanX = newX;
         this.pacmanY = newY;
+        isMoving = true;
       }
 
       // Tunnel Horizontal Teleport Wrapping (Row 15)
@@ -371,6 +385,31 @@ export class MainGameScene extends Phaser.Scene {
       this.pacmanGridPos = { col: wrappedCol, row: newTile.row };
     }
 
+    // 4. Pac-Man Chomping Animation & Directional Rotation
+    if (isMoving) {
+      this.chompTimerMs += deltaMs;
+      if (this.chompTimerMs >= 100) {
+        this.chompTimerMs = 0;
+        this.isMouthOpen = !this.isMouthOpen;
+      }
+    } else {
+      this.isMouthOpen = true;
+    }
+
+    const openTex = this.textures.exists('pacman:player_open') ? 'pacman:player_open' : 'pacman:player';
+    const closeTex = this.textures.exists('pacman:player_closed') ? 'pacman:player_closed' : 'pacman:player';
+    this.pacmanSprite.setTexture(this.isMouthOpen ? openTex : closeTex);
+
+    // Direction Rotation Angles
+    let rot = 0;
+    if (this.currentDirection === Direction.RIGHT) rot = 0;
+    else if (this.currentDirection === Direction.DOWN) rot = Math.PI / 2;
+    else if (this.currentDirection === Direction.LEFT) rot = Math.PI;
+    else if (this.currentDirection === Direction.UP) rot = -Math.PI / 2;
+
+    if (typeof this.pacmanSprite.setRotation === 'function') {
+      this.pacmanSprite.setRotation(rot);
+    }
     this.pacmanSprite.setPosition(this.pacmanX, this.pacmanY);
 
     // Consume Pellet Check
@@ -469,15 +508,20 @@ export class MainGameScene extends Phaser.Scene {
     return this.timerArrayPhaseIndex % 2 === 0 ? GhostMode.SCATTER : GhostMode.CHASE;
   }
 
-  private updateGhostsPosition(deltaSec: number): void {
+  private updateGhostsPosition(deltaSec: number, timeMs: number): void {
     const blinkyPos = this.ghosts.get(GhostType.BLINKY)?.gridPos || { col: 13, row: 14 };
     const clydePos = this.ghosts.get(GhostType.CLYDE)?.gridPos || { col: 15, row: 16 };
     const spec = this.gameState.getCurrentSpec();
 
     this.ghosts.forEach((ghost) => {
-      // 1. Ghost House Timed Exit FSM
+      // 1. Ghost House Timed Exit FSM & Active Bouncing Animation
       if (ghost.houseState === GhostHouseState.HOME) {
         ghost.exitDelaySec -= deltaSec;
+
+        // Smooth vertical bounce inside ghost house while waiting
+        ghost.y = ghost.homeBaseY + Math.sin(timeMs * 0.008) * 4;
+        ghost.sprite.setPosition(ghost.x, ghost.y);
+
         if (ghost.exitDelaySec <= 0) {
           ghost.houseState = GhostHouseState.EXITING;
         }
@@ -489,7 +533,7 @@ export class MainGameScene extends Phaser.Scene {
         const doorX = this.offsetX + doorWorld.x;
         const doorY = this.offsetY + doorWorld.y;
 
-        // Move to door center (13, 16) first if at side
+        // Move to house center (13, 16) first if at side
         const houseCenterX = this.offsetX + PacmanMaze.tileToWorld(13, 16, DEFAULT_TILE_SIZE).x;
         if (Math.abs(ghost.x - houseCenterX) > 2) {
           ghost.x += (houseCenterX > ghost.x ? 1 : -1) * SPEED_GHOST_BASE * deltaSec * 0.8;
@@ -700,6 +744,8 @@ export class MainGameScene extends Phaser.Scene {
     // Teardown dynamic textures
     const pacmanTextureKeys = [
       'pacman:player',
+      'pacman:player_open',
+      'pacman:player_closed',
       'pacman:ghost_blinky',
       'pacman:ghost_pinky',
       'pacman:ghost_inky',

@@ -19,16 +19,39 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   private createProceduralTextures(): void {
-    // 1. Pac-Man Texture
-    if (!this.textures.exists('pacman:player')) {
+    // 1. Pac-Man Open Mouth Texture
+    if (!this.textures.exists('pacman:player_open')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
       gfx.fillStyle(0xfacc15, 1); // Yellow
+      if (typeof (gfx as any).slice === 'function') {
+        (gfx as any).slice(10, 10, 9, Phaser.Math.DegToRad(35), Phaser.Math.DegToRad(325), false);
+        gfx.fillPath();
+      } else {
+        gfx.fillCircle(10, 10, 9);
+      }
+      gfx.generateTexture('pacman:player_open', 20, 20);
+      gfx.destroy();
+    }
+
+    // 2. Pac-Man Closed Mouth Texture
+    if (!this.textures.exists('pacman:player_closed')) {
+      const gfx = this.make.graphics({ x: 0, y: 0 });
+      gfx.fillStyle(0xfacc15, 1); // Yellow
+      gfx.fillCircle(10, 10, 9);
+      gfx.generateTexture('pacman:player_closed', 20, 20);
+      gfx.destroy();
+    }
+
+    // Default key fallback
+    if (!this.textures.exists('pacman:player')) {
+      const gfx = this.make.graphics({ x: 0, y: 0 });
+      gfx.fillStyle(0xfacc15, 1);
       gfx.fillCircle(10, 10, 9);
       gfx.generateTexture('pacman:player', 20, 20);
       gfx.destroy();
     }
 
-    // 2. Ghost Textures (Blinky, Pinky, Inky, Clyde)
+    // 3. Ghost Textures (Blinky, Pinky, Inky, Clyde)
     const ghostColors: Array<{ key: string; color: number }> = [
       { key: 'pacman:ghost_blinky', color: 0xef4444 }, // Red
       { key: 'pacman:ghost_pinky', color: 0xf472b6 },  // Pink
@@ -56,7 +79,7 @@ export class PreloadScene extends Phaser.Scene {
       }
     });
 
-    // 3. Frightened Ghost (Blue)
+    // 4. Frightened Ghost (Blue)
     if (!this.textures.exists('pacman:ghost_frightened')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
       gfx.fillStyle(0x1d4ed8, 1);
@@ -69,7 +92,7 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // 4. Frightened Flashing Ghost (White)
+    // 5. Frightened Flashing Ghost (White)
     if (!this.textures.exists('pacman:ghost_frightened_flash')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
       gfx.fillStyle(0xf8fafc, 1);
@@ -82,7 +105,7 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // 5. Eaten Ghost Eyes
+    // 6. Eaten Ghost Eyes
     if (!this.textures.exists('pacman:ghost_eyes')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
       gfx.fillStyle(0xffffff, 1);
@@ -95,7 +118,7 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // 6. Pellet
+    // 7. Pellet
     if (!this.textures.exists('pacman:pellet')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
       gfx.fillStyle(0xfef08a, 1);
@@ -104,7 +127,7 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // 7. Power Pellet
+    // 8. Power Pellet
     if (!this.textures.exists('pacman:power_pellet')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
       gfx.fillStyle(0xfde047, 1);
@@ -113,7 +136,7 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // 8. Fruit Textures
+    // 9. Fruit Textures
     const fruitKeys = ['Cherry', 'Strawberry', 'Peach', 'Apple', 'Pineapple', 'Galaxian', 'Bell', 'Key'];
     fruitKeys.forEach((fruit) => {
       const key = `pacman:fruit_${fruit.toLowerCase()}`;
