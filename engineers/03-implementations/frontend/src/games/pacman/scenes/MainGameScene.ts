@@ -43,7 +43,7 @@ export class MainGameScene extends Phaser.Scene {
 
   private pacmanX: number = 0;
   private pacmanY: number = 0;
-  private pacmanGridPos: GridPos = { col: 13, row: 26 };
+  private pacmanGridPos: GridPos = { col: 13, row: 23 };
   private currentDirection: Direction = Direction.NONE;
   private queuedDirection: Direction = Direction.NONE;
   private pacmanSprite!: Phaser.GameObjects.Sprite;
@@ -146,9 +146,9 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private resetEntityPositions(): void {
-    // Pacman Start Position: Tile (13, 26) - Authentic Arcade Pacman Start Corridor
-    this.pacmanGridPos = { col: 13, row: 26 };
-    const worldPos = PacmanMaze.tileToWorld(13, 26, DEFAULT_TILE_SIZE);
+    // Pacman Start Position: Tile (13, 23) - Authentic Arcade Pacman Start Corridor
+    this.pacmanGridPos = { col: 13, row: 23 };
+    const worldPos = PacmanMaze.tileToWorld(13, 23, DEFAULT_TILE_SIZE);
     this.pacmanX = this.offsetX + worldPos.x;
     this.pacmanY = this.offsetY + worldPos.y;
     this.currentDirection = Direction.LEFT;
