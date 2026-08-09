@@ -658,6 +658,41 @@ export class MainGameScene extends Phaser.Scene {
     });
   }
 
+  private showFloatingScore(x: number, y: number, score: number, color: string = '#38bdf8'): void {
+    const textObj = this.add.text(x, y, score.toString(), {
+      fontFamily: 'monospace',
+      fontSize: '18px',
+      fontStyle: 'bold',
+      color,
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0.5, 0.5).setDepth(100);
+
+    let flashCount = 0;
+    const flashTimer = this.time.addEvent({
+      delay: 90,
+      loop: true,
+      callback: () => {
+        flashCount++;
+        if (textObj && textObj.active) {
+          textObj.setVisible(flashCount % 2 === 0);
+        }
+      },
+    });
+
+    this.tweens.add({
+      targets: textObj,
+      y: y - 20,
+      duration: 1000,
+      onComplete: () => {
+        flashTimer.destroy();
+        if (textObj && textObj.active) {
+          textObj.destroy();
+        }
+      },
+    });
+  }
+
   private updateFruit(deltaSec: number, timeMs: number): void {
     this.gameState.updateFruitTimer(deltaSec);
     const activeFruit = this.gameState.getActiveFruit();
@@ -684,10 +719,18 @@ export class MainGameScene extends Phaser.Scene {
 
       // Pac-Man eat fruit check
       if (this.pacmanGridPos.col === FRUIT_SPAWN_TILE.col && this.pacmanGridPos.row === FRUIT_SPAWN_TILE.row) {
-        this.gameState.consumeFruit();
+        const fruitScore = this.gameState.consumeFruit();
         PacmanAudioService.playEatFruit();
-        this.fruitSprite.destroy();
-        this.fruitSprite = null;
+
+        if (fruitScore) {
+          const worldPos = PacmanMaze.tileToWorld(FRUIT_SPAWN_TILE.col, FRUIT_SPAWN_TILE.row, DEFAULT_TILE_SIZE);
+          this.showFloatingScore(this.offsetX + worldPos.x, this.offsetY + worldPos.y, fruitScore, '#fde047');
+        }
+
+        if (this.fruitSprite) {
+          this.fruitSprite.destroy();
+          this.fruitSprite = null;
+        }
       }
     } else if (this.fruitSprite) {
       this.fruitSprite.destroy();
@@ -704,10 +747,13 @@ export class MainGameScene extends Phaser.Scene {
       if (dist < 14) {
         if (ghost.mode === GhostMode.FRIGHTENED) {
           // Eat Ghost
-          this.gameState.eatGhost();
+          const ghostScore = this.gameState.eatGhost();
           PacmanAudioService.playEatGhost();
           ghost.mode = GhostMode.EATEN;
           ghost.sprite.setTexture('pacman:ghost_eyes');
+
+          // Show floating score popup at ghost location
+          this.showFloatingScore(ghost.x, ghost.y, ghostScore, '#38bdf8');
         } else if (ghost.mode === GhostMode.SCATTER || ghost.mode === GhostMode.CHASE) {
           // Pacman Dies
           this.handlePacmanDeath();
@@ -769,9 +815,8 @@ export class MainGameScene extends Phaser.Scene {
     this.statusText.setText(`LEVEL ${this.gameState.getLevel()}`);
     this.statusText.setVisible(true);
     this.time.delayedCall(2000, () => {
-      this.statusText.setVisible(false);
-      this.gameState.setPlayState(PlayState.PLAYING);
-      PacmanAudioService.startSiren(false);
+      // Start new level with full intro music fanfare and READY banner!
+      this.startReadyStateIntro();
     });
   }
 
