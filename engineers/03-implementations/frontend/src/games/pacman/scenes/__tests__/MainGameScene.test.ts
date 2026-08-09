@@ -21,6 +21,7 @@ describe('MainGameScene Unit Tests', () => {
       fillRect: vi.fn(),
       lineStyle: vi.fn(),
       strokeRect: vi.fn(),
+      lineBetween: vi.fn(),
       destroy: vi.fn(),
     };
 

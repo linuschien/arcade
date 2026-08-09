@@ -175,6 +175,9 @@ export class MainGameScene extends Phaser.Scene {
       this.pacmanSprite.setPosition(this.pacmanX, this.pacmanY);
       this.pacmanSprite.setVisible(true);
     }
+    if (typeof this.pacmanSprite.setDisplaySize === 'function') {
+      this.pacmanSprite.setDisplaySize(28, 28);
+    }
 
     // Ghost Start Configurations: Timed House Exits & Bouncing Home Position
     const ghostConfigs: Array<{
@@ -228,6 +231,9 @@ export class MainGameScene extends Phaser.Scene {
         ghost.sprite.setPosition(gx, gy);
         ghost.sprite.setVisible(true);
       }
+      if (typeof ghost.sprite.setDisplaySize === 'function') {
+        ghost.sprite.setDisplaySize(28, 28);
+      }
     });
 
     this.timerArrayPhaseIndex = 0;
@@ -239,6 +245,7 @@ export class MainGameScene extends Phaser.Scene {
     this.mazeGraphics.clear();
     const grid = this.maze.getGrid();
 
+    // 1. Draw dark background for wall tiles
     for (let r = 0; r < MAZE_ROWS; r++) {
       for (let c = 0; c < MAZE_COLS; c++) {
         const val = grid[r][c];
@@ -246,13 +253,97 @@ export class MainGameScene extends Phaser.Scene {
         const y = this.offsetY + r * DEFAULT_TILE_SIZE;
 
         if (val === TileType.WALL) {
-          this.mazeGraphics.fillStyle(0x1e3a8a, 1); // Dark blue wall fill
+          // Fill interior with pure dark canvas background
+          this.mazeGraphics.fillStyle(0x050b14, 1);
           this.mazeGraphics.fillRect(x, y, DEFAULT_TILE_SIZE, DEFAULT_TILE_SIZE);
-          this.mazeGraphics.lineStyle(1, 0x3b82f6, 1); // Neon blue stroke
-          this.mazeGraphics.strokeRect(x, y, DEFAULT_TILE_SIZE, DEFAULT_TILE_SIZE);
         } else if (val === TileType.GHOST_GATE) {
-          this.mazeGraphics.fillStyle(0xf472b6, 0.8);
-          this.mazeGraphics.fillRect(x, y + 8, DEFAULT_TILE_SIZE, 4);
+          this.mazeGraphics.fillStyle(0xf472b6, 0.9);
+          this.mazeGraphics.fillRect(x, y + 8, DEFAULT_TILE_SIZE, 5);
+        }
+      }
+    }
+
+    // Helper to check if a grid cell is a wall
+    const isWallTile = (col: number, row: number): boolean => {
+      if (row < 0 || row >= MAZE_ROWS || col < 0 || col >= MAZE_COLS) return true;
+      return grid[row][col] === TileType.WALL;
+    };
+
+    // 2. Pass 1: Draw outer royal-blue boundary strokes along non-wall edges
+    this.mazeGraphics.lineStyle(2, 0x1d4ed8, 1); // Royal Blue outer line
+    for (let r = 0; r < MAZE_ROWS; r++) {
+      for (let c = 0; c < MAZE_COLS; c++) {
+        if (grid[r][c] !== TileType.WALL) continue;
+
+        const x = this.offsetX + c * DEFAULT_TILE_SIZE;
+        const y = this.offsetY + r * DEFAULT_TILE_SIZE;
+        const s = DEFAULT_TILE_SIZE;
+
+        const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
+          if (typeof this.mazeGraphics.lineBetween === 'function') {
+            this.mazeGraphics.lineBetween(x1, y1, x2, y2);
+          }
+        };
+
+        // Top edge
+        if (!isWallTile(c, r - 1)) {
+          drawLine(x, y, x + s, y);
+        }
+        // Bottom edge
+        if (!isWallTile(c, r + 1)) {
+          drawLine(x, y + s, x + s, y + s);
+        }
+        // Left edge
+        if (!isWallTile(c - 1, r)) {
+          drawLine(x, y, x, y + s);
+        }
+        // Right edge
+        if (!isWallTile(c + 1, r)) {
+          drawLine(x + s, y, x + s, y + s);
+        }
+      }
+    }
+
+    // 3. Pass 2: Draw inset neon-blue parallel strokes for 1980 arcade double-line glow effect
+    this.mazeGraphics.lineStyle(1.5, 0x3b82f6, 1); // Bright Neon Blue inner line
+    const inset = 3;
+    for (let r = 0; r < MAZE_ROWS; r++) {
+      for (let c = 0; c < MAZE_COLS; c++) {
+        if (grid[r][c] !== TileType.WALL) continue;
+
+        const x = this.offsetX + c * DEFAULT_TILE_SIZE;
+        const y = this.offsetY + r * DEFAULT_TILE_SIZE;
+        const s = DEFAULT_TILE_SIZE;
+
+        const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
+          if (typeof this.mazeGraphics.lineBetween === 'function') {
+            this.mazeGraphics.lineBetween(x1, y1, x2, y2);
+          }
+        };
+
+        // Top inset
+        if (!isWallTile(c, r - 1)) {
+          const x1 = isWallTile(c - 1, r) ? x : x + inset;
+          const x2 = isWallTile(c + 1, r) ? x + s : x + s - inset;
+          drawLine(x1, y + inset, x2, y + inset);
+        }
+        // Bottom inset
+        if (!isWallTile(c, r + 1)) {
+          const x1 = isWallTile(c - 1, r) ? x : x + inset;
+          const x2 = isWallTile(c + 1, r) ? x + s : x + s - inset;
+          drawLine(x1, y + s - inset, x2, y + s - inset);
+        }
+        // Left inset
+        if (!isWallTile(c - 1, r)) {
+          const y1 = isWallTile(c, r - 1) ? y : y + inset;
+          const y2 = isWallTile(c, r + 1) ? y + s : y + s - inset;
+          drawLine(x + inset, y1, x + inset, y2);
+        }
+        // Right inset
+        if (!isWallTile(c + 1, r)) {
+          const y1 = isWallTile(c, r - 1) ? y : y + inset;
+          const y2 = isWallTile(c, r + 1) ? y + s : y + s - inset;
+          drawLine(x + s - inset, y1, x + s - inset, y2);
         }
       }
     }
@@ -412,6 +503,9 @@ export class MainGameScene extends Phaser.Scene {
     const openTex = this.textures.exists('pacman:player_open') ? 'pacman:player_open' : 'pacman:player';
     const closeTex = this.textures.exists('pacman:player_closed') ? 'pacman:player_closed' : 'pacman:player';
     this.pacmanSprite.setTexture(this.isMouthOpen ? openTex : closeTex);
+    if (typeof this.pacmanSprite.setDisplaySize === 'function') {
+      this.pacmanSprite.setDisplaySize(28, 28);
+    }
 
     // Direction Rotation Angles
     let rot = 0;
