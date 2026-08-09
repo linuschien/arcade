@@ -5,11 +5,13 @@
 
 import { IArcadeGame } from '@/core/bridge/ArcadeBridge';
 import { createTetrisGame } from './tetris';
+import { createPacmanGame } from './pacman';
 
 export type GameFactory = (container: HTMLElement) => IArcadeGame;
 
 export const gameRegistry: Record<string, GameFactory> = {
   tetris: createTetrisGame,
+  pacman: createPacmanGame,
 };
 
 /**
