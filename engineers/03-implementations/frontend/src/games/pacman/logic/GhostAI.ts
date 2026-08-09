@@ -88,7 +88,8 @@ export class GhostAI {
   }
 
   /**
-   * Select next direction at intersection (cannot turn 180 degrees backward unless mode changed).
+   * Select next direction at intersection.
+   * If useBfsHome is true, uses BFS distance map to navigate eaten ghosts directly to door (13, 14).
    */
   public static getNextDirection(
     maze: PacmanMaze,
@@ -96,16 +97,17 @@ export class GhostAI {
     currentDir: Direction,
     targetTile: GridPos,
     allowGhostGate: boolean = false,
-    allowReverse: boolean = false
+    allowReverse: boolean = false,
+    useBfsHome: boolean = false
   ): Direction {
     const validDirs: Direction[] = [Direction.UP, Direction.LEFT, Direction.DOWN, Direction.RIGHT];
     const opposite = OPPOSITE_DIRECTIONS[currentDir];
 
     let bestDir = currentDir;
-    let minDistance = Infinity;
+    let minMetric = Infinity;
 
     for (const dir of validDirs) {
-      // Disallow 180 turn unless forced
+      // Disallow 180 turn unless forced by dead-end
       if (!allowReverse && dir === opposite && currentDir !== Direction.NONE) {
         continue;
       }
@@ -115,15 +117,25 @@ export class GhostAI {
       const nextRow = currentPos.row + vec.row;
 
       if (!maze.isWall(nextCol, nextRow, allowGhostGate)) {
-        const dx = nextCol - targetTile.col;
-        const dy = nextRow - targetTile.row;
-        const distSq = dx * dx + dy * dy;
+        let metric = Infinity;
+        if (useBfsHome) {
+          metric = maze.getHomeBfsDistance(nextCol, nextRow);
+        } else {
+          const dx = nextCol - targetTile.col;
+          const dy = nextRow - targetTile.row;
+          metric = dx * dx + dy * dy;
+        }
 
-        if (distSq < minDistance) {
-          minDistance = distSq;
+        if (metric < minMetric) {
+          minMetric = metric;
           bestDir = dir;
         }
       }
+    }
+
+    // Fallback: If facing a wall with no open side directions, allow 180 reverse to prevent walking off-screen
+    if (minMetric === Infinity && !allowReverse) {
+      return GhostAI.getNextDirection(maze, currentPos, currentDir, targetTile, allowGhostGate, true, useBfsHome);
     }
 
     return bestDir;

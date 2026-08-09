@@ -48,7 +48,7 @@ export const OPPOSITE_DIRECTIONS: Record<Direction, Direction> = {
 
 export const MAZE_COLS = 28;
 export const MAZE_ROWS = 36;
-export const DEFAULT_TILE_SIZE = 20;
+export const DEFAULT_TILE_SIZE = 21;
 export const TUNNEL_ROW = 15;
 
 // Authentic 28x36 Arcade Pac-Man Matrix (0=EMPTY, 1=WALL, 2=PELLET, 3=POWER_PELLET, 4=GHOST_HOUSE, 5=GHOST_GATE)
@@ -103,10 +103,12 @@ export class PacmanMaze {
   private grid: number[][];
   private initialPelletCount: number = 0;
   private remainingPelletCount: number = 0;
+  private homeBfsDistance: number[][] = [];
 
   constructor() {
     this.grid = [];
     this.resetMaze();
+    this.computeHomeBfsDistance();
   }
 
   /**
@@ -125,6 +127,50 @@ export class PacmanMaze {
     }
     this.initialPelletCount = count;
     this.remainingPelletCount = count;
+  }
+
+  /**
+   * Precompute BFS shortest path step distance from every maze tile to ghost house door (13, 14).
+   */
+  private computeHomeBfsDistance(): void {
+    const doorCol = 13;
+    const doorRow = 14;
+
+    this.homeBfsDistance = Array.from({ length: MAZE_ROWS }, () =>
+      Array(MAZE_COLS).fill(Infinity)
+    );
+
+    const queue: Array<{ col: number; row: number; dist: number }> = [
+      { col: doorCol, row: doorRow, dist: 0 },
+    ];
+    this.homeBfsDistance[doorRow][doorCol] = 0;
+
+    const dirs = [
+      { col: 0, row: -1 },
+      { col: 0, row: 1 },
+      { col: -1, row: 0 },
+      { col: 1, row: 0 },
+    ];
+
+    while (queue.length > 0) {
+      const curr = queue.shift()!;
+      for (const d of dirs) {
+        const nc = curr.col + d.col;
+        const nr = curr.row + d.row;
+
+        if (nr >= 0 && nr < MAZE_ROWS && nc >= 0 && nc < MAZE_COLS) {
+          if (!this.isWall(nc, nr, true) && this.homeBfsDistance[nr][nc] === Infinity) {
+            this.homeBfsDistance[nr][nc] = curr.dist + 1;
+            queue.push({ col: nc, row: nr, dist: curr.dist + 1 });
+          }
+        }
+      }
+    }
+  }
+
+  public getHomeBfsDistance(col: number, row: number): number {
+    if (row < 0 || row >= MAZE_ROWS || col < 0 || col >= MAZE_COLS) return Infinity;
+    return this.homeBfsDistance[row][col];
   }
 
   public getGrid(): number[][] {

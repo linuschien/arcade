@@ -70,8 +70,8 @@ export class MainGameScene extends Phaser.Scene {
   private statusText!: Phaser.GameObjects.Text;
 
   private isPausedState: boolean = false;
-  private offsetX: number = 120; // Center 560px grid inside 800px width canvas
-  private offsetY: number = 0;   // 36 rows * 20px = 720px height fits canvas perfectly
+  private offsetX: number = 106; // Center 588px grid inside 800px canvas width
+  private offsetY: number = 0;   // 36 rows * 21px = 756px height fits canvas perfectly
 
   constructor() {
     super({ key: 'pacman:MainGameScene' });
@@ -141,7 +141,7 @@ export class MainGameScene extends Phaser.Scene {
       color: '#ef4444',
     });
 
-    this.statusText = this.add.text(400, 410, 'READY!', {
+    this.statusText = this.add.text(400, 430, 'READY!', {
       fontFamily: 'monospace',
       fontSize: '32px',
       color: '#fde047',
@@ -289,7 +289,7 @@ export class MainGameScene extends Phaser.Scene {
     this.updatePacmanPosition(deltaSec, deltaMs);
     this.updateGhostFSM(deltaSec);
     this.updateGhostsPosition(deltaSec, time);
-    this.updateFruit(deltaSec);
+    this.updateFruit(deltaSec, time);
     this.checkCollisions();
     this.updateUI();
   }
@@ -589,18 +589,24 @@ export class MainGameScene extends Phaser.Scene {
 
       if (dist < 4) {
         if (ghost.mode === GhostMode.EATEN && ghost.gridPos.col === 13 && ghost.gridPos.row === 16) {
-          // Revive eaten ghost inside house
+          // Revive eaten ghost: reset texture, set houseState = HOME, and rest for 2.0 seconds inside house!
           ghost.mode = this.getCurrentPhaseMode();
           ghost.sprite.setTexture(`pacman:ghost_${ghost.type.toLowerCase()}`);
-          ghost.houseState = GhostHouseState.EXITING;
+          ghost.houseState = GhostHouseState.HOME;
+          ghost.exitDelaySec = 2.0;
+          ghost.homeBaseX = wCenterX;
+          ghost.homeBaseY = wCenterY;
           return;
         } else {
+          const isEaten = ghost.mode === GhostMode.EATEN;
           ghost.direction = GhostAI.getNextDirection(
             this.maze,
             ghost.gridPos,
             ghost.direction,
             ghost.targetTile,
-            allowGatePass
+            allowGatePass,
+            false,
+            isEaten
           );
         }
       }
@@ -625,6 +631,10 @@ export class MainGameScene extends Phaser.Scene {
         } else if (ghost.x > rightBoundary) {
           ghost.x = this.offsetX + 0.5 * DEFAULT_TILE_SIZE;
         }
+      } else {
+        // Clamp to active maze bounds when not in tunnel
+        ghost.x = Phaser.Math.Clamp(ghost.x, this.offsetX + 10, this.offsetX + (MAZE_COLS - 0.5) * DEFAULT_TILE_SIZE);
+        ghost.y = Phaser.Math.Clamp(ghost.y, this.offsetY + 10, this.offsetY + (MAZE_ROWS - 0.5) * DEFAULT_TILE_SIZE);
       }
 
       const newTile = PacmanMaze.worldToTile(ghost.x - this.offsetX, ghost.y - this.offsetY, DEFAULT_TILE_SIZE);
@@ -633,7 +643,7 @@ export class MainGameScene extends Phaser.Scene {
     });
   }
 
-  private updateFruit(deltaSec: number): void {
+  private updateFruit(deltaSec: number, timeMs: number): void {
     this.gameState.updateFruitTimer(deltaSec);
     const activeFruit = this.gameState.getActiveFruit();
 
@@ -643,6 +653,17 @@ export class MainGameScene extends Phaser.Scene {
         const key = `pacman:fruit_${activeFruit.type.toLowerCase()}`;
         this.fruitSprite = this.add.sprite(this.offsetX + worldPos.x, this.offsetY + worldPos.y, key);
       } else {
+        this.fruitSprite.setVisible(true);
+      }
+
+      // Fruit Flash Hint: Flash during first 1.5s (remainingTimeSec >= 8.0s) and final 2.0s (remainingTimeSec <= 2.0s)
+      const timer = activeFruit.remainingTimeSec;
+      const isFlashingPeriod = (timer >= 8.0 || timer <= 2.0);
+
+      if (isFlashingPeriod && this.fruitSprite) {
+        const isVisible = Math.floor(timeMs * 0.008) % 2 === 0;
+        this.fruitSprite.setVisible(isVisible);
+      } else if (this.fruitSprite) {
         this.fruitSprite.setVisible(true);
       }
 
