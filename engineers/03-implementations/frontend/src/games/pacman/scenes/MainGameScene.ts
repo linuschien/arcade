@@ -279,47 +279,14 @@ export class MainGameScene extends Phaser.Scene {
     };
 
     const s = DEFAULT_TILE_SIZE;
-
-    // 2. Pass 1: Outer Royal Blue Boundary Line (#1d4ed8) - 100% Continuous Gapless Grid Lock
-    this.mazeGraphics.lineStyle(2, 0x1d4ed8, 1);
-    for (let r = 0; r < MAZE_ROWS; r++) {
-      for (let c = 0; c < MAZE_COLS; c++) {
-        if (grid[r][c] !== TileType.WALL) continue;
-
-        const x = this.offsetX + c * s;
-        const y = this.offsetY + r * s;
-
-        // Top edge
-        if (!isWallTile(c, r - 1)) {
-          const x1 = !isWallTile(c - 1, r) ? x : x - 1;
-          const x2 = !isWallTile(c + 1, r) ? x + s : x + s + 1;
-          drawLine(x1, y, x2, y);
-        }
-        // Bottom edge
-        if (!isWallTile(c, r + 1)) {
-          const x1 = !isWallTile(c - 1, r) ? x : x - 1;
-          const x2 = !isWallTile(c + 1, r) ? x + s : x + s + 1;
-          drawLine(x1, y + s, x2, y + s);
-        }
-        // Left edge
-        if (!isWallTile(c - 1, r)) {
-          const y1 = !isWallTile(c, r - 1) ? y : y - 1;
-          const y2 = !isWallTile(c, r + 1) ? y + s : y + s + 1;
-          drawLine(x, y1, x, y2);
-        }
-        // Right edge
-        if (!isWallTile(c + 1, r)) {
-          const y1 = !isWallTile(c, r - 1) ? y : y - 1;
-          const y2 = !isWallTile(c, r + 1) ? y + s : y + s + 1;
-          drawLine(x + s, y1, x + s, y2);
-        }
-      }
-    }
-
-    // 3. Pass 2: Inset Neon Blue Line (#3b82f6) - Dual-Border Arcade Glow with Seamless Outer & Inner Joins
-    const INSET_RATIO = 0.18; // 18% of tile size = ~4px inset for 21px tile
+    const INSET_RATIO = 0.40; // 40% of tile size = 8px inset for 21px tile
     const inset = Math.round(s * INSET_RATIO);
-    this.mazeGraphics.lineStyle(1.5, 0x3b82f6, 1);
+
+    // Render single neon blue boundary line inset by 40% (8px).
+    // This expands visual corridor width to 37px, shrinks 2-tile walls to 26px,
+    // and keeps 1-tile walls (ghost house) crisp at 5px.
+    // Endpoints extend by 1px to ensure 100% gapless stroke overlaps across all corners and tile joins.
+    this.mazeGraphics.lineStyle(2, 0x1d6ef5, 1);
 
     for (let r = 0; r < MAZE_ROWS; r++) {
       for (let c = 0; c < MAZE_COLS; c++) {
@@ -343,7 +310,7 @@ export class MainGameScene extends Phaser.Scene {
           } else if (isWallTile(c + 1, r) && !isWallTile(c + 1, r - 1)) {
             x2 = x + s + inset; // Inner T/L corner
           }
-          drawLine(x1, y + inset, x2, y + inset);
+          drawLine(x1 - 1, y + inset, x2 + 1, y + inset);
         }
 
         // Bottom inset line
@@ -361,7 +328,7 @@ export class MainGameScene extends Phaser.Scene {
           } else if (isWallTile(c + 1, r) && !isWallTile(c + 1, r + 1)) {
             x2 = x + s + inset; // Inner T/L corner
           }
-          drawLine(x1, y + s - inset, x2, y + s - inset);
+          drawLine(x1 - 1, y + s - inset, x2 + 1, y + s - inset);
         }
 
         // Left inset line
@@ -379,7 +346,7 @@ export class MainGameScene extends Phaser.Scene {
           } else if (isWallTile(c, r + 1) && !isWallTile(c - 1, r + 1)) {
             y2 = y + s + inset; // Inner T/L corner
           }
-          drawLine(x + inset, y1, x + inset, y2);
+          drawLine(x + inset, y1 - 1, x + inset, y2 + 1);
         }
 
         // Right inset line
@@ -397,7 +364,7 @@ export class MainGameScene extends Phaser.Scene {
           } else if (isWallTile(c, r + 1) && !isWallTile(c + 1, r + 1)) {
             y2 = y + s + inset; // Inner T/L corner
           }
-          drawLine(x + s - inset, y1, x + s - inset, y2);
+          drawLine(x + s - inset, y1 - 1, x + s - inset, y2 + 1);
         }
       }
     }
