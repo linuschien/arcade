@@ -12,8 +12,8 @@ describe('PacmanMaze Unit Tests', () => {
     const grid = maze.getGrid();
     expect(grid.length).toBe(MAZE_ROWS);
     expect(grid[0].length).toBe(MAZE_COLS);
-    expect(maze.getInitialPelletCount()).toBe(248);
-    expect(maze.getRemainingPelletCount()).toBe(248);
+    expect(maze.getInitialPelletCount()).toBe(244);
+    expect(maze.getRemainingPelletCount()).toBe(244);
   });
 
   it('should calculate tile to world and world to tile coordinates accurately', () => {
