@@ -967,7 +967,7 @@ export class MainGameScene extends Phaser.Scene {
 
     // Play 11-frame wilting death animation
     for (let frame = 0; frame <= 10; frame++) {
-      this.time.delayedCall(frame * 90, () => {
+      this.time.delayedCall(frame * 80, () => {
         if (this.pacmanSprite) {
           const key = `pacman:death_${frame}`;
           if (this.textures.exists(key)) {
@@ -977,8 +977,15 @@ export class MainGameScene extends Phaser.Scene {
       });
     }
 
-    // After 1.0s death animation finishes, process lives & reset/respawn
-    this.time.delayedCall(1050, () => {
+    // Hide pacman sprite right after wilting animation completes at 920ms
+    this.time.delayedCall(920, () => {
+      if (this.pacmanSprite) {
+        this.pacmanSprite.setVisible(false);
+      }
+    });
+
+    // After 1.45s complete death tune & 2 pop notes finish, process lives & reset/respawn
+    this.time.delayedCall(1450, () => {
       const remainingLives = this.gameState.loseLife();
 
       if (remainingLives === 0) {
