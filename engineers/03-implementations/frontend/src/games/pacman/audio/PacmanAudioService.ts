@@ -131,9 +131,9 @@ class PacmanAudioServiceImpl {
       { freq: 120, delayMs: 720,  durationSeconds: 0.10, type: 'sawtooth' as OscillatorType, vol: 0.2 },
       { freq: 80,  delayMs: 830,  durationSeconds: 0.15, type: 'sawtooth' as OscillatorType, vol: 0.2 },
 
-      // 2 Final Authentic Pop/Plink Finish Notes (Pac-Man Disappears)
-      { freq: 140, delayMs: 1040, durationSeconds: 0.07, type: 'square' as OscillatorType, vol: 0.22 },
-      { freq: 280, delayMs: 1130, durationSeconds: 0.12, type: 'square' as OscillatorType, vol: 0.25 },
+      // 2 Final Authentic High-Pitch Pop/Plink Finish Chirps (Pac-Man Disappears)
+      { freq: 659.25, delayMs: 1040, durationSeconds: 0.08, type: 'square' as OscillatorType, vol: 0.22 }, // High E5 Pop 1
+      { freq: 987.77, delayMs: 1140, durationSeconds: 0.12, type: 'square' as OscillatorType, vol: 0.25 }, // High B5 Pop 2
     ];
     SoundEngine.playSequence(deathSeq);
   }
