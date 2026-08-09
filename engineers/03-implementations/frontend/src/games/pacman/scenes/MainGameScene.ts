@@ -63,11 +63,11 @@ export class MainGameScene extends Phaser.Scene {
   private frightenedTimeSec: number = 0;
   private frightenedFlashSec: number = 0;
 
-  // UI Text
+  // UI Text & Life Sprites
   private scoreText!: Phaser.GameObjects.Text;
-  private livesText!: Phaser.GameObjects.Text;
   private levelText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
+  private lifeSprites: Phaser.GameObjects.Sprite[] = [];
 
   private isPausedState: boolean = false;
   private offsetX: number = 106; // Center 588px grid inside 800px canvas width
@@ -123,23 +123,30 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private createUI(): void {
-    this.scoreText = this.add.text(20, 8, '1UP: 0', {
-      fontFamily: 'monospace',
-      fontSize: '18px',
-      color: '#ffffff',
-    });
-
-    this.levelText = this.add.text(350, 8, 'LVL 1', {
+    // Top-Left: LEVEL text
+    this.levelText = this.add.text(20, 8, 'LEVEL 1', {
       fontFamily: 'monospace',
       fontSize: '18px',
       color: '#facc15',
     });
 
-    this.livesText = this.add.text(680, 8, 'LIVES: 3', {
+    // Top-Center: Score text
+    this.scoreText = this.add.text(400, 8, '1UP: 0', {
       fontFamily: 'monospace',
       fontSize: '18px',
-      color: '#ef4444',
-    });
+      color: '#ffffff',
+    }).setOrigin(0.5, 0);
+
+    // Top-Right: Pac-Man Lives Icons (Max 5 reserve life icons)
+    this.lifeSprites = [];
+    for (let i = 0; i < 5; i++) {
+      const icon = this.add.sprite(760 - i * 24, 18, 'pacman:player_open');
+      if (typeof icon.setRotation === 'function') {
+        icon.setRotation(Math.PI); // Facing Left like classic Pacman extra life icons
+      }
+      icon.setVisible(false);
+      this.lifeSprites.push(icon);
+    }
 
     this.statusText = this.add.text(400, 430, 'READY!', {
       fontFamily: 'monospace',
@@ -759,7 +766,7 @@ export class MainGameScene extends Phaser.Scene {
     this.renderPellets();
     this.resetEntityPositions();
 
-    this.statusText.setText(`STAGE ${this.gameState.getLevel()}`);
+    this.statusText.setText(`LEVEL ${this.gameState.getLevel()}`);
     this.statusText.setVisible(true);
     this.time.delayedCall(2000, () => {
       this.statusText.setVisible(false);
@@ -769,9 +776,15 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private updateUI(): void {
+    this.levelText.setText(`LEVEL ${this.gameState.getLevel()}`);
     this.scoreText.setText(`1UP: ${this.gameState.getScore()}`);
-    this.levelText.setText(`LVL ${this.gameState.getLevel()}`);
-    this.livesText.setText(`LIVES: ${this.gameState.getLives()}`);
+
+    const extraLives = Math.max(0, this.gameState.getLives() - 1);
+    this.lifeSprites.forEach((sprite, index) => {
+      if (sprite) {
+        sprite.setVisible(index < extraLives);
+      }
+    });
   }
 
   private handleTeardown(): void {
@@ -795,6 +808,9 @@ export class MainGameScene extends Phaser.Scene {
     if (this.mazeGraphics) {
       this.mazeGraphics.destroy();
     }
+
+    this.lifeSprites.forEach((s) => s.destroy());
+    this.lifeSprites = [];
 
     // Teardown dynamic textures
     const pacmanTextureKeys = [
