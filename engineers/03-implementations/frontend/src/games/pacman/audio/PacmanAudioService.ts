@@ -114,21 +114,26 @@ class PacmanAudioServiceImpl {
   }
 
   /**
-   * Authentic Pac-Man Death Tune (11-Note Downward Pitch Drop).
+   * Authentic Pac-Man Death Tune (13-Note Downward Pitch Drop + 2 Final Pop Notes).
    */
   public playDeath(): void {
     const deathSeq = [
-      { freq: 500, delayMs: 0, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
-      { freq: 450, delayMs: 80, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
-      { freq: 400, delayMs: 160, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
-      { freq: 350, delayMs: 240, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
-      { freq: 300, delayMs: 320, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
-      { freq: 250, delayMs: 400, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
-      { freq: 200, delayMs: 480, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
-      { freq: 150, delayMs: 560, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
-      { freq: 120, delayMs: 640, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
-      { freq: 90,  delayMs: 720, durationSeconds: 0.12, type: 'sawtooth' as OscillatorType, vol: 0.2 },
-      { freq: 60,  delayMs: 840, durationSeconds: 0.2,  type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      // 11 Downward Pitch Drops
+      { freq: 520, delayMs: 0,    durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 480, delayMs: 80,   durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 440, delayMs: 160,  durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 400, delayMs: 240,  durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 350, delayMs: 320,  durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 300, delayMs: 400,  durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 250, delayMs: 480,  durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 200, delayMs: 560,  durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 160, delayMs: 640,  durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 120, delayMs: 720,  durationSeconds: 0.10, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 80,  delayMs: 830,  durationSeconds: 0.15, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+
+      // 2 Final Authentic Pop/Plink Finish Notes (Pac-Man Disappears)
+      { freq: 140, delayMs: 1040, durationSeconds: 0.07, type: 'square' as OscillatorType, vol: 0.22 },
+      { freq: 280, delayMs: 1130, durationSeconds: 0.12, type: 'square' as OscillatorType, vol: 0.25 },
     ];
     SoundEngine.playSequence(deathSeq);
   }
