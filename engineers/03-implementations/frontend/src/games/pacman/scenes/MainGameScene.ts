@@ -10,7 +10,7 @@ import { ArcadeBridge } from '@/core/bridge/ArcadeBridge';
 import { SoundEngine } from '@/core/audio/SoundEngine';
 import { PacmanMaze, TileType, Direction, DIRECTION_VECTORS, OPPOSITE_DIRECTIONS, GridPos, MAZE_COLS, MAZE_ROWS, DEFAULT_TILE_SIZE, TUNNEL_ROW } from '../logic/PacmanMaze';
 import { PacmanGameState, PlayState, FRUIT_SPAWN_TILE } from '../logic/PacmanGameState';
-import { GhostAI, GhostType, GhostMode, GHOST_CORNER_TARGETS, GHOST_HOUSE_RESPAWN } from '../logic/GhostAI';
+import { GhostAI, GhostType, GhostMode, GHOST_CORNER_TARGETS } from '../logic/GhostAI';
 import { PacmanAudioService } from '../audio/PacmanAudioService';
 
 const SPEED_PACMAN_BASE = 130; // Pixels per second
@@ -87,23 +87,27 @@ export class MainGameScene extends Phaser.Scene {
     this.renderMazeStatic();
     this.renderPellets();
 
-    // Start in READY state for full 1.8s Intro Theme music playback
+    // Start in READY state for full 3.7s Intro Theme music playback
+    this.startReadyStateIntro();
+
+    // Teardown event listeners
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleTeardown, this);
+    this.events.once(Phaser.Scenes.Events.DESTROY, this.handleTeardown, this);
+  }
+
+  private startReadyStateIntro(): void {
     this.gameState.setPlayState(PlayState.READY);
     this.statusText.setText('READY!');
     this.statusText.setVisible(true);
 
     PacmanAudioService.playGameStart();
 
-    // Wait 1.8s for Intro Fanfare before starting gameplay loop & siren
-    this.time.delayedCall(1800, () => {
+    // Wait 3.7s for full 32-note Intro Fanfare before starting gameplay loop & siren
+    this.time.delayedCall(3700, () => {
       this.statusText.setVisible(false);
       this.gameState.setPlayState(PlayState.PLAYING);
       PacmanAudioService.startSiren(false);
     });
-
-    // Teardown event listeners
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleTeardown, this);
-    this.events.once(Phaser.Scenes.Events.DESTROY, this.handleTeardown, this);
   }
 
   public setPauseState(paused: boolean): void {
@@ -158,7 +162,9 @@ export class MainGameScene extends Phaser.Scene {
       this.pacmanSprite = this.add.sprite(this.pacmanX, this.pacmanY, 'pacman:player_open');
     } else {
       this.pacmanSprite.setTexture('pacman:player_open');
-      this.pacmanSprite.setRotation(Math.PI); // Facing LEFT
+      if (typeof this.pacmanSprite.setRotation === 'function') {
+        this.pacmanSprite.setRotation(Math.PI); // Facing LEFT
+      }
       this.pacmanSprite.setPosition(this.pacmanX, this.pacmanY);
       this.pacmanSprite.setVisible(true);
     }
@@ -567,7 +573,12 @@ export class MainGameScene extends Phaser.Scene {
           clydePos
         );
       } else if (ghost.mode === GhostMode.EATEN) {
-        ghost.targetTile = { col: 13, row: 16 }; // Target center inside house
+        // Eaten ghost target door (13, 14) first while outside to avoid wall bumping
+        if (ghost.gridPos.col === 13 && (ghost.gridPos.row === 14 || ghost.gridPos.row === 15)) {
+          ghost.targetTile = { col: 13, row: 16 }; // Inside house center
+        } else {
+          ghost.targetTile = { col: 13, row: 14 }; // Door entrance outside house
+        }
       }
 
       // 3. Tile Center Steering
@@ -670,30 +681,45 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private handlePacmanDeath(): void {
+    this.gameState.setPlayState(PlayState.DYING);
     PacmanAudioService.stopSiren();
     PacmanAudioService.playDeath();
-    const remainingLives = this.gameState.loseLife();
 
-    if (remainingLives === 0) {
-      this.statusText.setText('GAME OVER');
-      this.statusText.setVisible(true);
+    // Hide ghost sprites during death animation
+    this.ghosts.forEach((g) => g.sprite.setVisible(false));
 
-      ArcadeBridge.emit('GAME_OVER', {
-        gameId: 'pacman',
-        score: this.gameState.getScore(),
-        playTimeSeconds: Math.floor(this.gameState.getPlayTimeSeconds()),
-        creditsUsed: 1,
-      });
-    } else {
-      this.statusText.setText('READY!');
-      this.statusText.setVisible(true);
-      this.time.delayedCall(1200, () => {
-        this.statusText.setVisible(false);
-        this.resetEntityPositions();
-        this.gameState.setPlayState(PlayState.PLAYING);
-        PacmanAudioService.startSiren(false);
+    // Play 11-frame wilting death animation
+    for (let frame = 0; frame <= 10; frame++) {
+      this.time.delayedCall(frame * 90, () => {
+        if (this.pacmanSprite) {
+          const key = `pacman:death_${frame}`;
+          if (this.textures.exists(key)) {
+            this.pacmanSprite.setTexture(key);
+          }
+        }
       });
     }
+
+    // After 1.0s death animation finishes, process lives & reset/respawn
+    this.time.delayedCall(1050, () => {
+      const remainingLives = this.gameState.loseLife();
+
+      if (remainingLives === 0) {
+        this.statusText.setText('GAME OVER');
+        this.statusText.setVisible(true);
+
+        ArcadeBridge.emit('GAME_OVER', {
+          gameId: 'pacman',
+          score: this.gameState.getScore(),
+          playTimeSeconds: Math.floor(this.gameState.getPlayTimeSeconds()),
+          creditsUsed: 1,
+        });
+      } else {
+        // Respawn & play Intro Fanfare again with READY banner!
+        this.resetEntityPositions();
+        this.startReadyStateIntro();
+      }
+    });
   }
 
   private handleLevelClear(): void {
@@ -756,6 +782,10 @@ export class MainGameScene extends Phaser.Scene {
       'pacman:pellet',
       'pacman:power_pellet',
     ];
+
+    for (let f = 0; f <= 10; f++) {
+      pacmanTextureKeys.push(`pacman:death_${f}`);
+    }
 
     pacmanTextureKeys.forEach((key) => {
       if (this.textures.exists(key)) {

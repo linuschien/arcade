@@ -51,7 +51,48 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // 3. Ghost Textures (Blinky, Pinky, Inky, Clyde)
+    // 3. Pac-Man Death Wilting Animation Textures (pacman:death_0 .. pacman:death_10)
+    const deathAngles = [40, 70, 110, 150, 190, 240, 300, 340];
+    deathAngles.forEach((angleDeg, idx) => {
+      const key = `pacman:death_${idx}`;
+      if (!this.textures.exists(key)) {
+        const gfx = this.make.graphics({ x: 0, y: 0 });
+        gfx.fillStyle(0xfacc15, 1);
+        const startRad = Phaser.Math.DegToRad(angleDeg / 2);
+        const endRad = Phaser.Math.DegToRad(360 - angleDeg / 2);
+        if (typeof (gfx as any).slice === 'function') {
+          (gfx as any).slice(10, 10, 9, startRad, endRad, false);
+          gfx.fillPath();
+        } else {
+          gfx.fillCircle(10, 10, Math.max(1, 9 - idx));
+        }
+        gfx.generateTexture(key, 20, 20);
+        gfx.destroy();
+      }
+    });
+
+    // Final pop death frames
+    if (!this.textures.exists('pacman:death_8')) {
+      const gfx = this.make.graphics({ x: 0, y: 0 });
+      gfx.fillStyle(0xfacc15, 1);
+      gfx.fillCircle(10, 10, 4);
+      gfx.generateTexture('pacman:death_8', 20, 20);
+      gfx.destroy();
+    }
+    if (!this.textures.exists('pacman:death_9')) {
+      const gfx = this.make.graphics({ x: 0, y: 0 });
+      gfx.fillStyle(0xfacc15, 1);
+      gfx.fillCircle(10, 10, 1.5);
+      gfx.generateTexture('pacman:death_9', 20, 20);
+      gfx.destroy();
+    }
+    if (!this.textures.exists('pacman:death_10')) {
+      const gfx = this.make.graphics({ x: 0, y: 0 });
+      gfx.generateTexture('pacman:death_10', 20, 20);
+      gfx.destroy();
+    }
+
+    // 4. Ghost Textures (Blinky, Pinky, Inky, Clyde)
     const ghostColors: Array<{ key: string; color: number }> = [
       { key: 'pacman:ghost_blinky', color: 0xef4444 }, // Red
       { key: 'pacman:ghost_pinky', color: 0xf472b6 },  // Pink
@@ -79,7 +120,7 @@ export class PreloadScene extends Phaser.Scene {
       }
     });
 
-    // 4. Frightened Ghost (Blue)
+    // 5. Frightened Ghost (Blue)
     if (!this.textures.exists('pacman:ghost_frightened')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
       gfx.fillStyle(0x1d4ed8, 1);
@@ -92,7 +133,7 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // 5. Frightened Flashing Ghost (White)
+    // 6. Frightened Flashing Ghost (White)
     if (!this.textures.exists('pacman:ghost_frightened_flash')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
       gfx.fillStyle(0xf8fafc, 1);
@@ -105,7 +146,7 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // 6. Eaten Ghost Eyes
+    // 7. Eaten Ghost Eyes
     if (!this.textures.exists('pacman:ghost_eyes')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
       gfx.fillStyle(0xffffff, 1);
@@ -118,7 +159,7 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // 7. Pellet
+    // 8. Pellet
     if (!this.textures.exists('pacman:pellet')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
       gfx.fillStyle(0xfef08a, 1);
@@ -127,7 +168,7 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // 8. Power Pellet
+    // 9. Power Pellet
     if (!this.textures.exists('pacman:power_pellet')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
       gfx.fillStyle(0xfde047, 1);
@@ -136,7 +177,7 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // 9. Fruit Textures
+    // 10. Fruit Textures
     const fruitKeys = ['Cherry', 'Strawberry', 'Peach', 'Apple', 'Pineapple', 'Galaxian', 'Bell', 'Key'];
     fruitKeys.forEach((fruit) => {
       const key = `pacman:fruit_${fruit.toLowerCase()}`;

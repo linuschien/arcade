@@ -13,25 +13,46 @@ class PacmanAudioServiceImpl {
   private sirenPitchOffset: number = 0;
 
   /**
-   * Authentic Game Start Intro Fanfare (16-Note Pac-Man Theme).
+   * Authentic Game Start Intro Fanfare (32-Note Authentic 1980 Pac-Man Theme).
    */
   public playGameStart(): void {
     const melody = [
-      { freq: 493.88, delayMs: 0, durationSeconds: 0.12, type: 'square' as OscillatorType, vol: 0.15 },  // B4
-      { freq: 987.77, delayMs: 120, durationSeconds: 0.12, type: 'square' as OscillatorType, vol: 0.15 }, // B5
-      { freq: 739.99, delayMs: 240, durationSeconds: 0.12, type: 'square' as OscillatorType, vol: 0.15 }, // F#5
-      { freq: 622.25, delayMs: 360, durationSeconds: 0.12, type: 'square' as OscillatorType, vol: 0.15 }, // D#5
-      { freq: 987.77, delayMs: 480, durationSeconds: 0.08, type: 'square' as OscillatorType, vol: 0.15 }, // B5
-      { freq: 739.99, delayMs: 560, durationSeconds: 0.16, type: 'square' as OscillatorType, vol: 0.15 }, // F#5
-      { freq: 622.25, delayMs: 720, durationSeconds: 0.2, type: 'square' as OscillatorType, vol: 0.15 },  // D#5
+      // Measure 1: B Major
+      { freq: 493.88, delayMs: 0,    durationSeconds: 0.1, type: 'square' as OscillatorType, vol: 0.15 },  // B4
+      { freq: 987.77, delayMs: 110,  durationSeconds: 0.1, type: 'square' as OscillatorType, vol: 0.15 },  // B5
+      { freq: 739.99, delayMs: 220,  durationSeconds: 0.1, type: 'square' as OscillatorType, vol: 0.15 },  // F#5
+      { freq: 622.25, delayMs: 330,  durationSeconds: 0.1, type: 'square' as OscillatorType, vol: 0.15 },  // D#5
+      { freq: 987.77, delayMs: 440,  durationSeconds: 0.07, type: 'square' as OscillatorType, vol: 0.15 }, // B5
+      { freq: 739.99, delayMs: 510,  durationSeconds: 0.14, type: 'square' as OscillatorType, vol: 0.15 }, // F#5
+      { freq: 622.25, delayMs: 650,  durationSeconds: 0.2, type: 'square' as OscillatorType, vol: 0.15 },  // D#5
 
-      { freq: 523.25, delayMs: 960, durationSeconds: 0.12, type: 'square' as OscillatorType, vol: 0.15 },  // C5
-      { freq: 1046.5, delayMs: 1080, durationSeconds: 0.12, type: 'square' as OscillatorType, vol: 0.15 }, // C6
-      { freq: 783.99, delayMs: 1200, durationSeconds: 0.12, type: 'square' as OscillatorType, vol: 0.15 }, // G5
-      { freq: 659.25, delayMs: 1320, durationSeconds: 0.12, type: 'square' as OscillatorType, vol: 0.15 }, // E5
-      { freq: 1046.5, delayMs: 1440, durationSeconds: 0.08, type: 'square' as OscillatorType, vol: 0.15 }, // C6
-      { freq: 783.99, delayMs: 1520, durationSeconds: 0.16, type: 'square' as OscillatorType, vol: 0.15 }, // G5
-      { freq: 659.25, delayMs: 1680, durationSeconds: 0.2, type: 'square' as OscillatorType, vol: 0.15 },  // E5
+      // Measure 2: C Major
+      { freq: 523.25, delayMs: 870,  durationSeconds: 0.1, type: 'square' as OscillatorType, vol: 0.15 },  // C5
+      { freq: 1046.5, delayMs: 980,  durationSeconds: 0.1, type: 'square' as OscillatorType, vol: 0.15 },  // C6
+      { freq: 783.99, delayMs: 1090, durationSeconds: 0.1, type: 'square' as OscillatorType, vol: 0.15 },  // G5
+      { freq: 659.25, delayMs: 1200, durationSeconds: 0.1, type: 'square' as OscillatorType, vol: 0.15 },  // E5
+      { freq: 1046.5, delayMs: 1310, durationSeconds: 0.07, type: 'square' as OscillatorType, vol: 0.15 }, // C6
+      { freq: 783.99, delayMs: 1380, durationSeconds: 0.14, type: 'square' as OscillatorType, vol: 0.15 }, // G5
+      { freq: 659.25, delayMs: 1520, durationSeconds: 0.2, type: 'square' as OscillatorType, vol: 0.15 },  // E5
+
+      // Measure 3: B Major Repeat
+      { freq: 493.88, delayMs: 1740, durationSeconds: 0.1, type: 'square' as OscillatorType, vol: 0.15 },  // B4
+      { freq: 987.77, delayMs: 1850, durationSeconds: 0.1, type: 'square' as OscillatorType, vol: 0.15 },  // B5
+      { freq: 739.99, delayMs: 1960, durationSeconds: 0.1, type: 'square' as OscillatorType, vol: 0.15 },  // F#5
+      { freq: 622.25, delayMs: 2070, durationSeconds: 0.1, type: 'square' as OscillatorType, vol: 0.15 },  // D#5
+      { freq: 987.77, delayMs: 2180, durationSeconds: 0.07, type: 'square' as OscillatorType, vol: 0.15 }, // B5
+      { freq: 739.99, delayMs: 2250, durationSeconds: 0.14, type: 'square' as OscillatorType, vol: 0.15 }, // F#5
+      { freq: 622.25, delayMs: 2390, durationSeconds: 0.2, type: 'square' as OscillatorType, vol: 0.15 },  // D#5
+
+      // Measure 4: Ascending Finale Cadence
+      { freq: 622.25, delayMs: 2610, durationSeconds: 0.09, type: 'square' as OscillatorType, vol: 0.15 }, // D#5
+      { freq: 659.25, delayMs: 2700, durationSeconds: 0.09, type: 'square' as OscillatorType, vol: 0.15 }, // E5
+      { freq: 698.46, delayMs: 2790, durationSeconds: 0.09, type: 'square' as OscillatorType, vol: 0.15 }, // F5
+      { freq: 739.99, delayMs: 2880, durationSeconds: 0.09, type: 'square' as OscillatorType, vol: 0.15 }, // F#5
+      { freq: 783.99, delayMs: 2970, durationSeconds: 0.09, type: 'square' as OscillatorType, vol: 0.15 }, // G5
+      { freq: 830.61, delayMs: 3060, durationSeconds: 0.09, type: 'square' as OscillatorType, vol: 0.15 }, // G#5
+      { freq: 880.00, delayMs: 3150, durationSeconds: 0.09, type: 'square' as OscillatorType, vol: 0.15 }, // A5
+      { freq: 987.77, delayMs: 3240, durationSeconds: 0.45, type: 'square' as OscillatorType, vol: 0.18 }, // B5 (Final Held Note!)
     ];
 
     SoundEngine.playSequence(melody);
@@ -59,118 +80,114 @@ class PacmanAudioServiceImpl {
    * Power Pellet Eat Chime.
    */
   public playPowerPellet(): void {
-    SoundEngine.playSequence([
-      { freq: 280, delayMs: 0, durationSeconds: 0.06, type: 'sawtooth', vol: 0.15 },
-      { freq: 420, delayMs: 60, durationSeconds: 0.06, type: 'square', vol: 0.18 },
-      { freq: 640, delayMs: 120, durationSeconds: 0.08, type: 'square', vol: 0.2 },
-    ]);
+    SoundEngine.playTone({
+      type: 'sine',
+      frequency: 600,
+      targetFrequency: 1200,
+      durationSeconds: 0.15,
+      volume: 0.15,
+    });
   }
 
   /**
-   * Bonus Fruit Eat Chime.
-   */
-  public playEatFruit(): void {
-    SoundEngine.playSequence([
-      { freq: 523.25, delayMs: 0, durationSeconds: 0.06, type: 'square', vol: 0.18 },
-      { freq: 659.25, delayMs: 60, durationSeconds: 0.06, type: 'square', vol: 0.18 },
-      { freq: 783.99, delayMs: 120, durationSeconds: 0.06, type: 'square', vol: 0.2 },
-      { freq: 1046.5, delayMs: 180, durationSeconds: 0.12, type: 'square', vol: 0.22 },
-    ]);
-  }
-
-  /**
-   * Ghost Eat Multiplier Sound.
+   * Eat Ghost Multiplier Chime.
    */
   public playEatGhost(): void {
-    SoundEngine.playSequence([
-      { freq: 250, delayMs: 0, durationSeconds: 0.05, type: 'sawtooth', vol: 0.2 },
-      { freq: 500, delayMs: 50, durationSeconds: 0.05, type: 'sawtooth', vol: 0.22 },
-      { freq: 1000, delayMs: 100, durationSeconds: 0.05, type: 'square', vol: 0.25 },
-      { freq: 1500, delayMs: 150, durationSeconds: 0.08, type: 'square', vol: 0.25 },
-    ]);
+    const seq = [
+      { freq: 440, delayMs: 0, durationSeconds: 0.06, type: 'square' as OscillatorType, vol: 0.2 },
+      { freq: 880, delayMs: 60, durationSeconds: 0.1, type: 'square' as OscillatorType, vol: 0.2 },
+    ];
+    SoundEngine.playSequence(seq);
   }
 
   /**
-   * Authentic Classic Pac-Man Death Tune (11-Step Pitch Drop).
+   * Eat Fruit Arpeggio.
+   */
+  public playEatFruit(): void {
+    const seq = [
+      { freq: 523.25, delayMs: 0, durationSeconds: 0.05, type: 'triangle' as OscillatorType, vol: 0.2 },
+      { freq: 659.25, delayMs: 50, durationSeconds: 0.05, type: 'triangle' as OscillatorType, vol: 0.2 },
+      { freq: 783.99, delayMs: 100, durationSeconds: 0.05, type: 'triangle' as OscillatorType, vol: 0.2 },
+      { freq: 1046.5, delayMs: 150, durationSeconds: 0.12, type: 'triangle' as OscillatorType, vol: 0.2 },
+    ];
+    SoundEngine.playSequence(seq);
+  }
+
+  /**
+   * Authentic Pac-Man Death Tune (11-Note Downward Pitch Drop).
    */
   public playDeath(): void {
-    const deathNotes = [
-      { freq: 750, delayMs: 0, durationSeconds: 0.07, type: 'triangle' as OscillatorType, vol: 0.18 },
-      { freq: 680, delayMs: 70, durationSeconds: 0.07, type: 'triangle' as OscillatorType, vol: 0.18 },
-      { freq: 600, delayMs: 140, durationSeconds: 0.07, type: 'triangle' as OscillatorType, vol: 0.18 },
-      { freq: 520, delayMs: 210, durationSeconds: 0.07, type: 'triangle' as OscillatorType, vol: 0.18 },
-      { freq: 450, delayMs: 280, durationSeconds: 0.07, type: 'triangle' as OscillatorType, vol: 0.18 },
-      { freq: 380, delayMs: 350, durationSeconds: 0.07, type: 'triangle' as OscillatorType, vol: 0.18 },
-      { freq: 320, delayMs: 420, durationSeconds: 0.07, type: 'triangle' as OscillatorType, vol: 0.18 },
-      { freq: 260, delayMs: 490, durationSeconds: 0.07, type: 'triangle' as OscillatorType, vol: 0.18 },
-      { freq: 200, delayMs: 560, durationSeconds: 0.07, type: 'sawtooth' as OscillatorType, vol: 0.18 },
-      { freq: 140, delayMs: 630, durationSeconds: 0.07, type: 'sawtooth' as OscillatorType, vol: 0.18 },
-      { freq: 80, delayMs: 700, durationSeconds: 0.12, type: 'sawtooth' as OscillatorType, vol: 0.2 },
-      { freq: 50, delayMs: 820, durationSeconds: 0.15, type: 'square' as OscillatorType, vol: 0.22 },
+    const deathSeq = [
+      { freq: 500, delayMs: 0, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 450, delayMs: 80, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 400, delayMs: 160, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 350, delayMs: 240, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 300, delayMs: 320, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 250, delayMs: 400, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 200, delayMs: 480, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 150, delayMs: 560, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 120, delayMs: 640, durationSeconds: 0.08, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 90,  delayMs: 720, durationSeconds: 0.12, type: 'sawtooth' as OscillatorType, vol: 0.2 },
+      { freq: 60,  delayMs: 840, durationSeconds: 0.2,  type: 'sawtooth' as OscillatorType, vol: 0.2 },
     ];
-
-    SoundEngine.playSequence(deathNotes);
+    SoundEngine.playSequence(deathSeq);
   }
 
   /**
-   * Stage Clear Fanfare.
+   * Level Clear Victory Chime.
    */
   public playLevelClear(): void {
-    SoundEngine.playSequence([
-      { freq: 440, delayMs: 0, durationSeconds: 0.08, type: 'square', vol: 0.15 },
-      { freq: 554, delayMs: 80, durationSeconds: 0.08, type: 'square', vol: 0.15 },
-      { freq: 659, delayMs: 160, durationSeconds: 0.08, type: 'square', vol: 0.18 },
-      { freq: 880, delayMs: 240, durationSeconds: 0.2, type: 'square', vol: 0.22 },
-    ]);
+    const seq = [
+      { freq: 523.25, delayMs: 0, durationSeconds: 0.1, type: 'sine' as OscillatorType, vol: 0.2 },
+      { freq: 659.25, delayMs: 100, durationSeconds: 0.1, type: 'sine' as OscillatorType, vol: 0.2 },
+      { freq: 783.99, delayMs: 200, durationSeconds: 0.1, type: 'sine' as OscillatorType, vol: 0.2 },
+      { freq: 1046.5, delayMs: 300, durationSeconds: 0.3, type: 'sine' as OscillatorType, vol: 0.2 },
+    ];
+    SoundEngine.playSequence(seq);
   }
 
   /**
-   * Start Arcade Background Siren Loop.
+   * Background Siren Loop.
    */
   public startSiren(isFrightened: boolean = false): void {
-    if (this.sirenTimer) return;
+    this.stopSiren();
     this.isFrightenedSiren = isFrightened;
-    this.scheduleSirenLoop();
+
+    this.sirenTimer = setInterval(() => {
+      if (this.isFrightenedSiren) {
+        // Frightened siren: Low alternating pulse (150Hz / 120Hz)
+        const freq = this.sirenPitchOffset % 2 === 0 ? 150 : 120;
+        this.sirenPitchOffset++;
+        SoundEngine.playTone({
+          type: 'sawtooth',
+          frequency: freq,
+          durationSeconds: 0.18,
+          volume: 0.08,
+        });
+      } else {
+        // Normal siren: Rising pitch oscillation (200Hz -> 300Hz)
+        const freq = 200 + (this.sirenPitchOffset % 5) * 20;
+        this.sirenPitchOffset++;
+        SoundEngine.playTone({
+          type: 'triangle',
+          frequency: freq,
+          durationSeconds: 0.12,
+          volume: 0.06,
+        });
+      }
+    }, 200);
   }
 
   public setFrightenedSiren(isFrightened: boolean): void {
-    this.isFrightenedSiren = isFrightened;
+    if (this.isFrightenedSiren !== isFrightened) {
+      this.startSiren(isFrightened);
+    }
   }
 
   public stopSiren(): void {
     if (this.sirenTimer) {
-      clearTimeout(this.sirenTimer);
+      clearInterval(this.sirenTimer);
       this.sirenTimer = null;
-    }
-  }
-
-  private scheduleSirenLoop(): void {
-    if (SoundEngine.isMutedState()) return;
-
-    if (this.isFrightenedSiren) {
-      // Rapid high warble siren
-      SoundEngine.playTone({
-        type: 'sawtooth',
-        frequency: 650,
-        targetFrequency: 850,
-        durationSeconds: 0.12,
-        volume: 0.04,
-      });
-      this.sirenTimer = setTimeout(() => this.scheduleSirenLoop(), 140);
-    } else {
-      // Classic ambient maze siren pitch sweep
-      const baseFreq = 220 + (this.sirenPitchOffset % 4) * 25;
-      const targetFreq = baseFreq + 120;
-      this.sirenPitchOffset++;
-
-      SoundEngine.playTone({
-        type: 'sine',
-        frequency: baseFreq,
-        targetFrequency: targetFreq,
-        durationSeconds: 0.22,
-        volume: 0.03,
-      });
-      this.sirenTimer = setTimeout(() => this.scheduleSirenLoop(), 260);
     }
   }
 }
