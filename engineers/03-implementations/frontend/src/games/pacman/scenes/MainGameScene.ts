@@ -573,6 +573,26 @@ export class MainGameScene extends Phaser.Scene {
           clydePos
         );
       } else if (ghost.mode === GhostMode.EATEN) {
+        const houseCenterX = this.offsetX + PacmanMaze.tileToWorld(13, 16, DEFAULT_TILE_SIZE).x;
+        const houseCenterY = this.offsetY + PacmanMaze.tileToWorld(13, 16, DEFAULT_TILE_SIZE).y;
+        const distToHomeCenter = Phaser.Math.Distance.Between(ghost.x, ghost.y, houseCenterX, houseCenterY);
+
+        if (distToHomeCenter < 14 || (ghost.gridPos.col === 13 && ghost.gridPos.row === 16)) {
+          // REVIVE GHOST: Reset texture, set houseState = HOME, and rest for 2.0 seconds inside house!
+          ghost.mode = (this.frightenedTimeSec > 0) ? GhostMode.FRIGHTENED : this.getCurrentPhaseMode();
+          const texKey = (this.frightenedTimeSec > 0) ? 'pacman:ghost_frightened' : `pacman:ghost_${ghost.type.toLowerCase()}`;
+          ghost.sprite.setTexture(texKey);
+          ghost.x = houseCenterX;
+          ghost.y = houseCenterY;
+          ghost.homeBaseX = houseCenterX;
+          ghost.homeBaseY = houseCenterY;
+          ghost.gridPos = { col: 13, row: 16 };
+          ghost.houseState = GhostHouseState.HOME;
+          ghost.exitDelaySec = 2.0;
+          ghost.sprite.setPosition(ghost.x, ghost.y);
+          return;
+        }
+
         // Eaten ghost target door (13, 14) first while outside to avoid wall bumping
         if (ghost.gridPos.col === 13 && (ghost.gridPos.row === 14 || ghost.gridPos.row === 15)) {
           ghost.targetTile = { col: 13, row: 16 }; // Inside house center
@@ -588,27 +608,16 @@ export class MainGameScene extends Phaser.Scene {
       const dist = Phaser.Math.Distance.Between(ghost.x, ghost.y, wCenterX, wCenterY);
 
       if (dist < 4) {
-        if (ghost.mode === GhostMode.EATEN && ghost.gridPos.col === 13 && ghost.gridPos.row === 16) {
-          // Revive eaten ghost: reset texture, set houseState = HOME, and rest for 2.0 seconds inside house!
-          ghost.mode = this.getCurrentPhaseMode();
-          ghost.sprite.setTexture(`pacman:ghost_${ghost.type.toLowerCase()}`);
-          ghost.houseState = GhostHouseState.HOME;
-          ghost.exitDelaySec = 2.0;
-          ghost.homeBaseX = wCenterX;
-          ghost.homeBaseY = wCenterY;
-          return;
-        } else {
-          const isEaten = ghost.mode === GhostMode.EATEN;
-          ghost.direction = GhostAI.getNextDirection(
-            this.maze,
-            ghost.gridPos,
-            ghost.direction,
-            ghost.targetTile,
-            allowGatePass,
-            false,
-            isEaten
-          );
-        }
+        const isEaten = ghost.mode === GhostMode.EATEN;
+        ghost.direction = GhostAI.getNextDirection(
+          this.maze,
+          ghost.gridPos,
+          ghost.direction,
+          ghost.targetTile,
+          allowGatePass,
+          false,
+          isEaten
+        );
       }
 
       // 4. Move Ghost
