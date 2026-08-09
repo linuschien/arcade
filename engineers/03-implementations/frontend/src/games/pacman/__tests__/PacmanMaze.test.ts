@@ -8,12 +8,12 @@ describe('PacmanMaze Unit Tests', () => {
     maze = new PacmanMaze();
   });
 
-  it('should initialize an authentic 28x36 grid with 244 total pellets', () => {
+  it('should initialize an authentic 28x36 grid with 240 total pellets', () => {
     const grid = maze.getGrid();
     expect(grid.length).toBe(MAZE_ROWS);
     expect(grid[0].length).toBe(MAZE_COLS);
-    expect(maze.getInitialPelletCount()).toBe(244);
-    expect(maze.getRemainingPelletCount()).toBe(244);
+    expect(maze.getInitialPelletCount()).toBe(240);
+    expect(maze.getRemainingPelletCount()).toBe(240);
   });
 
   it('should calculate tile to world and world to tile coordinates accurately', () => {

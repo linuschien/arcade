@@ -86,12 +86,12 @@ export const PACMAN_ASCII_MAP: string[] = [
   "#............##............#", // Row 20: Middle-bottom horizontal pellet corridor
   "#.####.#####.##.#####.####.#", // Row 21: Top bar of left/right inverted-T
   "#.####.#####.##.#####.####.#", // Row 22: Top bar of left/right inverted-T
-  "#o..##.......  .......##..o#", // Row 23: Power Pellets & Pacman Start Tile (col 13-14)
+  "#o..##.......  .......##..o#", // Row 23: Power Pellets in authentic Nook & Pacman Start Tile (col 13-14)
   "###.##.##.########.##.##.###", // Row 24: Center T-wall bar & left/right inverted-T stems
   "###.##.##.########.##.##.###", // Row 25: Center T-wall bar & left/right inverted-T stems
   "#......##....##....##......#", // Row 26: Horizontal corridor under inverted-T walls
-  "#.######.###.##.###.######.#", // Row 27: Bottom Inverted-T bar & center T-stem (col 13-14)
-  "#.######.###.##.###.######.#", // Row 28: Bottom Inverted-T bar & center T-stem (col 13-14)
+  "#.##########.##.##########.#", // Row 27: Authentic 10-tile unbroken horizontal bar of Inverted-T
+  "#.##########.##.##########.#", // Row 28: Authentic 10-tile unbroken horizontal bar of Inverted-T
   "#..........................#", // Row 29: Bottom-most horizontal pellet corridor
   "############################", // Row 30: Bottom Outer Wall Border
   "                            ", // Row 31: Footer UI Space
