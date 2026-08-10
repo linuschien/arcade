@@ -21,6 +21,7 @@ export interface LevelSpec {
   frightDurationSec: number;
   frightFlashCount: number;
   timerArraySec: number[]; // e.g. [7, 20, 7, 20, 5, 20, 5, Infinity]
+  ghostExitDelaysSec?: { pinky: number; inky: number; clyde: number };
 }
 
 const DEFAULT_TIMERS_LVL1_2 = [7, 20, 7, 20, 5, 20, 5, Infinity];
@@ -158,6 +159,15 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
 };
 
 export function getLevelSpec(level: number): LevelSpec {
+  const defaultDelays =
+    level === 1
+      ? { pinky: 2.0, inky: 5.0, clyde: 10.0 }
+      : level === 2
+      ? { pinky: 1.0, inky: 2.5, clyde: 5.0 }
+      : level <= 4
+      ? { pinky: 0.5, inky: 1.5, clyde: 3.5 }
+      : { pinky: 0.2, inky: 0.8, clyde: 2.0 };
+
   if (level >= 17) {
     return {
       level,
@@ -167,12 +177,14 @@ export function getLevelSpec(level: number): LevelSpec {
       frightDurationSec: 0.0,
       frightFlashCount: 0,
       timerArraySec: DEFAULT_TIMERS_LVL3_PLUS,
+      ghostExitDelaysSec: defaultDelays,
     };
   }
 
   const spec = LEVEL_SPECS_MAP[level] || LEVEL_SPECS_MAP[1];
   return {
     level,
+    ghostExitDelaysSec: defaultDelays,
     ...spec,
   };
 }

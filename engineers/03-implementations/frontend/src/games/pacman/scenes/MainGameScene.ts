@@ -202,9 +202,9 @@ export class MainGameScene extends Phaser.Scene {
       this.pacmanSprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
     }
 
-    // Ghost Start Configurations: Timed House Exits & Bouncing Home Position
-    // Blinky starts OUTSIDE directly above Pink Gate at (13.5, 13, x = 300px) facing LEFT
-    // Pinky (13.5, 16, x = 300px), Inky (11.5, 16, x = 258px), Clyde (15.5, 16, x = 342px) evenly spaced inside Ghost House
+    const spec = this.gameState.getCurrentSpec();
+    const delays = spec.ghostExitDelaysSec || { pinky: 2.0, inky: 5.0, clyde: 10.0 };
+
     const ghostConfigs: Array<{
       type: GhostType;
       startCol: number;
@@ -214,10 +214,10 @@ export class MainGameScene extends Phaser.Scene {
       exitDelaySec: number;
       key: string;
     }> = [
-      { type: GhostType.BLINKY, startCol: 13.5, startRow: 13, startDir: Direction.RIGHT, houseState: GhostHouseState.OUTSIDE, exitDelaySec: 0,   key: 'pacman:ghost_blinky' },
-      { type: GhostType.PINKY,  startCol: 13.5, startRow: 16, startDir: Direction.DOWN,  houseState: GhostHouseState.HOME,    exitDelaySec: 2.0, key: 'pacman:ghost_pinky' },
-      { type: GhostType.INKY,   startCol: 11.5, startRow: 16, startDir: Direction.UP,    houseState: GhostHouseState.HOME,    exitDelaySec: 5.0, key: 'pacman:ghost_inky' },
-      { type: GhostType.CLYDE,  startCol: 15.5, startRow: 16, startDir: Direction.UP,    houseState: GhostHouseState.HOME,    exitDelaySec: 10.0, key: 'pacman:ghost_clyde' },
+      { type: GhostType.BLINKY, startCol: 13.5, startRow: 13, startDir: Direction.RIGHT, houseState: GhostHouseState.OUTSIDE, exitDelaySec: 0,            key: 'pacman:ghost_blinky' },
+      { type: GhostType.PINKY,  startCol: 13.5, startRow: 16, startDir: Direction.DOWN,  houseState: GhostHouseState.HOME,    exitDelaySec: delays.pinky, key: 'pacman:ghost_pinky' },
+      { type: GhostType.INKY,   startCol: 11.5, startRow: 16, startDir: Direction.UP,    houseState: GhostHouseState.HOME,    exitDelaySec: delays.inky,  key: 'pacman:ghost_inky' },
+      { type: GhostType.CLYDE,  startCol: 15.5, startRow: 16, startDir: Direction.UP,    houseState: GhostHouseState.HOME,    exitDelaySec: delays.clyde, key: 'pacman:ghost_clyde' },
     ];
 
     ghostConfigs.forEach(({ type, startCol, startRow, startDir, houseState, exitDelaySec, key }) => {
