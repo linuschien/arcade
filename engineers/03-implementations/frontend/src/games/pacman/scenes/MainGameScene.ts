@@ -170,18 +170,19 @@ export class MainGameScene extends Phaser.Scene {
       this.lifeSprites.push(icon);
     }
 
-    this.statusText = this.add.text(300, 400, 'READY!', {
+    const statusWorld = PacmanMaze.tileToWorld(13.5, FRUIT_SPAWN_TILE.row, DEFAULT_TILE_SIZE);
+    this.statusText = this.add.text(this.offsetX + statusWorld.x, this.offsetY + statusWorld.y, 'READY!', {
       fontFamily: 'monospace',
-      fontSize: '32px',
+      fontSize: '28px',
       color: '#fde047',
     }).setOrigin(0.5);
     this.statusText.setVisible(false);
   }
 
   private resetEntityPositions(): void {
-    // Pacman Start Position: Tile (13.5, 23) - Centered in 2-tile wide central corridor (col 13 & 14)
-    this.pacmanGridPos = { col: 13, row: 23 };
-    const worldPos = PacmanMaze.tileToWorld(13.5, 23, DEFAULT_TILE_SIZE);
+    // Pacman Start Position: Tile (13.5, 25) - Centered in 2-tile wide start nook (col 13 & 14, row 25)
+    this.pacmanGridPos = { col: 13, row: 25 };
+    const worldPos = PacmanMaze.tileToWorld(13.5, 25, DEFAULT_TILE_SIZE);
     this.pacmanX = this.offsetX + worldPos.x;
     this.pacmanY = this.offsetY + worldPos.y;
     this.currentDirection = Direction.LEFT;
@@ -202,6 +203,8 @@ export class MainGameScene extends Phaser.Scene {
     }
 
     // Ghost Start Configurations: Timed House Exits & Bouncing Home Position
+    // Blinky starts OUTSIDE directly above Pink Gate at (13.5, 13)
+    // Pinky (13.5, 16), Inky (11.5, 16), Clyde (15.5, 16) evenly spaced inside Ghost House
     const ghostConfigs: Array<{
       type: GhostType;
       startCol: number;
@@ -210,10 +213,10 @@ export class MainGameScene extends Phaser.Scene {
       exitDelaySec: number;
       key: string;
     }> = [
-      { type: GhostType.BLINKY, startCol: 13, startRow: 14, houseState: GhostHouseState.OUTSIDE, exitDelaySec: 0, key: 'pacman:ghost_blinky' },
-      { type: GhostType.PINKY, startCol: 13, startRow: 16, houseState: GhostHouseState.HOME, exitDelaySec: 0.5, key: 'pacman:ghost_pinky' },
-      { type: GhostType.INKY, startCol: 11, startRow: 16, houseState: GhostHouseState.HOME, exitDelaySec: 4.0, key: 'pacman:ghost_inky' },
-      { type: GhostType.CLYDE, startCol: 15, startRow: 16, houseState: GhostHouseState.HOME, exitDelaySec: 8.0, key: 'pacman:ghost_clyde' },
+      { type: GhostType.BLINKY, startCol: 13.5, startRow: 13, houseState: GhostHouseState.OUTSIDE, exitDelaySec: 0, key: 'pacman:ghost_blinky' },
+      { type: GhostType.PINKY,  startCol: 13.5, startRow: 16, houseState: GhostHouseState.HOME,    exitDelaySec: 0.5, key: 'pacman:ghost_pinky' },
+      { type: GhostType.INKY,   startCol: 11.5, startRow: 16, houseState: GhostHouseState.HOME,    exitDelaySec: 4.0, key: 'pacman:ghost_inky' },
+      { type: GhostType.CLYDE,  startCol: 15.5, startRow: 16, houseState: GhostHouseState.HOME,    exitDelaySec: 8.0, key: 'pacman:ghost_clyde' },
     ];
 
     ghostConfigs.forEach(({ type, startCol, startRow, houseState, exitDelaySec, key }) => {
@@ -233,7 +236,7 @@ export class MainGameScene extends Phaser.Scene {
           homeBaseY: gy,
           x: gx,
           y: gy,
-          gridPos: { col: startCol, row: startRow },
+          gridPos: { col: Math.floor(startCol), row: Math.floor(startRow) },
           direction: Direction.UP,
           sprite,
           targetTile: GHOST_CORNER_TARGETS[type],
@@ -247,7 +250,7 @@ export class MainGameScene extends Phaser.Scene {
         ghost.homeBaseY = gy;
         ghost.x = gx;
         ghost.y = gy;
-        ghost.gridPos = { col: startCol, row: startRow };
+        ghost.gridPos = { col: Math.floor(startCol), row: Math.floor(startRow) };
         ghost.direction = Direction.UP;
         ghost.sprite.setTexture(key);
         ghost.sprite.setPosition(gx, gy);
