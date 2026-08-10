@@ -142,7 +142,7 @@ export class PacmanGameState {
     if (this.activeFruit) {
       const score = this.activeFruit.score;
       this.eatenFruitHistory.push(this.activeFruit.type);
-      if (this.eatenFruitHistory.length > 7) {
+      if (this.eatenFruitHistory.length > 14) {
         this.eatenFruitHistory.shift();
       }
       this.addScore(score);

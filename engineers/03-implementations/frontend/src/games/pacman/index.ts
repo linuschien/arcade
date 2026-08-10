@@ -27,7 +27,7 @@ export class PacmanGame implements IArcadeGame {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
         width: 600,
-        height: 693,
+        height: 735,
       },
       scene: [PreloadScene, MainGameScene],
       physics: {
