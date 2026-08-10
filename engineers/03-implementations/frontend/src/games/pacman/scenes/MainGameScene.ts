@@ -301,14 +301,22 @@ export class MainGameScene extends Phaser.Scene {
       }
     };
 
+    const drawArc = (cx: number, cy: number, radius: number, startDeg: number, endDeg: number) => {
+      if (typeof (this.mazeGraphics as any).strokeArc === 'function') {
+        (this.mazeGraphics as any).strokeArc(cx, cy, radius, Phaser.Math.DegToRad(startDeg), Phaser.Math.DegToRad(endDeg));
+      } else if (typeof (this.mazeGraphics as any).arc === 'function') {
+        this.mazeGraphics.beginPath();
+        (this.mazeGraphics as any).arc(cx, cy, radius, Phaser.Math.DegToRad(startDeg), Phaser.Math.DegToRad(endDeg));
+        this.mazeGraphics.strokePath();
+      }
+    };
+
     const s = DEFAULT_TILE_SIZE;
     const INSET_RATIO = 0.40; // 40% of tile size = 8px inset for 21px tile
     const inset = Math.round(s * INSET_RATIO);
+    const r_corner = 5; // 5px smooth rounded corner radius
 
-    // Render single neon blue boundary line inset by 40% (8px).
-    // This expands visual corridor width to 37px, shrinks 2-tile walls to 26px,
-    // and keeps 1-tile walls (ghost house) crisp at 5px.
-    // Endpoints extend by 1px to ensure 100% gapless stroke overlaps across all corners and tile joins.
+    // Render single neon blue boundary line inset by 40% (8px) with rounded arc corners
     this.mazeGraphics.lineStyle(2, 0x1d6ef5, 1);
 
     for (let r = 0; r < MAZE_ROWS; r++) {
@@ -322,88 +330,121 @@ export class MainGameScene extends Phaser.Scene {
         if (!isWallTile(c, r - 1)) {
           let x1 = x;
           if (!isWallTile(c - 1, r)) {
-            x1 = x + inset; // Outer corner
+            x1 = x + inset + r_corner; // Outer rounded corner start
           } else if (isWallTile(c - 1, r) && !isWallTile(c - 1, r - 1)) {
-            x1 = x; // Straight horizontal wall continuation
+            x1 = x;
           } else if (isWallTile(c - 1, r) && isWallTile(c - 1, r - 1)) {
-            x1 = x - inset; // T-junction: extend LEFT to meet vertical bar at x - inset
+            x1 = x - inset;
           }
 
           let x2 = x + s;
           if (!isWallTile(c + 1, r)) {
-            x2 = x + s - inset; // Outer corner
+            x2 = x + s - inset - r_corner; // Outer rounded corner end
           } else if (isWallTile(c + 1, r) && !isWallTile(c + 1, r - 1)) {
-            x2 = x + s; // Straight horizontal wall continuation
+            x2 = x + s;
           } else if (isWallTile(c + 1, r) && isWallTile(c + 1, r - 1)) {
-            x2 = x + s + inset; // T-junction: extend RIGHT to meet vertical bar at x + s + inset
+            x2 = x + s + inset;
           }
-          drawLine(x1 - 1, y + inset, x2 + 1, y + inset);
+
+          if (x1 <= x2) {
+            drawLine(x1, y + inset, x2, y + inset);
+          }
         }
 
         // Bottom inset line
         if (!isWallTile(c, r + 1)) {
           let x1 = x;
           if (!isWallTile(c - 1, r)) {
-            x1 = x + inset; // Outer corner
+            x1 = x + inset + r_corner;
           } else if (isWallTile(c - 1, r) && !isWallTile(c - 1, r + 1)) {
-            x1 = x; // Straight horizontal wall continuation
+            x1 = x;
           } else if (isWallTile(c - 1, r) && isWallTile(c - 1, r + 1)) {
-            x1 = x - inset; // T-junction: extend LEFT to meet vertical bar at x - inset
+            x1 = x - inset;
           }
 
           let x2 = x + s;
           if (!isWallTile(c + 1, r)) {
-            x2 = x + s - inset; // Outer corner
+            x2 = x + s - inset - r_corner;
           } else if (isWallTile(c + 1, r) && !isWallTile(c + 1, r + 1)) {
-            x2 = x + s; // Straight horizontal wall continuation
+            x2 = x + s;
           } else if (isWallTile(c + 1, r) && isWallTile(c + 1, r + 1)) {
-            x2 = x + s + inset; // T-junction: extend RIGHT to meet vertical bar at x + s + inset
+            x2 = x + s + inset;
           }
-          drawLine(x1 - 1, y + s - inset, x2 + 1, y + s - inset);
+
+          if (x1 <= x2) {
+            drawLine(x1, y + s - inset, x2, y + s - inset);
+          }
         }
 
         // Left inset line
         if (!isWallTile(c - 1, r)) {
           let y1 = y;
           if (!isWallTile(c, r - 1)) {
-            y1 = y + inset; // Outer corner
+            y1 = y + inset + r_corner;
           } else if (isWallTile(c, r - 1) && !isWallTile(c - 1, r - 1)) {
-            y1 = y; // Straight vertical wall continuation
+            y1 = y;
           } else if (isWallTile(c, r - 1) && isWallTile(c - 1, r - 1)) {
-            y1 = y - inset; // T-junction: extend UP to meet horizontal bar at y - inset
+            y1 = y - inset;
           }
 
           let y2 = y + s;
           if (!isWallTile(c, r + 1)) {
-            y2 = y + s - inset; // Outer corner
+            y2 = y + s - inset - r_corner;
           } else if (isWallTile(c, r + 1) && !isWallTile(c - 1, r + 1)) {
-            y2 = y + s; // Straight vertical wall continuation
+            y2 = y + s;
           } else if (isWallTile(c, r + 1) && isWallTile(c - 1, r + 1)) {
-            y2 = y + s + inset; // T-junction: extend DOWN to meet horizontal bar at y + s + inset
+            y2 = y + s + inset;
           }
-          drawLine(x + inset, y1 - 1, x + inset, y2 + 1);
+
+          if (y1 <= y2) {
+            drawLine(x + inset, y1, x + inset, y2);
+          }
         }
 
         // Right inset line
         if (!isWallTile(c + 1, r)) {
           let y1 = y;
           if (!isWallTile(c, r - 1)) {
-            y1 = y + inset; // Outer corner
+            y1 = y + inset + r_corner;
           } else if (isWallTile(c, r - 1) && !isWallTile(c + 1, r - 1)) {
-            y1 = y; // Straight vertical wall continuation
+            y1 = y;
           } else if (isWallTile(c, r - 1) && isWallTile(c + 1, r - 1)) {
-            y1 = y - inset; // T-junction: extend UP to meet horizontal bar at y - inset
+            y1 = y - inset;
           }
 
           let y2 = y + s;
           if (!isWallTile(c, r + 1)) {
-            y2 = y + s - inset; // Outer corner
+            y2 = y + s - inset - r_corner;
           } else if (isWallTile(c, r + 1) && !isWallTile(c + 1, r + 1)) {
-            y2 = y + s; // Straight vertical wall continuation
+            y2 = y + s;
           } else if (isWallTile(c, r + 1) && isWallTile(c + 1, r + 1)) {
-            y2 = y + s + inset; // T-junction: extend DOWN to meet horizontal bar at y + s + inset
+            y2 = y + s + inset;
           }
-          drawLine(x + s - inset, y1 - 1, x + s - inset, y2 + 1);
+
+          if (y1 <= y2) {
+            drawLine(x + s - inset, y1, x + s - inset, y2);
+          }
+        }
+
+        // 4 Outer Corner Arcs
+        // Top-Left Outer Corner Arc (180° to 270°)
+        if (!isWallTile(c, r - 1) && !isWallTile(c - 1, r)) {
+          drawArc(x + inset + r_corner, y + inset + r_corner, r_corner, 180, 270);
+        }
+
+        // Top-Right Outer Corner Arc (270° to 360°)
+        if (!isWallTile(c, r - 1) && !isWallTile(c + 1, r)) {
+          drawArc(x + s - inset - r_corner, y + inset + r_corner, r_corner, 270, 360);
+        }
+
+        // Bottom-Left Outer Corner Arc (90° to 180°)
+        if (!isWallTile(c, r + 1) && !isWallTile(c - 1, r)) {
+          drawArc(x + inset + r_corner, y + s - inset - r_corner, r_corner, 90, 180);
+        }
+
+        // Bottom-Right Outer Corner Arc (0° to 90°)
+        if (!isWallTile(c, r + 1) && !isWallTile(c + 1, r)) {
+          drawArc(x + s - inset - r_corner, y + s - inset - r_corner, r_corner, 0, 90);
         }
       }
     }
