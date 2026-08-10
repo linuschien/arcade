@@ -1065,15 +1065,16 @@ export class MainGameScene extends Phaser.Scene {
     this.fruitIndicatorSprites = [];
 
     const history = this.gameState.getFruitHistory();
-    // Render up to 7 recent fruit icons from right to left in bottom-right Footer UI space (Row 33.5, y = 708px)
-    history.slice().reverse().forEach((fruitType, i) => {
-      const x = 576 - i * 22;
+    // Render eaten fruit icons from left to right in bottom Footer UI space (Row 33.5, y = 714px)
+    // Larger 28x28px HD icons with 32px horizontal spacing
+    history.forEach((fruitType, i) => {
+      const x = 260 + i * 32;
       const y = this.offsetY + 33.5 * DEFAULT_TILE_SIZE;
       const key = `pacman:fruit_${fruitType.toLowerCase()}`;
       if (this.textures.exists(key)) {
         const sprite = this.add.sprite(x, y, key);
         if (typeof sprite.setDisplaySize === 'function') {
-          sprite.setDisplaySize(20, 20);
+          sprite.setDisplaySize(28, 28);
         }
         this.fruitIndicatorSprites.push(sprite);
       }
