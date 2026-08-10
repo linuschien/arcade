@@ -48,12 +48,12 @@ export const OPPOSITE_DIRECTIONS: Record<Direction, Direction> = {
 };
 
 export const MAZE_COLS = 28;
-export const MAZE_ROWS = 33;
+export const MAZE_ROWS = 35;
 export const DEFAULT_TILE_SIZE = 21;
-export const TUNNEL_ROW = 15;
+export const TUNNEL_ROW = 16;
 
 /**
- * Authentic 1980 Namco Arcade Pac-Man ASCII Map (28 columns x 33 rows)
+ * Authentic 1980 Namco Arcade Pac-Man ASCII Map (28 columns x 35 rows)
  * Legend:
  * '#' = Wall
  * '.' = Pellet
@@ -76,26 +76,28 @@ export const PACMAN_ASCII_MAP: string[] = [
   "#......##....##....##......#", // Row 10
   "######.##### ## #####.######", // Row 11: Side Outer Walls & Upper T-stem
   "     #.##### ## #####.#     ", // Row 12: Upper T-bar horizontal wall
-  "     #.##          ##.#     ", // Row 13: OPEN horizontal exit corridor for ghosts (cols 9-18)
-  "######.## ###--### ##.######", // Row 14: Ghost House Roof & Pink Gate
-  "      .   #HHHHHH#   .      ", // Row 15: Tunnel Row (Wrap Teleport)
-  "######.## #HHHHHH# ##.######", // Row 16: Ghost House Middle
-  "     #.## ######## ##.#     ", // Row 17: Ghost House Bottom Wall
-  "     #.##          ##.#     ", // Row 18: Corridor below Ghost House
-  "######.## ######## ##.######", // Row 19: Horizontal wall bar below Ghost House
-  "#............##............#", // Row 20: Middle-bottom horizontal pellet corridor
-  "#.####.#####.##.#####.####.#", // Row 21: Top bar of left/right inverted-T
-  "#.####.#####.##.#####.####.#", // Row 22: Top bar of left/right inverted-T
-  "#o..##.......  .......##..o#", // Row 23: Power Pellets in authentic Nook & Pacman Start Tile (col 13-14)
-  "###.##.##.########.##.##.###", // Row 24: Center T-wall bar & left/right inverted-T stems
-  "###.##.##.########.##.##.###", // Row 25: Center T-wall bar & left/right inverted-T stems
-  "#......##....##....##......#", // Row 26: Horizontal corridor under inverted-T walls
-  "#.##########.##.##########.#", // Row 27: Authentic 10-tile unbroken horizontal bar of Inverted-T
-  "#.##########.##.##########.#", // Row 28: Authentic 10-tile unbroken horizontal bar of Inverted-T
-  "#..........................#", // Row 29: Bottom-most horizontal pellet corridor
-  "############################", // Row 30: Bottom Outer Wall Border
-  "                            ", // Row 31: Footer UI Space
-  "                            ", // Row 32: Footer UI Space
+  "     #.##          ##.#     ", // Row 13: OPEN horizontal exit corridor for ghosts
+  "     #.## ###--### ##.#     ", // Row 14: Ghost House Roof & Pink Gate (1/5)
+  "######.## #HHHHHH# ##.######", // Row 15: Ghost House Upper Interior (2/5)
+  "      .   #HHHHHH#   .      ", // Row 16: Tunnel Row (Wrap Teleport) & Ghost House Center (3/5)
+  "######.## #HHHHHH# ##.######", // Row 17: Ghost House Lower Interior (4/5)
+  "     #.## ######## ##.#     ", // Row 18: Ghost House Bottom Wall (5/5)
+  "     #.##          ##.#     ", // Row 19: Corridor below Ghost House
+  "     #.## ######## ##.#     ", // Row 20: 2-tile thick T-bar top row (1/2)
+  "######.## ######## ##.######", // Row 21: 2-tile thick T-bar bottom row (2/2)
+  "#............##............#", // Row 22: Middle-bottom horizontal pellet corridor
+  "#.####.#####.##.#####.####.#", // Row 23: Top bar of left/right inverted-T
+  "#.####.#####.##.#####.####.#", // Row 24: Top bar of left/right inverted-T
+  "#o..##.......  .......##..o#", // Row 25: Power Pellets in authentic Nook & Pacman Start Tile
+  "###.##.##.########.##.##.###", // Row 26: Center T-wall bar & left/right inverted-T stems
+  "###.##.##.########.##.##.###", // Row 27: Center T-wall bar & left/right inverted-T stems
+  "#......##....##....##......#", // Row 28: Horizontal corridor under inverted-T walls
+  "#.##########.##.##########.#", // Row 29: Horizontal bar of Inverted-T
+  "#.##########.##.##########.#", // Row 30: Horizontal bar of Inverted-T
+  "#..........................#", // Row 31: Bottom-most horizontal pellet corridor
+  "############################", // Row 32: Bottom Outer Wall Border
+  "                            ", // Row 33: Footer UI Space
+  "                            ", // Row 34: Footer UI Space
 ];
 
 function parseAsciiMap(map: string[]): number[][] {
