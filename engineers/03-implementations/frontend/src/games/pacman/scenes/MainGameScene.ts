@@ -332,7 +332,7 @@ export class MainGameScene extends Phaser.Scene {
         if (!isWallTile(c, r - 1)) {
           let x1 = x;
           if (c === 0 && isWallTile(c - 1, r)) {
-            x1 = 0; // Extend off left edge of screen
+            x1 = x + inset; // Align with left outer wall boundary line (x = 14px)
           } else if (!isWallTile(c - 1, r)) {
             x1 = x + inset + r_corner; // Outer rounded corner start
           } else if (isWallTile(c - 1, r) && !isWallTile(c - 1, r - 1)) {
@@ -343,7 +343,7 @@ export class MainGameScene extends Phaser.Scene {
 
           let x2 = x + s;
           if (c === MAZE_COLS - 1 && isWallTile(c + 1, r)) {
-            x2 = this.offsetX + MAZE_COLS * s; // Extend off right edge of screen
+            x2 = x + s - inset; // Align with right outer wall boundary line (x = 586px)
           } else if (!isWallTile(c + 1, r)) {
             x2 = x + s - inset - r_corner; // Outer rounded corner end
           } else if (isWallTile(c + 1, r) && !isWallTile(c + 1, r - 1)) {
@@ -361,7 +361,7 @@ export class MainGameScene extends Phaser.Scene {
         if (!isWallTile(c, r + 1)) {
           let x1 = x;
           if (c === 0 && isWallTile(c - 1, r)) {
-            x1 = 0; // Extend off left edge of screen
+            x1 = x + inset; // Align with left outer wall boundary line (x = 14px)
           } else if (!isWallTile(c - 1, r)) {
             x1 = x + inset + r_corner;
           } else if (isWallTile(c - 1, r) && !isWallTile(c - 1, r + 1)) {
@@ -372,7 +372,7 @@ export class MainGameScene extends Phaser.Scene {
 
           let x2 = x + s;
           if (c === MAZE_COLS - 1 && isWallTile(c + 1, r)) {
-            x2 = this.offsetX + MAZE_COLS * s; // Extend off right edge of screen
+            x2 = x + s - inset; // Align with right outer wall boundary line (x = 586px)
           } else if (!isWallTile(c + 1, r)) {
             x2 = x + s - inset - r_corner;
           } else if (isWallTile(c + 1, r) && !isWallTile(c + 1, r + 1)) {
