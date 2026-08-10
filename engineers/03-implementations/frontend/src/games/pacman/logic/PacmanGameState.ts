@@ -37,6 +37,7 @@ export class PacmanGameState {
   private activeFruit: ActiveFruit | null = null;
   private fruitTriggered174: boolean = false;
   private fruitTriggered74: boolean = false;
+  private eatenFruitHistory: FruitType[] = [];
 
   constructor(initialLevel: number = 1) {
     this.level = initialLevel;
@@ -79,6 +80,13 @@ export class PacmanGameState {
 
   public getActiveFruit(): ActiveFruit | null {
     return this.activeFruit;
+  }
+
+  /**
+   * Get authentic eaten fruit history array for bottom-right footer UI display (up to 7 items).
+   */
+  public getFruitHistory(): FruitType[] {
+    return [...this.eatenFruitHistory];
   }
 
   /**
@@ -133,6 +141,10 @@ export class PacmanGameState {
   public consumeFruit(): number | null {
     if (this.activeFruit) {
       const score = this.activeFruit.score;
+      this.eatenFruitHistory.push(this.activeFruit.type);
+      if (this.eatenFruitHistory.length > 7) {
+        this.eatenFruitHistory.shift();
+      }
       this.addScore(score);
       this.activeFruit = null;
       return score;
@@ -193,6 +205,7 @@ export class PacmanGameState {
     this.fruitTriggered174 = false;
     this.fruitTriggered74 = false;
     this.activeFruit = null;
+    this.eatenFruitHistory = [];
     this.ghostEatingMultiplierIndex = 0;
     this.playState = PlayState.READY;
   }

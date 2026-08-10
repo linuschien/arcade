@@ -99,4 +99,12 @@ describe('PacmanGameState Unit Tests', () => {
     expect(nextSpec.fruit).toBe('Strawberry');
     expect(nextSpec.fruitScore).toBe(300);
   });
+
+  it('should track eaten fruit history up to 7 items', () => {
+    expect(state.getFruitHistory()).toEqual([]);
+
+    state.onEatPellet(174); // Spawn Cherry
+    state.consumeFruit();
+    expect(state.getFruitHistory()).toEqual(['Cherry']);
+  });
 });

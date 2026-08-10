@@ -64,11 +64,12 @@ export class MainGameScene extends Phaser.Scene {
   private frightenedTimeSec: number = 0;
   private frightenedFlashSec: number = 0;
 
-  // UI Text & Life Sprites
+  // UI Text & Life Sprites & Fruit History Indicators
   private scoreText!: Phaser.GameObjects.Text;
   private levelText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
   private lifeSprites: Phaser.GameObjects.Sprite[] = [];
+  private fruitIndicatorSprites: Phaser.GameObjects.Sprite[] = [];
 
   private isPausedState: boolean = false;
   private offsetX: number = 6; // Center 588px grid inside 600px canvas width
@@ -1054,6 +1055,29 @@ export class MainGameScene extends Phaser.Scene {
         sprite.setVisible(index < extraLives);
       }
     });
+
+    this.updateFruitIndicators();
+  }
+
+  private updateFruitIndicators(): void {
+    // Clear old fruit indicator sprites
+    this.fruitIndicatorSprites.forEach((s) => s.destroy());
+    this.fruitIndicatorSprites = [];
+
+    const history = this.gameState.getFruitHistory();
+    // Render up to 7 recent fruit icons from right to left in bottom-right Footer UI space (Row 33.5, y = 708px)
+    history.slice().reverse().forEach((fruitType, i) => {
+      const x = 576 - i * 22;
+      const y = this.offsetY + 33.5 * DEFAULT_TILE_SIZE;
+      const key = `pacman:fruit_${fruitType.toLowerCase()}`;
+      if (this.textures.exists(key)) {
+        const sprite = this.add.sprite(x, y, key);
+        if (typeof sprite.setDisplaySize === 'function') {
+          sprite.setDisplaySize(20, 20);
+        }
+        this.fruitIndicatorSprites.push(sprite);
+      }
+    });
   }
 
   private handleTeardown(): void {
@@ -1066,6 +1090,9 @@ export class MainGameScene extends Phaser.Scene {
       this.fruitSprite.destroy();
       this.fruitSprite = null;
     }
+
+    this.fruitIndicatorSprites.forEach((s) => s.destroy());
+    this.fruitIndicatorSprites = [];
 
     this.ghosts.forEach((g) => g.sprite.destroy());
     this.ghosts.clear();
