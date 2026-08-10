@@ -214,10 +214,10 @@ export class MainGameScene extends Phaser.Scene {
       exitDelaySec: number;
       key: string;
     }> = [
-      { type: GhostType.BLINKY, startCol: 13.5, startRow: 13, startDir: Direction.RIGHT, houseState: GhostHouseState.OUTSIDE, exitDelaySec: 0, key: 'pacman:ghost_blinky' },
-      { type: GhostType.PINKY,  startCol: 13.5, startRow: 16, startDir: Direction.DOWN,  houseState: GhostHouseState.HOME,    exitDelaySec: 0.5, key: 'pacman:ghost_pinky' },
-      { type: GhostType.INKY,   startCol: 11.5, startRow: 16, startDir: Direction.UP,    houseState: GhostHouseState.HOME,    exitDelaySec: 4.0, key: 'pacman:ghost_inky' },
-      { type: GhostType.CLYDE,  startCol: 15.5, startRow: 16, startDir: Direction.UP,    houseState: GhostHouseState.HOME,    exitDelaySec: 8.0, key: 'pacman:ghost_clyde' },
+      { type: GhostType.BLINKY, startCol: 13.5, startRow: 13, startDir: Direction.RIGHT, houseState: GhostHouseState.OUTSIDE, exitDelaySec: 0,   key: 'pacman:ghost_blinky' },
+      { type: GhostType.PINKY,  startCol: 13.5, startRow: 16, startDir: Direction.DOWN,  houseState: GhostHouseState.HOME,    exitDelaySec: 2.0, key: 'pacman:ghost_pinky' },
+      { type: GhostType.INKY,   startCol: 11.5, startRow: 16, startDir: Direction.UP,    houseState: GhostHouseState.HOME,    exitDelaySec: 5.0, key: 'pacman:ghost_inky' },
+      { type: GhostType.CLYDE,  startCol: 15.5, startRow: 16, startDir: Direction.UP,    houseState: GhostHouseState.HOME,    exitDelaySec: 10.0, key: 'pacman:ghost_clyde' },
     ];
 
     ghostConfigs.forEach(({ type, startCol, startRow, startDir, houseState, exitDelaySec, key }) => {
