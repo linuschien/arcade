@@ -23,7 +23,7 @@ export enum GhostHouseState {
   OUTSIDE = 'OUTSIDE',
 }
 
-interface GhostEntity {
+export interface GhostEntity {
   type: GhostType;
   mode: GhostMode;
   houseState: GhostHouseState;
@@ -36,6 +36,8 @@ interface GhostEntity {
   direction: Direction;
   sprite: Phaser.GameObjects.Sprite;
   targetTile: GridPos;
+  eyesEnteredGate?: boolean;
+  eyesAtHouseFloor?: boolean;
 }
 
 export class MainGameScene extends Phaser.Scene {
@@ -787,7 +789,7 @@ export class MainGameScene extends Phaser.Scene {
       }
 
       // 2. Determine Target Tile for Ghost Outside
-      const allowGatePass = ghost.mode === GhostMode.EATEN;
+      const allowGatePass = ghost.mode === GhostMode.EATEN && ghost.eyesEnteredGate === true;
 
       if (ghost.mode === GhostMode.SCATTER) {
         ghost.targetTile = GHOST_CORNER_TARGETS[ghost.type];
@@ -800,42 +802,99 @@ export class MainGameScene extends Phaser.Scene {
           clydePos
         );
       } else if (ghost.mode === GhostMode.EATEN) {
-        const doorWorld = PacmanMaze.tileToWorld(13.5, 13, DEFAULT_TILE_SIZE);
-        const doorX = this.offsetX + doorWorld.x;
-        const doorY = this.offsetY + doorWorld.y;
+        const doorCenterX = this.offsetX + PacmanMaze.tileToWorld(13.5, 13, DEFAULT_TILE_SIZE).x;
+        const doorY = this.offsetY + PacmanMaze.tileToWorld(13.5, 13, DEFAULT_TILE_SIZE).y;
+        const distToDoor = Phaser.Math.Distance.Between(ghost.x, ghost.y, doorCenterX, doorY);
 
-        const distToDoor = Phaser.Math.Distance.Between(ghost.x, ghost.y, doorX, doorY);
-
-        if (distToDoor < 14) {
-          // REVIVE GHOST to its individual home starting position!
-          ghost.mode = this.getCurrentPhaseMode();
-          ghost.sprite.setTexture(`pacman:ghost_${ghost.type.toLowerCase()}`);
-          if (typeof ghost.sprite.setDisplaySize === 'function') {
-            ghost.sprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
-          }
-
-          ghost.x = ghost.homeBaseX;
-          ghost.y = ghost.homeBaseY;
-
-          if (ghost.type === GhostType.BLINKY) {
-            // Blinky revives OUTSIDE at (13.5, 13) and immediately resumes hunting RIGHT/LEFT
+        if (ghost.type === GhostType.BLINKY) {
+          // Blinky revives outside directly at doorstep (13.5, 13)
+          if (distToDoor < 12 || (ghost.gridPos.row === 13 && (ghost.gridPos.col === 13 || ghost.gridPos.col === 14))) {
+            ghost.mode = this.getCurrentPhaseMode();
             ghost.houseState = GhostHouseState.OUTSIDE;
             ghost.direction = Direction.RIGHT;
+            ghost.x = ghost.homeBaseX;
+            ghost.y = ghost.homeBaseY;
             ghost.gridPos = { col: 13, row: 13 };
-          } else {
-            // Pinky, Inky, Clyde revive INSIDE their individual home base seats
-            ghost.houseState = GhostHouseState.HOME;
-            ghost.direction = Direction.UP;
-            ghost.exitDelaySec = ghost.type === GhostType.PINKY ? 1.0 : ghost.type === GhostType.INKY ? 2.0 : 3.0;
-            ghost.gridPos = { col: Math.floor(ghost.x > doorX ? 15 : ghost.x < doorX ? 11 : 13), row: 16 };
+            ghost.sprite.setTexture('pacman:ghost_blinky_right_0');
+            if (typeof ghost.sprite.setDisplaySize === 'function') {
+              ghost.sprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
+            }
+            ghost.sprite.setPosition(ghost.x, ghost.y);
+            ghost.eyesEnteredGate = false;
+            ghost.eyesAtHouseFloor = false;
+            return;
+          }
+          ghost.targetTile = { col: 13, row: 13 };
+        } else {
+          // Pinky, Inky, Clyde eyes fly to doorstep (300px), enter gate opening, move to home seat, then revive
+          const insideY = this.offsetY + PacmanMaze.tileToWorld(13.5, 16, DEFAULT_TILE_SIZE).y;
+
+          // Stage 1: Returning from anywhere in the maze to doorstep (13.5, 13) outside
+          if (!ghost.eyesEnteredGate) {
+            ghost.targetTile = { col: 13, row: 13 };
+            if (distToDoor < 12 || (ghost.gridPos.row === 13 && (ghost.gridPos.col === 13 || ghost.gridPos.col === 14))) {
+              ghost.eyesEnteredGate = true;
+            }
           }
 
-          ghost.sprite.setPosition(ghost.x, ghost.y);
-          return;
-        }
+          // Stage 2: Descending through Pink Gate into house
+          if (ghost.eyesEnteredGate && !ghost.eyesAtHouseFloor) {
+            // Align horizontally with gate center (300px)
+            if (Math.abs(ghost.x - doorCenterX) > 2) {
+              ghost.x += (doorCenterX > ghost.x ? 1 : -1) * SPEED_GHOST_BASE * 1.5 * deltaSec * 0.6;
+            } else {
+              ghost.x = doorCenterX;
+            }
+            // Move vertically down to insideY
+            if (ghost.y < insideY) {
+              ghost.y += SPEED_GHOST_BASE * 1.5 * deltaSec * 0.6;
+              ghost.direction = Direction.DOWN;
+            } else {
+              ghost.y = insideY;
+              ghost.eyesAtHouseFloor = true;
+            }
+            const newTile = PacmanMaze.worldToTile(ghost.x - this.offsetX, ghost.y - this.offsetY, DEFAULT_TILE_SIZE);
+            ghost.gridPos = { col: newTile.col, row: newTile.row };
+            ghost.sprite.setPosition(ghost.x, ghost.y);
+            return;
+          }
 
-        // Target tile is doorstep at (13, 13) for returning eyes
-        ghost.targetTile = { col: 13, row: 13 };
+          // Stage 3: Inside house, slide horizontally to home seat and revive
+          if (ghost.eyesAtHouseFloor) {
+            if (Math.abs(ghost.x - ghost.homeBaseX) > 2) {
+              ghost.x += (ghost.homeBaseX > ghost.x ? 1 : -1) * SPEED_GHOST_BASE * 1.5 * deltaSec * 0.6;
+              ghost.direction = ghost.homeBaseX > ghost.x ? Direction.RIGHT : Direction.LEFT;
+              const newTile = PacmanMaze.worldToTile(ghost.x - this.offsetX, ghost.y - this.offsetY, DEFAULT_TILE_SIZE);
+              ghost.gridPos = { col: newTile.col, row: newTile.row };
+              ghost.sprite.setPosition(ghost.x, ghost.y);
+              return;
+            }
+
+            // REVIVE IN HOME SEAT!
+            ghost.mode = this.getCurrentPhaseMode();
+            ghost.houseState = GhostHouseState.HOME;
+            ghost.direction = Direction.UP;
+            ghost.x = ghost.homeBaseX;
+            ghost.y = ghost.homeBaseY;
+            ghost.eyesEnteredGate = false;
+            ghost.eyesAtHouseFloor = false;
+            const delays = spec.ghostExitDelaysSec || { pinky: 1.0, inky: 2.0, clyde: 3.0 };
+            ghost.exitDelaySec =
+              ghost.type === GhostType.PINKY
+                ? delays.pinky
+                : ghost.type === GhostType.INKY
+                ? delays.inky
+                : delays.clyde;
+            const colVal = ghost.type === GhostType.INKY ? 11 : ghost.type === GhostType.CLYDE ? 15 : 13;
+            ghost.gridPos = { col: colVal, row: 16 };
+            ghost.sprite.setTexture(`pacman:ghost_${ghost.type.toLowerCase()}_up_0`);
+            if (typeof ghost.sprite.setDisplaySize === 'function') {
+              ghost.sprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
+            }
+            ghost.sprite.setPosition(ghost.x, ghost.y);
+            return;
+          }
+        }
       }
 
       // 3. Tile Center Steering
@@ -1016,6 +1075,8 @@ export class MainGameScene extends Phaser.Scene {
           const ghostScore = this.gameState.eatGhost();
           PacmanAudioService.playEatGhost();
           ghost.mode = GhostMode.EATEN;
+          ghost.eyesEnteredGate = false;
+          ghost.eyesAtHouseFloor = false;
           ghost.sprite.setTexture('pacman:ghost_eyes');
           if (typeof ghost.sprite.setDisplaySize === 'function') {
             ghost.sprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
