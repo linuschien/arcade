@@ -214,10 +214,10 @@ export class MainGameScene extends Phaser.Scene {
       exitDelaySec: number;
       key: string;
     }> = [
-      { type: GhostType.BLINKY, startCol: 13.5, startRow: 13, startDir: Direction.LEFT, houseState: GhostHouseState.OUTSIDE, exitDelaySec: 0, key: 'pacman:ghost_blinky' },
-      { type: GhostType.PINKY,  startCol: 13.5, startRow: 16, startDir: Direction.DOWN, houseState: GhostHouseState.HOME,    exitDelaySec: 0.5, key: 'pacman:ghost_pinky' },
-      { type: GhostType.INKY,   startCol: 11.5, startRow: 16, startDir: Direction.UP,   houseState: GhostHouseState.HOME,    exitDelaySec: 4.0, key: 'pacman:ghost_inky' },
-      { type: GhostType.CLYDE,  startCol: 15.5, startRow: 16, startDir: Direction.UP,   houseState: GhostHouseState.HOME,    exitDelaySec: 8.0, key: 'pacman:ghost_clyde' },
+      { type: GhostType.BLINKY, startCol: 13.5, startRow: 13, startDir: Direction.RIGHT, houseState: GhostHouseState.OUTSIDE, exitDelaySec: 0, key: 'pacman:ghost_blinky' },
+      { type: GhostType.PINKY,  startCol: 13.5, startRow: 16, startDir: Direction.DOWN,  houseState: GhostHouseState.HOME,    exitDelaySec: 0.5, key: 'pacman:ghost_pinky' },
+      { type: GhostType.INKY,   startCol: 11.5, startRow: 16, startDir: Direction.UP,    houseState: GhostHouseState.HOME,    exitDelaySec: 4.0, key: 'pacman:ghost_inky' },
+      { type: GhostType.CLYDE,  startCol: 15.5, startRow: 16, startDir: Direction.UP,    houseState: GhostHouseState.HOME,    exitDelaySec: 8.0, key: 'pacman:ghost_clyde' },
     ];
 
     ghostConfigs.forEach(({ type, startCol, startRow, startDir, houseState, exitDelaySec, key }) => {
@@ -748,30 +748,42 @@ export class MainGameScene extends Phaser.Scene {
           clydePos
         );
       } else if (ghost.mode === GhostMode.EATEN) {
-        const houseCenterX = this.offsetX + PacmanMaze.tileToWorld(13, 16, DEFAULT_TILE_SIZE).x;
-        const houseCenterY = this.offsetY + PacmanMaze.tileToWorld(13, 16, DEFAULT_TILE_SIZE).y;
-        const distToHomeCenter = Phaser.Math.Distance.Between(ghost.x, ghost.y, houseCenterX, houseCenterY);
+        const doorWorld = PacmanMaze.tileToWorld(13.5, 13, DEFAULT_TILE_SIZE);
+        const doorX = this.offsetX + doorWorld.x;
+        const doorY = this.offsetY + doorWorld.y;
 
-        if (distToHomeCenter < 14 || (ghost.gridPos.col === 13 && ghost.gridPos.row === 16)) {
-          // REVIVE GHOST: Always restore to ORIGINAL CHARACTER COLOR and normal SCATTER/CHASE mode!
+        const distToDoor = Phaser.Math.Distance.Between(ghost.x, ghost.y, doorX, doorY);
+
+        if (distToDoor < 14) {
+          // REVIVE GHOST to its individual home starting position!
           ghost.mode = this.getCurrentPhaseMode();
           ghost.sprite.setTexture(`pacman:ghost_${ghost.type.toLowerCase()}`);
           if (typeof ghost.sprite.setDisplaySize === 'function') {
             ghost.sprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
           }
-          ghost.x = houseCenterX;
-          ghost.y = houseCenterY;
-          ghost.homeBaseX = houseCenterX;
-          ghost.homeBaseY = houseCenterY;
-          ghost.gridPos = { col: 13, row: 16 };
-          ghost.houseState = GhostHouseState.HOME;
-          ghost.exitDelaySec = 2.0;
+
+          ghost.x = ghost.homeBaseX;
+          ghost.y = ghost.homeBaseY;
+
+          if (ghost.type === GhostType.BLINKY) {
+            // Blinky revives OUTSIDE at (13.5, 13) and immediately resumes hunting RIGHT/LEFT
+            ghost.houseState = GhostHouseState.OUTSIDE;
+            ghost.direction = Direction.RIGHT;
+            ghost.gridPos = { col: 13, row: 13 };
+          } else {
+            // Pinky, Inky, Clyde revive INSIDE their individual home base seats
+            ghost.houseState = GhostHouseState.HOME;
+            ghost.direction = Direction.UP;
+            ghost.exitDelaySec = ghost.type === GhostType.PINKY ? 1.0 : ghost.type === GhostType.INKY ? 2.0 : 3.0;
+            ghost.gridPos = { col: Math.floor(ghost.x > doorX ? 15 : ghost.x < doorX ? 11 : 13), row: 16 };
+          }
+
           ghost.sprite.setPosition(ghost.x, ghost.y);
           return;
         }
 
-        // Target tile inside house center (13, 16)
-        ghost.targetTile = { col: 13, row: 16 };
+        // Target tile is doorstep at (13, 13) for returning eyes
+        ghost.targetTile = { col: 13, row: 13 };
       }
 
       // 3. Tile Center Steering
