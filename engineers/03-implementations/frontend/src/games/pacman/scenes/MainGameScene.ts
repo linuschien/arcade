@@ -291,6 +291,8 @@ export class MainGameScene extends Phaser.Scene {
     }
 
     const isWallTile = (col: number, row: number): boolean => {
+      // Tunnel border rows (Row 15 & Row 17) continue off-screen as walls to keep tunnel entrance open
+      if ((col < 0 || col >= MAZE_COLS) && (row === 15 || row === 17)) return true;
       if (row < 2 || row > 32 || col < 0 || col >= MAZE_COLS) return false;
       return grid[row][col] === TileType.WALL;
     };
@@ -329,7 +331,9 @@ export class MainGameScene extends Phaser.Scene {
         // Top inset line
         if (!isWallTile(c, r - 1)) {
           let x1 = x;
-          if (!isWallTile(c - 1, r)) {
+          if (c === 0 && isWallTile(c - 1, r)) {
+            x1 = 0; // Extend off left edge of screen
+          } else if (!isWallTile(c - 1, r)) {
             x1 = x + inset + r_corner; // Outer rounded corner start
           } else if (isWallTile(c - 1, r) && !isWallTile(c - 1, r - 1)) {
             x1 = x;
@@ -338,7 +342,9 @@ export class MainGameScene extends Phaser.Scene {
           }
 
           let x2 = x + s;
-          if (!isWallTile(c + 1, r)) {
+          if (c === MAZE_COLS - 1 && isWallTile(c + 1, r)) {
+            x2 = this.offsetX + MAZE_COLS * s; // Extend off right edge of screen
+          } else if (!isWallTile(c + 1, r)) {
             x2 = x + s - inset - r_corner; // Outer rounded corner end
           } else if (isWallTile(c + 1, r) && !isWallTile(c + 1, r - 1)) {
             x2 = x + s;
@@ -354,7 +360,9 @@ export class MainGameScene extends Phaser.Scene {
         // Bottom inset line
         if (!isWallTile(c, r + 1)) {
           let x1 = x;
-          if (!isWallTile(c - 1, r)) {
+          if (c === 0 && isWallTile(c - 1, r)) {
+            x1 = 0; // Extend off left edge of screen
+          } else if (!isWallTile(c - 1, r)) {
             x1 = x + inset + r_corner;
           } else if (isWallTile(c - 1, r) && !isWallTile(c - 1, r + 1)) {
             x1 = x;
@@ -363,7 +371,9 @@ export class MainGameScene extends Phaser.Scene {
           }
 
           let x2 = x + s;
-          if (!isWallTile(c + 1, r)) {
+          if (c === MAZE_COLS - 1 && isWallTile(c + 1, r)) {
+            x2 = this.offsetX + MAZE_COLS * s; // Extend off right edge of screen
+          } else if (!isWallTile(c + 1, r)) {
             x2 = x + s - inset - r_corner;
           } else if (isWallTile(c + 1, r) && !isWallTile(c + 1, r + 1)) {
             x2 = x + s;
