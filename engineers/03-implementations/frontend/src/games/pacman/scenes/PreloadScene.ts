@@ -117,7 +117,26 @@ export class PreloadScene extends Phaser.Scene {
       }
     };
 
-    // 4. Ghost Textures with 2-Frame Skirt Animation (Blinky, Pinky, Inky, Clyde)
+    // Helper to draw eyes facing a specific direction
+    const drawGhostEyes = (gfx: Phaser.GameObjects.Graphics, dir: string) => {
+      let offsetX = 0;
+      let offsetY = 0;
+      if (dir === 'left') offsetX = -2.5;
+      else if (dir === 'right') offsetX = 2.5;
+      else if (dir === 'up') offsetY = -2.5;
+      else if (dir === 'down') offsetY = 2.5;
+
+      gfx.fillStyle(0xffffff, 1);
+      gfx.fillCircle(10, 10, 5);
+      gfx.fillCircle(22, 10, 5);
+      gfx.fillStyle(0x1e3a8a, 1);
+      gfx.fillCircle(10 + offsetX, 10 + offsetY, 2.5);
+      gfx.fillCircle(22 + offsetX, 10 + offsetY, 2.5);
+    };
+
+    const directions = ['left', 'right', 'up', 'down'];
+
+    // 4. Ghost Textures with 2-Frame Skirt Animation & Directional Eyes
     const ghostColors: Array<{ baseKey: string; color: number }> = [
       { baseKey: 'pacman:ghost_blinky', color: 0xef4444 }, // Red
       { baseKey: 'pacman:ghost_pinky', color: 0xf472b6 },  // Pink
@@ -126,26 +145,28 @@ export class PreloadScene extends Phaser.Scene {
     ];
 
     ghostColors.forEach(({ baseKey, color }) => {
-      [0, 1].forEach((frame) => {
-        const key = `${baseKey}_${frame}`;
-        if (!this.textures.exists(key)) {
-          const gfx = this.make.graphics({ x: 0, y: 0 });
-          drawGhostBodyWithSkirt(gfx, color, frame);
+      directions.forEach((dir) => {
+        [0, 1].forEach((frame) => {
+          const key = `${baseKey}_${dir}_${frame}`;
+          if (!this.textures.exists(key)) {
+            const gfx = this.make.graphics({ x: 0, y: 0 });
+            drawGhostBodyWithSkirt(gfx, color, frame);
+            drawGhostEyes(gfx, dir);
+            gfx.generateTexture(key, 32, 32);
 
-          // Eyes
-          gfx.fillStyle(0xffffff, 1);
-          gfx.fillCircle(10, 10, 5);
-          gfx.fillCircle(22, 10, 5);
-          gfx.fillStyle(0x1e3a8a, 1);
-          gfx.fillCircle(10, 10, 2.5);
-          gfx.fillCircle(22, 10, 2.5);
-
-          gfx.generateTexture(key, 32, 32);
-          if (frame === 0 && !this.textures.exists(baseKey)) {
-            gfx.generateTexture(baseKey, 32, 32);
+            // Fallback base keys
+            if (frame === 0 && !this.textures.exists(`${baseKey}_${dir}`)) {
+              gfx.generateTexture(`${baseKey}_${dir}`, 32, 32);
+            }
+            if (dir === 'left' && frame === 0 && !this.textures.exists(`${baseKey}_${frame}`)) {
+              gfx.generateTexture(`${baseKey}_${frame}`, 32, 32);
+            }
+            if (dir === 'left' && frame === 0 && !this.textures.exists(baseKey)) {
+              gfx.generateTexture(baseKey, 32, 32);
+            }
+            gfx.destroy();
           }
-          gfx.destroy();
-        }
+        });
       });
     });
 
@@ -159,6 +180,7 @@ export class PreloadScene extends Phaser.Scene {
         gfx.fillStyle(0xfde047, 1);
         gfx.fillCircle(10, 10, 3.5);
         gfx.fillCircle(22, 10, 3.5);
+
         gfx.generateTexture(key, 32, 32);
         if (frame === 0 && !this.textures.exists('pacman:ghost_frightened')) {
           gfx.generateTexture('pacman:ghost_frightened', 32, 32);
@@ -167,16 +189,17 @@ export class PreloadScene extends Phaser.Scene {
       }
     });
 
-    // 6. Frightened Flashing Ghost (White) 2-Frame Animation
+    // 6. Frightened Ghost Flashing (White/Blue) 2-Frame Animation
     [0, 1].forEach((frame) => {
       const key = `pacman:ghost_frightened_flash_${frame}`;
       if (!this.textures.exists(key)) {
         const gfx = this.make.graphics({ x: 0, y: 0 });
-        drawGhostBodyWithSkirt(gfx, 0xf8fafc, frame);
+        drawGhostBodyWithSkirt(gfx, 0xf8fafc, frame); // White body
 
-        gfx.fillStyle(0xef4444, 1);
+        gfx.fillStyle(0xef4444, 1); // Red eyes
         gfx.fillCircle(10, 10, 3.5);
         gfx.fillCircle(22, 10, 3.5);
+
         gfx.generateTexture(key, 32, 32);
         if (frame === 0 && !this.textures.exists('pacman:ghost_frightened_flash')) {
           gfx.generateTexture('pacman:ghost_frightened_flash', 32, 32);
@@ -185,18 +208,31 @@ export class PreloadScene extends Phaser.Scene {
       }
     });
 
-    // 7. Eaten Ghost Eyes
-    if (!this.textures.exists('pacman:ghost_eyes')) {
-      const gfx = this.make.graphics({ x: 0, y: 0 });
-      gfx.fillStyle(0xffffff, 1);
-      gfx.fillCircle(10, 12, 6);
-      gfx.fillCircle(22, 12, 6);
-      gfx.fillStyle(0x1e3a8a, 1);
-      gfx.fillCircle(10, 12, 3);
-      gfx.fillCircle(22, 12, 3);
-      gfx.generateTexture('pacman:ghost_eyes', 32, 32);
-      gfx.destroy();
-    }
+    // 7. Eaten Ghost Eyes Directional Textures
+    directions.forEach((dir) => {
+      const key = `pacman:ghost_eyes_${dir}`;
+      if (!this.textures.exists(key)) {
+        let offsetX = 0;
+        let offsetY = 0;
+        if (dir === 'left') offsetX = -3;
+        else if (dir === 'right') offsetX = 3;
+        else if (dir === 'up') offsetY = -3;
+        else if (dir === 'down') offsetY = 3;
+
+        const gfx = this.make.graphics({ x: 0, y: 0 });
+        gfx.fillStyle(0xffffff, 1);
+        gfx.fillCircle(10, 12, 6);
+        gfx.fillCircle(22, 12, 6);
+        gfx.fillStyle(0x1e3a8a, 1);
+        gfx.fillCircle(10 + offsetX, 12 + offsetY, 3);
+        gfx.fillCircle(22 + offsetX, 12 + offsetY, 3);
+        gfx.generateTexture(key, 32, 32);
+        if (dir === 'left' && !this.textures.exists('pacman:ghost_eyes')) {
+          gfx.generateTexture('pacman:ghost_eyes', 32, 32);
+        }
+        gfx.destroy();
+      }
+    });
 
     // 8. Pellet
     if (!this.textures.exists('pacman:pellet')) {

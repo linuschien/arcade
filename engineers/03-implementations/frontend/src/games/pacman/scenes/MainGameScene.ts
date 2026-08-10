@@ -290,7 +290,7 @@ export class MainGameScene extends Phaser.Scene {
     }
 
     const isWallTile = (col: number, row: number): boolean => {
-      if (row < 0 || row >= MAZE_ROWS || col < 0 || col >= MAZE_COLS) return true;
+      if (row < 2 || row > 32 || col < 0 || col >= MAZE_COLS) return false;
       return grid[row][col] === TileType.WALL;
     };
 
@@ -839,18 +839,24 @@ export class MainGameScene extends Phaser.Scene {
       ghost.gridPos = { col: PacmanMaze.wrapTunnelCol(newTile.col), row: newTile.row };
       ghost.sprite.setPosition(ghost.x, ghost.y);
 
-      // 5. Ghost Skirt Flutter Walking Animation (Frame 0 & 1)
+      // 5. Ghost Skirt Flutter Walking Animation & Directional Eye Orientations
       const animFrame = Math.floor(timeMs * 0.007) % 2;
+      let dirStr = (ghost.direction || Direction.LEFT).toLowerCase();
+      if (dirStr === 'none') dirStr = 'left';
       let frameKey = '';
 
       if (ghost.mode === GhostMode.EATEN) {
-        frameKey = 'pacman:ghost_eyes';
+        frameKey = `pacman:ghost_eyes_${dirStr}`;
+        if (!this.textures.exists(frameKey)) frameKey = 'pacman:ghost_eyes';
       } else if (ghost.mode === GhostMode.FRIGHTENED) {
         const isFlashing = this.frightenedTimeSec <= 2.0 && Math.floor(this.frightenedFlashSec * 6) % 2 === 0;
         const prefix = isFlashing ? 'pacman:ghost_frightened_flash' : 'pacman:ghost_frightened';
         frameKey = `${prefix}_${animFrame}`;
       } else {
-        frameKey = `pacman:ghost_${ghost.type.toLowerCase()}_${animFrame}`;
+        frameKey = `pacman:ghost_${ghost.type.toLowerCase()}_${dirStr}_${animFrame}`;
+        if (!this.textures.exists(frameKey)) {
+          frameKey = `pacman:ghost_${ghost.type.toLowerCase()}_${animFrame}`;
+        }
       }
 
       if (this.textures.exists(frameKey)) {
@@ -1000,8 +1006,8 @@ export class MainGameScene extends Phaser.Scene {
       }
     });
 
-    // After 1.45s complete death tune & 2 pop notes finish, process lives & reset/respawn
-    this.time.delayedCall(1450, () => {
+    // After death tune & 2 pop notes finish, wait ~1.1s silent breathing pause before reset/respawn
+    this.time.delayedCall(2350, () => {
       const remainingLives = this.gameState.loseLife();
 
       if (remainingLives === 0) {
