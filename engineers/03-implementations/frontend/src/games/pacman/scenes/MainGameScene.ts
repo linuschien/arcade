@@ -785,7 +785,7 @@ export class MainGameScene extends Phaser.Scene {
         if (Phaser.Math.Distance.Between(ghost.x, ghost.y, doorCenterX, doorY) < 6 || ghost.y <= doorY) {
           ghost.houseState = GhostHouseState.OUTSIDE;
           ghost.y = doorY;
-          ghost.direction = Direction.LEFT;
+          ghost.direction = ghost.type === GhostType.INKY ? Direction.RIGHT : Direction.LEFT;
           ghost.gridPos = { col: 13, row: 13 };
         }
         return;
