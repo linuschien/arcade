@@ -114,6 +114,7 @@ export class MainGameScene extends Phaser.Scene {
 
   private startReadyStateIntro(): void {
     this.gameState.setPlayState(PlayState.READY);
+    this.updateUI(); // Update LEVEL, Lives, and Fruit UI immediately BEFORE music starts playing!
     this.statusText.setText('READY!');
     this.statusText.setVisible(true);
 
@@ -1168,6 +1169,7 @@ export class MainGameScene extends Phaser.Scene {
     // After death tune & 2 pop notes finish, wait ~1.1s silent breathing pause before reset/respawn
     this.time.delayedCall(2350, () => {
       const remainingLives = this.gameState.loseLife();
+      this.updateUI(); // Immediately update remaining lives UI before music/gameover!
 
       if (remainingLives === 0) {
         this.statusText.setText('GAME OVER');
@@ -1211,6 +1213,7 @@ export class MainGameScene extends Phaser.Scene {
       this.maze.resetMaze();
       this.renderPellets();
       this.resetEntityPositions();
+      this.updateUI(); // Immediately update LEVEL, Lives, and Fruit UI BEFORE music plays!
 
       this.statusText.setText(`LEVEL ${this.gameState.getLevel()}`);
       this.statusText.setVisible(true);
