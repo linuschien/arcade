@@ -684,6 +684,11 @@ export class MainGameScene extends Phaser.Scene {
         if (typeof ghost.sprite.setDisplaySize === 'function') {
           ghost.sprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
         }
+
+        // Authentic Arcade Pac-Man Rule: 180-degree turn (Reverse Direction) upon entering Frightened Mode!
+        if (ghost.houseState === GhostHouseState.OUTSIDE && ghost.direction !== Direction.NONE) {
+          ghost.direction = OPPOSITE_DIRECTIONS[ghost.direction];
+        }
       }
     });
   }
@@ -739,6 +744,10 @@ export class MainGameScene extends Phaser.Scene {
       this.ghosts.forEach((g) => {
         if (g.mode === GhostMode.SCATTER || g.mode === GhostMode.CHASE) {
           g.mode = newMode;
+          // Authentic Arcade Pac-Man Rule: 180-degree turn when switching Scatter <-> Chase phase!
+          if (g.houseState === GhostHouseState.OUTSIDE && g.direction !== Direction.NONE) {
+            g.direction = OPPOSITE_DIRECTIONS[g.direction];
+          }
         }
       });
     }
@@ -810,6 +819,14 @@ export class MainGameScene extends Phaser.Scene {
           blinkyPos,
           clydePos
         );
+      } else if (ghost.mode === GhostMode.FRIGHTENED) {
+        // Flee target vector pointing far away from Pac-Man!
+        const dx = ghost.gridPos.col - this.pacmanGridPos.col;
+        const dy = ghost.gridPos.row - this.pacmanGridPos.row;
+        ghost.targetTile = {
+          col: Phaser.Math.Clamp(ghost.gridPos.col + dx * 4, 0, MAZE_COLS - 1),
+          row: Phaser.Math.Clamp(ghost.gridPos.row + dy * 4, 0, MAZE_ROWS - 1),
+        };
       } else if (ghost.mode === GhostMode.EATEN) {
         const doorCenterX = this.offsetX + PacmanMaze.tileToWorld(13.5, 13, DEFAULT_TILE_SIZE).x;
         const doorY = this.offsetY + PacmanMaze.tileToWorld(13.5, 13, DEFAULT_TILE_SIZE).y;
