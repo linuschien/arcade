@@ -170,36 +170,59 @@ export class PreloadScene extends Phaser.Scene {
       });
     });
 
-    const drawFrightenedFace = (gfx: Phaser.GameObjects.Graphics, color: number) => {
+    const drawFrightenedFace = (gfx: Phaser.GameObjects.Graphics, color: number, frame: number = 0) => {
       // 1. Two small square eye dots
       gfx.fillStyle(color, 1);
       gfx.fillRect(8, 9, 4, 4);
       gfx.fillRect(20, 9, 4, 4);
 
-      // 2. Wavy / Zigzag Squiggly Mouth
+      // 2. Wavy / Zigzag Animated Wiggling Mouth (Inverts wave between frame 0 & frame 1!)
       if (typeof (gfx as any).lineStyle === 'function') {
         (gfx as any).lineStyle(2, color, 1);
       }
+
+      const isFrame0 = frame === 0;
       if (typeof (gfx as any).beginPath === 'function') {
         gfx.beginPath();
-        gfx.moveTo(6, 20);
-        gfx.lineTo(9, 17);
-        gfx.lineTo(12, 21);
-        gfx.lineTo(15, 17);
-        gfx.lineTo(18, 21);
-        gfx.lineTo(21, 17);
-        gfx.lineTo(24, 21);
-        gfx.lineTo(26, 19);
+        if (isFrame0) {
+          gfx.moveTo(6, 20);
+          gfx.lineTo(9, 17);
+          gfx.lineTo(12, 21);
+          gfx.lineTo(15, 17);
+          gfx.lineTo(18, 21);
+          gfx.lineTo(21, 17);
+          gfx.lineTo(24, 21);
+          gfx.lineTo(26, 19);
+        } else {
+          gfx.moveTo(6, 18);
+          gfx.lineTo(9, 21);
+          gfx.lineTo(12, 17);
+          gfx.lineTo(15, 21);
+          gfx.lineTo(18, 17);
+          gfx.lineTo(21, 21);
+          gfx.lineTo(24, 17);
+          gfx.lineTo(26, 20);
+        }
         gfx.strokePath();
       } else {
         gfx.fillStyle(color, 1);
-        gfx.fillRect(6, 20, 3, 2);
-        gfx.fillRect(9, 17, 3, 2);
-        gfx.fillRect(12, 20, 3, 2);
-        gfx.fillRect(15, 17, 3, 2);
-        gfx.fillRect(18, 20, 3, 2);
-        gfx.fillRect(21, 17, 3, 2);
-        gfx.fillRect(24, 20, 3, 2);
+        if (isFrame0) {
+          gfx.fillRect(6, 20, 3, 2);
+          gfx.fillRect(9, 17, 3, 2);
+          gfx.fillRect(12, 20, 3, 2);
+          gfx.fillRect(15, 17, 3, 2);
+          gfx.fillRect(18, 20, 3, 2);
+          gfx.fillRect(21, 17, 3, 2);
+          gfx.fillRect(24, 20, 3, 2);
+        } else {
+          gfx.fillRect(6, 18, 3, 2);
+          gfx.fillRect(9, 21, 3, 2);
+          gfx.fillRect(12, 17, 3, 2);
+          gfx.fillRect(15, 21, 3, 2);
+          gfx.fillRect(18, 17, 3, 2);
+          gfx.fillRect(21, 21, 3, 2);
+          gfx.fillRect(24, 17, 3, 2);
+        }
       }
     };
 
@@ -209,7 +232,7 @@ export class PreloadScene extends Phaser.Scene {
       if (!this.textures.exists(key)) {
         const gfx = this.make.graphics({ x: 0, y: 0 });
         drawGhostBodyWithSkirt(gfx, 0x1d4ed8, frame);
-        drawFrightenedFace(gfx, 0xfde047); // Yellow/Orange face
+        drawFrightenedFace(gfx, 0xfde047, frame); // Yellow/Orange face with frame animation
 
         gfx.generateTexture(key, 32, 32);
         if (frame === 0 && !this.textures.exists('pacman:ghost_frightened')) {
@@ -225,7 +248,7 @@ export class PreloadScene extends Phaser.Scene {
       if (!this.textures.exists(key)) {
         const gfx = this.make.graphics({ x: 0, y: 0 });
         drawGhostBodyWithSkirt(gfx, 0xf8fafc, frame); // White body
-        drawFrightenedFace(gfx, 0xef4444); // Red face
+        drawFrightenedFace(gfx, 0xef4444, frame); // Red face with frame animation
 
         gfx.generateTexture(key, 32, 32);
         if (frame === 0 && !this.textures.exists('pacman:ghost_frightened_flash')) {
