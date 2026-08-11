@@ -170,16 +170,46 @@ export class PreloadScene extends Phaser.Scene {
       });
     });
 
+    const drawFrightenedFace = (gfx: Phaser.GameObjects.Graphics, color: number) => {
+      // 1. Two small square eye dots
+      gfx.fillStyle(color, 1);
+      gfx.fillRect(8, 9, 4, 4);
+      gfx.fillRect(20, 9, 4, 4);
+
+      // 2. Wavy / Zigzag Squiggly Mouth
+      if (typeof (gfx as any).lineStyle === 'function') {
+        (gfx as any).lineStyle(2, color, 1);
+      }
+      if (typeof (gfx as any).beginPath === 'function') {
+        gfx.beginPath();
+        gfx.moveTo(6, 20);
+        gfx.lineTo(9, 17);
+        gfx.lineTo(12, 21);
+        gfx.lineTo(15, 17);
+        gfx.lineTo(18, 21);
+        gfx.lineTo(21, 17);
+        gfx.lineTo(24, 21);
+        gfx.lineTo(26, 19);
+        gfx.strokePath();
+      } else {
+        gfx.fillStyle(color, 1);
+        gfx.fillRect(6, 20, 3, 2);
+        gfx.fillRect(9, 17, 3, 2);
+        gfx.fillRect(12, 20, 3, 2);
+        gfx.fillRect(15, 17, 3, 2);
+        gfx.fillRect(18, 20, 3, 2);
+        gfx.fillRect(21, 17, 3, 2);
+        gfx.fillRect(24, 20, 3, 2);
+      }
+    };
+
     // 5. Frightened Ghost (Blue) 2-Frame Animation
     [0, 1].forEach((frame) => {
       const key = `pacman:ghost_frightened_${frame}`;
       if (!this.textures.exists(key)) {
         const gfx = this.make.graphics({ x: 0, y: 0 });
         drawGhostBodyWithSkirt(gfx, 0x1d4ed8, frame);
-
-        gfx.fillStyle(0xfde047, 1);
-        gfx.fillCircle(10, 10, 3.5);
-        gfx.fillCircle(22, 10, 3.5);
+        drawFrightenedFace(gfx, 0xfde047); // Yellow/Orange face
 
         gfx.generateTexture(key, 32, 32);
         if (frame === 0 && !this.textures.exists('pacman:ghost_frightened')) {
@@ -195,10 +225,7 @@ export class PreloadScene extends Phaser.Scene {
       if (!this.textures.exists(key)) {
         const gfx = this.make.graphics({ x: 0, y: 0 });
         drawGhostBodyWithSkirt(gfx, 0xf8fafc, frame); // White body
-
-        gfx.fillStyle(0xef4444, 1); // Red eyes
-        gfx.fillCircle(10, 10, 3.5);
-        gfx.fillCircle(22, 10, 3.5);
+        drawFrightenedFace(gfx, 0xef4444); // Red face
 
         gfx.generateTexture(key, 32, 32);
         if (frame === 0 && !this.textures.exists('pacman:ghost_frightened_flash')) {
