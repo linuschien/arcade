@@ -764,26 +764,29 @@ export class MainGameScene extends Phaser.Scene {
       }
 
       if (ghost.houseState === GhostHouseState.EXITING) {
-        const doorWorld = PacmanMaze.tileToWorld(13, 14, DEFAULT_TILE_SIZE);
-        const doorX = this.offsetX + doorWorld.x;
-        const doorY = this.offsetY + doorWorld.y;
+        const doorCenterX = this.offsetX + PacmanMaze.tileToWorld(13.5, 13, DEFAULT_TILE_SIZE).x;
+        const doorY = this.offsetY + PacmanMaze.tileToWorld(13.5, 13, DEFAULT_TILE_SIZE).y;
 
-        // Move to house center (13, 16) first if at side
-        const houseCenterX = this.offsetX + PacmanMaze.tileToWorld(13, 16, DEFAULT_TILE_SIZE).x;
-        if (Math.abs(ghost.x - houseCenterX) > 2) {
-          ghost.x += (houseCenterX > ghost.x ? 1 : -1) * SPEED_GHOST_BASE * deltaSec * 0.8;
+        // Stage 1: Move horizontally to exact house center (col 13.5 = 300px)
+        if (Math.abs(ghost.x - doorCenterX) > 2) {
+          ghost.x += (doorCenterX > ghost.x ? 1 : -1) * SPEED_GHOST_BASE * deltaSec * 0.8;
+          ghost.direction = doorCenterX > ghost.x ? Direction.RIGHT : Direction.LEFT;
         } else {
-          ghost.x = houseCenterX;
+          // Stage 2: Move vertically up through exact gate center (300px)
+          ghost.x = doorCenterX;
           ghost.y -= SPEED_GHOST_BASE * deltaSec * 0.8;
+          ghost.direction = Direction.UP;
         }
 
         const newTile = PacmanMaze.worldToTile(ghost.x - this.offsetX, ghost.y - this.offsetY, DEFAULT_TILE_SIZE);
         ghost.gridPos = { col: newTile.col, row: newTile.row };
         ghost.sprite.setPosition(ghost.x, ghost.y);
 
-        if (Phaser.Math.Distance.Between(ghost.x, ghost.y, doorX, doorY) < 4) {
+        if (Phaser.Math.Distance.Between(ghost.x, ghost.y, doorCenterX, doorY) < 6 || ghost.y <= doorY) {
           ghost.houseState = GhostHouseState.OUTSIDE;
+          ghost.y = doorY;
           ghost.direction = Direction.LEFT;
+          ghost.gridPos = { col: 13, row: 13 };
         }
         return;
       }
