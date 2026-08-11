@@ -7,7 +7,11 @@ describe('PacmanLevelSpecs Unit Tests', () => {
     expect(spec.level).toBe(1);
     expect(spec.fruit).toBe('Cherry');
     expect(spec.fruitScore).toBe(100);
+    expect(spec.pacmanSpeedRatio).toBe(0.80);
+    expect(spec.pacmanFrightSpeedRatio).toBe(0.90);
     expect(spec.ghostSpeedRatio).toBe(0.75);
+    expect(spec.ghostFrightSpeedRatio).toBe(0.50);
+    expect(spec.ghostTunnelSpeedRatio).toBe(0.40);
     expect(spec.frightDurationSec).toBe(6.0);
     expect(spec.frightFlashCount).toBe(5);
     expect(spec.timerArraySec).toEqual([7, 20, 7, 20, 5, 20, 5, Infinity]);
@@ -42,7 +46,7 @@ describe('PacmanLevelSpecs Unit Tests', () => {
     const spec17 = getLevelSpec(17);
     expect(spec17.fruit).toBe('Key');
     expect(spec17.fruitScore).toBe(5000);
-    expect(spec17.ghostSpeedRatio).toBe(1.0);
+    expect(spec17.ghostSpeedRatio).toBe(0.95);
     expect(spec17.frightDurationSec).toBe(0.0);
     expect(spec17.frightFlashCount).toBe(0);
 

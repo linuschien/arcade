@@ -13,8 +13,7 @@ import { PacmanGameState, PlayState, FRUIT_SPAWN_TILE } from '../logic/PacmanGam
 import { GhostAI, GhostType, GhostMode, GHOST_CORNER_TARGETS } from '../logic/GhostAI';
 import { PacmanAudioService } from '../audio/PacmanAudioService';
 
-const SPEED_PACMAN_BASE = 130; // Pixels per second
-const SPEED_GHOST_BASE = 120;  // Pixels per second
+const SPEED_BASE = 130; // 100% Full Hardware Speed Benchmark (Pixels per second)
 const CHARACTER_SPRITE_SIZE = 34; // Scaled to fill 35px visual corridor width
 
 export enum GhostHouseState {
@@ -563,7 +562,12 @@ export class MainGameScene extends Phaser.Scene {
     // 3. Move Pac-Man in current direction with precise wall stopping at tile center
     let isMoving = false;
     if (this.currentDirection !== Direction.NONE) {
-      const speed = SPEED_PACMAN_BASE * deltaSec;
+      const spec = this.gameState.getCurrentSpec();
+      const pacmanSpeedRatio = (this.frightenedTimeSec > 0)
+        ? spec.pacmanFrightSpeedRatio
+        : spec.pacmanSpeedRatio;
+
+      const speed = SPEED_BASE * pacmanSpeedRatio * deltaSec;
       const moveVec = DIRECTION_VECTORS[this.currentDirection];
 
       const aheadCol = this.pacmanGridPos.col + moveVec.col;
@@ -784,12 +788,12 @@ export class MainGameScene extends Phaser.Scene {
 
         // Stage 1: Move horizontally to exact house center (col 13.5 = 300px)
         if (Math.abs(ghost.x - doorCenterX) > 2) {
-          ghost.x += (doorCenterX > ghost.x ? 1 : -1) * SPEED_GHOST_BASE * deltaSec * 0.8;
+          ghost.x += (doorCenterX > ghost.x ? 1 : -1) * SPEED_BASE * deltaSec * 0.8;
           ghost.direction = doorCenterX > ghost.x ? Direction.RIGHT : Direction.LEFT;
         } else {
           // Stage 2: Move vertically up through exact gate center (300px)
           ghost.x = doorCenterX;
-          ghost.y -= SPEED_GHOST_BASE * deltaSec * 0.8;
+          ghost.y -= SPEED_BASE * deltaSec * 0.8;
           ghost.direction = Direction.UP;
         }
 
@@ -867,13 +871,13 @@ export class MainGameScene extends Phaser.Scene {
           if (ghost.eyesEnteredGate && !ghost.eyesAtHouseFloor) {
             // Align horizontally with gate center (300px)
             if (Math.abs(ghost.x - doorCenterX) > 2) {
-              ghost.x += (doorCenterX > ghost.x ? 1 : -1) * SPEED_GHOST_BASE * 1.5 * deltaSec * 0.6;
+              ghost.x += (doorCenterX > ghost.x ? 1 : -1) * SPEED_BASE * 1.5 * deltaSec * 0.6;
             } else {
               ghost.x = doorCenterX;
             }
             // Move vertically down to insideY
             if (ghost.y < insideY) {
-              ghost.y += SPEED_GHOST_BASE * 1.5 * deltaSec * 0.6;
+              ghost.y += SPEED_BASE * 1.5 * deltaSec * 0.6;
               ghost.direction = Direction.DOWN;
             } else {
               ghost.y = insideY;
@@ -888,7 +892,7 @@ export class MainGameScene extends Phaser.Scene {
           // Stage 3: Inside house, slide horizontally to home seat and revive
           if (ghost.eyesAtHouseFloor) {
             if (Math.abs(ghost.x - ghost.homeBaseX) > 2) {
-              ghost.x += (ghost.homeBaseX > ghost.x ? 1 : -1) * SPEED_GHOST_BASE * 1.5 * deltaSec * 0.6;
+              ghost.x += (ghost.homeBaseX > ghost.x ? 1 : -1) * SPEED_BASE * 1.5 * deltaSec * 0.6;
               ghost.direction = ghost.homeBaseX > ghost.x ? Direction.RIGHT : Direction.LEFT;
               const newTile = PacmanMaze.worldToTile(ghost.x - this.offsetX, ghost.y - this.offsetY, DEFAULT_TILE_SIZE);
               ghost.gridPos = { col: newTile.col, row: newTile.row };
@@ -947,11 +951,18 @@ export class MainGameScene extends Phaser.Scene {
       }
 
       // 4. Move Ghost
-      let speedMult = spec.ghostSpeedRatio;
-      if (ghost.mode === GhostMode.FRIGHTENED) speedMult = 0.5;
-      if (ghost.mode === GhostMode.EATEN) speedMult = 1.8;
+      let ghostSpeedRatio = spec.ghostSpeedRatio;
+      const isInTunnel = ghost.gridPos.row === TUNNEL_ROW && (ghost.gridPos.col <= 5 || ghost.gridPos.col >= 22);
 
-      const speed = SPEED_GHOST_BASE * speedMult * deltaSec;
+      if (ghost.mode === GhostMode.EATEN) {
+        ghostSpeedRatio = 1.80; // 180% fast return for eaten eyes
+      } else if (ghost.mode === GhostMode.FRIGHTENED) {
+        ghostSpeedRatio = spec.ghostFrightSpeedRatio; // 50% ~ 60% frightened slowdown
+      } else if (isInTunnel) {
+        ghostSpeedRatio = spec.ghostTunnelSpeedRatio; // 40% ~ 50% side tunnel slowdown
+      }
+
+      const speed = SPEED_BASE * ghostSpeedRatio * deltaSec;
       const moveVec = DIRECTION_VECTORS[ghost.direction];
       ghost.x += moveVec.col * speed;
       ghost.y += moveVec.row * speed;

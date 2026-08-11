@@ -1,6 +1,7 @@
 /**
  * PacmanLevelSpecs.ts
- * Exact parameters for Levels 1 through 17+ per PRD-02.
+ * Exact parameters for Levels 1 through 17+ per official Arcade Pac-Man specifications.
+ * Defines level-based speed ratios for Pac-Man and Ghosts across normal, frightened, and tunnel states.
  */
 
 export type FruitType =
@@ -17,10 +18,14 @@ export interface LevelSpec {
   level: number;
   fruit: FruitType;
   fruitScore: number;
-  ghostSpeedRatio: number; // e.g. 0.75 for 75%
+  pacmanSpeedRatio: number;       // Normal Pac-Man speed ratio (0.80 ~ 1.00)
+  pacmanFrightSpeedRatio: number; // Frightened Pac-Man speed ratio (0.90 ~ 1.00)
+  ghostSpeedRatio: number;        // Normal Ghost speed ratio (0.75 ~ 0.95)
+  ghostFrightSpeedRatio: number;  // Frightened Ghost speed ratio (0.50 ~ 0.60)
+  ghostTunnelSpeedRatio: number;  // Tunnel Ghost speed ratio (0.40 ~ 0.50)
   frightDurationSec: number;
   frightFlashCount: number;
-  timerArraySec: number[]; // e.g. [7, 20, 7, 20, 5, 20, 5, Infinity]
+  timerArraySec: number[];
   ghostExitDelaysSec?: { pinky: number; inky: number; clyde: number };
 }
 
@@ -31,7 +36,11 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
   1: {
     fruit: 'Cherry',
     fruitScore: 100,
+    pacmanSpeedRatio: 0.80,
+    pacmanFrightSpeedRatio: 0.90,
     ghostSpeedRatio: 0.75,
+    ghostFrightSpeedRatio: 0.50,
+    ghostTunnelSpeedRatio: 0.40,
     frightDurationSec: 6.0,
     frightFlashCount: 5,
     timerArraySec: DEFAULT_TIMERS_LVL1_2,
@@ -39,7 +48,11 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
   2: {
     fruit: 'Strawberry',
     fruitScore: 300,
+    pacmanSpeedRatio: 0.90,
+    pacmanFrightSpeedRatio: 0.95,
     ghostSpeedRatio: 0.85,
+    ghostFrightSpeedRatio: 0.55,
+    ghostTunnelSpeedRatio: 0.45,
     frightDurationSec: 5.0,
     frightFlashCount: 5,
     timerArraySec: DEFAULT_TIMERS_LVL1_2,
@@ -47,7 +60,11 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
   3: {
     fruit: 'Peach',
     fruitScore: 500,
+    pacmanSpeedRatio: 0.90,
+    pacmanFrightSpeedRatio: 0.95,
     ghostSpeedRatio: 0.85,
+    ghostFrightSpeedRatio: 0.55,
+    ghostTunnelSpeedRatio: 0.45,
     frightDurationSec: 4.0,
     frightFlashCount: 5,
     timerArraySec: DEFAULT_TIMERS_LVL3_PLUS,
@@ -55,7 +72,11 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
   4: {
     fruit: 'Peach',
     fruitScore: 500,
+    pacmanSpeedRatio: 0.90,
+    pacmanFrightSpeedRatio: 0.95,
     ghostSpeedRatio: 0.85,
+    ghostFrightSpeedRatio: 0.55,
+    ghostTunnelSpeedRatio: 0.45,
     frightDurationSec: 3.0,
     frightFlashCount: 5,
     timerArraySec: DEFAULT_TIMERS_LVL3_PLUS,
@@ -63,7 +84,11 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
   5: {
     fruit: 'Apple',
     fruitScore: 700,
+    pacmanSpeedRatio: 1.00,
+    pacmanFrightSpeedRatio: 1.00,
     ghostSpeedRatio: 0.95,
+    ghostFrightSpeedRatio: 0.60,
+    ghostTunnelSpeedRatio: 0.50,
     frightDurationSec: 2.0,
     frightFlashCount: 5,
     timerArraySec: DEFAULT_TIMERS_LVL3_PLUS,
@@ -71,7 +96,11 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
   6: {
     fruit: 'Apple',
     fruitScore: 700,
+    pacmanSpeedRatio: 1.00,
+    pacmanFrightSpeedRatio: 1.00,
     ghostSpeedRatio: 0.95,
+    ghostFrightSpeedRatio: 0.60,
+    ghostTunnelSpeedRatio: 0.50,
     frightDurationSec: 5.0,
     frightFlashCount: 5,
     timerArraySec: DEFAULT_TIMERS_LVL3_PLUS,
@@ -79,7 +108,11 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
   7: {
     fruit: 'Pineapple',
     fruitScore: 1000,
+    pacmanSpeedRatio: 1.00,
+    pacmanFrightSpeedRatio: 1.00,
     ghostSpeedRatio: 0.95,
+    ghostFrightSpeedRatio: 0.60,
+    ghostTunnelSpeedRatio: 0.50,
     frightDurationSec: 2.0,
     frightFlashCount: 5,
     timerArraySec: DEFAULT_TIMERS_LVL3_PLUS,
@@ -87,7 +120,11 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
   8: {
     fruit: 'Pineapple',
     fruitScore: 1000,
+    pacmanSpeedRatio: 1.00,
+    pacmanFrightSpeedRatio: 1.00,
     ghostSpeedRatio: 0.95,
+    ghostFrightSpeedRatio: 0.60,
+    ghostTunnelSpeedRatio: 0.50,
     frightDurationSec: 2.0,
     frightFlashCount: 5,
     timerArraySec: DEFAULT_TIMERS_LVL3_PLUS,
@@ -95,7 +132,11 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
   9: {
     fruit: 'Galaxian',
     fruitScore: 2000,
+    pacmanSpeedRatio: 1.00,
+    pacmanFrightSpeedRatio: 1.00,
     ghostSpeedRatio: 0.95,
+    ghostFrightSpeedRatio: 0.60,
+    ghostTunnelSpeedRatio: 0.50,
     frightDurationSec: 1.0,
     frightFlashCount: 3,
     timerArraySec: DEFAULT_TIMERS_LVL3_PLUS,
@@ -103,7 +144,11 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
   10: {
     fruit: 'Galaxian',
     fruitScore: 2000,
+    pacmanSpeedRatio: 1.00,
+    pacmanFrightSpeedRatio: 1.00,
     ghostSpeedRatio: 0.95,
+    ghostFrightSpeedRatio: 0.60,
+    ghostTunnelSpeedRatio: 0.50,
     frightDurationSec: 5.0,
     frightFlashCount: 5,
     timerArraySec: DEFAULT_TIMERS_LVL3_PLUS,
@@ -111,7 +156,11 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
   11: {
     fruit: 'Bell',
     fruitScore: 3000,
+    pacmanSpeedRatio: 1.00,
+    pacmanFrightSpeedRatio: 1.00,
     ghostSpeedRatio: 0.95,
+    ghostFrightSpeedRatio: 0.60,
+    ghostTunnelSpeedRatio: 0.50,
     frightDurationSec: 2.0,
     frightFlashCount: 5,
     timerArraySec: DEFAULT_TIMERS_LVL3_PLUS,
@@ -119,7 +168,11 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
   12: {
     fruit: 'Bell',
     fruitScore: 3000,
+    pacmanSpeedRatio: 1.00,
+    pacmanFrightSpeedRatio: 1.00,
     ghostSpeedRatio: 0.95,
+    ghostFrightSpeedRatio: 0.60,
+    ghostTunnelSpeedRatio: 0.50,
     frightDurationSec: 1.0,
     frightFlashCount: 3,
     timerArraySec: DEFAULT_TIMERS_LVL3_PLUS,
@@ -127,7 +180,11 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
   13: {
     fruit: 'Key',
     fruitScore: 5000,
+    pacmanSpeedRatio: 1.00,
+    pacmanFrightSpeedRatio: 1.00,
     ghostSpeedRatio: 0.95,
+    ghostFrightSpeedRatio: 0.60,
+    ghostTunnelSpeedRatio: 0.50,
     frightDurationSec: 1.0,
     frightFlashCount: 3,
     timerArraySec: DEFAULT_TIMERS_LVL3_PLUS,
@@ -135,7 +192,11 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
   14: {
     fruit: 'Key',
     fruitScore: 5000,
+    pacmanSpeedRatio: 1.00,
+    pacmanFrightSpeedRatio: 1.00,
     ghostSpeedRatio: 0.95,
+    ghostFrightSpeedRatio: 0.60,
+    ghostTunnelSpeedRatio: 0.50,
     frightDurationSec: 3.0,
     frightFlashCount: 5,
     timerArraySec: DEFAULT_TIMERS_LVL3_PLUS,
@@ -143,7 +204,11 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
   15: {
     fruit: 'Key',
     fruitScore: 5000,
+    pacmanSpeedRatio: 1.00,
+    pacmanFrightSpeedRatio: 1.00,
     ghostSpeedRatio: 0.95,
+    ghostFrightSpeedRatio: 0.60,
+    ghostTunnelSpeedRatio: 0.50,
     frightDurationSec: 1.0,
     frightFlashCount: 3,
     timerArraySec: DEFAULT_TIMERS_LVL3_PLUS,
@@ -151,7 +216,11 @@ const LEVEL_SPECS_MAP: Record<number, Omit<LevelSpec, 'level'>> = {
   16: {
     fruit: 'Key',
     fruitScore: 5000,
+    pacmanSpeedRatio: 1.00,
+    pacmanFrightSpeedRatio: 1.00,
     ghostSpeedRatio: 0.95,
+    ghostFrightSpeedRatio: 0.60,
+    ghostTunnelSpeedRatio: 0.50,
     frightDurationSec: 1.0,
     frightFlashCount: 3,
     timerArraySec: DEFAULT_TIMERS_LVL3_PLUS,
@@ -173,7 +242,11 @@ export function getLevelSpec(level: number): LevelSpec {
       level,
       fruit: 'Key',
       fruitScore: 5000,
-      ghostSpeedRatio: 1.0,
+      pacmanSpeedRatio: 0.90,
+      pacmanFrightSpeedRatio: 0.90,
+      ghostSpeedRatio: 0.95,
+      ghostFrightSpeedRatio: 0.60,
+      ghostTunnelSpeedRatio: 0.50,
       frightDurationSec: 0.0,
       frightFlashCount: 0,
       timerArraySec: DEFAULT_TIMERS_LVL3_PLUS,
