@@ -34,8 +34,8 @@ describe('PacmanGameState Unit Tests', () => {
     expect(fruit1?.score).toBe(100);
 
     // Consume fruit
-    const score = state.consumeFruit();
-    expect(score).toBe(100);
+    const res = state.consumeFruit();
+    expect(res?.score).toBe(100);
     expect(state.getScore()).toBe(110);
     expect(state.getActiveFruit()).toBeNull();
 
@@ -59,21 +59,37 @@ describe('PacmanGameState Unit Tests', () => {
   it('should calculate sequential ghost eating multiplier scores (200, 400, 800, 1600)', () => {
     state.resetGhostEatingMultiplier();
 
-    expect(state.eatGhost()).toBe(200);
+    expect(state.eatGhost().score).toBe(200);
     expect(state.getScore()).toBe(200);
 
-    expect(state.eatGhost()).toBe(400);
+    expect(state.eatGhost().score).toBe(400);
     expect(state.getScore()).toBe(600);
 
-    expect(state.eatGhost()).toBe(800);
+    expect(state.eatGhost().score).toBe(800);
     expect(state.getScore()).toBe(1400);
 
-    expect(state.eatGhost()).toBe(1600);
+    expect(state.eatGhost().score).toBe(1600);
     expect(state.getScore()).toBe(3000);
 
     // 5th ghost caps at 1600
-    expect(state.eatGhost()).toBe(1600);
+    expect(state.eatGhost().score).toBe(1600);
     expect(state.getScore()).toBe(4600);
+  });
+
+  it('should award 1UP extra life when reaching 10,000 points', () => {
+    expect(state.getLives()).toBe(3);
+
+    const firstBonus = state.addScore(9990);
+    expect(firstBonus).toBe(false);
+    expect(state.getLives()).toBe(3);
+
+    const secondBonus = state.addScore(20); // Hits 10,010 pts
+    expect(secondBonus).toBe(true);
+    expect(state.getLives()).toBe(4);
+
+    const thirdBonus = state.addScore(10000); // 1UP only awarded ONCE
+    expect(thirdBonus).toBe(false);
+    expect(state.getLives()).toBe(4);
   });
 
   it('should handle life loss and transition to GAME_OVER when lives reach 0', () => {

@@ -39,6 +39,8 @@ export class PacmanGameState {
   private fruitTriggered74: boolean = false;
   private eatenFruitHistory: FruitType[] = [];
 
+  private hasEarned1UP: boolean = false;
+
   constructor(initialLevel: number = 1) {
     this.level = initialLevel;
     this.currentSpec = getLevelSpec(this.level);
@@ -90,24 +92,33 @@ export class PacmanGameState {
   }
 
   /**
-   * Add score points.
+   * Add score points and check for 10,000 pts 1UP Extra Life milestone.
+   * Returns true if 1UP extra life was awarded.
    */
-  public addScore(pts: number): void {
+  public addScore(pts: number): boolean {
     this.score += pts;
+    if (this.score >= 10000 && !this.hasEarned1UP) {
+      this.hasEarned1UP = true;
+      this.lives += 1;
+      return true;
+    }
+    return false;
   }
 
   /**
    * Process pellet eating score and check fruit spawn triggers.
    */
-  public onEatPellet(remainingPellets: number): void {
-    this.addScore(10);
+  public onEatPellet(remainingPellets: number): boolean {
+    const earned1UP = this.addScore(10);
     this.checkFruitSpawnTrigger(remainingPellets);
+    return earned1UP;
   }
 
-  public onEatPowerPellet(remainingPellets: number): void {
-    this.addScore(50);
+  public onEatPowerPellet(remainingPellets: number): boolean {
+    const earned1UP = this.addScore(50);
     this.resetGhostEatingMultiplier();
     this.checkFruitSpawnTrigger(remainingPellets);
+    return earned1UP;
   }
 
   private checkFruitSpawnTrigger(remainingPellets: number): void {
@@ -138,16 +149,16 @@ export class PacmanGameState {
     }
   }
 
-  public consumeFruit(): number | null {
+  public consumeFruit(): { score: number; earned1UP: boolean } | null {
     if (this.activeFruit) {
       const score = this.activeFruit.score;
       this.eatenFruitHistory.push(this.activeFruit.type);
       if (this.eatenFruitHistory.length > 14) {
         this.eatenFruitHistory.shift();
       }
-      this.addScore(score);
+      const earned1UP = this.addScore(score);
       this.activeFruit = null;
-      return score;
+      return { score, earned1UP };
     }
     return null;
   }
@@ -162,12 +173,12 @@ export class PacmanGameState {
   /**
    * Get score awarded for next eaten ghost in Frightened Mode cycle.
    */
-  public eatGhost(): number {
+  public eatGhost(): { score: number; earned1UP: boolean } {
     const scores = [200, 400, 800, 1600];
     const pts = scores[Math.min(this.ghostEatingMultiplierIndex, 3)];
     this.ghostEatingMultiplierIndex++;
-    this.addScore(pts);
-    return pts;
+    const earned1UP = this.addScore(pts);
+    return { score: pts, earned1UP };
   }
 
   /**

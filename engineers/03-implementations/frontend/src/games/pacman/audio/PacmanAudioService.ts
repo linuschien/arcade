@@ -114,6 +114,19 @@ class PacmanAudioServiceImpl {
   }
 
   /**
+   * Extra Life 1UP Chime (High Pitch Ascending Sweep).
+   */
+  public playExtraLife(): void {
+    const seq = [
+      { freq: 880, delayMs: 0, durationSeconds: 0.08, type: 'square' as OscillatorType, vol: 0.2 },
+      { freq: 1174.66, delayMs: 80, durationSeconds: 0.08, type: 'square' as OscillatorType, vol: 0.2 },
+      { freq: 1396.91, delayMs: 160, durationSeconds: 0.08, type: 'square' as OscillatorType, vol: 0.2 },
+      { freq: 1760, delayMs: 240, durationSeconds: 0.2, type: 'square' as OscillatorType, vol: 0.25 },
+    ];
+    SoundEngine.playSequence(seq);
+  }
+
+  /**
    * Authentic Pac-Man Death Tune (13-Note Downward Pitch Drop + 2 Final Pop Notes).
    */
   public playDeath(): void {

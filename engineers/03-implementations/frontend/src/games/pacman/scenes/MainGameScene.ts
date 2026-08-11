@@ -648,13 +648,19 @@ export class MainGameScene extends Phaser.Scene {
         this.pelletSprites.delete(key);
       }
 
+      let earned1UP = false;
       if (consumed === TileType.PELLET) {
-        this.gameState.onEatPellet(this.maze.getRemainingPelletCount());
+        earned1UP = this.gameState.onEatPellet(this.maze.getRemainingPelletCount());
         PacmanAudioService.playWakka();
       } else if (consumed === TileType.POWER_PELLET) {
-        this.gameState.onEatPowerPellet(this.maze.getRemainingPelletCount());
+        earned1UP = this.gameState.onEatPowerPellet(this.maze.getRemainingPelletCount());
         PacmanAudioService.playPowerPellet();
         this.triggerFrightenedMode();
+      }
+
+      if (earned1UP) {
+        PacmanAudioService.playExtraLife();
+        this.updateUI();
       }
 
       // Stage Clear Check
@@ -1047,12 +1053,16 @@ export class MainGameScene extends Phaser.Scene {
 
       // Pac-Man eat fruit check: triggers when Pac-Man enters row 20 in central corridor (col 13 or 14)
       if (this.pacmanGridPos.row === FRUIT_SPAWN_TILE.row && (this.pacmanGridPos.col === 13 || this.pacmanGridPos.col === 14)) {
-        const fruitScore = this.gameState.consumeFruit();
+        const fruitResult = this.gameState.consumeFruit();
         PacmanAudioService.playEatFruit();
 
-        if (fruitScore) {
+        if (fruitResult) {
+          if (fruitResult.earned1UP) {
+            PacmanAudioService.playExtraLife();
+            this.updateUI();
+          }
           const worldPos = PacmanMaze.tileToWorld(13.5, FRUIT_SPAWN_TILE.row, DEFAULT_TILE_SIZE);
-          this.showFloatingScore(this.offsetX + worldPos.x, this.offsetY + worldPos.y, fruitScore, '#fde047');
+          this.showFloatingScore(this.offsetX + worldPos.x, this.offsetY + worldPos.y, fruitResult.score, '#fde047');
         }
 
         if (this.fruitSprite) {
@@ -1075,8 +1085,12 @@ export class MainGameScene extends Phaser.Scene {
       if (dist < 14) {
         if (ghost.mode === GhostMode.FRIGHTENED) {
           // Eat Ghost
-          const ghostScore = this.gameState.eatGhost();
+          const ghostResult = this.gameState.eatGhost();
           PacmanAudioService.playEatGhost();
+          if (ghostResult.earned1UP) {
+            PacmanAudioService.playExtraLife();
+            this.updateUI();
+          }
           ghost.mode = GhostMode.EATEN;
           ghost.eyesEnteredGate = false;
           ghost.eyesAtHouseFloor = false;
@@ -1086,7 +1100,7 @@ export class MainGameScene extends Phaser.Scene {
           }
 
           // Show floating score popup at ghost location
-          this.showFloatingScore(ghost.x, ghost.y, ghostScore, '#38bdf8');
+          this.showFloatingScore(ghost.x, ghost.y, ghostResult.score, '#38bdf8');
         } else if (ghost.mode === GhostMode.SCATTER || ghost.mode === GhostMode.CHASE) {
           // Pacman Dies
           this.handlePacmanDeath();
