@@ -2,7 +2,7 @@
  * PacmanLevelSpecs.ts
  * Exact parameters for Levels 1 through 17+ per official Arcade Pac-Man specifications.
  * Uses a linear interpolation function of `level` (Levels 1 to 17) to smoothly scale
- * Pac-Man and Ghost base speeds and state multipliers without abrupt difficulty walls.
+ * Pac-Man and Ghost base speeds, state multipliers, and ghost exit delays without abrupt difficulty walls.
  */
 
 export type FruitType =
@@ -53,15 +53,6 @@ const LEVEL_METADATA_MAP: Record<number, { fruit: FruitType; fruitScore: number;
 };
 
 export function getLevelSpec(level: number): LevelSpec {
-  const defaultDelays =
-    level === 1
-      ? { pinky: 2.0, inky: 5.0, clyde: 10.0 }
-      : level === 2
-      ? { pinky: 1.0, inky: 2.5, clyde: 5.0 }
-      : level <= 4
-      ? { pinky: 0.5, inky: 1.5, clyde: 3.5 }
-      : { pinky: 0.2, inky: 0.8, clyde: 2.0 };
-
   // Linear Interpolation progress ratio (0.0 at Level 1 to 1.0 at Level 17+)
   const progress = Math.min((Math.max(1, level) - 1) / 16, 1.0);
 
@@ -74,13 +65,20 @@ export function getLevelSpec(level: number): LevelSpec {
   const ghostFrightSpeedRatio = Number((ghostSpeedRatio * 0.60).toFixed(4));
   const ghostTunnelSpeedRatio = Number((ghostSpeedRatio * 0.50).toFixed(4));
 
+  // Linear Ghost Exit Delays (Pinky: 2.0s -> 0.2s, Inky: 5.0s -> 0.8s, Clyde: 10.0s -> 2.0s)
+  const ghostExitDelaysSec = {
+    pinky: Number((2.0 - progress * (2.0 - 0.2)).toFixed(2)),
+    inky: Number((5.0 - progress * (5.0 - 0.8)).toFixed(2)),
+    clyde: Number((10.0 - progress * (10.0 - 2.0)).toFixed(2)),
+  };
+
   const meta = level >= 17
     ? { fruit: 'Key' as FruitType, fruitScore: 5000, frightDurationSec: 0.0, frightFlashCount: 0, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS }
     : (LEVEL_METADATA_MAP[level] || LEVEL_METADATA_MAP[1]);
 
   return {
     level,
-    ghostExitDelaysSec: defaultDelays,
+    ghostExitDelaysSec,
     pacmanSpeedRatio,
     pacmanFrightSpeedRatio,
     ghostSpeedRatio,
