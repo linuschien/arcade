@@ -276,20 +276,21 @@ export class MainGameScene extends Phaser.Scene {
     // 1. Draw dark background for wall tiles
     for (let r = 0; r < MAZE_ROWS; r++) {
       for (let c = 0; c < MAZE_COLS; c++) {
-        const val = grid[r][c];
-        const x = this.offsetX + c * DEFAULT_TILE_SIZE;
-        const y = this.offsetY + r * DEFAULT_TILE_SIZE;
-
-        if (val === TileType.WALL) {
-          // Fill interior with pure dark canvas background
+        if (grid[r][c] === TileType.WALL) {
+          const x = this.offsetX + c * DEFAULT_TILE_SIZE;
+          const y = this.offsetY + r * DEFAULT_TILE_SIZE;
           this.mazeGraphics.fillStyle(0x050b14, 1);
           this.mazeGraphics.fillRect(x, y, DEFAULT_TILE_SIZE, DEFAULT_TILE_SIZE);
-        } else if (val === TileType.GHOST_GATE) {
-          this.mazeGraphics.fillStyle(0xf472b6, 0.9);
-          this.mazeGraphics.fillRect(x, y + 8, DEFAULT_TILE_SIZE, 5);
         }
       }
     }
+
+    // 2. Draw Pink Ghost Gate bar directly across Row 14, Cols 13-14 (with 6px side extensions)
+    const gateX = this.offsetX + 13 * DEFAULT_TILE_SIZE - 6;
+    const gateY = this.offsetY + 14 * DEFAULT_TILE_SIZE + 8;
+    const gateWidth = DEFAULT_TILE_SIZE * 2 + 12; // 42px + 12px = 54px total width
+    this.mazeGraphics.fillStyle(0xf472b6, 0.9);
+    this.mazeGraphics.fillRect(gateX, gateY, gateWidth, 5);
 
     const isWallTile = (col: number, row: number): boolean => {
       // Tunnel border rows (Row 15 & Row 17) continue off-screen as walls to keep tunnel entrance open
