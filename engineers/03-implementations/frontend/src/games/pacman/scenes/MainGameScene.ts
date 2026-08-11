@@ -270,7 +270,7 @@ export class MainGameScene extends Phaser.Scene {
     this.frightenedTimeSec = 0;
   }
 
-  private renderMazeStatic(): void {
+  private renderMazeStatic(wallColor: number = 0x1d6ef5): void {
     this.mazeGraphics.clear();
     const grid = this.maze.getGrid();
 
@@ -320,8 +320,8 @@ export class MainGameScene extends Phaser.Scene {
     const inset = Math.round(s * INSET_RATIO);
     const r_corner = 5; // 5px smooth rounded corner radius
 
-    // Render single neon blue boundary line inset by 40% (8px) with rounded arc corners
-    this.mazeGraphics.lineStyle(2, 0x1d6ef5, 1);
+    // Render single boundary line inset by 40% (8px) with rounded arc corners
+    this.mazeGraphics.lineStyle(2, wallColor, 1);
 
     for (let r = 0; r < MAZE_ROWS; r++) {
       for (let c = 0; c < MAZE_COLS; c++) {
@@ -1147,16 +1147,35 @@ export class MainGameScene extends Phaser.Scene {
   private handleLevelClear(): void {
     PacmanAudioService.stopSiren();
     PacmanAudioService.playLevelClear();
-    this.gameState.advanceLevel();
-    this.maze.resetMaze();
-    this.renderPellets();
-    this.resetEntityPositions();
 
-    this.statusText.setText(`LEVEL ${this.gameState.getLevel()}`);
-    this.statusText.setVisible(true);
-    this.time.delayedCall(2000, () => {
-      // Start new level with full intro music fanfare and READY banner!
-      this.startReadyStateIntro();
+    // 1. Freeze movement & hide ghosts
+    this.gameState.setPlayState(PlayState.LEVEL_CLEAR);
+    this.ghosts.forEach((g) => g.sprite.setVisible(false));
+
+    // 2. Play authentic 8-cycle maze wall flashing animation (White 0xffffff <-> Blue 0x1d6ef5)
+    const flashDelay = 180; // ms per color swap
+    for (let i = 0; i < 8; i++) {
+      this.time.delayedCall(400 + i * flashDelay, () => {
+        const isWhite = i % 2 === 0;
+        this.renderMazeStatic(isWhite ? 0xffffff : 0x1d6ef5);
+      });
+    }
+
+    // 3. Reset maze wall color to blue & transition to next level
+    this.time.delayedCall(400 + 8 * flashDelay, () => {
+      this.renderMazeStatic(0x1d6ef5);
+      this.gameState.advanceLevel();
+      this.maze.resetMaze();
+      this.renderPellets();
+      this.resetEntityPositions();
+
+      this.statusText.setText(`LEVEL ${this.gameState.getLevel()}`);
+      this.statusText.setVisible(true);
+
+      this.time.delayedCall(600, () => {
+        // Start new level with full intro music fanfare and READY banner!
+        this.startReadyStateIntro();
+      });
     });
   }
 
