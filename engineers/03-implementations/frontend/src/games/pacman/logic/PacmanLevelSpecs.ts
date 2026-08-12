@@ -60,8 +60,8 @@ export function getLevelSpec(level: number): LevelSpec {
   const pacmanSpeedRatio = Number((0.85 + progress * (1.00 - 0.85)).toFixed(4));
   const ghostSpeedRatio = Number((0.68 + progress * (0.96 - 0.68)).toFixed(4));
 
-  // Relative State Multipliers
-  const pacmanFrightSpeedRatio = Number(Math.min(pacmanSpeedRatio * 1.12, 1.00).toFixed(4));
+  // Relative State Multipliers (+20% frightened boost without 100% cap; ghost frightened slowdown at 60%)
+  const pacmanFrightSpeedRatio = Number((pacmanSpeedRatio * 1.20).toFixed(4));
   const ghostFrightSpeedRatio = Number((ghostSpeedRatio * 0.60).toFixed(4));
   const ghostTunnelSpeedRatio = Number((ghostSpeedRatio * 0.50).toFixed(4));
 

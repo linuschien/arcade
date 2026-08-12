@@ -8,7 +8,7 @@ describe('PacmanLevelSpecs Unit Tests', () => {
     expect(spec.fruit).toBe('Cherry');
     expect(spec.fruitScore).toBe(100);
     expect(spec.pacmanSpeedRatio).toBe(0.85);
-    expect(spec.pacmanFrightSpeedRatio).toBe(0.952);
+    expect(spec.pacmanFrightSpeedRatio).toBe(1.02);
     expect(spec.ghostSpeedRatio).toBe(0.68);
     expect(spec.ghostFrightSpeedRatio).toBe(0.408);
     expect(spec.ghostTunnelSpeedRatio).toBe(0.34);
