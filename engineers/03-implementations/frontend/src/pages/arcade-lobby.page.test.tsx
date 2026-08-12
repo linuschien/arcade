@@ -285,10 +285,20 @@ describe('ArcadeLobbyPage Unit Tests', () => {
       user: { email: 'linus@example.com', id: '550e8400-e29b-41d4-a716-446655440000' },
       wallet: { dailyFreeCredit: 10, adminBonusCredit: 5, totalCredits: 15, id: 'a3b1c2d3' },
       settings: { crtEnabled: false, masterMuted: false },
-      data: { listGameCards: [], top10Leaderboard: [] },
+      data: {
+        listGameCards: [],
+        top10Leaderboard: [],
+        listPlayersSelectOptions: ['linus@example.com', 'alice@example.com'],
+        playersMapByEmail: {
+          'alice@example.com': { id: 'alice-id', gcpIapEmail: 'alice@example.com', wallet: { id: 'alice-wallet-id' } },
+        },
+      },
       activeGameId: 'tetris',
       modals: { 'admin-grant-credit-modal': true },
-      form: { 'bonus-credit-amount-field': 10 },
+      form: {
+        'grant-target-player-field': 'alice@example.com',
+        'bonus-credit-amount-field': 10,
+      },
     });
 
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });

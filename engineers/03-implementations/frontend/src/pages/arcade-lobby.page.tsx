@@ -236,30 +236,16 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
 
   useEffect(() => {
     if (playersData && playersData.length > 0) {
-      const selectOptions = playersData.map((p) => ({
-        label: p.gcpIapEmail ? `${p.gcpIapEmail} (${p.id.substring(0, 8)})` : p.id,
-        value: p.id,
-      }));
-      const playersMap = Object.fromEntries(playersData.map((p) => [p.id, p]));
+      const selectOptions = playersData.map((p) => p.gcpIapEmail || p.id);
+      const playersMapByEmail = Object.fromEntries(
+        playersData.map((p) => [p.gcpIapEmail || p.id, p])
+      );
 
       store.set('/data/listPlayersSelectOptions', selectOptions);
-      store.set('/data/playersMap', playersMap);
+      store.set('/data/playersMapByEmail', playersMapByEmail);
 
       if (!store.get('/form/grant-target-player-field')) {
-        store.set('/form/grant-target-player-field', whoamiData?.id || playersData[0].id);
-      }
-    } else if (whoamiData) {
-      // Fallback if players list is empty or single user
-      const selfOption = [
-        {
-          label: whoamiData.gcpIapEmail ? `${whoamiData.gcpIapEmail} (${whoamiData.id.substring(0, 8)})` : whoamiData.id,
-          value: whoamiData.id,
-        },
-      ];
-      store.set('/data/listPlayersSelectOptions', selfOption);
-      store.set('/data/playersMap', { [whoamiData.id]: whoamiData });
-      if (!store.get('/form/grant-target-player-field')) {
-        store.set('/form/grant-target-player-field', whoamiData.id);
+        store.set('/form/grant-target-player-field', whoamiData?.gcpIapEmail || selectOptions[0]);
       }
     }
   }, [playersData, whoamiData, store]);
@@ -350,19 +336,17 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
             return;
           }
 
+          const selectedEmail = String(
+            store.get('/form/grant-target-player-field') || whoamiData?.gcpIapEmail || ''
+          );
+          const playersMap = store.get('/data/playersMapByEmail') || {};
+          const targetPlayer = playersMap[selectedEmail] || Object.values(playersMap)[0];
+
           const targetPlayerId =
-            store.get('/form/grant-target-player-field') ||
-            store.get('/user/id') ||
-            '550e8400-e29b-41d4-a716-446655440000';
-
-          const playersMap = store.get('/data/playersMap') || {};
-          const targetPlayer = playersMap[targetPlayerId];
+            (targetPlayer as any)?.id || store.get('/user/id') || '550e8400-e29b-41d4-a716-446655440000';
           const targetWalletId =
-            targetPlayer?.wallet?.id ||
-            store.get('/wallet/id') ||
-            'a3b1c2d3-e4f5-6789-abcd-ef0123456789';
-
-          const targetEmail = targetPlayer?.gcpIapEmail || 'target player';
+            (targetPlayer as any)?.wallet?.id || store.get('/wallet/id') || 'a3b1c2d3-e4f5-6789-abcd-ef0123456789';
+          const targetEmail = (targetPlayer as any)?.gcpIapEmail || selectedEmail || 'target player';
 
           try {
             await grantAdminCreditMutation.mutateAsync({
