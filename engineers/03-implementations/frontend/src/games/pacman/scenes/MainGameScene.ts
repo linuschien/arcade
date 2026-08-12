@@ -153,7 +153,7 @@ export class MainGameScene extends Phaser.Scene {
     });
 
     // Top-Center: Score text
-    this.scoreText = this.add.text(300, 8, '1UP: 0', {
+    this.scoreText = this.add.text(300, 8, 'SCORE: 0', {
       fontFamily: 'monospace',
       fontSize: '18px',
       color: '#ffffff',
@@ -1227,7 +1227,7 @@ export class MainGameScene extends Phaser.Scene {
 
   private updateUI(): void {
     this.levelText.setText(`LEVEL ${this.gameState.getLevel()}`);
-    this.scoreText.setText(`1UP: ${this.gameState.getScore()}`);
+    this.scoreText.setText(`SCORE: ${this.gameState.getScore()}`);
 
     const extraLives = Math.max(0, this.gameState.getLives() - 1);
     this.lifeSprites.forEach((sprite, index) => {
