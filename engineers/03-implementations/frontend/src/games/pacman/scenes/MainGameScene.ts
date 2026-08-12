@@ -706,10 +706,13 @@ export class MainGameScene extends Phaser.Scene {
     if (this.frightenedTimeSec > 0) {
       this.frightenedTimeSec -= deltaSec;
 
-      // Handle flashing blue/white near end of frightened mode
-      if (this.frightenedTimeSec <= 2.0 && spec.frightFlashCount > 0) {
+      // Handle flashing blue/white near end of frightened mode dynamically based on spec.frightFlashCount
+      const flashWindowSec = Math.min(2.0, spec.frightDurationSec);
+      if (this.frightenedTimeSec <= flashWindowSec && spec.frightFlashCount > 0 && flashWindowSec > 0) {
         this.frightenedFlashSec += deltaSec;
-        const isWhite = Math.floor(this.frightenedFlashSec * 6) % 2 === 0;
+        // Exactly frightFlashCount pairs of (White -> Blue) flashes spread evenly across flashWindowSec
+        const flashRate = (spec.frightFlashCount * 2) / flashWindowSec;
+        const isWhite = Math.floor(this.frightenedFlashSec * flashRate) % 2 === 0;
         this.ghosts.forEach((g) => {
           if (g.mode === GhostMode.FRIGHTENED) {
             g.sprite.setTexture(isWhite ? 'pacman:ghost_frightened_flash' : 'pacman:ghost_frightened');
