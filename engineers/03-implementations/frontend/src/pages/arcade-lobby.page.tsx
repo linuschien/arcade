@@ -8,6 +8,7 @@ import { useListGameCards } from '@/hooks/use-listGameCards';
 import { useGetTop10Leaderboard } from '@/hooks/use-getTop10Leaderboard';
 import { useDeductCredit } from '@/hooks/use-deductCredit';
 import { useGrantAdminCredit } from '@/hooks/use-grantAdminCredit';
+import { useListPlayers } from '@/hooks/use-listPlayers';
 import { useSubmitHighScore } from '@/hooks/use-submitHighScore';
 import { ArcadeBridge, IArcadeGame } from '@/core/bridge/ArcadeBridge';
 import { createGameInstance } from '@/games';
@@ -77,6 +78,7 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
 
   // Queries & Mutations
   const { data: whoamiData } = useWhoami();
+  const { data: playersData } = useListPlayers(whoamiData?.isAdmin ?? false);
   const { data: gameCardsData } = useListGameCards();
   const [activeGameId, setActiveGameId] = useState<string>('tetris');
   const { data: leaderboardData } = useGetTop10Leaderboard(activeGameId);
@@ -232,6 +234,36 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
     }
   }, [leaderboardData, store]);
 
+  useEffect(() => {
+    if (playersData && playersData.length > 0) {
+      const selectOptions = playersData.map((p) => ({
+        label: p.gcpIapEmail ? `${p.gcpIapEmail} (${p.id.substring(0, 8)})` : p.id,
+        value: p.id,
+      }));
+      const playersMap = Object.fromEntries(playersData.map((p) => [p.id, p]));
+
+      store.set('/data/listPlayersSelectOptions', selectOptions);
+      store.set('/data/playersMap', playersMap);
+
+      if (!store.get('/form/grant-target-player-field')) {
+        store.set('/form/grant-target-player-field', whoamiData?.id || playersData[0].id);
+      }
+    } else if (whoamiData) {
+      // Fallback if players list is empty or single user
+      const selfOption = [
+        {
+          label: whoamiData.gcpIapEmail ? `${whoamiData.gcpIapEmail} (${whoamiData.id.substring(0, 8)})` : whoamiData.id,
+          value: whoamiData.id,
+        },
+      ];
+      store.set('/data/listPlayersSelectOptions', selfOption);
+      store.set('/data/playersMap', { [whoamiData.id]: whoamiData });
+      if (!store.get('/form/grant-target-player-field')) {
+        store.set('/form/grant-target-player-field', whoamiData.id);
+      }
+    }
+  }, [playersData, whoamiData, store]);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 4000);
@@ -318,16 +350,27 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
             return;
           }
 
-          const playerId = store.get('/user/id') || '550e8400-e29b-41d4-a716-446655440000';
-          const userWalletId = store.get('/wallet/id') || 'a3b1c2d3-e4f5-6789-abcd-ef0123456789';
+          const targetPlayerId =
+            store.get('/form/grant-target-player-field') ||
+            store.get('/user/id') ||
+            '550e8400-e29b-41d4-a716-446655440000';
+
+          const playersMap = store.get('/data/playersMap') || {};
+          const targetPlayer = playersMap[targetPlayerId];
+          const targetWalletId =
+            targetPlayer?.wallet?.id ||
+            store.get('/wallet/id') ||
+            'a3b1c2d3-e4f5-6789-abcd-ef0123456789';
+
+          const targetEmail = targetPlayer?.gcpIapEmail || 'target player';
 
           try {
             await grantAdminCreditMutation.mutateAsync({
-              playerId,
-              userWalletId,
+              playerId: targetPlayerId,
+              userWalletId: targetWalletId,
               amount: amountVal,
             });
-            showToast('Bonus credits granted successfully!');
+            showToast(`Granted ${amountVal} bonus credit(s) to ${targetEmail} successfully!`);
             store.set('/modals/admin-grant-credit-modal', false);
           } catch (err: any) {
             const errorMessage = err?.data?.message || err?.message || 'Failed to grant bonus credits.';

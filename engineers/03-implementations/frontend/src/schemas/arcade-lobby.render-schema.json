@@ -354,7 +354,7 @@
       "props": {
         "id": "admin-grant-credit-modal",
         "title": "✨ Grant Admin Bonus Credits",
-        "description": "Enter bonus coins amount to grant.",
+        "description": "Select a target player and enter bonus coins amount to grant.",
         "openPath": "/modals/admin-grant-credit-modal"
       },
       "children": ["grant-form-section"]
@@ -365,7 +365,19 @@
         "id": "grant-form-section",
         "className": "space-y-4 pt-2"
       },
-      "children": ["bonus-credit-amount-field", "grant-credit-submit-trigger"]
+      "children": ["grant-target-player-field", "bonus-credit-amount-field", "grant-credit-submit-trigger"]
+    },
+    "grant-target-player-field": {
+      "type": "Select",
+      "props": {
+        "id": "grant-target-player-field",
+        "label": "Target Player",
+        "name": "grant-target-player-field",
+        "placeholder": "Select target player...",
+        "value": { "$bindState": "/form/grant-target-player-field" },
+        "options": { "$bindState": "/data/listPlayersSelectOptions" }
+      },
+      "children": []
     },
     "bonus-credit-amount-field": {
       "type": "Input",

@@ -301,7 +301,7 @@ describe('ArcadeLobbyPage Unit Tests', () => {
     const submitBtn = await screen.findByRole('button', { name: /Issue Bonus Credits|Grant Bonus Credits/i });
     await user.click(submitBtn);
     await waitFor(() => {
-      expect(screen.getByText(/Bonus credits granted successfully!/i)).toBeInTheDocument();
+      expect(screen.getByText(/successfully/i)).toBeInTheDocument();
     });
   });
 
