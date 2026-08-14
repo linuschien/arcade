@@ -53,11 +53,17 @@ class InputServiceImpl {
     // Primary Action Button (Button A)
     Space: ArcadeAction.BUTTON_A,
     ' ': ArcadeAction.BUTTON_A,
+    Enter: ArcadeAction.BUTTON_A,
+    NumpadEnter: ArcadeAction.BUTTON_A,
     KeyJ: ArcadeAction.BUTTON_A,
+    KeyZ: ArcadeAction.BUTTON_A,
+    z: ArcadeAction.BUTTON_A,
 
     // Secondary Action Button (Button B)
     KeyX: ArcadeAction.BUTTON_B,
     x: ArcadeAction.BUTTON_B,
+    KeyF: ArcadeAction.BUTTON_B,
+    f: ArcadeAction.BUTTON_B,
 
     // Tertiary Utility Button (Button C)
     KeyC: ArcadeAction.BUTTON_C,
@@ -68,6 +74,11 @@ class InputServiceImpl {
     // Mode / Auxiliary Button (Button D)
     KeyM: ArcadeAction.BUTTON_D,
     m: ArcadeAction.BUTTON_D,
+
+    // Start / Pause Keys
+    Escape: ArcadeAction.START,
+    KeyP: ArcadeAction.START,
+    p: ArcadeAction.START,
   };
 
   constructor() {
@@ -149,9 +160,7 @@ class InputServiceImpl {
           this.setActionState(PlayerIndex.P1, ArcadeAction.BUTTON_B, btnB || btnRB);
           this.setActionState(PlayerIndex.P1, ArcadeAction.BUTTON_C, btnX || btnLB);
           this.setActionState(PlayerIndex.P1, ArcadeAction.BUTTON_D, btnY);
-          if (btnStart) {
-            this.setActionState(PlayerIndex.P1, ArcadeAction.START, true);
-          }
+          this.setActionState(PlayerIndex.P1, ArcadeAction.START, btnStart);
         }
       } catch (err) {
         // Ignore gamepad poll errors in non-standard environments
