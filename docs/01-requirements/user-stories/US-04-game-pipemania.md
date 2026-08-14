@@ -1,7 +1,7 @@
 # US-04 水管工人模組 (Pipe Mania Game Module)
 
 ## 背景 (Background)
-Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊戲。本模組規範 $10 \times 7$ 網格操作、13 種水管連通物理、5 格 FIFO 發牌佇列、對齊三大階段 (1~8、9~20、21~36) 的統一加權發牌、3 支扳手生命與每 50,000 分獎勵加命、開口防死路約束與地圖 100% 保證可解演算協定、起終點線性難度佈局、Fast Forward 快進結算以及 GameOver 爆管判定邏輯。
+Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊戲。本模組規範 $10 \times 7$ 網格操作、13 種水管連通物理、5 格 FIFO 發牌佇列、對齊三大階段 (1~8、9~20、21~36) 的統一加權發牌與精確數值區間、3 支扳手生命與每 50,000 分獎勵加命、開口防死路約束與地圖 100% 保證可解演算協定、起終點線性難度佈局、Fast Forward 快進結算以及 GameOver 爆管判定邏輯。
 
 ---
 
@@ -51,7 +51,7 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
   - 4 款無方向性雙向彎管（`╝`, `╚`, `╗`, `╔`），推進耗時為基準 $T_{\text{flow}}$。
   - 1 款立體交叉十字管 (`╬`)：水平與垂直兩路各自獨立直行，液體可先後通過兩軸，禁止轉彎。流經獲得 $+100$ 分。
 - **AC2 (4 One-Way Pipes)**：僅允許指定單一方向進入（`→`, `←`, `↑`, `↓`），反向或側面灌入立即觸發爆管 (Spill Game Over)。
-- **AC3 (2 Reservoir Tank Pipes)**：水流進入水庫直管後，推進填充耗時精確計算為 $T_{\text{reservoir}} = T_{\text{flow}} \times 4.0$（推進時間為普通管的 4 倍，流速降為 $25\%$）。完全填滿後提供 $+300$ 分高額獎勵。
+- **AC3 (2 Reservoir Tank Pipes)**：水流進入水庫直管後，推進填充耗時精確計算為 $T_{\text{reservoir}} = T_{\text{flow}} \times 4.0$（推進時間為普通管的 4 倍，流速降為 $25\%$）。數值區間為 $6000\text{ms} \to 2080\text{ms}$。完全填滿後提供 $+300$ 分高額獎勵。
 
 ---
 
@@ -85,7 +85,7 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 
 ---
 
-## US-04-06：三階段統一加權發牌 (3-Tier Unified Weighted Drop Rate by Level L)
+## US-04-06：三階段統一加權發牌與精確機率區間 (3-Tier Weighted Drop Rates)
 
 **身份**： 遊戲系統
 
@@ -94,33 +94,46 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 > **So that** 關卡階梯完全和諧一致，且高階關卡保有 5% 水庫管救命保底率。
 
 ### 驗收條件 (Acceptance Criteria)
-- **AC1 (Tier 1: Level 1 ~ 8 新手期)**：單向管 $P_{\text{oneway}} = 0\%$、水庫管 $P_{\text{reservoir}} = 0\%$、7 種基礎水管均勻佔比 $100\%$。
+- **AC1 (Tier 1: Level 1 ~ 8 新手期)**：
+  - 單向管機率 $P_{\text{oneway}} = \mathbf{0\%}$
+  - 水庫管機率 $P_{\text{reservoir}} = \mathbf{0\%}$
+  - 7 種基礎水管總佔比 $\mathbf{100\%}$（每款個別機率為 $\mathbf{14.28\%}$）。
 - **AC2 (Tier 2: Level 9 ~ 20 進階期)**：
-  - 單向管機率：$P_{\text{oneway}} = 5\% + 0.6\% \times (L - 9)$（$5\% \to 12\%$）。
-  - 水庫管機率：$P_{\text{reservoir}} = \max(5\%, 12\% - 0.6\% \times (L - 9))$（$12\% \to 5\%$）。
-  - 剩餘機率平均分配予 7 種基礎管。
+  - 單向管機率：$P_{\text{oneway}} = 5\% + 0.6\% \times (L - 9)$，數值區間為 **$[5.0\% \sim 11.6\%]$**。
+  - 水庫管機率：$P_{\text{reservoir}} = \max(5\%, 12\% - 0.6\% \times (L - 9))$，數值區間為 **$[12.0\% \sim 5.4\%]$**。
+  - 7 種基礎水管總佔比恆定為 $\mathbf{83.0\%}$（每款個別機率為 $\mathbf{11.85\%}$）。
 - **AC3 (Tier 3: Level 21 ~ 36 高階期)**：
-  - 單向管機率：$P_{\text{oneway}} = \min(20\%, 12\% + 0.5\% \times (L - 21))$（$12\% \to 20\%$）。
-  - 水庫管機率：$P_{\text{reservoir}} = 5\%$（保底下限）。
-  - 剩餘機率平均分配予 7 種基礎管。
+  - 單向管機率：$P_{\text{oneway}} = \min(20\%, 12\% + 0.5\% \times (L - 21))$，數值區間為 **$[12.0\% \sim 19.5\%]$**。
+  - 水庫管機率：$P_{\text{reservoir}} = \mathbf{5.0\%}$（保底下限）。
+  - 7 種基礎水管總佔比區間為 **$[83.0\% \sim 75.5\%]$**（每款個別機率為 **$[11.85\% \sim 10.78\%]$**）。
 - **AC4 (Unified RNG Generation)**：本三階段發牌權重由「側邊 5 格發牌佇列」與「盤面 $N_{\text{fixed}}$ 預設固定水管生成器」**100% 共享共用同一套 `PipeRNG.getRandomPipe(level)` 函式**。
 
 ---
 
-## US-04-07：無硬編碼線性難度參數公式 (Linear Level Formulas)
+## US-04-07：無硬編碼線性難度參數公式與各階段數值區間 (Linear Level Formulas)
 
 **身份**： 遊戲平衡系統
 
 > **As a** 遊戲平衡系統，  
-> **I want to** 透過線性函數計算每關的預備時間、水流速度、目標長度與障礙數量，且速度下限維持在舒適的 500ms，  
+> **I want to** 透過線性函數計算每關的預備時間、水流速度、目標長度與障礙數量，並明確規範各階段之數值區間，  
 > **So that** 系統節奏適中且支援 1 至 36 關的平滑推進。
 
 ### 驗收條件 (Acceptance Criteria)
-- **AC1 (Delay Time)**：$T_{\text{delay}} = \max(1.0, 10 - 0.25 \times (L - 1))$ 秒。
-- **AC2 (Flow Speed)**：$T_{\text{flow}} = \max(500, 1500 - 28 \times (L - 1))$ 毫秒（下限為 500ms，即每秒推進 2 格，節奏適中）。
-- **AC3 (Target Length)**：$N_{\text{target}} = \min(40, \lfloor 10 + 0.85 \times (L - 1) \rfloor)$ 格。
-- **AC4 (Obstacles Count)**：$N_{\text{obstacle}} = \min(12, \lfloor 0 + 0.35 \times (L - 1) \rfloor)$ 個。
-- **AC5 (Preset Count)**：$L \ge 5$ 時，$N_{\text{fixed}} = \min(6, \lfloor 1 + 0.15 \times (L - 5) \rfloor)$ 個；$L < 5$ 時為 0。
+- **AC1 (Delay Time $T_{\text{delay}}$)**：
+  - 公式：$T_{\text{delay}} = \max(1.0, 10 - 0.25 \times (L - 1))$ 秒。
+  - 數值區間：Tier 1 為 **$[10.00\text{s} \sim 8.25\text{s}]$**；Tier 2 為 **$[8.00\text{s} \sim 5.25\text{s}]$**；Tier 3 為 **$[5.00\text{s} \sim 1.25\text{s}]$**。
+- **AC2 (Flow Speed $T_{\text{flow}}$)**：
+  - 公式：$T_{\text{flow}} = \max(500, 1500 - 28 \times (L - 1))$ 毫秒。
+  - 數值區間：Tier 1 為 **$[1500\text{ms} \sim 1304\text{ms}]$**；Tier 2 為 **$[1276\text{ms} \sim 968\text{ms}]$**；Tier 3 為 **$[940\text{ms} \sim 520\text{ms}]$**（封頂 500ms）。
+- **AC3 (Target Length $N_{\text{target}}$)**：
+  - 公式：$N_{\text{target}} = \min(40, \lfloor 10 + 0.85 \times (L - 1) \rfloor)$ 格。
+  - 數值區間：Tier 1 為 **$[10 \sim 15\text{格}]$**；Tier 2 為 **$[16 \sim 26\text{格}]$**；Tier 3 為 **$[27 \sim 40\text{格}]$**（第 36 關封頂 40 格）。
+- **AC4 (Obstacles Count $N_{\text{obstacle}}$)**：
+  - 公式：$N_{\text{obstacle}} = \min(12, \lfloor 0 + 0.35 \times (L - 1) \rfloor)$ 個。
+  - 數值區間：Tier 1 為 **$[0 \sim 2\text{顆}]$**；Tier 2 為 **$[2 \sim 6\text{顆}]$**；Tier 3 為 **$[7 \sim 12\text{顆}]$**（第 36 關封頂 12 顆）。
+- **AC5 (Preset Count $N_{\text{fixed}}$)**：
+  - 公式：$L \ge 5$ 時為 $\min(6, \lfloor 1 + 0.15 \times (L - 5) \rfloor)$ 個；$L < 5$ 時為 $0$ 個。
+  - 數值區間：Tier 1 為 **$[0 \sim 1\text{根}]$**；Tier 2 為 **$[1 \sim 3\text{根}]$**；Tier 3 為 **$[3 \sim 5\text{根}]$**。
 
 ---
 
@@ -139,28 +152,28 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 - **AC2 (BFS Connectivity Check)**：隨機放置障礙石頭後，使用 BFS 驗證起點與終點必須處於同一個連通分量 (Connected Component)。
 - **AC3 (Max Path Capacity Check $\ge N_{\text{target}}$)**：以 DFS 啟發式評估盤面所有可用空白格子，起點至終點的**理論最大無自交路徑長度必須 $\ge N_{\text{target}}$**。
 - **AC4 (Auto Retry Loop)**：若生成的地圖未通過 AC1~AC3 驗證，引擎在 5ms 內自動更換隨機種子重新生成（最多重試 10 次；若仍未通過則自動減少 1 顆障礙石頭以保證 100% 可解）。
-- **AC5 (3-Tier Level Progression Layout)**：
-  - **$L = 1 \sim 8$ (新手期)**：起終點曼哈頓距離 $D \ge 9$，終點開口**正對**起點方向。
-  - **$L = 9 \sim 20$ (進階期)**：曼哈頓距離 $D = \max(5, 10 - \lfloor 0.3 \times (L - 8) \rfloor)$，終點開口**垂直正交**於起點。
-  - **$L = 21 \sim 36$ (高階期)**：曼哈頓距離 $D = \max(2, 5 - \lfloor 0.2 \times (L - 20) \rfloor)$，終點開口**背向**起點，強迫繞全場大迴圈。
+- **AC5 (3-Tier Level Progression Layout & Distances)**：
+  - **$L = 1 \sim 8$ (新手期)**：起終點曼哈頓距離 **$D \ge 9$ 格**（遠距對角），終點開口**正對**起點方向。
+  - **$L = 9 \sim 20$ (進階期)**：曼哈頓距離 **$D = [10 \sim 7\text{格}]$**，終點開口**垂直正交 (90°)** 於起點。
+  - **$L = 21 \sim 36$ (高階期)**：曼哈頓距離 **$D = [5 \sim 2\text{格}]$**（極近相鄰），終點開口**背向 (180°)** 起點，強迫繞全場大迴圈。
 
 ---
 
-## US-04-09：36 關主線通關與無限循環波浪節奏 (Endless Mode & Wave Pacing)
+## US-04-09：36 關主線通關與無限循環各輪數值區間 (Endless Mode Numerical Reference)
 
 **身份**： 核心玩家
 
 > **As a** 核心玩家，  
-> **I want to** 在完成 36 關後進入無限循環模式並體驗經典街機的周回波浪節奏，  
-> **So that** 在第 37 關獲得適度喘息並在後續輪次中挑戰更高極限。
+> **I want to** 在完成 36 關後進入無限循環模式並查閱各輪次之精確數值區間，  
+> **So that** 能在清晰可測量的加壓曲線下持續挑戰極限分數。
 
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (36 Level Mainline)**：通過第 36 關時，顯示通關榮譽並進入 Endless Loop。
-- **AC2 (Wave Pacing in Loop)**：當關卡 $L > 36$ 時，定義循環輪數 $R = \lfloor (L - 1) / 36 \rfloor$ 與基準關卡 $\text{BaseLevel} = ((L - 1) \bmod 36) + 1$：
-  - 地圖佈局按 $\text{BaseLevel}$ 生成。
-  - **波浪節奏 (Wave Pacing)**：進入第 37 關時（即第 2 輪的 Level 1 地圖），流速為 $1500 \times 0.90 = 1350\text{ ms}$。流速適度放緩，給予玩家通關後的新一輪節奏起伏。
-  - 起噴延遲公式：$T_{\text{delay}}(L) = \max(1.0, T_{\text{delay}}(\text{BaseLevel}) \times 0.90^R)$。
-  - 水流速度公式：$T_{\text{flow}}(L) = \max(350, T_{\text{flow}}(\text{BaseLevel}) \times 0.90^R)$（極限保底 350ms）。
+- **AC2 (Endless Loop Multi-Round Numerical Ranges)**：當關卡 $L > 36$ 時，定義循環輪數 $R = \lfloor (L - 1) / 36 \rfloor$ 與基準關卡 $\text{BaseLevel} = ((L - 1) \bmod 36) + 1$：
+  - **第 2 輪 (Loop 1: $L=37\sim 72, R=1$)**：$T_{\text{delay}} = [9.00\text{s} \sim 1.13\text{s}]$, $T_{\text{flow}} = [1350\text{ms} \sim 468\text{ms}]$。
+  - **第 3 輪 (Loop 2: $L=73\sim 108, R=2$)**：$T_{\text{delay}} = [8.10\text{s} \sim 1.01\text{s}]$, $T_{\text{flow}} = [1215\text{ms} \sim 421\text{ms}]$。
+  - **第 4 輪 (Loop 3: $L=109\sim 144, R=3$)**：$T_{\text{delay}} = [7.29\text{s} \sim 1.00\text{s}]$, $T_{\text{flow}} = [1093\text{ms} \sim 379\text{ms}]$。
+  - **第 5 輪+ (極限: $L \ge 145, R \ge 4$)**：$T_{\text{delay}} = 1.00\text{s}$ 保底極限，$T_{\text{flow}} \to 350\text{ms}$ 極限保護牆。
 
 ---
 
