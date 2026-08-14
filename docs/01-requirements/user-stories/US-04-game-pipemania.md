@@ -1,23 +1,27 @@
 # US-04 水管工人模組 (Pipe Mania Game Module)
 
 ## 背景 (Background)
-Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊戲。本模組規範 $10 \times 7$ 網格操作、13 種水管連通物理、5 格 FIFO 發牌佇列、對齊三大階段 (1~8、9~20、21~36) 的統一加權發牌與精確數值區間、3 支扳手生命與每 50,000 分獎勵加命、開口防死路約束與地圖 100% 保證可解演算協定、起終點線性難度佈局、Fast Forward 快進結算以及 GameOver 爆管判定邏輯。
+Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊戲。本模組規範 $10 \times 7$ 網格操作與鍵盤/搖桿游標、13 種水管連通物理與平滑填充遮罩動畫、5 格 FIFO 發牌佇列、對齊三大階段 (1~8、9~20、21~36) 的統一加權發牌與精確數值區間、3 支扳手生命與每 50,000 分獎勵加命、開口防死路約束與地圖 100% 保證可解演算協定、起終點線性難度佈局、Fast Forward 快進結算以及 GameOver 爆管判定邏輯。
 
 ---
 
-## US-04-01：$10 \times 7$ 網格操作與水管放置 (Grid Interaction & Pipe Placement)
+## US-04-01：$10 \times 7$ 網格操作、水管放置與跨裝置游標 (Grid Interaction, Pipe Placement & Reticle)
 
 **身份**： Pipe Mania 玩家 (Pipe Mania Player)
 
 > **As a** 玩家，  
-> **I want to** 在 $10 \times 7$ 的矩形網格上點擊空白格子，  
+> **I want to** 在 $10 \times 7$ 網格上透過滑鼠點擊、觸控或以鍵盤/搖桿移動網格游標放置水管，  
 > **So that** 我能將發牌佇列頂端（第 1 格）的水管放置到指定座標鋪設水路。
 
 ### 驗收條件 (Acceptance Criteria)
-- **AC1 (Placement)**：點擊空白格子時，將佇列最頂端（第 1 格 / Index 0）水管放置到該座標。
+- **AC1 (Placement)**：點擊空白格子或在游標位置按下放置鍵時，將佇列最頂端（第 1 格 / Index 0）水管放置到該座標。
 - **AC2 (Queue Shift)**：頂端第 1 格水管彈出 (Pop)，下方第 2~5 格水管依序向上移動遞補，第 5 格依權重生成新水管補齊。
-- **AC3 (Replacement & Penalty)**：點擊已放置水管但水流尚未流經的格子時，允許以佇列新水管進行覆蓋替換，並扣除 $-50$ 分覆蓋分數。
+- **AC3 (Replacement & Penalty)**：點擊/在已放置水管但水流尚未流經的格子放置時，允許以佇列新水管進行覆蓋替換，並扣除 $-50$ 分覆蓋分數。
 - **AC4 (Flooded Lock)**：點擊水流正在流經或已流過的格子時，系統忽略點擊，禁止覆蓋。
+- **AC5 (Multi-Device Reticle Navigation)**：
+  - 鍵盤方向鍵 (`UP`/`DOWN`/`LEFT`/`RIGHT`) 或 Gamepad 搖桿/D-Pad 移動盤面高亮 **「網格游標 (Grid Reticle)」**。
+  - `Space` / `Enter` / Gamepad `Button A` (ACTION_1) 放置手牌水管。
+  - `Shift` / `F` / Gamepad `Button B` (ACTION_2) 長按觸發 Fast Forward 手動加速。
 
 ---
 
@@ -37,13 +41,13 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 
 ---
 
-## US-04-03：13 種實體水管元件連通性與物理規則 (13 Pipe Types Physical Rules)
+## US-04-03：13 種實體水管元件連通性與平滑填充動畫 (13 Pipe Types & Fill Mask Animation)
 
 **身份**： 遊戲引擎 (Game Engine)
 
 > **As a** 遊戲引擎，  
-> **I want to** 依據 13 種水管類型判定水流的出入方向與精確推進耗時，  
-> **So that** 能正確推進水流或判定溢出爆管。
+> **I want to** 依據 13 種水管類型判定水流的出入方向，並以平滑填充遮罩動畫呈現推進進度，  
+> **So that** 能正確推進水流、呈現液體流動視覺，或在碰撞時判定溢出爆管。
 
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (7 Standard Pipes)**：
@@ -52,6 +56,9 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
   - 1 款立體交叉十字管 (`╬`)：水平與垂直兩路各自獨立直行，液體可先後通過兩軸，禁止轉彎。流經獲得 $+100$ 分。
 - **AC2 (4 One-Way Pipes)**：僅允許指定單一方向進入（`→`, `←`, `↑`, `↓`），反向或側面灌入立即觸發爆管 (Spill Game Over)。
 - **AC3 (2 Reservoir Tank Pipes)**：水流進入水庫直管後，推進填充耗時精確計算為 $T_{\text{reservoir}} = T_{\text{flow}} \times 4.0$（推進時間為普通管的 4 倍，流速降為 $25\%$）。數值區間為 $6000\text{ms} \to 2080\text{ms}$。完全填滿後提供 $+300$ 分高額獎勵。
+- **AC4 (Continuous Fill Mask Animation)**：
+  - 普通水管在 $T_{\text{flow}}$ 毫秒內由入口至出口呈現 **$0\% \to 100\%$ 平滑填充遮罩動畫**，液體尖端清澈可見。
+  - 水庫水管在 $T_{\text{reservoir}}$ 毫秒內呈現蓄水槽液面由底層緩慢蓄升的平滑注水動畫。
 
 ---
 
