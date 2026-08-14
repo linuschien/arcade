@@ -1,7 +1,7 @@
 # US-04 水管工人模組 (Pipe Mania Game Module)
 
 ## 背景 (Background)
-Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊戲。本模組規範 $10 \times 7$ 網格操作、13 種水管連通物理、5 格 FIFO 發牌佇列、動態權重發牌、3 支扳手生命與每 50,000 分獎勵加命、開口防死路約束與地圖 100% 保證可解演算協定、起終點線性難度佈局、Fast Forward 快進結算以及 GameOver 爆管判定邏輯。
+Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊戲。本模組規範 $10 \times 7$ 網格操作、13 種水管連通物理、5 格 FIFO 發牌佇列、對齊三大階段 (1~8、9~20、21~36) 的統一加權發牌、3 支扳手生命與每 50,000 分獎勵加命、開口防死路約束與地圖 100% 保證可解演算協定、起終點線性難度佈局、Fast Forward 快進結算以及 GameOver 爆管判定邏輯。
 
 ---
 
@@ -85,22 +85,25 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 
 ---
 
-## US-04-06：基於關卡等級的統一加權發牌 (Unified Weighted Drop Rate by Level L)
+## US-04-06：三階段統一加權發牌 (3-Tier Unified Weighted Drop Rate by Level L)
 
 **身份**： 遊戲系統
 
 > **As a** 遊戲系統，  
-> **I want to** 讓發牌佇列與盤面預放水管共享同一套動態機率算式，  
-> **So that** 難度隨進度合理提升，架構簡潔一致且水庫管在後期依然具備 5% 保底率。
+> **I want to** 讓發牌佇列與盤面預放水管共享完全對齊 1~8、9~20、21~36 三大階段的加權發牌算式，  
+> **So that** 關卡階梯完全和諧一致，且高階關卡保有 5% 水庫管救命保底率。
 
 ### 驗收條件 (Acceptance Criteria)
-- **AC1 (Level < 4)**：水庫管發牌率為 $0\%$、單向管發牌率為 $0\%$。
-- **AC2 (4 <= Level < 7)**：水庫管發牌率 $P_{\text{reservoir}} = \max(5\%, 15\% - 1\% \times (L - 4))$，單向管為 $0\%$。
-- **AC3 (Level >= 7)**：
-  - 單向管機率隨等級線性遞增：$P_{\text{oneway}} = \min(20\%, 5\% + 1\% \times (L - 7))$。
-  - 水庫管機率隨等級線性遞減：$P_{\text{reservoir}} = \max(5\%, 12\% - 0.5\% \times (L - 7))$（保底下限 **5%**）。
-  - 其餘權重（$100\% - P_{\text{oneway}} - P_{\text{reservoir}}$）平均分配予 7 種基礎管。
-- **AC4 (Unified RNG Generation)**：本發牌權重規則由「側邊 5 格發牌佇列」與「盤面 $N_{\text{fixed}}$ 預設固定水管生成器」**100% 共享共用同一套 `PipeRNG.getRandomPipe(level)` 函式**。
+- **AC1 (Tier 1: Level 1 ~ 8 新手期)**：單向管 $P_{\text{oneway}} = 0\%$、水庫管 $P_{\text{reservoir}} = 0\%$、7 種基礎水管均勻佔比 $100\%$。
+- **AC2 (Tier 2: Level 9 ~ 20 進階期)**：
+  - 單向管機率：$P_{\text{oneway}} = 5\% + 0.6\% \times (L - 9)$（$5\% \to 12\%$）。
+  - 水庫管機率：$P_{\text{reservoir}} = \max(5\%, 12\% - 0.6\% \times (L - 9))$（$12\% \to 5\%$）。
+  - 剩餘機率平均分配予 7 種基礎管。
+- **AC3 (Tier 3: Level 21 ~ 36 高階期)**：
+  - 單向管機率：$P_{\text{oneway}} = \min(20\%, 12\% + 0.5\% \times (L - 21))$（$12\% \to 20\%$）。
+  - 水庫管機率：$P_{\text{reservoir}} = 5\%$（保底下限）。
+  - 剩餘機率平均分配予 7 種基礎管。
+- **AC4 (Unified RNG Generation)**：本三階段發牌權重由「側邊 5 格發牌佇列」與「盤面 $N_{\text{fixed}}$ 預設固定水管生成器」**100% 共享共用同一套 `PipeRNG.getRandomPipe(level)` 函式**。
 
 ---
 
@@ -136,10 +139,10 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 - **AC2 (BFS Connectivity Check)**：隨機放置障礙石頭後，使用 BFS 驗證起點與終點必須處於同一個連通分量 (Connected Component)。
 - **AC3 (Max Path Capacity Check $\ge N_{\text{target}}$)**：以 DFS 啟發式評估盤面所有可用空白格子，起點至終點的**理論最大無自交路徑長度必須 $\ge N_{\text{target}}$**。
 - **AC4 (Auto Retry Loop)**：若生成的地圖未通過 AC1~AC3 驗證，引擎在 5ms 內自動更換隨機種子重新生成（最多重試 10 次；若仍未通過則自動減少 1 顆障礙石頭以保證 100% 可解）。
-- **AC5 (Level Progression Layout)**：
-  - **$L = 1 \sim 8$ (新手)**：起終點曼哈頓距離 $D \ge 9$，終點開口**正對**起點方向。
-  - **$L = 9 \sim 20$ (進階)**：曼哈頓距離 $D = \max(5, 10 - \lfloor 0.3 \times (L - 8) \rfloor)$，終點開口**垂直正交**於起點。
-  - **$L = 21 \sim 36$ (高階)**：曼哈頓距離 $D = \max(2, 5 - \lfloor 0.2 \times (L - 20) \rfloor)$，終點開口**背向**起點，強迫繞全場大迴圈。
+- **AC5 (3-Tier Level Progression Layout)**：
+  - **$L = 1 \sim 8$ (新手期)**：起終點曼哈頓距離 $D \ge 9$，終點開口**正對**起點方向。
+  - **$L = 9 \sim 20$ (進階期)**：曼哈頓距離 $D = \max(5, 10 - \lfloor 0.3 \times (L - 8) \rfloor)$，終點開口**垂直正交**於起點。
+  - **$L = 21 \sim 36$ (高階期)**：曼哈頓距離 $D = \max(2, 5 - \lfloor 0.2 \times (L - 20) \rfloor)$，終點開口**背向**起點，強迫繞全場大迴圈。
 
 ---
 
