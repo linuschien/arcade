@@ -39,21 +39,36 @@
 | **US-03-03** | 幽靈 AI 性格模式切換 | 4 隻幽靈切換 Scatter/Chase | Blinky/Pinky/Inky/Clyde 獨特目標算式、Timer Array 序列 |
 | **US-03-04** | 生命扣減、過關與 Game Over | 扣減生命、跳下一關與失敗結算 | 碰撞死亡動畫、Level 1~17+ 精確難度參數表、`GAME_OVER` 事件廣播 |
 
+### 4. 水管工人模組 (`US-04-game-pipemania.md`)
+| 故事 ID | 故事名稱 | 核心動作 | 驗收條件涵蓋 |
+|---|---|---|---|
+| **US-04-01** | $10 \times 7$ 網格操作與水管放置 | 點擊網格放置/覆蓋水管 | 佇列 Pop/Push、未水淹水管覆蓋扣 50 分、水淹水管禁止覆蓋 |
+| **US-04-02** | 障礙物與預設固定水管限制 | 盤面障礙與預設水管互動 | 石頭忽略輸入、預設水管禁止覆蓋與 Bonus 加分 |
+| **US-04-03** | 13 種實體水管元件連通性物理 | 判定 13 種水管之進出方向與速度 | 7 種基礎管（含 `╬` 十字獨立通道）、4 種單向管、2 種水庫管（$20\% \sim 33\%$ 緩衝） |
+| **US-04-04** | 邊界碰撞與水流溢出判定 | 判定撞牆、錯位或無開口溢出 | 外圍邊界爆管、無開口/單向管反向爆管、`GAME_OVER` 事件拋出 |
+| **US-04-05** | 5 格先進先出 (FIFO) 發送器 | 側邊 UI 展示未來 5 格佇列 | 5 格 UI 預覽、平滑 Pop & Push 動畫 |
+| **US-04-06** | 基於關卡等級的加權發牌 | 動態調整 13 種水管發牌機率 | $L<4$ 無水庫管、$L<7$ 無單向管、$L\ge 7$ 線性動態權重分配 |
+| **US-04-07** | 無硬編碼線性難度參數公式 | 計算預備時間、流速、目標長度與障礙數 | $T_{\text{delay}}$, $T_{\text{flow}}$, $N_{\text{target}}$, $N_{\text{obstacle}}$, $N_{\text{fixed}}$ 無硬編碼公式 |
+| **US-04-08** | 終點錨定與過關長度驗證 | 驗收水流進入終點條件與長度 | $\ge N_{\text{target}}$ 成功過關、$< N_{\text{target}}$ Underflow 失敗、終點開口背向起點 |
+| **US-04-09** | 36 關主線通關與無限極限循環 | 36 關通關後進入 Endless Loop | 36 關主線、$\bmod 36$ 地圖循環與等比流速加壓 |
+| **US-04-10** | 手動加速與結算加分 | 按下 Fast Forward 加速水流 | 強制 $50\text{ ms}$ 推進、$2\times$ 加速倍率得分加成 |
+
 ---
 
 ## 🔄 端到端業務流程 (Business Workflows)
 
 ### 流程一：玩家經由 GCP IAP 登入與單局啟動 (GCP IAP Auth & Game Startup Flow)
 1. 會員玩家經由 GCP IAP 認證存取平台，系統自動取得 `X-Goog-Authenticated-User-Email` Header，並發放/重置 10 枚「每日免費代幣」 (`US-01-05`)。
-2. 玩家於大廳選單選擇 Tetris，點擊「START (1 Coin)」 (`US-01-02`)。
+2. 玩家於大廳選單選擇 Pipe Mania，點擊「START (1 Coin)」 (`US-01-02`)。
 3. 系統直接從帳號錢包扣除 1 枚免費代幣，透過 `ArcadeBridge.emit('COIN_INSERTED')` 啟動遊戲 (`US-01-03`)。
 
 ### 流程二：手動/自動暫停與離場 (Pause & Exit Flow)
 1. 玩家手動點擊 UI 按鈕或按下 `ESC`/`P`/Gamepad 按鍵（或切換分頁失焦），觸發 `US-01-08` 發送 `PAUSE_REQUESTED` 暫停遊戲。
 2. 玩家遊玩中途點擊「返回大廳」，系統調用 `destroyGame()` 清理記憶體，無 Soft Reset。
-3. 玩家 GameOver 時跳出 10 秒倒數，點擊「CONTINUE (1 Coin)」，扣除 1 枚硬幣原位恢復生命繼續遊玩。
+3. 玩家 GameOver (爆管溢出或長度未達標) 時跳出 10 秒倒數，點擊「CONTINUE (1 Coin)」，扣除 1 枚硬幣續關。
 
-### 流程三：每款遊戲獨立前十名排行榜結算 (Per-Game Top 10 Auto Email Submission Flow)
-1. 玩家 GameOver 觸發 `ArcadeBridge.emit('GAME_OVER', summary)`。
-2. 系統自動帶入 GCP IAP 玩家 Email（例如：`user@example.com`）併同得分上載 API。同分時依照 Email 字母 A-Z 順序排序。
-3. 若該得分擠進該款遊戲 (`game_id`) 的前十名，該遊戲卡片的 Top 10 排行榜視窗自動刷新展出。
+### 流程三：Pipe Mania 鋪路與 Fast Forward 加速通關流程 (Pipe Placement & Fast Forward Flow)
+1. 遊戲開局倒數 $T_{\text{delay}}$ 秒，玩家利用 $5$ 格 FIFO 佇列在 $10 \times 7$ 網格放置水管 (`US-04-01`, `US-04-05`)。
+2. 液體由起點開始以 $T_{\text{flow}}$ 速度推進 (`US-04-03`)。
+3. 玩家長按 Fast Forward 加速 (`US-04-10`)，水流以 $50\text{ ms}$ 極速前進並獲得 $2\times$ 得分倍率。
+4. 液體成功流入終點且水管格數 $\ge N_{\text{target}}$，宣告通關並載入下一個 Level (`US-04-08`)。
