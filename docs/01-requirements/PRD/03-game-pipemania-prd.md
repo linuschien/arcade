@@ -29,7 +29,7 @@ Pipe Mania 是一部經典的網格路徑規劃益智遊戲。玩家在 $10 \tim
     - 盤面上渲染高亮 **「網格游標 (Grid Cursor / Reticle)」**。
     - **方向鍵 / D-Pad / 類比搖桿**：在 $10 \times 7$ 網格範圍內移動游標座標 $(X, Y)$。
     - **`Space` / `Enter` / `KeyJ` / `KeyZ` / Gamepad `Button A` (ACTION_1)**：將手牌水管放置於當前游標所在格子。
-    - **`Shift` / `F` / `KeyX` / Gamepad `Button B` (ACTION_2)**：按住觸發 Fast Forward 手動加速。
+    - **`Shift` / `F` / `KeyX` / `KeyK` / Gamepad `Button B` (ACTION_2)**：按住觸發 Fast Forward 手動加速。
 
 ### 2.3 平滑水流填充遮罩動畫 (Continuous Fill Mask Animation)
 - **水流視覺渲染**：
@@ -37,24 +37,42 @@ Pipe Mania 是一部經典的網格路徑規劃益智遊戲。玩家在 $10 \tim
   - **普通水管推進動畫**：依當前關卡 $T_{\text{flow}}$ 毫秒平滑由入水口延伸至出水口。
   - **水庫管推進動畫**：水流進入水庫管後，以 $T_{\text{reservoir}} = T_{\text{flow}} \times 4.0$ 毫秒慢速注入蓄水槽，液體液面由底層緩慢蓄升，讓玩家清晰目測剩餘蓄水時間。
 
-### 2.4 生命值（扳手 Wrenches）與加命機制 (Lives & Extends)
+### 2.4 音樂與音效規格 (Audio & Sound Effects Specification)
+遊戲音效完全整合至 Arcade Stadium 全域音量與靜音控制器（`ArcadeBridge` / `SoundEngine`），包含以下音樂與音效：
+
+| 聲音資產代碼 (Sound Asset ID) | 觸發時機 (Trigger Event) | 聲效描述與風格 | 播放類型 |
+|---|---|---|---|
+| **`BGM_GAMEPLAY`** | 進入關卡開始遊玩 | 輕快、富有節奏感的 8-bit/16-bit 街機益智電子音樂 | 背景音樂 Loop |
+| **`BGM_VICTORY`** | 成功通關 ($N \ge N_{\text{target}}$ 進入終點) | 歡快、激勵的 Victory 通關短曲 (Jingle) | 一次性 (One-shot) |
+| **`BGM_GAMEOVER`** | 3 支扳手用盡或放棄續關 | 詼諧、略帶挫折感之經典街機 Game Over 樂段 | 一次性 (One-shot) |
+| **`SFX_COUNTDOWN_TICK`** | 開局起噴倒數 $T_{\text{delay}}$ 秒 | 急促、清脆的秒針滴答聲 (Ticking Timer) | 定時脈衝音效 |
+| **`SFX_PIPE_PLACE`** | 點擊空白格子放置水管 | 清脆的管道扣合金屬點擊聲 (Click / Snap) | 一次性音效 |
+| **`SFX_PIPE_REPLACE`** | 覆蓋替換未通水水管 | 鐵鎚/敲碎水管的破裂打碎聲 (Smash / Crack) | 一次性音效 |
+| **`SFX_FLOW_BUBBLE`** | 液體在管道內連續推進流動 | 咕嚕咕嚕的液體流動循環音 (Glug-glug Flow Loop) | 動態流動 Loop |
+| **`SFX_RESERVOIR_FILL`** | 水流進入水庫管慢速蓄水 | 沉穩、厚重的大容量注水蓄水聲 (Tank Filling) | 蓄水期間 Loop |
+| **`SFX_FAST_FORWARD`** | 按下/長按 Fast Forward 加速鍵 | 高頻增壓推進噴射聲 (Speed Jet Whoosh) | 加速期間 Loop |
+| **`SFX_SPILL_BURST`** | 水流撞牆或錯位爆管 (Spill) | 高壓液體噴濺與爆裂破碎聲 (Spill Splash Burst) | 一次性重音效 |
+| **`SFX_EXTEND_LIFE`** | 累積 50,000 分獲得獎勵加命 | 經典街機 1UP / 金屬風鈴提示音 (Extend Bell) | 一次性獎勵音 |
+| **`SFX_LEVEL_CLEAR`** | 水流安全灌入終點排水口 | 液體極速排空吸入聲 (Fast Drain Whistle) | 一次性過關音 |
+
+### 2.5 生命值（扳手 Wrenches）與加命機制 (Lives & Extends)
 - **初始生命值**：單次投幣 (1 Credit) 獲得 **3 支扳手 (3 條生命 / Lives)**。
 - **扣命與關卡重試**：
-  - 當發生「爆管溢出 (Spill)」或「長度未達標 (Underflow)」時，扣除 1 支扳手。
+  - 當發生「爆管溢出 (Spill)」或「長度未達標 (Underflow)」時，扣除 1 支扳手，播放 `SFX_SPILL_BURST`。
   - 若剩餘扳手 $> 0$，玩家**原關重試 (Retry Current Level)**，重置盤面並重新發送開局 $T_{\text{delay}}$ 預備時間。
   - 若扳手 $= 0$，進入平台 10 秒 Continue 倒數。
 - **獎勵加命 (Extend Mechanism)**：
-  - 玩家每累積獲得 **50,000 分**，系統自動獎勵 **+1 支扳手 (Extend)**。
+  - 玩家每累積獲得 **50,000 分**，系統播放 `SFX_EXTEND_LIFE` 並自動獎勵 **+1 支扳手 (Extend)**。
   - 扳手上限為 **5 支**。
 
-### 2.5 5 格 FIFO 水管發牌佇列 (5-Slot FIFO Pipe Queue)
+### 2.6 5 格 FIFO 水管發牌佇列 (5-Slot FIFO Pipe Queue)
 - **UI 佇列結構明確定義**：
   - **第 1 格 (最頂端 / Index 0)**：**「當前即將放置的水管 (Active Pipe)」**。玩家點擊盤面時，此水管被放置至網格。
   - **第 2 ~ 4 格**：即將依序遞補的後續水管預覽。
   - **第 5 格 (最底端 / Index 4)**：**「最新生成的水管 (Newest Incoming Pipe)」**。
 - **放置遞移邏輯**：放置水管後，第 1 格彈出 (Pop)，第 2~5 格依序向上平滑移動（$2\to 1, 3\to 2, 4\to 3, 5\to 4$），第 5 格依權重動態生成新水管補齊。
 
-### 2.6 開口防死路約束與地圖保證可解性演算協定 (Clamping & Solvability Protocol)
+### 2.7 開口防死路約束與地圖保證可解性演算協定 (Clamping & Solvability Protocol)
 1. **開口朝向防死路約束 (Port Clamping Rules)**：
    - **起點防死路**：若起點貼近邊界（如 $X=0$），其出水口禁止朝向外牆；起點出水口正前方相鄰第 1 格**絕對禁止放置障礙石頭或不可進水元件**。
    - **終點防死路**：終點入水口正前方相鄰第 1 格**必須為空白可通行網格**（禁止緊貼外牆或障礙物）。
@@ -125,7 +143,7 @@ Pipe Mania 是一部經典的網格路徑規劃益智遊戲。玩家在 $10 \tim
 - **Fast Forward 快進加分**：水流推進間隔強制縮短至 $50\text{ ms}$，加速期間每格水管獲得 $2\times$ 額外倍率積分加成。
 - **過關結算獎勵**：超過目標長度 $N_{\text{target}}$ 的額外水管，每格獎勵 $+100$ 分。
 - **勝負判定**：
-  - **通關 (Level Complete)**：水流由終點指定合法開口進入，且累積流經格數 $\ge N_{\text{target}}$。
+  - **通關 (Level Complete)**：水流由終點指定合法開口進入，且累積流經格數 $\ge N_{\text{target}}$，播放 `SFX_LEVEL_CLEAR` 與 `BGM_VICTORY`。
   - **未達標失敗 (Underflow)**：水流進入終點開口，但累積格數 $< N_{\text{target}}$，扣除 1 支扳手。
-  - **溢出爆管失敗 (Spill)**：水流撞擊邊界、錯位或反向單向管，扣除 1 支扳手。
-  - **ArcadeBridge 廣播**：扳手歸零或放棄續關時，發送 `ArcadeBridge.emit('GAME_OVER', summary)`。
+  - **溢出爆管失敗 (Spill)**：水流撞擊邊界、錯位或反向單向管，扣除 1 支扳手，播放 `SFX_SPILL_BURST`。
+  - **ArcadeBridge 廣播**：扳手歸零或放棄續關時，播放 `BGM_GAMEOVER` 並發送 `ArcadeBridge.emit('GAME_OVER', summary)`。

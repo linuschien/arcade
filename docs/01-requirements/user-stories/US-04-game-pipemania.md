@@ -1,7 +1,7 @@
 # US-04 水管工人模組 (Pipe Mania Game Module)
 
 ## 背景 (Background)
-Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊戲。本模組規範 $10 \times 7$ 網格操作與鍵盤/搖桿游標、13 種水管連通物理與平滑填充遮罩動畫、5 格 FIFO 發牌佇列、全域 100% 純線性加權發牌與無分支關卡參數算式、3 支扳手生命與每 50,000 分獎勵加命、開口防死路約束與地圖 100% 保證可解演算協定、起終點線性難度佈局、Fast Forward 快進結算以及 GameOver 爆管判定邏輯。
+Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊戲。本模組規範 $10 \times 7$ 網格操作與鍵盤/搖桿游標、13 種水管連通物理與平滑填充遮罩動畫、5 格 FIFO 發牌佇列、全域 100% 純線性加權發牌與無分支關卡參數算式、3 支扳手生命與每 50,000 分獎勵加命、開口防死路約束與地圖 100% 保證可解演算協定、起終點線性難度佈局、Fast Forward 快進結算、音樂音效反饋系統以及 GameOver 爆管判定邏輯。
 
 ---
 
@@ -14,14 +14,14 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 > **So that** 我能將發牌佇列頂端（第 1 格）的水管放置到指定座標鋪設水路。
 
 ### 驗收條件 (Acceptance Criteria)
-- **AC1 (Placement)**：點擊空白格子或在游標位置按下放置鍵時，將佇列最頂端（第 1 格 / Index 0）水管放置到該座標。
+- **AC1 (Placement)**：點擊空白格子或在游標位置按下放置鍵時，將佇列最頂端（第 1 格 / Index 0）水管放置到該座標，並觸發 `SFX_PIPE_PLACE` 音效。
 - **AC2 (Queue Shift)**：頂端第 1 格水管彈出 (Pop)，下方第 2~5 格水管依序向上移動遞補，第 5 格依權重生成新水管補齊。
-- **AC3 (Replacement & Penalty)**：點擊/在已放置水管但水流尚未流經的格子放置時，允許以佇列新水管進行覆蓋替換，並扣除 $-50$ 分覆蓋分數。
+- **AC3 (Replacement & Penalty)**：點擊/在已放置水管但水流尚未流經的格子放置時，允許以佇列新水管進行覆蓋替換，扣除 $-50$ 分覆蓋分數，並觸發 `SFX_PIPE_REPLACE` 敲碎音效。
 - **AC4 (Flooded Lock)**：點擊水流正在流經或已流過的格子時，系統忽略點擊，禁止覆蓋。
 - **AC5 (Multi-Device Reticle Navigation)**：
   - 鍵盤方向鍵 (`UP`/`DOWN`/`LEFT`/`RIGHT`) 或 Gamepad 搖桿/D-Pad 移動盤面高亮 **「網格游標 (Grid Reticle)」**。
   - `Space` / `Enter` / `KeyJ` / `KeyZ` / Gamepad `Button A` (ACTION_1) 放置手牌水管。
-  - `Shift` / `F` / `KeyX` / Gamepad `Button B` (ACTION_2) 長按觸發 Fast Forward 手動加速。
+  - `Shift` / `F` / `KeyX` / `KeyK` / Gamepad `Button B` (ACTION_2) 長按觸發 Fast Forward 手動加速。
 
 ---
 
@@ -55,9 +55,9 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
   - 4 款無方向性雙向彎管（`╝`, `╚`, `╗`, `╔`），推進耗時為基準 $T_{\text{flow}}$。
   - 1 款立體交叉十字管 (`╬`)：水平與垂直兩路各自獨立直行，液體可先後通過兩軸，禁止轉彎。流經獲得 $+100$ 分。
 - **AC2 (4 One-Way Pipes)**：僅允許指定單一方向進入（`→`, `←`, `↑`, `↓`），反向或側面灌入立即觸發爆管 (Spill Game Over)。
-- **AC3 (2 Reservoir Tank Pipes)**：水流進入水庫直管後，推進填充耗時精確計算為 $T_{\text{reservoir}} = T_{\text{flow}} \times 4.0$（推進時間為普通管的 4 倍，流速降為 $25\%$）。數值區間為 $6000\text{ms} \to 2080\text{ms}$。完全填滿後提供 $+300$ 分高額獎勵。
+- **AC3 (2 Reservoir Tank Pipes)**：水流進入水庫直管後，推進填充耗時精確計算為 $T_{\text{reservoir}} = T_{\text{flow}} \times 4.0$（推進時間為普通管的 4 倍，流速降為 $25\%$）。數值區間為 $6000\text{ms} \to 2080\text{ms}$。完全填滿後提供 $+300$ 分高額獎勵，注水期間播放 `SFX_RESERVOIR_FILL`。
 - **AC4 (Continuous Fill Mask Animation)**：
-  - 普通水管在 $T_{\text{flow}}$ 毫秒內由入口至出口呈現 **$0\% \to 100\%$ 平滑填充遮罩動畫**，液體尖端清澈可見。
+  - 普通水管在 $T_{\text{flow}}$ 毫秒內由入口至出口呈現 **$0\% \to 100\%$ 平滑填充遮罩動畫**，伴隨 `SFX_FLOW_BUBBLE` 流水音效。
   - 水庫水管在 $T_{\text{reservoir}}$ 毫秒內呈現蓄水槽液面由底層緩慢蓄升的平滑注水動畫。
 
 ---
@@ -72,9 +72,9 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (Initial 3 Wrenches)**：單局投幣開局獲得 **3 支扳手 (3 條生命 / Lives)**。
-- **AC2 (Spill & Retry Current Level)**：當發生溢出爆管 (Spill) 或長度未達標 (Underflow) 時，扣除 1 支扳手。若剩餘扳手 $> 0$，**立即原關重試 (Retry Current Level)**，重置盤面並重新倒數 $T_{\text{delay}}$ 預備時間。
-- **AC3 (Extend Every 50k Pts)**：玩家每累積獲得 **50,000 分**，系統自動獎勵 **+1 支扳手**（上限為 5 支），播放經典獎勵音效。
-- **AC4 (Game Over Trigger)**：當扳手 $= 0$ 時，觸發平台 10 秒 Continue 倒數。若倒數結束未續幣，發送 `ArcadeBridge.emit('GAME_OVER', summary)`。
+- **AC2 (Spill & Retry Current Level)**：當發生溢出爆管 (Spill) 或長度未達標 (Underflow) 時，扣除 1 支扳手，播放 `SFX_SPILL_BURST`。若剩餘扳手 $> 0$，**立即原關重試 (Retry Current Level)**，重置盤面並重新倒數 $T_{\text{delay}}$ 預備時間。
+- **AC3 (Extend Every 50k Pts)**：玩家每累積獲得 **50,000 分**，系統播放 `SFX_EXTEND_LIFE` 並自動獎勵 **+1 支扳手**（上限為 5 支）。
+- **AC4 (Game Over Trigger)**：當扳手 $= 0$ 時，觸發平台 10 秒 Continue 倒數。若倒數結束未續幣，播放 `BGM_GAMEOVER` 並發送 `ArcadeBridge.emit('GAME_OVER', summary)`。
 
 ---
 
@@ -125,7 +125,7 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (Delay Time $T_{\text{delay}}$)**：
   - 公式：$T_{\text{delay}}(L) = \max(1.0, 10.0 - 0.25 \times (L - 1))$ 秒。
-  - 數值區間：$10.00\text{s} \to 1.25\text{s}$。
+  - 數值區間：$10.00\text{s} \to 1.25\text{s}$。倒數期間播放 `SFX_COUNTDOWN_TICK` 定時脈衝音。
 - **AC2 (Flow Speed $T_{\text{flow}}$)**：
   - 公式：$T_{\text{flow}}(L) = \max(500, 1500 - 28 \times (L - 1))$ 毫秒。
   - 數值區間：$1500\text{ms} \to 520\text{ms}$（下限封頂 500ms，每秒最多推進 2 格）。
@@ -134,10 +134,10 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
   - 數值區間：$10 \to 40$ 格（第 36 關封頂 40 格）。
 - **AC4 (Obstacles Count $N_{\text{obstacle}}$)**：
   - 公式：$N_{\text{obstacle}}(L) = \min(12, \lfloor 0.35 \times (L - 1) \rfloor)$ 顆。
-  - 數值區間：$0 \to 12$ 顆（第 36 關封頂 12 顆）。
+  - 數值區解：$0 \to 12$ 顆（第 36 關封頂 12 顆）。
 - **AC5 (Preset Fixed Pipes Count $N_{\text{fixed}}$)**：
   - 公式：$N_{\text{fixed}}(L) = \min(6, \max(0, \lfloor 0.18 \times (L - 3) \rfloor))$ 根。
-  - 數值區間：$L=1\sim 8$ 自然為 $0$ 根；$L \ge 9$ 平滑遞增至 $1 \sim 5$ 根（完全無須 `if(L<5)` 分支）。
+  - 數值區間：$L=1\sim 8$ 自然為 $0$ 根；$L \ge 9$ 平滑遞增至 $1 \sim 5$ 根。
 
 ---
 
@@ -171,7 +171,7 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 > **So that** 能在清晰可測量的加壓曲線下持續挑戰極限分數。
 
 ### 驗收條件 (Acceptance Criteria)
-- **AC1 (36 Level Mainline)**：通過第 36 關時，顯示通關榮譽並進入 Endless Loop。
+- **AC1 (36 Level Mainline)**：通過第 36 關時，播放 `BGM_VICTORY` 並進入 Endless Loop。
 - **AC2 (Endless Loop Multi-Round Numerical Ranges)**：當關卡 $L > 36$ 時，定義循環輪數 $R = \lfloor (L - 1) / 36 \rfloor$ 與基準關卡 $\text{BaseLevel} = ((L - 1) \bmod 36) + 1$：
   - **第 2 輪 (Loop 1: $L=37\sim 72, R=1$)**：$T_{\text{delay}} = [9.00\text{s} \sim 1.13\text{s}]$, $T_{\text{flow}} = [1350\text{ms} \sim 468\text{ms}]$。
   - **第 3 輪 (Loop 2: $L=73\sim 108, R=2$)**：$T_{\text{delay}} = [8.10\text{s} \sim 1.01\text{s}]$, $T_{\text{flow}} = [1215\text{ms} \sim 421\text{ms}]$。
@@ -189,6 +189,24 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 > **So that** 我能跳過等待時間並賺取剩餘時間的倍率獎勵。
 
 ### 驗收條件 (Acceptance Criteria)
-- **AC1 (Fast Forward Speed)**：長按或點擊加速按鈕時，水流推進間隔強制縮短至 $50\text{ ms}$。
+- **AC1 (Fast Forward Speed & Audio)**：長按或點擊加速按鈕時，水流推進間隔強制縮短至 $50\text{ ms}$，持續播放 `SFX_FAST_FORWARD` 噴射音效。
 - **AC2 (Bonus Multiplier)**：加速期間流經的每格水管獲得 $2\times$ 額外倍率積分加成。
-- **AC3 (Victory / Underflow / Spill Evaluation)**：水流進入終點且長度 $\ge N_{\text{target}}$ 判定通關；長度 $< N_{\text{target}}$ 扣 1 扳手判定 Underflow；撞牆/錯位扣 1 扳手判定 Spill。
+- **AC3 (Victory / Underflow / Spill Evaluation)**：
+  - 水流進入終點且長度 $\ge N_{\text{target}}$：判定通關，播放 `SFX_LEVEL_CLEAR` 與 `BGM_VICTORY`。
+  - 長度 $< N_{\text{target}}$：扣 1 扳手判定 Underflow，播放 `SFX_SPILL_BURST`。
+  - 撞牆/錯位：扣 1 扳手判定 Spill，播放 `SFX_SPILL_BURST`。
+
+---
+
+## US-04-11：遊戲音樂與音效反饋系統 (Audio & Sound Feedback System)
+
+**身份**： 街機玩家 (Arcade Player)
+
+> **As a** 街機玩家，  
+> **I want to** 在遊戲進行中聽到與操作高度同步的經典音效與背景音樂，並受全域靜音與音量控制管轄，  
+> **So that** 我能獲得沉浸式的街機聲光反饋。
+
+### 驗收條件 (Acceptance Criteria)
+- **AC1 (BGM Lifecycle)**：關卡進行中循環播放 `BGM_GAMEPLAY`；通關時播放 `BGM_VICTORY`；Game Over 時播放 `BGM_GAMEOVER`。
+- **AC2 (SFX Responsiveness)**：水管放置 (`SFX_PIPE_PLACE`)、覆蓋敲碎 (`SFX_PIPE_REPLACE`)、倒數計時 (`SFX_COUNTDOWN_TICK`)、液體流動 (`SFX_FLOW_BUBBLE`)、水庫注水 (`SFX_RESERVOIR_FILL`)、爆管噴濺 (`SFX_SPILL_BURST`) 與加命提示 (`SFX_EXTEND_LIFE`) 延遲 $< 16\text{ ms}$。
+- **AC3 (Mute & Volume Synchronization)**：所有聲音輸出受大廳頂部 Master 控制器與 `ArcadeBridge` 事件廣播嚴格控管。
