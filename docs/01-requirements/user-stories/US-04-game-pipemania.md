@@ -1,7 +1,7 @@
 # US-04 水管工人模組 (Pipe Mania Game Module)
 
 ## 背景 (Background)
-Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊戲。本模組規範 $10 \times 7$ 網格操作、13 種水管連通物理、5 格 FIFO 發牌佇列、動態權重發牌、3 支扳手生命與每 50,000 分獎勵加命、無硬編碼線性關卡公式 (1~36 關 + 無限循環波浪節奏)、起終點線性難度佈局、Fast Forward 快進結算以及 GameOver 爆管判定邏輯。
+Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊戲。本模組規範 $10 \times 7$ 網格操作、13 種水管連通物理、5 格 FIFO 發牌佇列、動態權重發牌、3 支扳手生命與每 50,000 分獎勵加命、開口防死路約束與地圖 100% 保證可解演算協定、起終點線性難度佈局、Fast Forward 快進結算以及 GameOver 爆管判定邏輯。
 
 ---
 
@@ -26,13 +26,14 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 **身份**： 關卡設計師 / 玩家
 
 > **As a** 玩家，  
-> **I want to** 在盤面上看到「障礙石頭」與「預設固定水管」，  
+> **I want to** 在盤面上看到「障礙石頭」與「預設固定水管」，且預設水管開口不貼牆死路，  
 > **So that** 關卡具備適度的路徑限制並能賺取預設水管的額外獎勵分。
 
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (Obstacle Lock)**：點擊「障礙石頭」時，系統忽略輸入且不消耗佇列水管。
-- **AC2 (Preset Pipe Types & Weight Consistency)**：預設水管涵蓋直管、彎管、十字管、水庫管與單向管。**預設水管種類之生成機率與 US-04-06 佇列加權發牌機率完全一致 (100% 共享算式)**，開局固定於網格上且不可覆蓋替換。
-- **AC3 (Preset Score Bonus Formula)**：當水流成功流經預設水管時，結算得分為 **「該水管基礎分 + 200 點 Bonus」**（直管為 $50+200=250$ 分，十字管為 $100+200=300$ 分/軸，水庫管為 $300+200=500$ 分）。
+- **AC2 (Preset Pipe Types & Weight Consistency)**：預設水管涵蓋直管、彎管、十字管、水庫管與單向管。預設水管種類生成機率與 US-04-06 佇列加權發牌機率完全一致 (100% 共享算式)。
+- **AC3 (Preset Port Wall Clamping)**：預設水管（特別是單向管與彎管）開口若緊貼外圍邊界，系統自動旋轉其方向，確保所有進出端口前方的相鄰 1 格皆為可用空白網格，禁止生成死路。
+- **AC4 (Preset Score Bonus Formula)**：當水流成功流經預設水管時，結算得分為 **「該水管基礎分 + 200 點 Bonus」**（直管為 $250$ 分，十字管為 $300$ 分/軸，水庫管為 $500$ 分）。
 
 ---
 
@@ -120,22 +121,25 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 
 ---
 
-## US-04-08：起終點線性難度佈局與長度驗收 (Start & End Linear Layout & Drain Check)
+## US-04-08：起終點開口防死路約束與 100% 可解性驗證 (Port Clamping & Solvability Check)
 
-**身份**： 遊戲核心判定系統
+**身份**： 關卡生成引擎 (Level Generation Engine)
 
-> **As a** 遊戲核心判定系統，  
-> **I want to** 隨等級線性縮短起終點距離並調整終點朝向，並驗證水流進入終點之開口與長度，  
-> **So that** 決定關卡是成功通關還是因未達標/撞牆而失敗。
+> **As a** 關卡生成引擎，  
+> **I want to** 自動約束起終點開口不貼牆死路，並在佈局障礙後以 BFS/DFS 驗證理論最大路徑 $\ge N_{\text{target}}$，  
+> **So that** 保證所有隨機關卡 100% 具備可解性，絕不出現死局。
 
 ### 驗收條件 (Acceptance Criteria)
-- **AC1 (Level Complete)**：水流由終點指定合法開口進入，且累積流經格數 $\ge N_{\text{target}}$ 時，判定通關 (Level Complete)。
-- **AC2 (Underflow Game Over)**：水流由終點指定合法開口進入，但累積流經格數 $< N_{\text{target}}$ 時，判定未達標失敗 (Underflow Game Over)。
-- **AC3 (Spill Game Over)**：水流由終點非開口面撞擊時，判定撞牆溢出 (Spill Game Over)。
-- **AC4 (Linear Start & End Layout by Level)**：
+- **AC1 (Start & End Port Clamping)**：
+  - 起點出水口禁止朝向外圍外牆，且起點出水口正前方相鄰 1 格**絕對禁止放置障礙石頭**。
+  - 終點入水口禁止朝向外圍外牆，且終點入水口正前方相鄰 1 格**必須為空白可通行網格**。
+- **AC2 (BFS Connectivity Check)**：隨機放置障礙石頭後，使用 BFS 驗證起點與終點必須處於同一個連通分量 (Connected Component)。
+- **AC3 (Max Path Capacity Check $\ge N_{\text{target}}$)**：以 DFS 啟發式評估盤面所有可用空白格子，起點至終點的**理論最大無自交路徑長度必須 $\ge N_{\text{target}}$**。
+- **AC4 (Auto Retry Loop)**：若生成的地圖未通過 AC1~AC3 驗證，引擎在 5ms 內自動更換隨機種子重新生成（最多重試 10 次；若仍未通過則自動減少 1 顆障礙石頭以保證 100% 可解）。
+- **AC5 (Level Progression Layout)**：
   - **$L = 1 \sim 8$ (新手)**：起終點曼哈頓距離 $D \ge 9$，終點開口**正對**起點方向。
   - **$L = 9 \sim 20$ (進階)**：曼哈頓距離 $D = \max(5, 10 - \lfloor 0.3 \times (L - 8) \rfloor)$，終點開口**垂直正交**於起點。
-  - **$L = 21 \sim 36$ (高階)**：曼哈頓距離 $D = \max(2, 5 - \lfloor 0.2 \times (L - 20) \rfloor)$（距離僅 2~5 格），終點開口**背向**起點，強迫繞全場大迴圈。
+  - **$L = 21 \sim 36$ (高階)**：曼哈頓距離 $D = \max(2, 5 - \lfloor 0.2 \times (L - 20) \rfloor)$，終點開口**背向**起點，強迫繞全場大迴圈。
 
 ---
 
@@ -168,3 +172,4 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (Fast Forward Speed)**：長按或點擊加速按鈕時，水流推進間隔強制縮短至 $50\text{ ms}$。
 - **AC2 (Bonus Multiplier)**：加速期間流經的每格水管獲得 $2\times$ 額外倍率積分加成。
+- **AC3 (Victory / Underflow / Spill Evaluation)**：水流進入終點且長度 $\ge N_{\text{target}}$ 判定通關；長度 $< N_{\text{target}}$ 扣 1 扳手判定 Underflow；撞牆/錯位扣 1 扳手判定 Spill。

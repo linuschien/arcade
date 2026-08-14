@@ -48,7 +48,21 @@ Pipe Mania 是一部經典的網格路徑規劃益智遊戲。玩家在 $10 \tim
   - 水庫管發牌率：$P_{\text{reservoir}} = \max(5\%, 12\% - 0.5\% \times (L - 7))$（最低下限保底 **5%**）
   - 剩餘機率（$100\% - P_{\text{oneway}} - P_{\text{reservoir}}$）平均分配予 7 種基礎水管。
 
-### 2.5 起點與終點位置之線性難度佈局 (Start & End Positioning by Level)
+### 2.5 開口防死路約束與地圖保證可解性演算協定 (Clamping & Solvability Protocol)
+
+為杜絕任何開局死路或數學不可解地圖，關卡生成引擎必須嚴格執行三道約束與驗證：
+
+1. **開口朝向防死路約束 (Port Clamping Rules)**：
+   - **起點防死路**：若起點貼近邊界（如 $X=0$），其出水口禁止朝向外牆；起點出水口**正前方相鄰第 1 格絕對禁止放置障礙石頭或不可進水元件**。
+   - **終點防死路**：終點入水口**正前方相鄰第 1 格必須為空白可通行網格**（禁止緊貼外牆或障礙物）。
+   - **預設固定水管防死路**：預設單向管或彎管之開口若貼近邊界，必須自動轉向確保進出端口皆至少有 1 格可用空白緩衝。
+2. **連通性檢驗 (BFS Connectivity Check)**：
+   - 隨機佈局障礙石頭後，以廣度優先搜尋 (BFS) 檢驗起點與終點是否處於同一個連通分量 (Connected Component)，禁止形成完全隔離的孤島死局。
+3. **最長路徑容量驗證 (Max Potential Path $\ge N_{\text{target}}$)**：
+   - 以深度優先 (DFS) 啟發式評估盤面所有可用空白格子，起點至終點之**理論最大無自交路徑長度必須 $\ge N_{\text{target}}$**。
+   - **自動重試機制 (Generation Retry Loop)**：若生成的隨機種子未通過上述檢驗，系統在 5ms 內重新取 Seed 生成（最多重試 10 次；若仍未通過則自動減少 1 顆障礙石頭以保證 100% 可解）。
+
+### 2.6 起點與終點位置之線性難度佈局 (Start & End Positioning by Level)
 起點 (Start) 與終點 (Drain/End) 的座標距離與開口朝向依關卡線性提升難度：
 
 | 關卡階段 | 起點與終點曼哈頓距離 $D_{\text{manhattan}}$ | 終點開口朝向規則 (Drain Direction) | 難度佈局說明 |
@@ -57,7 +71,7 @@ Pipe Mania 是一部經典的網格路徑規劃益智遊戲。玩家在 $10 \tim
 | **進階期 ($L = 9 \sim 20$)** | $D = \max(5, 10 - \lfloor 0.3 \times (L - 8) \rfloor)$ | 終點開口**垂直正交**於起點方向 | 距離縮短，逼迫玩家必須轉彎繞行 |
 | **高階期 ($L = 21 \sim 36$)** | $D = \max(2, 5 - \lfloor 0.2 \times (L - 20) \rfloor)$（極近） | 終點開口**背向**起點方向 | 起終點相鄰（距離 2~4 格）且開口背向，強迫玩家鋪設 30+ 格大迴圈繞全場 |
 
-### 2.6 無硬編碼線性關卡參數公式 (Linear Level Parameter Formulas)
+### 2.7 無硬編碼線性關卡參數公式 (Linear Level Parameter Formulas)
 遊戲支援 1 至 36 關主線關卡，並於通關後進入無限循環模式 (Endless Loop)。每格流速下限調整為休閒舒適的 **500 ms**（每秒最多推進 2 格）：
 
 | 關卡參數項目 | 計算公式 (Formula) | 數值範圍 / 單位 | 說明 |
@@ -69,20 +83,20 @@ Pipe Mania 是一部經典的網格路徑規劃益智遊戲。玩家在 $10 \tim
 | **地圖障礙石頭數量** | $N_{\text{obstacle}} = \min(12, \lfloor 0 + 0.35 \times (L - 1) \rfloor)$ | $0 \sim 12$ 個 | 盤面上隨機生成的障礙石頭 |
 | **預設固定水管數量** | $L \ge 5$ 時：$N_{\text{fixed}} = \min(6, \lfloor 1 + 0.15 \times (L - 5) \rfloor)$<br>$L < 5$ 時：$0$ | $0 \sim 6$ 個 | 盤面上預先放置且不可覆蓋的獎勵水管 |
 
-### 2.7 無限循環模式波浪節奏設計 (Endless Loop & Wave Pacing)
+### 2.8 無限循環模式波浪節奏設計 (Endless Loop & Wave Pacing)
 當通關第 36 關進入無限模式時，定義循環輪數 $R = \lfloor (L - 1) / 36 \rfloor$ 與對應基準關卡 $\text{BaseLevel} = ((L - 1) \bmod 36) + 1$：
 - **波浪節奏 (Wave Pacing)**：回到第 37 關時（即第 2 輪的 Level 1 地圖），流速為 $1500 \times 0.90 = 1350\text{ ms}$。這會刻意比剛通關的第 36 關 ($520\text{ ms}$) 放緩，提供經典街機 **「周回重置喘息波浪 (Wave Reset Pacing)」**，讓玩家在緊繃通關後得到舒緩，再重新累積速度挑戰第 72 關。
 - **起噴時間遞減**：$T_{\text{delay}}(L) = \max(1.0, T_{\text{delay}}(\text{BaseLevel}) \times 0.90^R)$。
 - **水流流速等比加壓**：$T_{\text{flow}}(L) = \max(350, T_{\text{flow}}(\text{BaseLevel}) \times 0.90^R)$（極限下限保底 350ms）。
 
-### 2.8 得分與 Fast Forward 加速倍率 (Scoring & Fast Forward)
+### 2.9 得分與 Fast Forward 加速倍率 (Scoring & Fast Forward)
 - **基礎水管填充分**：水流流經每格普通水管 $+50$ 分；十字管 $+100$ 分；水庫管 $+300$ 分。
 - **預設固定水管加成**：流經預設水管獲得 **「基礎分 + 200」** 額外獎勵。
 - **水管覆蓋替換扣分**：覆蓋未流經的水管扣除 $-50$ 分。
 - **Fast Forward 快進加分**：長按/點擊加速按鈕時，水流推進間隔強制縮短至 $50\text{ ms}$，加速期間流經的每格水管獲得 $2\times$ 額外倍率積分加成。
 - **過關結算獎勵**：超過目標長度 $N_{\text{target}}$ 的額外水管，每格獎勵 $+100$ 分。
 
-### 2.9 勝負與溢出失敗判定 (Victory & Spill Game Over Conditions)
+### 2.10 勝負與溢出失敗判定 (Victory & Spill Game Over Conditions)
 - **通關 (Level Complete)**：水流由終點指定合法開口進入，且累積流經格數 $\ge N_{\text{target}}$。
 - **未達標失敗 (Underflow Game Over)**：水流進入終點開口，但累積格數 $< N_{\text{target}}$。
 - **溢出爆管失敗 (Spill Game Over)**：水流撞擊 $10 \times 7$ 網格外圍邊界、撞上無對接開口之水管/障礙物/單向管反向端。
