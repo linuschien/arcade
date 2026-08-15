@@ -15,6 +15,7 @@ import {
   PipeType,
   PIPE_PORT_CONFIGS,
   STANDARD_PIPES,
+  ALL_PLACEABLE_PIPES,
 } from './PipeTypes';
 import { PipeRNG } from './PipeRNG';
 import { PipeManiaLevelSpecs, LevelConfig } from './PipeManiaLevelSpecs';
@@ -436,7 +437,60 @@ export class PipeGrid {
   }
 
   /**
-   * Place preset fixed golden pipes.
+   * Return required opening port directions for a given pipe type.
+   */
+  public getPipeOpenings(type: PipeType): Direction[] {
+    switch (type) {
+      case PipeType.HORIZONTAL:
+      case PipeType.RESERVOIR_HORIZONTAL:
+      case PipeType.ONE_WAY_RIGHT:
+      case PipeType.ONE_WAY_LEFT:
+        return [Direction.LEFT, Direction.RIGHT];
+      case PipeType.VERTICAL:
+      case PipeType.RESERVOIR_VERTICAL:
+      case PipeType.ONE_WAY_UP:
+      case PipeType.ONE_WAY_DOWN:
+        return [Direction.UP, Direction.DOWN];
+      case PipeType.CORNER_TOP_RIGHT:
+        return [Direction.UP, Direction.RIGHT];
+      case PipeType.CORNER_TOP_LEFT:
+        return [Direction.UP, Direction.LEFT];
+      case PipeType.CORNER_BOTTOM_RIGHT:
+        return [Direction.DOWN, Direction.RIGHT];
+      case PipeType.CORNER_BOTTOM_LEFT:
+        return [Direction.DOWN, Direction.LEFT];
+      case PipeType.CROSS:
+        return [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT];
+      default:
+        return [];
+    }
+  }
+
+  /**
+   * Check if a pipe type's required opening ports all face in-bounds, non-obstacle cells.
+   */
+  public isPipePortsClear(col: number, row: number, type: PipeType): boolean {
+    const openings = this.getPipeOpenings(type);
+    if (openings.length === 0) return false;
+
+    for (const dir of openings) {
+      const v = DIRECTION_VECTORS[dir];
+      const nc = col + v.dx;
+      const nr = row + v.dy;
+
+      // 1. Must be strictly within grid bounds
+      if (nc < 0 || nc >= GRID_COLS || nr < 0 || nr >= GRID_ROWS) return false;
+
+      // 2. Must not face directly into an obstacle stone
+      const neighborCell = this.cells[nr][nc];
+      if (neighborCell.type === PipeType.OBSTACLE) return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Place preset fixed golden pipes ensuring all ports have 100% clearance.
    */
   private placePresetPipes(count: number, level: number, rng: () => number): void {
     if (count <= 0) return;
@@ -456,36 +510,27 @@ export class PipeGrid {
       [available[i], available[j]] = [available[j], available[i]];
     }
 
-    const toPlace = Math.min(count, available.length);
-    for (let i = 0; i < toPlace; i++) {
-      const coord = available[i];
+    let placed = 0;
+    for (const coord of available) {
+      if (placed >= count) break;
+
       let pipeType = PipeRNG.getRandomPipe(level, rng);
 
-      // Clamp preset pipes near borders so they don't face outside
-      pipeType = this.clampPresetPipe(coord.col, coord.row, pipeType);
+      // If the generated pipe type has clear ports, use it directly!
+      if (!this.isPipePortsClear(coord.col, coord.row, pipeType)) {
+        // Otherwise, filter all placeable pipe types whose ports are 100% clear at this location
+        const validTypes = ALL_PLACEABLE_PIPES.filter((t) => this.isPipePortsClear(coord.col, coord.row, t));
+        if (validTypes.length === 0) {
+          // If this cell is too constrained by surrounding stones/walls (< 2 open sides), skip to next candidate cell
+          continue;
+        }
+        pipeType = validTypes[Math.floor(rng() * validTypes.length)];
+      }
 
       const cell = this.cells[coord.row][coord.col];
       cell.type = pipeType;
       cell.isPreset = true;
+      placed++;
     }
-  }
-
-  /**
-   * Clamping logic for preset pipes so they don't dead-end immediately against outer walls.
-   */
-  private clampPresetPipe(col: number, row: number, type: PipeType): PipeType {
-    if (col === 0 && (type === PipeType.HORIZONTAL || type === PipeType.ONE_WAY_LEFT || type === PipeType.CORNER_TOP_LEFT || type === PipeType.CORNER_BOTTOM_LEFT)) {
-      return PipeType.CORNER_TOP_RIGHT;
-    }
-    if (col === GRID_COLS - 1 && (type === PipeType.HORIZONTAL || type === PipeType.ONE_WAY_RIGHT || type === PipeType.CORNER_TOP_RIGHT || type === PipeType.CORNER_BOTTOM_RIGHT)) {
-      return PipeType.CORNER_TOP_LEFT;
-    }
-    if (row === 0 && (type === PipeType.VERTICAL || type === PipeType.ONE_WAY_UP || type === PipeType.CORNER_TOP_RIGHT || type === PipeType.CORNER_TOP_LEFT)) {
-      return PipeType.CORNER_BOTTOM_RIGHT;
-    }
-    if (row === GRID_ROWS - 1 && (type === PipeType.VERTICAL || type === PipeType.ONE_WAY_DOWN || type === PipeType.CORNER_BOTTOM_RIGHT || type === PipeType.CORNER_BOTTOM_LEFT)) {
-      return PipeType.CORNER_TOP_RIGHT;
-    }
-    return type;
   }
 }

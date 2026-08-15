@@ -62,12 +62,17 @@ describe('PipeGrid Unit Tests', () => {
     expect(grid.computeMaxPotentialPath()).toBeGreaterThanOrEqual(config.targetLength);
   });
 
-  it('should place preset bolted pipes on higher levels', () => {
+  it('should place preset bolted pipes on higher levels with 100% port clearance', () => {
     const grid = new PipeGrid();
-    grid.generateLevel(10);
+    grid.generateLevel(15);
     const cells = grid.getCells().flat();
     const presetPipes = cells.filter((c) => c.isPreset);
     expect(presetPipes.length).toBeGreaterThan(0);
+
+    // Verify all preset pipes have clear ports (not pointing to outer borders or obstacles)
+    for (const preset of presetPipes) {
+      expect(grid.isPipePortsClear(preset.col, preset.row, preset.type)).toBe(true);
+    }
 
     // Preset pipes cannot be overwritten
     const preset = presetPipes[0];
