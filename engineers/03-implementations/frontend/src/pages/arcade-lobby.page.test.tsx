@@ -46,6 +46,7 @@ const store = createStateStore({
     ],
   },
   activeGameId: 'tetris',
+  activeGameTitle: 'Tetris Classic',
   modals: {
     'admin-grant-credit-modal': false,
     'game-pause-modal': false,

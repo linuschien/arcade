@@ -264,6 +264,7 @@
       "type": "GameIdBadge",
       "props": {
         "id": "active-game-title-badge",
+        "title": { "$bindState": "/activeGameTitle" },
         "gameId": { "$bindState": "/activeGameId" }
       },
       "children": []

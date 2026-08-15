@@ -37,6 +37,7 @@ const defaultStore = createStateStore({
     top10Leaderboard: [],
   },
   activeGameId: 'tetris',
+  activeGameTitle: 'Tetris Classic',
   modals: {
     'admin-grant-credit-modal': false,
     'game-pause-modal': false,
@@ -215,10 +216,11 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
   useEffect(() => {
     if (gameCardsData && gameCardsData.length > 0) {
       store.set('/data/listGameCards', gameCardsData);
-      if (!store.get('/activeGameId')) {
-        store.set('/activeGameId', gameCardsData[0].gameId);
-        setActiveGameId(gameCardsData[0].gameId);
-      }
+      const currentId = store.get('/activeGameId') || gameCardsData[0].gameId;
+      const currentCard = gameCardsData.find((g: any) => g.gameId === currentId) || gameCardsData[0];
+      store.set('/activeGameId', currentCard.gameId);
+      store.set('/activeGameTitle', currentCard.title);
+      setActiveGameId(currentCard.gameId);
     }
   }, [gameCardsData, store]);
 
@@ -286,9 +288,10 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
         case 'PrevGame': {
           if (games.length > 0) {
             const prevIndex = (currentIndex - 1 + games.length) % games.length;
-            const newGameId = games[prevIndex].gameId;
-            store.set('/activeGameId', newGameId);
-            setActiveGameId(newGameId);
+            const newGame = games[prevIndex];
+            store.set('/activeGameId', newGame.gameId);
+            store.set('/activeGameTitle', newGame.title);
+            setActiveGameId(newGame.gameId);
           }
           break;
         }
@@ -296,9 +299,10 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
         case 'NextGame': {
           if (games.length > 0) {
             const nextIndex = (currentIndex + 1) % games.length;
-            const newGameId = games[nextIndex].gameId;
-            store.set('/activeGameId', newGameId);
-            setActiveGameId(newGameId);
+            const newGame = games[nextIndex];
+            store.set('/activeGameId', newGame.gameId);
+            store.set('/activeGameTitle', newGame.title);
+            setActiveGameId(newGame.gameId);
           }
           break;
         }
