@@ -21,6 +21,7 @@ import { PipeGrid, PlaceResult } from './PipeGrid';
 import { PipeManiaLevelSpecs, LevelConfig } from './PipeManiaLevelSpecs';
 
 export enum PlayState {
+  STAGE_INTRO = 'STAGE_INTRO',
   READY_COUNTDOWN = 'READY_COUNTDOWN',
   FLOWING = 'FLOWING',
   LEVEL_CLEAR = 'LEVEL_CLEAR',
@@ -57,16 +58,16 @@ export class PipeManiaGameState {
   private queue: PipeType[] = [];
   private currentLevel: number = 1;
   private levelConfig!: LevelConfig;
-  private playState: PlayState = PlayState.READY_COUNTDOWN;
+  private playState: PlayState = PlayState.STAGE_INTRO;
   private failureReason: FailureReason = FailureReason.NONE;
 
   private score: number = 0;
-  private wrenches: number = 3; // Initial 3 lives
   private nextExtendScoreThreshold: number = 50000;
+  private wrenches: number = 3;
   private floodedCount: number = 0;
   private fastForward: boolean = false;
 
-  // Countdown & Flow timing
+  private stageIntroRemainingMs: number = 1500;
   private countdownRemainingSec: number = 10;
   private lastCountDownIntSec: number = 10;
   private currentHeadCoord: GridCoord | null = null;
@@ -94,7 +95,8 @@ export class PipeManiaGameState {
   public startLevel(level: number): void {
     this.currentLevel = Math.max(1, level);
     this.levelConfig = this.grid.generateLevel(this.currentLevel, this.rng);
-    this.playState = PlayState.READY_COUNTDOWN;
+    this.playState = PlayState.STAGE_INTRO;
+    this.stageIntroRemainingMs = 1500;
     this.failureReason = FailureReason.NONE;
     this.floodedCount = 0;
     this.fastForward = false;
@@ -145,7 +147,7 @@ export class PipeManiaGameState {
   }
 
   public getLevelConfig(): LevelConfig {
-    return this.levelConfig;
+    return { ...this.levelConfig };
   }
 
   public getFloodedCount(): number {
@@ -172,7 +174,11 @@ export class PipeManiaGameState {
    * Place current active pipe on grid cell (col, row).
    */
   public placeActivePipe(col: number, row: number): PlaceResult {
-    if (this.playState !== PlayState.READY_COUNTDOWN && this.playState !== PlayState.FLOWING) {
+    if (
+      this.playState !== PlayState.STAGE_INTRO &&
+      this.playState !== PlayState.READY_COUNTDOWN &&
+      this.playState !== PlayState.FLOWING
+    ) {
       return { success: false, isReplacement: false };
     }
 
@@ -203,7 +209,20 @@ export class PipeManiaGameState {
   public update(deltaMs: number): GameStepEvent[] {
     const events: GameStepEvent[] = [];
 
-    if (this.playState === PlayState.READY_COUNTDOWN) {
+    if (this.playState === PlayState.STAGE_INTRO) {
+      if (this.fastForward) {
+        this.stageIntroRemainingMs = 0;
+      } else {
+        this.stageIntroRemainingMs -= deltaMs;
+      }
+
+      if (this.stageIntroRemainingMs <= 0) {
+        this.stageIntroRemainingMs = 0;
+        this.playState = PlayState.READY_COUNTDOWN;
+        this.countdownRemainingSec = this.levelConfig.delaySeconds;
+        this.lastCountDownIntSec = Math.ceil(this.countdownRemainingSec);
+      }
+    } else if (this.playState === PlayState.READY_COUNTDOWN) {
       // If fast forwarding during countdown, skip countdown directly to 0
       if (this.fastForward) {
         this.countdownRemainingSec = 0;

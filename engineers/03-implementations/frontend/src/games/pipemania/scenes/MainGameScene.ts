@@ -2,7 +2,8 @@
  * MainGameScene.ts
  * Core 60fps Phaser 4 Canvas Scene for Pipe Mania.
  * Features Continuous Fill Mask animations, 5-Slot FIFO queue sidebar,
- * multi-device unified input reticle, WebAudio integration, and clean memory teardown.
+ * combined top HUD countdown & target meter, prominent center board game overlays,
+ * stage start opening jingle, and clean memory teardown.
  */
 
 import Phaser from 'phaser';
@@ -24,6 +25,10 @@ const BOARD_Y = 70;
 const SIDEBAR_X = 15;
 const SIDEBAR_Y = 70;
 
+// Board geometric center
+const BOARD_CENTER_X = BOARD_X + (GRID_COLS * TILE_SIZE) / 2; // 415
+const BOARD_CENTER_Y = BOARD_Y + (GRID_ROWS * TILE_SIZE) / 2; // 266
+
 export class MainGameScene extends Phaser.Scene {
   private gameState!: PipeManiaGameState;
   private isPausedState: boolean = false;
@@ -37,15 +42,20 @@ export class MainGameScene extends Phaser.Scene {
   private queueSprites: Phaser.GameObjects.Sprite[] = [];
   private queueHighlight!: Phaser.GameObjects.Graphics;
 
-  // HUD
+  // Top HUD
   private scoreText!: Phaser.GameObjects.Text;
-  private targetText!: Phaser.GameObjects.Text;
-  private levelText!: Phaser.GameObjects.Text;
-  private statusText!: Phaser.GameObjects.Text;
+  private hudCenterStatsText!: Phaser.GameObjects.Text;
   private countdownBar!: Phaser.GameObjects.Graphics;
+  private levelText!: Phaser.GameObjects.Text;
   private wrenchSprites: Phaser.GameObjects.Sprite[] = [];
   private ffButtonBg!: Phaser.GameObjects.Rectangle;
   private ffButtonText!: Phaser.GameObjects.Text;
+
+  // Center Board Game Message Overlay (10x7 center)
+  private centerOverlayContainer!: Phaser.GameObjects.Container;
+  private centerOverlayBg!: Phaser.GameObjects.Graphics;
+  private centerTitleText!: Phaser.GameObjects.Text;
+  private centerSubtitleText!: Phaser.GameObjects.Text;
 
   // Input state
   private cursorCol: number = 2;
@@ -67,10 +77,12 @@ export class MainGameScene extends Phaser.Scene {
     this.createHUD();
     this.createSidebarQueue();
     this.createBoardGrid();
+    this.createCenterOverlay();
     this.createReticle();
     this.setupPointerInput();
 
-    // Start BGM
+    // Play Stage Start Fanfare and begin BGM
+    PipeManiaAudioService.playStageStart();
     PipeManiaAudioService.playBGM();
 
     // Mandatory Teardown
@@ -119,48 +131,65 @@ export class MainGameScene extends Phaser.Scene {
     const hudBg = this.add.rectangle(360, 32, 720, 64, 0x070b14);
     hudBg.setStrokeStyle(1, 0x1e293b);
 
-    // Score Text with glowing green
-    this.scoreText = this.add.text(20, 16, 'SCORE: 0', {
+    // 1. Left: Score Text
+    this.scoreText = this.add.text(24, 18, 'SCORE: 0', {
       fontFamily: 'monospace',
       fontSize: '18px',
       color: '#f8fafc',
       fontStyle: 'bold',
     });
 
-    // Target Pipes vs Current Flooded Text
-    this.targetText = this.add.text(220, 16, 'PIPES: 0 / 10', {
+    // 2. Center: Combined Target Pipes & Countdown Timer Text
+    this.hudCenterStatsText = this.add.text(360, 14, 'PIPES: 0 / 10  │  TIME: 10.0s', {
       fontFamily: 'monospace',
-      fontSize: '18px',
+      fontSize: '16px',
       color: '#38bdf8',
       fontStyle: 'bold',
-    });
+    }).setOrigin(0.5, 0);
 
-    // Level Text
-    this.levelText = this.add.text(420, 16, 'LEVEL 1', {
+    // Integrated Countdown & Goal Progress Bar in Center Top
+    this.countdownBar = this.add.graphics();
+
+    // 3. Right: Level Text & Wrenches (Lives)
+    this.levelText = this.add.text(510, 18, 'LEVEL 1', {
       fontFamily: 'monospace',
       fontSize: '18px',
       color: '#f59e0b',
       fontStyle: 'bold',
     });
 
-    // Wrenches (Lives)
     for (let i = 0; i < 5; i++) {
-      const wrench = this.add.sprite(580 + i * 26, 26, 'pipemania:wrench');
-      wrench.setScale(1.1);
+      const wrench = this.add.sprite(610 + i * 22, 28, 'pipemania:wrench');
+      wrench.setScale(0.9);
       this.wrenchSprites.push(wrench);
     }
+  }
 
-    // Countdown Bar
-    this.countdownBar = this.add.graphics();
+  /**
+   * Prominent Message Banner displayed in the center of the 10x7 board.
+   */
+  private createCenterOverlay(): void {
+    this.centerOverlayContainer = this.add.container(BOARD_CENTER_X, BOARD_CENTER_Y);
+    this.centerOverlayContainer.setDepth(20);
 
-    // Bottom Status Banner
-    this.statusText = this.add.text(360, 495, 'CONNECT PIPES BEFORE FLOOZ FLOWS!', {
+    this.centerOverlayBg = this.add.graphics();
+    this.centerOverlayContainer.add(this.centerOverlayBg);
+
+    this.centerTitleText = this.add.text(0, -14, 'STAGE 1', {
       fontFamily: 'monospace',
-      fontSize: '16px',
+      fontSize: '24px',
+      color: '#f59e0b',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.centerOverlayContainer.add(this.centerTitleText);
+
+    this.centerSubtitleText = this.add.text(0, 18, 'READY! FLOOZ FLOWS IN 10s', {
+      fontFamily: 'monospace',
+      fontSize: '15px',
       color: '#22c55e',
       fontStyle: 'bold',
-    });
-    this.statusText.setOrigin(0.5);
+    }).setOrigin(0.5);
+    this.centerOverlayContainer.add(this.centerSubtitleText);
   }
 
   private createSidebarQueue(): void {
@@ -287,8 +316,10 @@ export class MainGameScene extends Phaser.Scene {
         this.transitionTimerMs = 0;
         if (this.gameState.getPlayState() === PlayState.LEVEL_CLEAR) {
           this.gameState.advanceToNextLevel();
+          PipeManiaAudioService.playStageStart();
         } else if (this.gameState.getPlayState() === PlayState.LEVEL_FAILED) {
           this.gameState.retryCurrentLevel();
+          PipeManiaAudioService.playStageStart();
         }
       }
       return;
@@ -305,6 +336,7 @@ export class MainGameScene extends Phaser.Scene {
     this.renderBoard();
     this.renderSidebarQueue();
     this.renderHUD();
+    this.renderCenterBoardOverlay();
     this.renderLiquidFlow();
   }
 
@@ -495,56 +527,127 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private renderHUD(): void {
+    // Score
     this.scoreText.setText(`SCORE: ${this.gameState.getScore()}`);
-    this.targetText.setText(`PIPES: ${this.gameState.getFloodedCount()} / ${this.gameState.getLevelConfig().targetLength}`);
     this.levelText.setText(`LEVEL ${this.gameState.getLevel()}`);
+
+    const targetLength = this.gameState.getLevelConfig().targetLength;
+    const floodedCount = this.gameState.getFloodedCount();
+    const state = this.gameState.getPlayState();
+    const remaining = this.gameState.getCountdownRemainingSec();
+    const totalDelay = this.gameState.getLevelConfig().delaySeconds;
+
+    // Combined Center Top Stats & Progress Bar
+    this.countdownBar.clear();
+
+    if (state === PlayState.STAGE_INTRO) {
+      this.hudCenterStatsText.setText(`PIPES: 0 / ${targetLength}  │  TIME: ${totalDelay.toFixed(1)}s`);
+      this.hudCenterStatsText.setColor('#38bdf8');
+
+      // Static full ready bar during intro fanfare
+      this.countdownBar.fillStyle(0x1e293b, 1);
+      this.countdownBar.fillRoundedRect(260, 38, 200, 6, 3);
+      this.countdownBar.fillStyle(0x22c55e, 1);
+      this.countdownBar.fillRoundedRect(260, 38, 200, 6, 3);
+    } else if (state === PlayState.READY_COUNTDOWN) {
+      this.hudCenterStatsText.setText(`PIPES: 0 / ${targetLength}  │  TIME: ${remaining.toFixed(1)}s`);
+      this.hudCenterStatsText.setColor('#38bdf8');
+
+      // Countdown Bar (200px width at x=260, y=38)
+      const pct = Math.max(0, Math.min(1.0, remaining / totalDelay));
+      this.countdownBar.fillStyle(0x1e293b, 1);
+      this.countdownBar.fillRoundedRect(260, 38, 200, 6, 3);
+      this.countdownBar.fillStyle(0x22c55e, 1);
+      this.countdownBar.fillRoundedRect(260, 38, 200 * pct, 6, 3);
+    } else {
+      const isFF = this.gameState.isFastForwarding();
+      this.hudCenterStatsText.setText(
+        `PIPES: ${floodedCount} / ${targetLength}  │  ${isFF ? '>> FAST FORWARD' : 'FLOWING'}`
+      );
+      this.hudCenterStatsText.setColor(floodedCount >= targetLength ? '#facc15' : (isFF ? '#38bdf8' : '#a855f7'));
+
+      // Flooded Pipe Target Bar
+      const goalPct = Math.max(0, Math.min(1.0, floodedCount / targetLength));
+      this.countdownBar.fillStyle(0x1e293b, 1);
+      this.countdownBar.fillRoundedRect(260, 38, 200, 6, 3);
+      this.countdownBar.fillStyle(floodedCount >= targetLength ? 0xfacc15 : 0x0284c7, 1);
+      this.countdownBar.fillRoundedRect(260, 38, 200 * goalPct, 6, 3);
+    }
 
     // Update Wrenches
     const wrenches = this.gameState.getWrenches();
     for (let i = 0; i < 5; i++) {
       this.wrenchSprites[i].setVisible(i < wrenches);
     }
+  }
 
-    // Countdown Bar
-    this.countdownBar.clear();
-    const config = this.gameState.getLevelConfig();
-    const remaining = this.gameState.getCountdownRemainingSec();
-    const totalDelay = config.delaySeconds;
-
-    if (this.gameState.getPlayState() === PlayState.READY_COUNTDOWN) {
-      const pct = Math.max(0, Math.min(1.0, remaining / totalDelay));
-      this.countdownBar.fillStyle(0x1e293b, 1);
-      this.countdownBar.fillRect(BOARD_X, 58, GRID_COLS * TILE_SIZE, 6);
-      this.countdownBar.fillStyle(0x22c55e, 1);
-      this.countdownBar.fillRect(BOARD_X, 58, GRID_COLS * TILE_SIZE * pct, 6);
-    }
-
-    // Status Banner Text
+  /**
+   * Prominent Message Banner displayed in the center of the 10x7 board.
+   */
+  private renderCenterBoardOverlay(): void {
     const state = this.gameState.getPlayState();
-    if (state === PlayState.READY_COUNTDOWN) {
-      this.statusText.setText(`READY: FLOOZ IN ${Math.ceil(remaining)}s`);
-      this.statusText.setColor('#22c55e');
-    } else if (state === PlayState.FLOWING) {
-      if (this.gameState.isFastForwarding()) {
-        this.statusText.setText('>> FAST FORWARDING! (2x BONUS)');
-        this.statusText.setColor('#38bdf8');
-      } else {
-        this.statusText.setText('FLOOZ FLOWING...');
-        this.statusText.setColor('#a855f7');
-      }
+    const level = this.gameState.getLevel();
+
+    this.centerOverlayBg.clear();
+
+    if (state === PlayState.STAGE_INTRO) {
+      // 1.5s Opening Fanfare phase - prominent Stage banner
+      this.centerOverlayContainer.setVisible(true);
+
+      // Translucent Dark Cyber Glass Box (320x88)
+      this.centerOverlayBg.fillStyle(0x070b14, 0.92);
+      this.centerOverlayBg.fillRoundedRect(-160, -44, 320, 88, 12);
+      this.centerOverlayBg.lineStyle(2, 0x38bdf8, 1);
+      this.centerOverlayBg.strokeRoundedRect(-160, -44, 320, 88, 12);
+
+      this.centerTitleText.setText(`STAGE ${level}`);
+      this.centerTitleText.setColor('#f59e0b');
+
+      this.centerSubtitleText.setText('GET READY!');
+      this.centerSubtitleText.setColor('#22c55e');
     } else if (state === PlayState.LEVEL_CLEAR) {
-      this.statusText.setText('★ LEVEL COMPLETE! ★');
-      this.statusText.setColor('#facc15');
+      this.centerOverlayContainer.setVisible(true);
+
+      this.centerOverlayBg.fillStyle(0x070b14, 0.92);
+      this.centerOverlayBg.fillRoundedRect(-180, -52, 360, 104, 12);
+      this.centerOverlayBg.lineStyle(2.5, 0xfacc15, 1);
+      this.centerOverlayBg.strokeRoundedRect(-180, -52, 360, 104, 12);
+
+      this.centerTitleText.setText('★ LEVEL COMPLETE! ★');
+      this.centerTitleText.setColor('#facc15');
+
+      this.centerSubtitleText.setText('+500 TARGET BONUS! ADVANCING...');
+      this.centerSubtitleText.setColor('#38bdf8');
     } else if (state === PlayState.LEVEL_FAILED) {
-      this.statusText.setText(
-        this.gameState.getFailureReason() === 'UNDERFLOW'
-          ? '✖ UNDERFLOW! NOT ENOUGH PIPES'
-          : '✖ SPILL! BURST PIPE'
-      );
-      this.statusText.setColor('#ef4444');
+      this.centerOverlayContainer.setVisible(true);
+
+      this.centerOverlayBg.fillStyle(0x070b14, 0.92);
+      this.centerOverlayBg.fillRoundedRect(-180, -52, 360, 104, 12);
+      this.centerOverlayBg.lineStyle(2.5, 0xef4444, 1);
+      this.centerOverlayBg.strokeRoundedRect(-180, -52, 360, 104, 12);
+
+      const reason = this.gameState.getFailureReason();
+      this.centerTitleText.setText(reason === 'UNDERFLOW' ? '✖ UNDERFLOW! ✖' : '✖ SPILL! BURST PIPE ✖');
+      this.centerTitleText.setColor('#ef4444');
+
+      this.centerSubtitleText.setText('WRENCH USED! RETRYING LEVEL...');
+      this.centerSubtitleText.setColor('#f8fafc');
     } else if (state === PlayState.GAME_OVER) {
-      this.statusText.setText('GAME OVER - INSERT COIN');
-      this.statusText.setColor('#ef4444');
+      this.centerOverlayContainer.setVisible(true);
+
+      this.centerOverlayBg.fillStyle(0x070b14, 0.95);
+      this.centerOverlayBg.fillRoundedRect(-180, -52, 360, 104, 12);
+      this.centerOverlayBg.lineStyle(3, 0xef4444, 1);
+      this.centerOverlayBg.strokeRoundedRect(-180, -52, 360, 104, 12);
+
+      this.centerTitleText.setText('GAME OVER');
+      this.centerTitleText.setColor('#ef4444');
+
+      this.centerSubtitleText.setText('INSERT COIN TO PLAY AGAIN');
+      this.centerSubtitleText.setColor('#facc15');
+    } else {
+      // READY_COUNTDOWN and FLOWING states - banner automatically disappears!
+      this.centerOverlayContainer.setVisible(false);
     }
   }
 

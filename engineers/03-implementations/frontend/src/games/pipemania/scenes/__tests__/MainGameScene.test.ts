@@ -4,6 +4,7 @@ import { InputService, PlayerIndex, ArcadeAction } from '@/core/input/InputServi
 
 vi.mock('../../audio/PipeManiaAudioService', () => ({
   PipeManiaAudioService: {
+    playStageStart: vi.fn(),
     playBGM: vi.fn(),
     stopBGM: vi.fn(),
     playVictory: vi.fn(),
@@ -27,6 +28,7 @@ describe('PipeMania MainGameScene Unit Tests', () => {
   let mockSprite: any;
   let mockText: any;
   let mockRect: any;
+  let mockContainer: any;
   let mockEvents: any;
   let mockInput: any;
 
@@ -37,6 +39,7 @@ describe('PipeMania MainGameScene Unit Tests', () => {
       clear: vi.fn(),
       fillStyle: vi.fn().mockReturnThis(),
       fillRect: vi.fn().mockReturnThis(),
+      fillRoundedRect: vi.fn().mockReturnThis(),
       fillCircle: vi.fn().mockReturnThis(),
       lineStyle: vi.fn().mockReturnThis(),
       strokeRect: vi.fn().mockReturnThis(),
@@ -73,6 +76,13 @@ describe('PipeMania MainGameScene Unit Tests', () => {
       destroy: vi.fn(),
     };
 
+    mockContainer = {
+      add: vi.fn().mockReturnThis(),
+      setVisible: vi.fn().mockReturnThis(),
+      setDepth: vi.fn().mockReturnThis(),
+      destroy: vi.fn(),
+    };
+
     mockEvents = {
       once: vi.fn(),
       off: vi.fn(),
@@ -87,6 +97,7 @@ describe('PipeMania MainGameScene Unit Tests', () => {
       sprite: vi.fn().mockReturnValue(mockSprite),
       text: vi.fn().mockReturnValue(mockText),
       rectangle: vi.fn().mockReturnValue(mockRect),
+      container: vi.fn().mockReturnValue(mockContainer),
     };
     (scene as any).events = mockEvents;
     (scene as any).input = mockInput;

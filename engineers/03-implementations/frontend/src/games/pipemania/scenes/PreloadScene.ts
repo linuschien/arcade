@@ -116,20 +116,48 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // 6. Wrench (Life Icon)
+    // 6. Wrench (Life Icon - Realistic Chrome Open-End / Combination Spanner)
     if (!this.textures.exists('pipemania:wrench')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
-      // Chrome handle
+      const W = 30;
+      const H = 30;
+
+      // 1. Diagonal Shaft / Handle (Chrome Steel with bevel)
+      gfx.lineStyle(5, 0x334155, 1); // Dark metal contour
+      gfx.strokeLineShape(new Phaser.Geom.Line(8, 22, 22, 8));
+
+      gfx.lineStyle(3.5, 0x94a3b8, 1); // Steel body
+      gfx.strokeLineShape(new Phaser.Geom.Line(8, 22, 22, 8));
+
+      gfx.lineStyle(1.5, 0xf8fafc, 1); // Chrome specular center highlight
+      gfx.strokeLineShape(new Phaser.Geom.Line(9, 21, 21, 9));
+
+      // 2. Open-Ended U/C Jaw Head at Top-Right (22, 8)
+      const hx = 22;
+      const hy = 8;
       gfx.fillStyle(0x94a3b8, 1);
-      gfx.fillRect(10, 8, 4, 14);
-      gfx.fillStyle(0x38bdf8, 1);
-      gfx.fillRect(11, 10, 2, 10);
-      // Wrench jaw head
+      gfx.fillCircle(hx, hy, 6);
+      gfx.fillStyle(0x0a0f1d, 1); // Empty cutout opening
+      gfx.fillTriangle(hx - 1, hy - 1, hx + 7, hy - 5, hx + 5, hy + 7);
+
+      // Jaw tips
       gfx.fillStyle(0xe2e8f0, 1);
-      gfx.fillCircle(12, 6, 6);
-      gfx.fillStyle(0x090d16, 1);
-      gfx.fillRect(11, 1, 2, 7);
-      gfx.generateTexture('pipemania:wrench', 24, 24);
+      gfx.fillCircle(hx + 2, hy - 4, 1.8);
+      gfx.fillCircle(hx + 4, hy + 2, 1.8);
+
+      // 3. Ring / Box Spanner End at Bottom-Left (8, 22)
+      const rx = 8;
+      const ry = 22;
+      gfx.fillStyle(0x94a3b8, 1);
+      gfx.fillCircle(rx, ry, 5.5);
+      gfx.fillStyle(0x0a0f1d, 1);
+      gfx.fillCircle(rx, ry, 2.5); // Inner hex hole
+
+      // Chrome rim highlight
+      gfx.lineStyle(1, 0xf8fafc, 0.9);
+      gfx.strokeCircle(rx, ry, 5.5);
+
+      gfx.generateTexture('pipemania:wrench', W, H);
       gfx.destroy();
     }
 

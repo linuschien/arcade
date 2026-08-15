@@ -12,6 +12,19 @@ class PipeManiaAudioServiceImpl {
   private isBgmPlaying: boolean = false;
 
   /**
+   * BGM_STAGE_START (Retro Arcade Opening Fanfare / Jingle, ~1.2s).
+   */
+  public playStageStart(): void {
+    const jingle = [
+      { freq: 440.0, delayMs: 0, durationSeconds: 0.08, type: 'square' as OscillatorType, vol: 0.14 }, // A4
+      { freq: 554.37, delayMs: 100, durationSeconds: 0.08, type: 'square' as OscillatorType, vol: 0.14 }, // C#5
+      { freq: 659.25, delayMs: 200, durationSeconds: 0.1, type: 'square' as OscillatorType, vol: 0.15 }, // E5
+      { freq: 880.0, delayMs: 320, durationSeconds: 0.25, type: 'square' as OscillatorType, vol: 0.18 }, // A5
+    ];
+    SoundEngine.playSequence(jingle);
+  }
+
+  /**
    * Start BGM_GAMEPLAY loop.
    */
   public playBGM(): void {

@@ -8,7 +8,7 @@ describe('PipeManiaGameState Unit Tests', () => {
     expect(gameState.getWrenches()).toBe(3);
     expect(gameState.getScore()).toBe(0);
     expect(gameState.getQueue().length).toBe(5);
-    expect(gameState.getPlayState()).toBe(PlayState.READY_COUNTDOWN);
+    expect(gameState.getPlayState()).toBe(PlayState.STAGE_INTRO);
   });
 
   it('should pop and shift 5-slot FIFO queue upon pipe placement', () => {
@@ -58,9 +58,15 @@ describe('PipeManiaGameState Unit Tests', () => {
 
   it('should count down and begin liquid flow', () => {
     const gameState = new PipeManiaGameState(1);
+    expect(gameState.getPlayState()).toBe(PlayState.STAGE_INTRO);
+
+    // Advance past stage intro (1500ms)
+    gameState.update(1500);
+    expect(gameState.getPlayState()).toBe(PlayState.READY_COUNTDOWN);
+
     const delaySec = gameState.getLevelConfig().delaySeconds;
 
-    // Advance halfway
+    // Advance halfway through countdown
     gameState.update(1000);
     expect(gameState.getPlayState()).toBe(PlayState.READY_COUNTDOWN);
 
@@ -84,7 +90,8 @@ describe('PipeManiaGameState Unit Tests', () => {
       : PipeType.VERTICAL;
     gameState.getGrid().placePipe(frontCol, frontRow, matchingPipe);
 
-    // Start liquid flow
+    // Fast-forward or transition into liquid flow
+    (gameState as any).playState = PlayState.READY_COUNTDOWN;
     (gameState as any).countdownRemainingSec = 0;
     gameState.update(10);
 
@@ -101,6 +108,7 @@ describe('PipeManiaGameState Unit Tests', () => {
     const initialWrenches = gameState.getWrenches();
 
     // Trigger flow into empty tile directly -> spill
+    (gameState as any).playState = PlayState.READY_COUNTDOWN;
     (gameState as any).countdownRemainingSec = 0;
     gameState.update(10);
 
@@ -113,6 +121,7 @@ describe('PipeManiaGameState Unit Tests', () => {
     (gameState as any).wrenches = 1;
 
     // Trigger spill
+    (gameState as any).playState = PlayState.READY_COUNTDOWN;
     (gameState as any).countdownRemainingSec = 0;
     gameState.update(10);
 
