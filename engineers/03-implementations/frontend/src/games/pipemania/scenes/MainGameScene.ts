@@ -609,24 +609,69 @@ export class MainGameScene extends Phaser.Scene {
       gfx.fillRect(bx + inset + 2, startY, pipeWidth - 4, fillH);
       gfx.fillStyle(coreColor, 1);
       gfx.fillRect(bx + inset + 8, startY, pipeWidth - 16, fillH);
-    } else if (cell.type === PipeType.RESERVOIR_HORIZONTAL || cell.type === PipeType.RESERVOIR_VERTICAL) {
-      // Tank filling from bottom to top
-      const tankH = (TILE_SIZE - 20) * progress;
-      gfx.fillStyle(color, 0.85);
-      gfx.fillRect(bx + 10, by + TILE_SIZE - 10 - tankH, TILE_SIZE - 20, tankH);
+    } else if (cell.type === PipeType.RESERVOIR_HORIZONTAL) {
+      // Horizontal reservoir pipe flow + tank chamber fill
+      const movingRight = cell.entryDir === Direction.RIGHT;
+      const fillW = TILE_SIZE * progress;
+      const startX = movingRight ? bx : bx + TILE_SIZE - fillW;
+
+      // Fill horizontal tube channel
+      gfx.fillStyle(color, 0.9);
+      gfx.fillRect(startX, by + inset + 2, fillW, pipeWidth - 4);
       gfx.fillStyle(coreColor, 1);
-      gfx.fillRect(bx + 14, by + TILE_SIZE - 10 - tankH, TILE_SIZE - 28, 3);
+      gfx.fillRect(startX, by + inset + 8, fillW, pipeWidth - 16);
+
+      // Expansion glass tank chamber filling smoothly
+      const tankH = 34 * progress;
+      gfx.fillStyle(color, 0.85);
+      gfx.fillRect(bx + 11, by + 11 + (34 - tankH), 34, tankH);
+      gfx.fillStyle(coreColor, 1);
+      gfx.fillRect(bx + 14, by + 11 + (34 - tankH), 28, 2);
+    } else if (cell.type === PipeType.RESERVOIR_VERTICAL) {
+      // Vertical reservoir pipe flow + tank chamber fill
+      const movingDown = cell.entryDir === Direction.DOWN;
+      const fillH = TILE_SIZE * progress;
+      const startY = movingDown ? by : by + TILE_SIZE - fillH;
+
+      // Fill vertical tube channel
+      gfx.fillStyle(color, 0.9);
+      gfx.fillRect(bx + inset + 2, startY, pipeWidth - 4, fillH);
+      gfx.fillStyle(coreColor, 1);
+      gfx.fillRect(bx + inset + 8, startY, pipeWidth - 16, fillH);
+
+      // Expansion glass tank chamber filling smoothly
+      const tankH = 36 * progress;
+      gfx.fillStyle(color, 0.85);
+      gfx.fillRect(bx + 12, by + 10 + (36 - tankH), 32, tankH);
+      gfx.fillStyle(coreColor, 1);
+      gfx.fillRect(bx + 15, by + 10 + (36 - tankH), 26, 2);
     } else if (cell.type === PipeType.CROSS) {
-      // Cross pipe dual axes
+      // Cross pipe dual axes with correct direction-aware fill
+      // 1. Horizontal Channel
       if (cell.crossHorizontalFlooded || cell.entryDir === Direction.RIGHT || cell.entryDir === Direction.LEFT) {
-        const p = cell.crossHorizontalFlooded ? 1.0 : progress;
+        const isFlooded = cell.crossHorizontalFlooded === true && cell.entryDir !== Direction.RIGHT && cell.entryDir !== Direction.LEFT;
+        const p = isFlooded ? 1.0 : (cell.crossHorizontalProgress ?? progress);
+        const movingRight = isFlooded ? true : (cell.entryDir === Direction.RIGHT);
+        const fillW = TILE_SIZE * p;
+        const startX = movingRight ? bx : bx + TILE_SIZE - fillW;
+
         gfx.fillStyle(color, 0.9);
-        gfx.fillRect(bx, by + inset + 2, TILE_SIZE * p, pipeWidth - 4);
+        gfx.fillRect(startX, by + inset + 2, fillW, pipeWidth - 4);
+        gfx.fillStyle(coreColor, 1);
+        gfx.fillRect(startX, by + inset + 8, fillW, pipeWidth - 16);
       }
+      // 2. Vertical Channel
       if (cell.crossVerticalFlooded || cell.entryDir === Direction.DOWN || cell.entryDir === Direction.UP) {
-        const p = cell.crossVerticalFlooded ? 1.0 : progress;
+        const isFlooded = cell.crossVerticalFlooded === true && cell.entryDir !== Direction.DOWN && cell.entryDir !== Direction.UP;
+        const p = isFlooded ? 1.0 : (cell.crossVerticalProgress ?? progress);
+        const movingDown = isFlooded ? true : (cell.entryDir === Direction.DOWN);
+        const fillH = TILE_SIZE * p;
+        const startY = movingDown ? by : by + TILE_SIZE - fillH;
+
         gfx.fillStyle(color, 0.9);
-        gfx.fillRect(bx + inset + 2, by, pipeWidth - 4, TILE_SIZE * p);
+        gfx.fillRect(bx + inset + 2, startY, pipeWidth - 4, fillH);
+        gfx.fillStyle(coreColor, 1);
+        gfx.fillRect(bx + inset + 8, startY, pipeWidth - 16, fillH);
       }
     } else {
       // Smooth Quarter-Torus Corner fluid stream

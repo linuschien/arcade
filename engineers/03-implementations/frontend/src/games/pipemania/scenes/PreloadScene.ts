@@ -515,42 +515,76 @@ export class PreloadScene extends Phaser.Scene {
       gfx.fillRect(offset - 2, tileSize - 4, pipeWidth + 4, 4);
     });
 
-    // 12. Reservoir Tank Horizontal
+    // 12. Reservoir Tank Horizontal (Unmistakable Horizontal Pipe with Expansion Capsule)
     this.drawAndSaveTexture('pipemania:pipe_reservoir_h', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
-      // Inflow/outflow horizontal stub
+
+      // Continuous full horizontal pipe body
       gfx.fillStyle(BODY_COLOR, 1);
-      gfx.fillRect(0, offset + 3, tileSize, pipeWidth - 6);
-      // Large glass chamber tank
-      gfx.fillStyle(0x172554, 1); // Dark blue vacuum
-      gfx.fillRoundedRect(6, 6, tileSize - 12, tileSize - 12, 10);
+      gfx.fillRect(0, offset, tileSize, pipeWidth);
+      gfx.fillStyle(INNER_DARK, 1);
+      gfx.fillRect(0, offset + 4, tileSize, pipeWidth - 8);
+      gfx.lineStyle(1.5, BORDER_CYAN, 0.9);
+      gfx.strokeLineShape(new Phaser.Geom.Line(0, offset, tileSize, offset));
+      gfx.strokeLineShape(new Phaser.Geom.Line(0, offset + pipeWidth, tileSize, offset + pipeWidth));
+
+      // Flanges on Left and Right borders ONLY
+      gfx.fillStyle(FLANGE_COLOR, 1);
+      gfx.fillRect(0, offset - 2, 4, pipeWidth + 4);
+      gfx.fillRect(tileSize - 4, offset - 2, 4, pipeWidth + 4);
+
+      // Horizontal Elongated Glass Expansion Tank in center (width: 36, height: 34)
+      gfx.fillStyle(0x0f2942, 0.9); // Dark blue glass
+      gfx.fillRoundedRect(10, 11, 36, 34, 8);
       gfx.lineStyle(2, 0x38bdf8, 1);
-      gfx.strokeRoundedRect(6, 6, tileSize - 12, tileSize - 12, 10);
-      // Tank level gauge lines
-      gfx.fillStyle(0x60a5fa, 0.7);
-      gfx.fillRect(10, 16, 8, 2);
-      gfx.fillRect(10, 26, 12, 2);
-      gfx.fillRect(10, 36, 8, 2);
-      // 4X Slow Indicator Badge
-      gfx.fillStyle(0x38bdf8, 1);
-      gfx.fillCircle(tileSize - 14, 14, 6);
+      gfx.strokeRoundedRect(10, 11, 36, 34, 8);
+
+      // Horizontal flow direction guide lines
+      gfx.fillStyle(0x38bdf8, 0.7);
+      gfx.fillRect(14, tileSize / 2 - 1, 28, 2);
+      gfx.fillTriangle(30, tileSize / 2 - 4, 30, tileSize / 2 + 4, 36, tileSize / 2);
+
+      // Tank 4X Slow Badge
+      gfx.fillStyle(0x0284c7, 1);
+      gfx.fillCircle(17, 18, 5);
+      gfx.fillStyle(0xffffff, 1);
+      gfx.fillRect(15, 17, 4, 2);
     });
 
-    // 13. Reservoir Tank Vertical
+    // 13. Reservoir Tank Vertical (Unmistakable Vertical Pipe with Expansion Capsule)
     this.drawAndSaveTexture('pipemania:pipe_reservoir_v', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
+
+      // Continuous full vertical pipe body
       gfx.fillStyle(BODY_COLOR, 1);
-      gfx.fillRect(offset + 3, 0, pipeWidth - 6, tileSize);
-      gfx.fillStyle(0x172554, 1);
-      gfx.fillRoundedRect(6, 6, tileSize - 12, tileSize - 12, 10);
+      gfx.fillRect(offset, 0, pipeWidth, tileSize);
+      gfx.fillStyle(INNER_DARK, 1);
+      gfx.fillRect(offset + 4, 0, pipeWidth - 8, tileSize);
+      gfx.lineStyle(1.5, BORDER_CYAN, 0.9);
+      gfx.strokeLineShape(new Phaser.Geom.Line(offset, 0, offset, tileSize));
+      gfx.strokeLineShape(new Phaser.Geom.Line(offset + pipeWidth, 0, offset + pipeWidth, tileSize));
+
+      // Flanges on Top and Bottom borders ONLY
+      gfx.fillStyle(FLANGE_COLOR, 1);
+      gfx.fillRect(offset - 2, 0, pipeWidth + 4, 4);
+      gfx.fillRect(offset - 2, tileSize - 4, pipeWidth + 4, 4);
+
+      // Vertical Elongated Glass Expansion Tank in center (width: 34, height: 36)
+      gfx.fillStyle(0x0f2942, 0.9);
+      gfx.fillRoundedRect(11, 10, 34, 36, 8);
       gfx.lineStyle(2, 0x38bdf8, 1);
-      gfx.strokeRoundedRect(6, 6, tileSize - 12, tileSize - 12, 10);
-      gfx.fillStyle(0x60a5fa, 0.7);
-      gfx.fillRect(16, 10, 2, 8);
-      gfx.fillRect(26, 10, 2, 12);
-      gfx.fillRect(36, 10, 2, 8);
-      gfx.fillStyle(0x38bdf8, 1);
-      gfx.fillCircle(tileSize - 14, 14, 6);
+      gfx.strokeRoundedRect(11, 10, 34, 36, 8);
+
+      // Vertical flow direction guide lines
+      gfx.fillStyle(0x38bdf8, 0.7);
+      gfx.fillRect(tileSize / 2 - 1, 14, 2, 28);
+      gfx.fillTriangle(tileSize / 2 - 4, 30, tileSize / 2 + 4, 30, tileSize / 2, 36);
+
+      // Tank 4X Slow Badge
+      gfx.fillStyle(0x0284c7, 1);
+      gfx.fillCircle(18, 17, 5);
+      gfx.fillStyle(0xffffff, 1);
+      gfx.fillRect(17, 15, 2, 4);
     });
   }
 
