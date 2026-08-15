@@ -294,8 +294,9 @@ export class MainGameScene extends Phaser.Scene {
 
         rowSprites.push(sprite);
 
-        // Gold bolt indicator for preset pipes
-        const bolt = this.add.sprite(x - TILE_SIZE / 2 + 7, y - TILE_SIZE / 2 + 7, 'pipemania:preset_bolt');
+        // Gold 4-corner bolt overlay for preset pipes
+        const bolt = this.add.sprite(x, y, 'pipemania:preset_bolt');
+        bolt.setDisplaySize(TILE_SIZE, TILE_SIZE);
         bolt.setVisible(false);
         rowBolts.push(bolt);
       }

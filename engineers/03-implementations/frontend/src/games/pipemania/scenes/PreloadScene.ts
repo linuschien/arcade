@@ -52,40 +52,96 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // 2. Obstacle Barrier (Hazard Steel Block with Warning Stripes)
+    // 2. Obstacle (3D Arcade Traffic Safety Cone with Hazard Markings)
     if (!this.textures.exists('pipemania:obstacle_rock')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
-      // Steel base plate
-      gfx.fillStyle(0x1e293b, 1);
-      gfx.fillRoundedRect(3, 3, TILE_SIZE - 6, TILE_SIZE - 6, 6);
-      gfx.lineStyle(2, 0x475569, 1);
-      gfx.strokeRoundedRect(3, 3, TILE_SIZE - 6, TILE_SIZE - 6, 6);
+      const S = TILE_SIZE; // 64
 
-      // Hazard Warning Stripes
-      gfx.fillStyle(0xd97706, 0.9); // Amber hazard
-      gfx.fillRect(8, 8, TILE_SIZE - 16, TILE_SIZE - 16);
+      // Steel grid base tile
+      gfx.fillStyle(0x0f172a, 1);
+      gfx.fillRoundedRect(2, 2, S - 4, S - 4, 6);
+      gfx.lineStyle(1.5, 0x1e293b, 1);
+      gfx.strokeRoundedRect(2, 2, S - 4, S - 4, 6);
 
-      gfx.fillStyle(0x0f172a, 0.9);
-      for (let i = 0; i < 5; i++) {
+      // Yellow & Black Diagonal Hazard Ground Plate (Caution Zone)
+      gfx.fillStyle(0xd97706, 0.85); // Amber gold caution plate
+      gfx.fillRoundedRect(7, 7, S - 14, S - 14, 4);
+
+      // Dark diagonal stripes
+      gfx.fillStyle(0x090d16, 0.92);
+      for (let i = -2; i < 7; i++) {
         gfx.fillTriangle(
-          12 + i * 10, 8,
-          20 + i * 10, 8,
-          8, 20 + i * 10
+          7 + i * 12, 7,
+          7 + (i + 1) * 12, 7,
+          7, 7 + (i + 1) * 12
         );
         gfx.fillTriangle(
-          8, 20 + i * 10,
-          20 + i * 10, 8,
-          12 + i * 10, 8
+          7, 7 + (i + 1) * 12,
+          7 + (i + 1) * 12, 7,
+          7 + (i + 2) * 12, 7
         );
       }
+      gfx.lineStyle(1, 0xb45309, 1);
+      gfx.strokeRoundedRect(7, 7, S - 14, S - 14, 4);
 
-      // Center lock icon
-      gfx.fillStyle(0xef4444, 1); // Red danger LED
-      gfx.fillCircle(TILE_SIZE / 2, TILE_SIZE / 2, 6);
-      gfx.fillStyle(0xffffff, 0.8);
-      gfx.fillCircle(TILE_SIZE / 2 - 1, TILE_SIZE / 2 - 1, 2);
+      // Drop shadow underneath the traffic cone
+      gfx.fillStyle(0x000000, 0.65);
+      gfx.fillEllipse(32, 53, 34, 10);
 
-      gfx.generateTexture('pipemania:obstacle_rock', TILE_SIZE, TILE_SIZE);
+      // --- Traffic Cone Heavy Rubber Base (Square/Rounded Plate) ---
+      gfx.fillStyle(0x18181b, 1); // Dark vulcanized rubber
+      gfx.fillRoundedRect(14, 46, 36, 9, 3);
+      gfx.fillStyle(0x27272a, 1); // Rubber base bevel
+      gfx.fillRoundedRect(16, 45, 32, 4, 2);
+      gfx.lineStyle(1, 0x3f3f46, 0.8);
+      gfx.strokeRoundedRect(14, 46, 36, 9, 3);
+
+      // --- Vibrant Safety Orange Cone Body ---
+      // Right shadow side
+      gfx.fillStyle(0xc2410c, 1); // Deep orange shadow
+      gfx.fillTriangle(32, 10, 44, 47, 32, 47);
+
+      // Left light side
+      gfx.fillStyle(0xf97316, 1); // Bright vibrant orange
+      gfx.fillTriangle(32, 10, 20, 47, 32, 47);
+
+      // Cone center blend
+      gfx.fillStyle(0xea580c, 1);
+      gfx.fillTriangle(32, 10, 24, 47, 40, 47);
+
+      // --- Reflective Silver-White Safety Bands ---
+      // Lower Reflective Band (Y: 33 to 41)
+      gfx.fillStyle(0xf8fafc, 1);
+      gfx.fillTriangle(24.5, 33, 39.5, 33, 22.5, 41);
+      gfx.fillTriangle(39.5, 33, 41.5, 41, 22.5, 41);
+
+      // Lower band shadow on right side
+      gfx.fillStyle(0x94a3b8, 0.9);
+      gfx.fillTriangle(32, 33, 39.5, 33, 32, 41);
+      gfx.fillTriangle(39.5, 33, 41.5, 41, 32, 41);
+
+      // Upper Reflective Band (Y: 20 to 27)
+      gfx.fillStyle(0xf8fafc, 1);
+      gfx.fillTriangle(27.8, 20, 36.2, 20, 25.8, 27);
+      gfx.fillTriangle(36.2, 20, 38.2, 27, 25.8, 27);
+
+      // Upper band shadow on right side
+      gfx.fillStyle(0x94a3b8, 0.9);
+      gfx.fillTriangle(32, 20, 36.2, 20, 32, 27);
+      gfx.fillTriangle(36.2, 20, 38.2, 27, 32, 27);
+
+      // Specular gloss vertical shine along the left highlight contour
+      gfx.fillStyle(0xffffff, 0.45);
+      gfx.fillTriangle(30, 12, 31.5, 12, 23.5, 46);
+      gfx.fillTriangle(31.5, 12, 25, 46, 23.5, 46);
+
+      // Top Cone Opening Hole (3D Rim & Depth)
+      gfx.fillStyle(0x431407, 1); // Dark inner hole
+      gfx.fillEllipse(32, 10, 6, 2.5);
+      gfx.lineStyle(1, 0xfed7aa, 0.9); // Top rim highlight
+      gfx.strokeEllipse(32, 10, 6, 2.5);
+
+      gfx.generateTexture('pipemania:obstacle_rock', S, S);
       gfx.destroy();
     }
 
@@ -161,14 +217,64 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // 7. Preset Gold Bolt
+    // 7. Preset Gold Bolted Frame (4-Corner Heavy Golden Hex Bolts & Reinforced Brackets)
     if (!this.textures.exists('pipemania:preset_bolt')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
-      gfx.fillStyle(0xf59e0b, 1);
-      gfx.fillCircle(6, 6, 5);
-      gfx.fillStyle(0xfef08a, 1);
-      gfx.fillCircle(5, 5, 2);
-      gfx.generateTexture('pipemania:preset_bolt', 12, 12);
+      const S = TILE_SIZE; // 64
+
+      const corners = [
+        { cx: 8, cy: 8 }, // Top-Left
+        { cx: S - 8, cy: 8 }, // Top-Right
+        { cx: 8, cy: S - 8 }, // Bottom-Left
+        { cx: S - 8, cy: S - 8 }, // Bottom-Right
+      ];
+
+      for (const { cx, cy } of corners) {
+        // Drop shadow for bolt
+        gfx.fillStyle(0x000000, 0.6);
+        gfx.fillCircle(cx + 1, cy + 1, 5.5);
+
+        // Golden L-Bracket Base Plate
+        gfx.fillStyle(0x78350f, 1); // Dark gold bevel
+        gfx.fillCircle(cx, cy, 6);
+
+        // Metallic Golden Hex Bolt Base
+        gfx.fillStyle(0xb45309, 1);
+        gfx.fillCircle(cx, cy, 5);
+
+        // Bright Gold Bolt Cap
+        gfx.fillStyle(0xf59e0b, 1);
+        gfx.fillCircle(cx, cy, 4);
+
+        // Shiny Bevel Edge
+        gfx.fillStyle(0xfef08a, 1);
+        gfx.fillCircle(cx - 1, cy - 1, 2.2);
+
+        // Center Screwdriver Slot / Hex Recess
+        gfx.fillStyle(0x451a03, 1);
+        gfx.fillRect(cx - 2.5, cy - 0.75, 5, 1.5);
+
+        // Specular White Ping
+        gfx.fillStyle(0xffffff, 0.95);
+        gfx.fillCircle(cx - 1.5, cy - 1.5, 1);
+      }
+
+      // Subtle Golden Corner Rivet Brackets on outer border
+      gfx.lineStyle(1.5, 0xf59e0b, 0.85);
+      // Top-Left corner bracket
+      gfx.strokeLineShape(new Phaser.Geom.Line(3, 14, 3, 3));
+      gfx.strokeLineShape(new Phaser.Geom.Line(3, 3, 14, 3));
+      // Top-Right corner bracket
+      gfx.strokeLineShape(new Phaser.Geom.Line(S - 14, 3, S - 3, 3));
+      gfx.strokeLineShape(new Phaser.Geom.Line(S - 3, 3, S - 3, 14));
+      // Bottom-Left corner bracket
+      gfx.strokeLineShape(new Phaser.Geom.Line(3, S - 14, 3, S - 3));
+      gfx.strokeLineShape(new Phaser.Geom.Line(3, S - 3, 14, S - 3));
+      // Bottom-Right corner bracket
+      gfx.strokeLineShape(new Phaser.Geom.Line(S - 14, S - 3, S - 3, S - 3));
+      gfx.strokeLineShape(new Phaser.Geom.Line(S - 3, S - 14, S - 3, S - 3));
+
+      gfx.generateTexture('pipemania:preset_bolt', S, S);
       gfx.destroy();
     }
 
