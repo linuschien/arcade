@@ -735,41 +735,111 @@ export class MainGameScene extends Phaser.Scene {
       gfx.fillStyle(coreColor, 1);
       gfx.fillRect(bx + inset + 8, startY, pipeWidth - 16, fillH);
     } else if (cell.type === PipeType.RESERVOIR_HORIZONTAL) {
-      // Horizontal reservoir pipe flow + tank chamber fill
+      // Horizontal wide-chamber reservoir single unified stream flow
       const movingRight = cell.entryDir === Direction.RIGHT;
-      const fillW = TILE_SIZE * progress;
-      const startX = movingRight ? bx : bx + TILE_SIZE - fillW;
+      const curProg = TILE_SIZE * progress; // 0 to 74
 
-      // Fill horizontal tube channel
-      gfx.fillStyle(color, 0.9);
-      gfx.fillRect(startX, by + inset + 2, fillW, pipeWidth - 4);
-      gfx.fillStyle(coreColor, 1);
-      gfx.fillRect(startX, by + inset + 8, fillW, pipeWidth - 16);
+      // Neck: x: 0..15 & 59..74 (height: pipeWidth = 28)
+      // Wide Chamber: x: 15..59 (width: 44, height: 38, centered at y: by + 18..56)
+      const drawHResStream = (fillColor: number, alpha: number, pad: number) => {
+        gfx.fillStyle(fillColor, alpha);
+        const yNeck = by + inset + pad;
+        const hNeck = pipeWidth - pad * 2;
+        const yChamber = by + 18 + pad;
+        const hChamber = 38 - pad * 2;
 
-      // Expansion glass tank chamber filling smoothly
-      const tankH = 38 * progress;
-      gfx.fillStyle(color, 0.85);
-      gfx.fillRect(bx + 13, by + 13 + (38 - tankH), 38, tankH);
-      gfx.fillStyle(coreColor, 1);
-      gfx.fillRect(bx + 16, by + 13 + (38 - tankH), 32, 2);
+        if (movingRight) {
+          // 1. Entry neck (0..15)
+          const fillNeck1 = Math.min(15, curProg);
+          if (fillNeck1 > 0) {
+            gfx.fillRect(bx, yNeck, fillNeck1, hNeck);
+          }
+          // 2. Wide Chamber (15..59)
+          if (curProg > 15) {
+            const fillChamber = Math.min(44, curProg - 15);
+            gfx.fillRect(bx + 15, yChamber, fillChamber, hChamber);
+          }
+          // 3. Exit neck (59..74)
+          if (curProg > 59) {
+            const fillNeck2 = Math.min(15, curProg - 59);
+            gfx.fillRect(bx + 59, yNeck, fillNeck2, hNeck);
+          }
+        } else {
+          // Flowing Right to Left (entry at 74, exit at 0)
+          // 1. Entry neck (74..59)
+          const fillNeck1 = Math.min(15, curProg);
+          if (fillNeck1 > 0) {
+            gfx.fillRect(bx + 74 - fillNeck1, yNeck, fillNeck1, hNeck);
+          }
+          // 2. Wide Chamber (59..15)
+          if (curProg > 15) {
+            const fillChamber = Math.min(44, curProg - 15);
+            gfx.fillRect(bx + 59 - fillChamber, yChamber, fillChamber, hChamber);
+          }
+          // 3. Exit neck (15..0)
+          if (curProg > 59) {
+            const fillNeck2 = Math.min(15, curProg - 59);
+            gfx.fillRect(bx + 15 - fillNeck2, yNeck, fillNeck2, hNeck);
+          }
+        }
+      };
+
+      // Outer luminous fluid & Inner high-intensity fluid core
+      drawHResStream(color, 0.9, 2);
+      drawHResStream(coreColor, 1.0, 7);
     } else if (cell.type === PipeType.RESERVOIR_VERTICAL) {
-      // Vertical reservoir pipe flow + tank chamber fill
+      // Vertical wide-chamber reservoir single unified stream flow
       const movingDown = cell.entryDir === Direction.DOWN;
-      const fillH = TILE_SIZE * progress;
-      const startY = movingDown ? by : by + TILE_SIZE - fillH;
+      const curProg = TILE_SIZE * progress; // 0 to 74
 
-      // Fill vertical tube channel
-      gfx.fillStyle(color, 0.9);
-      gfx.fillRect(bx + inset + 2, startY, pipeWidth - 4, fillH);
-      gfx.fillStyle(coreColor, 1);
-      gfx.fillRect(bx + inset + 8, startY, pipeWidth - 16, fillH);
+      // Neck: y: 0..15 & 59..74 (width: pipeWidth = 28)
+      // Wide Chamber: y: 15..59 (height: 44, width: 38, centered at x: bx + 18..56)
+      const drawVResStream = (fillColor: number, alpha: number, pad: number) => {
+        gfx.fillStyle(fillColor, alpha);
+        const xNeck = bx + inset + pad;
+        const wNeck = pipeWidth - pad * 2;
+        const xChamber = bx + 18 + pad;
+        const wChamber = 38 - pad * 2;
 
-      // Expansion glass tank chamber filling smoothly
-      const tankH = 40 * progress;
-      gfx.fillStyle(color, 0.85);
-      gfx.fillRect(bx + 14, by + 12 + (40 - tankH), 36, tankH);
-      gfx.fillStyle(coreColor, 1);
-      gfx.fillRect(bx + 17, by + 12 + (40 - tankH), 30, 2);
+        if (movingDown) {
+          // 1. Entry neck (0..15)
+          const fillNeck1 = Math.min(15, curProg);
+          if (fillNeck1 > 0) {
+            gfx.fillRect(xNeck, by, wNeck, fillNeck1);
+          }
+          // 2. Wide Chamber (15..59)
+          if (curProg > 15) {
+            const fillChamber = Math.min(44, curProg - 15);
+            gfx.fillRect(xChamber, by + 15, wChamber, fillChamber);
+          }
+          // 3. Exit neck (59..74)
+          if (curProg > 59) {
+            const fillNeck2 = Math.min(15, curProg - 59);
+            gfx.fillRect(xNeck, by + 59, wNeck, fillNeck2);
+          }
+        } else {
+          // Flowing Bottom to Top (entry at 74, exit at 0)
+          // 1. Entry neck (74..59)
+          const fillNeck1 = Math.min(15, curProg);
+          if (fillNeck1 > 0) {
+            gfx.fillRect(xNeck, by + 74 - fillNeck1, wNeck, fillNeck1);
+          }
+          // 2. Wide Chamber (59..15)
+          if (curProg > 15) {
+            const fillChamber = Math.min(44, curProg - 15);
+            gfx.fillRect(xChamber, by + 59 - fillChamber, wChamber, fillChamber);
+          }
+          // 3. Exit neck (15..0)
+          if (curProg > 59) {
+            const fillNeck2 = Math.min(15, curProg - 59);
+            gfx.fillRect(xNeck, by + 15 - fillNeck2, wNeck, fillNeck2);
+          }
+        }
+      };
+
+      // Outer luminous fluid & Inner high-intensity fluid core
+      drawVResStream(color, 0.9, 2);
+      drawVResStream(coreColor, 1.0, 7);
     } else if (cell.type === PipeType.CROSS) {
       // Cross pipe dual axes with correct direction-aware fill
       // 1. Horizontal Channel
