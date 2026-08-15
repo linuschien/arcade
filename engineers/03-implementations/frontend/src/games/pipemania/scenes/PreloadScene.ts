@@ -165,12 +165,122 @@ export class PreloadScene extends Phaser.Scene {
     if (!this.textures.exists('pipemania:preset_bolt')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
       gfx.fillStyle(0xf59e0b, 1);
-      gfx.fillCircle(4, 4, 3.5);
+      gfx.fillCircle(6, 6, 5);
       gfx.fillStyle(0xfef08a, 1);
-      gfx.fillCircle(3, 3, 1.5);
-      gfx.lineStyle(1, 0x78350f, 1);
-      gfx.strokeCircle(4, 4, 3.5);
-      gfx.generateTexture('pipemania:preset_bolt', 8, 8);
+      gfx.fillCircle(5, 5, 2);
+      gfx.generateTexture('pipemania:preset_bolt', 12, 12);
+      gfx.destroy();
+    }
+
+    // 8. Little Plumber Mascot Sprite (64x64 Retro Arcade Plumber)
+    if (!this.textures.exists('pipemania:plumber')) {
+      const gfx = this.make.graphics({ x: 0, y: 0 });
+      const S = 64;
+
+      // Drop shadow underneath
+      gfx.fillStyle(0x000000, 0.45);
+      gfx.fillEllipse(32, 59, 28, 8);
+
+      // --- Boots & Feet ---
+      gfx.fillStyle(0x451a03, 1); // Dark leather
+      gfx.fillRoundedRect(20, 52, 10, 8, 3);
+      gfx.fillRoundedRect(34, 52, 10, 8, 3);
+      gfx.fillStyle(0x78350f, 1); // Boot upper
+      gfx.fillRoundedRect(20, 50, 10, 5, 2);
+      gfx.fillRoundedRect(34, 50, 10, 5, 2);
+
+      // --- Red Undershirt ---
+      gfx.fillStyle(0xdc2626, 1); // Red shirt
+      gfx.fillRoundedRect(22, 32, 20, 16, 4);
+      // Left arm
+      gfx.fillRoundedRect(15, 34, 8, 14, 3);
+      // Right arm raised holding wrench
+      gfx.fillRoundedRect(41, 28, 8, 14, 3);
+
+      // --- Denim Overalls ---
+      gfx.fillStyle(0x1d4ed8, 1); // Blue denim overalls
+      gfx.fillRoundedRect(23, 37, 18, 15, 3);
+      // Pants legs separation
+      gfx.fillStyle(0x1e3a8a, 1);
+      gfx.fillRect(31, 46, 2, 6);
+      // Overalls suspender straps
+      gfx.fillStyle(0x2563eb, 1);
+      gfx.fillRect(25, 32, 3.5, 9);
+      gfx.fillRect(35.5, 32, 3.5, 9);
+      // Gold Buttons
+      gfx.fillStyle(0xfbbf24, 1);
+      gfx.fillCircle(26.7, 40, 1.8);
+      gfx.fillCircle(37.2, 40, 1.8);
+      // Center chest pocket
+      gfx.lineStyle(1, 0x1e3a8a, 1);
+      gfx.strokeRect(28, 41, 8, 6);
+
+      // --- White Work Gloves ---
+      gfx.fillStyle(0xf8fafc, 1);
+      gfx.fillCircle(17, 46, 4.5); // Left glove
+      gfx.fillCircle(47, 26, 4.5); // Right glove
+      gfx.fillStyle(0xe2e8f0, 1);
+      gfx.fillCircle(17, 46, 2.5);
+      gfx.fillCircle(47, 26, 2.5);
+
+      // --- Big Metallic Chrome Wrench in Right Hand ---
+      gfx.lineStyle(4, 0x64748b, 1);
+      gfx.strokeLineShape(new Phaser.Geom.Line(47, 26, 56, 14));
+      gfx.lineStyle(2, 0xe2e8f0, 1);
+      gfx.strokeLineShape(new Phaser.Geom.Line(47, 26, 56, 14));
+      // Wrench Jaw
+      gfx.fillStyle(0x94a3b8, 1);
+      gfx.fillCircle(56, 14, 5);
+      gfx.fillStyle(0x0a0f1d, 1);
+      gfx.fillTriangle(54, 12, 60, 10, 58, 18);
+      gfx.fillStyle(0xf8fafc, 1);
+      gfx.fillCircle(55, 11, 1.5);
+      gfx.fillCircle(58, 16, 1.5);
+
+      // --- Head & Face ---
+      // Ears
+      gfx.fillStyle(0xfb923c, 1);
+      gfx.fillCircle(20, 23, 3);
+      gfx.fillCircle(44, 23, 3);
+      // Face
+      gfx.fillStyle(0xfdba74, 1); // Warm skin tone
+      gfx.fillCircle(32, 23, 11);
+
+      // Rosy Cheeks
+      gfx.fillStyle(0xf43f5e, 0.45);
+      gfx.fillCircle(24, 26, 2.5);
+      gfx.fillCircle(40, 26, 2.5);
+
+      // Big Sparkling Eyes
+      gfx.fillStyle(0x0f172a, 1);
+      gfx.fillCircle(27, 21, 2.5);
+      gfx.fillCircle(37, 21, 2.5);
+      gfx.fillStyle(0xffffff, 1); // Specular white pupil reflections
+      gfx.fillCircle(27.8, 20.2, 1);
+      gfx.fillCircle(37.8, 20.2, 1);
+
+      // Cute Plumber Mustache & Nose
+      gfx.fillStyle(0x78350f, 1); // Brown mustache
+      gfx.fillEllipse(28.5, 27, 4.5, 2.5);
+      gfx.fillEllipse(35.5, 27, 4.5, 2.5);
+      gfx.fillStyle(0xf97316, 1); // Cute nose
+      gfx.fillCircle(32, 24, 2);
+
+      // --- Yellow Construction Helmet / Hardhat ---
+      gfx.fillStyle(0xeab308, 1); // Hardhat brim
+      gfx.fillRoundedRect(17, 16, 30, 4.5, 2);
+      gfx.fillStyle(0xfacc15, 1); // Hardhat dome
+      gfx.fillCircle(32, 14, 12.5);
+      // Helmet specular gloss streak
+      gfx.fillStyle(0xfef08a, 0.9);
+      gfx.fillRoundedRect(24, 5, 10, 2.5, 1);
+      // Front badge / lamp on helmet
+      gfx.fillStyle(0x38bdf8, 1);
+      gfx.fillCircle(32, 13, 2.5);
+      gfx.fillStyle(0xffffff, 1);
+      gfx.fillCircle(32, 13, 1);
+
+      gfx.generateTexture('pipemania:plumber', S, S);
       gfx.destroy();
     }
 

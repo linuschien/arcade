@@ -97,10 +97,14 @@ describe('PipeMania MainGameScene Unit Tests', () => {
       sprite: vi.fn().mockReturnValue(mockSprite),
       text: vi.fn().mockReturnValue(mockText),
       rectangle: vi.fn().mockReturnValue(mockRect),
+      ellipse: vi.fn().mockReturnValue(mockRect),
       container: vi.fn().mockReturnValue(mockContainer),
     };
     (scene as any).events = mockEvents;
     (scene as any).input = mockInput;
+    (scene as any).tweens = {
+      add: vi.fn(),
+    };
 
     InputService.reset();
   });

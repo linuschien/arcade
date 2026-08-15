@@ -57,6 +57,9 @@ export class MainGameScene extends Phaser.Scene {
   private centerTitleText!: Phaser.GameObjects.Text;
   private centerSubtitleText!: Phaser.GameObjects.Text;
 
+  // Mascot
+  private plumberSprite!: Phaser.GameObjects.Sprite;
+
   // Input state
   private cursorCol: number = 2;
   private cursorRow: number = 3;
@@ -246,6 +249,22 @@ export class MainGameScene extends Phaser.Scene {
     });
     this.ffButtonBg.on('pointerout', () => {
       this.gameState.setFastForward(false);
+    });
+
+    // Little Plumber Mascot in bottom-left corner below Queue
+    const plumberPlatform = this.add.ellipse(SIDEBAR_X + 62.5, 626, 96, 16, 0x0f172a);
+    plumberPlatform.setStrokeStyle(1.5, 0x38bdf8, 0.7);
+
+    this.plumberSprite = this.add.sprite(SIDEBAR_X + 62.5, 582, 'pipemania:plumber');
+    this.plumberSprite.setDisplaySize(68, 68);
+
+    this.tweens.add({
+      targets: this.plumberSprite,
+      y: 577,
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
     });
   }
 

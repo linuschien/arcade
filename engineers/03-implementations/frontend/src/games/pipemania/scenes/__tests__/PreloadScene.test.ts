@@ -13,6 +13,7 @@ describe('PipeMania PreloadScene Unit Tests', () => {
     mockGfx = {
       fillStyle: vi.fn().mockReturnThis(),
       fillCircle: vi.fn().mockReturnThis(),
+      fillEllipse: vi.fn().mockReturnThis(),
       fillRect: vi.fn().mockReturnThis(),
       fillRoundedRect: vi.fn().mockReturnThis(),
       fillTriangle: vi.fn().mockReturnThis(),
@@ -20,6 +21,7 @@ describe('PipeMania PreloadScene Unit Tests', () => {
       strokeRect: vi.fn().mockReturnThis(),
       strokeRoundedRect: vi.fn().mockReturnThis(),
       strokeCircle: vi.fn().mockReturnThis(),
+      strokeEllipse: vi.fn().mockReturnThis(),
       strokeLineShape: vi.fn().mockReturnThis(),
       beginPath: vi.fn().mockReturnThis(),
       arc: vi.fn().mockReturnThis(),
@@ -58,6 +60,7 @@ describe('PipeMania PreloadScene Unit Tests', () => {
     expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:pipe_cross', 64, 64);
     expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:pipe_oneway_right', 64, 64);
     expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:pipe_reservoir_h', 64, 64);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:plumber', 64, 64);
   });
 
   it('should transition to MainGameScene on create', () => {
