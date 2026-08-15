@@ -202,41 +202,41 @@ export class MainGameScene extends Phaser.Scene {
 
     this.add.text(SIDEBAR_X + 62.5, SIDEBAR_Y + 16, 'NEXT', {
       fontFamily: 'monospace',
-      fontSize: '13px',
+      fontSize: '14px',
       color: '#94a3b8',
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    // Active Pipe Highlight Frame around slot 0
+    // Active Pipe Highlight Frame around slot 0 (original 81x81)
     this.queueHighlight = this.add.graphics();
     this.queueHighlight.lineStyle(2.5, 0x22c55e, 1);
-    this.queueHighlight.strokeRoundedRect(SIDEBAR_X + 23.5, SIDEBAR_Y + 32, 78, 78, 8);
+    this.queueHighlight.strokeRoundedRect(SIDEBAR_X + 22, SIDEBAR_Y + 34, 81, 81, 8);
 
-    // 5 Queue Slots (Slot 0 is 60px, Slots 1-4 are 48px)
+    // 5 Queue Slots (Slot 0 is 62px, Slots 1-4 are 50px)
     this.queueSprites = [];
-    const slotPositions = [
-      { y: SIDEBAR_Y + 71, size: 60 },
-      { y: SIDEBAR_Y + 138, size: 48 },
-      { y: SIDEBAR_Y + 190, size: 48 },
-      { y: SIDEBAR_Y + 242, size: 48 },
-      { y: SIDEBAR_Y + 294, size: 48 },
-    ];
-
     for (let i = 0; i < 5; i++) {
-      const pos = slotPositions[i];
-      const sprite = this.add.sprite(SIDEBAR_X + 62.5, pos.y, 'pipemania:pipe_horizontal');
-      sprite.setDisplaySize(pos.size, pos.size);
+      let y = 0;
+      let size = 50;
+      if (i === 0) {
+        y = SIDEBAR_Y + 74.5;
+        size = 62;
+      } else {
+        y = SIDEBAR_Y + 155 + (i - 1) * 60;
+        size = 50;
+      }
+      const sprite = this.add.sprite(SIDEBAR_X + 62.5, y, 'pipemania:pipe_horizontal');
+      sprite.setDisplaySize(size, size);
       this.queueSprites.push(sprite);
     }
 
     // Fast Forward Button
-    this.ffButtonBg = this.add.rectangle(SIDEBAR_X + 62.5, SIDEBAR_Y + 348, 108, 34, 0x1e293b);
+    this.ffButtonBg = this.add.rectangle(SIDEBAR_X + 62.5, SIDEBAR_Y + 400, 110, 36, 0x1e293b);
     this.ffButtonBg.setStrokeStyle(1, 0x38bdf8);
     this.ffButtonBg.setInteractive({ useHandCursor: true });
 
-    this.ffButtonText = this.add.text(SIDEBAR_X + 62.5, SIDEBAR_Y + 348, '>> FAST [F]', {
+    this.ffButtonText = this.add.text(SIDEBAR_X + 62.5, SIDEBAR_Y + 400, '>> FAST [F]', {
       fontFamily: 'monospace',
-      fontSize: '12px',
+      fontSize: '13px',
       color: '#38bdf8',
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -252,16 +252,16 @@ export class MainGameScene extends Phaser.Scene {
       this.gameState.setFastForward(false);
     });
 
-    // Little Plumber Mascot in bottom of sidebar on platform
-    const plumberPlatform = this.add.ellipse(SIDEBAR_X + 62.5, SIDEBAR_Y + 496, 96, 14, 0x0f172a);
+    // Little Plumber Mascot in bottom-left corner below Queue
+    const plumberPlatform = this.add.ellipse(SIDEBAR_X + 62.5, SIDEBAR_Y + 500, 96, 16, 0x0f172a);
     plumberPlatform.setStrokeStyle(1.5, 0x38bdf8, 0.7);
 
-    this.plumberSprite = this.add.sprite(SIDEBAR_X + 62.5, SIDEBAR_Y + 440, 'pipemania:plumber');
-    this.plumberSprite.setDisplaySize(72, 72);
+    this.plumberSprite = this.add.sprite(SIDEBAR_X + 62.5, SIDEBAR_Y + 460, 'pipemania:plumber');
+    this.plumberSprite.setDisplaySize(68, 68);
 
     this.tweens.add({
       targets: this.plumberSprite,
-      y: SIDEBAR_Y + 435,
+      y: SIDEBAR_Y + 455,
       duration: 800,
       yoyo: true,
       repeat: -1,
