@@ -602,62 +602,15 @@ export class PreloadScene extends Phaser.Scene {
       }
     });
 
-    // 12. Reservoir Tank Horizontal
+    // 12. Reservoir Tank Horizontal (Bidirectional 4X Buffer Tank)
     this.drawAndSaveTexture('pipemania:pipe_reservoir_h', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
 
       // 3D Horizontal Pipe Body
       this.drawStandardHorizontalBody(gfx, tileSize, pipeWidth, offset);
 
-      // 3D Translucent Blue Glass Expansion Tank (width: 42, height: 40)
-      const tw = 42;
-      const th = 40;
-      const tx = (tileSize - tw) / 2;
-      const ty = (tileSize - th) / 2;
-
-      // Tank Drop Shadow
-      gfx.fillStyle(0x000000, 0.5);
-      gfx.fillRoundedRect(tx + 2, ty + 3, tw, th, 10);
-
-      // Glass Tank Outer Vessel
-      gfx.fillStyle(0x03254c, 0.95);
-      gfx.fillRoundedRect(tx, ty, tw, th, 10);
-      gfx.lineStyle(2, 0x38bdf8, 1);
-      gfx.strokeRoundedRect(tx, ty, tw, th, 10);
-
-      // Glass Specular Curved Highlight
-      gfx.fillStyle(0xe0f2fe, 0.7);
-      gfx.fillRoundedRect(tx + 4, ty + 4, tw - 8, 4, 2);
-
-      // Golden Mounting Collar Rings
-      gfx.fillStyle(0xd97706, 1);
-      gfx.fillRect(tx + 2, ty, 3, th);
-      gfx.fillRect(tx + tw - 5, ty, 3, th);
-      gfx.fillStyle(0xfde047, 1);
-      gfx.fillRect(tx + 2, ty, 1.5, th);
-      gfx.fillRect(tx + tw - 5, ty, 1.5, th);
-
-      // Horizontal flow direction guide
-      gfx.fillStyle(0x38bdf8, 0.8);
-      gfx.fillRect(tx + 8, tileSize / 2 - 1, tw - 16, 2);
-      gfx.fillTriangle(tx + tw - 12, tileSize / 2 - 4, tx + tw - 12, tileSize / 2 + 4, tx + tw - 6, tileSize / 2);
-
-      // 4X Slow Indicator Badge
-      gfx.fillStyle(0x0284c7, 1);
-      gfx.fillCircle(tx + 10, ty + 10, 5.5);
-      gfx.fillStyle(0xffffff, 1);
-      gfx.fillRect(tx + 8, ty + 9, 4, 2);
-    });
-
-    // 13. Reservoir Tank Vertical
-    this.drawAndSaveTexture('pipemania:pipe_reservoir_v', tileSize, (gfx) => {
-      this.drawGridBackground(gfx, tileSize);
-
-      // 3D Vertical Pipe Body
-      this.drawStandardVerticalBody(gfx, tileSize, pipeWidth, offset);
-
-      // 3D Translucent Blue Glass Expansion Tank (width: 40, height: 42)
-      const tw = 40;
+      // 3D Translucent Blue Glass Expansion Tank (width: 44, height: 42)
+      const tw = 44;
       const th = 42;
       const tx = (tileSize - tw) / 2;
       const ty = (tileSize - th) / 2;
@@ -673,7 +626,64 @@ export class PreloadScene extends Phaser.Scene {
       gfx.strokeRoundedRect(tx, ty, tw, th, 10);
 
       // Glass Specular Curved Highlight
-      gfx.fillStyle(0xe0f2fe, 0.7);
+      gfx.fillStyle(0xe0f2fe, 0.75);
+      gfx.fillRoundedRect(tx + 4, ty + 4, tw - 8, 4, 2);
+
+      // Golden Mounting Collar Rings
+      gfx.fillStyle(0xd97706, 1);
+      gfx.fillRect(tx + 2, ty, 3, th);
+      gfx.fillRect(tx + tw - 5, ty, 3, th);
+      gfx.fillStyle(0xfde047, 1);
+      gfx.fillRect(tx + 2, ty, 1.5, th);
+      gfx.fillRect(tx + tw - 5, ty, 1.5, th);
+
+      // Bidirectional Fluid Conduit Guide (Straight through, no one-way arrows)
+      gfx.fillStyle(0x38bdf8, 0.8);
+      gfx.fillRect(tx + 6, tileSize / 2 - 1, tw - 12, 2);
+
+      // Vertical Fluid Measurement Graduation Ticks (Tank Scale)
+      gfx.fillStyle(0x67e8f9, 0.9);
+      gfx.fillRect(tx + 14, ty + 12, 2, 6);
+      gfx.fillRect(tx + 21, ty + 10, 2, 8);
+      gfx.fillRect(tx + 28, ty + 12, 2, 6);
+      gfx.fillRect(tx + 14, ty + th - 18, 2, 6);
+      gfx.fillRect(tx + 21, ty + th - 18, 2, 8);
+      gfx.fillRect(tx + 28, ty + th - 18, 2, 6);
+
+      // Central Buffer Deceleration Gauge Ring
+      gfx.fillStyle(0x082f49, 1);
+      gfx.fillCircle(tileSize / 2, tileSize / 2, 7.5);
+      gfx.lineStyle(1.5, 0x38bdf8, 1);
+      gfx.strokeCircle(tileSize / 2, tileSize / 2, 7.5);
+      gfx.fillStyle(0x22c55e, 1);
+      gfx.fillCircle(tileSize / 2, tileSize / 2, 3);
+    });
+
+    // 13. Reservoir Tank Vertical (Bidirectional 4X Buffer Tank)
+    this.drawAndSaveTexture('pipemania:pipe_reservoir_v', tileSize, (gfx) => {
+      this.drawGridBackground(gfx, tileSize);
+
+      // 3D Vertical Pipe Body
+      this.drawStandardVerticalBody(gfx, tileSize, pipeWidth, offset);
+
+      // 3D Translucent Blue Glass Expansion Tank (width: 42, height: 44)
+      const tw = 42;
+      const th = 44;
+      const tx = (tileSize - tw) / 2;
+      const ty = (tileSize - th) / 2;
+
+      // Tank Drop Shadow
+      gfx.fillStyle(0x000000, 0.5);
+      gfx.fillRoundedRect(tx + 2, ty + 3, tw, th, 10);
+
+      // Glass Tank Outer Vessel
+      gfx.fillStyle(0x03254c, 0.95);
+      gfx.fillRoundedRect(tx, ty, tw, th, 10);
+      gfx.lineStyle(2, 0x38bdf8, 1);
+      gfx.strokeRoundedRect(tx, ty, tw, th, 10);
+
+      // Glass Specular Curved Highlight
+      gfx.fillStyle(0xe0f2fe, 0.75);
       gfx.fillRoundedRect(tx + 4, ty + 4, 4, th - 8, 2);
 
       // Golden Mounting Collar Rings
@@ -684,16 +694,26 @@ export class PreloadScene extends Phaser.Scene {
       gfx.fillRect(tx, ty + 2, tw, 1.5);
       gfx.fillRect(tx, ty + th - 5, tw, 1.5);
 
-      // Vertical flow direction guide
+      // Bidirectional Fluid Conduit Guide (Straight through, no one-way arrows)
       gfx.fillStyle(0x38bdf8, 0.8);
-      gfx.fillRect(tileSize / 2 - 1, ty + 8, 2, th - 16);
-      gfx.fillTriangle(tileSize / 2 - 4, ty + th - 12, tileSize / 2 + 4, ty + th - 12, tileSize / 2, ty + th - 6);
+      gfx.fillRect(tileSize / 2 - 1, ty + 6, 2, th - 12);
 
-      // 4X Slow Indicator Badge
-      gfx.fillStyle(0x0284c7, 1);
-      gfx.fillCircle(tx + 10, ty + 10, 5.5);
-      gfx.fillStyle(0xffffff, 1);
-      gfx.fillRect(tx + 9, ty + 8, 2, 4);
+      // Horizontal Fluid Measurement Graduation Ticks (Tank Scale)
+      gfx.fillStyle(0x67e8f9, 0.9);
+      gfx.fillRect(tx + 12, ty + 14, 6, 2);
+      gfx.fillRect(tx + 10, ty + 21, 8, 2);
+      gfx.fillRect(tx + 12, ty + 28, 6, 2);
+      gfx.fillRect(tx + tw - 18, ty + 14, 6, 2);
+      gfx.fillRect(tx + tw - 18, ty + 21, 8, 2);
+      gfx.fillRect(tx + tw - 18, ty + 28, 6, 2);
+
+      // Central Buffer Deceleration Gauge Ring
+      gfx.fillStyle(0x082f49, 1);
+      gfx.fillCircle(tileSize / 2, tileSize / 2, 7.5);
+      gfx.lineStyle(1.5, 0x38bdf8, 1);
+      gfx.strokeCircle(tileSize / 2, tileSize / 2, 7.5);
+      gfx.fillStyle(0x22c55e, 1);
+      gfx.fillCircle(tileSize / 2, tileSize / 2, 3);
     });
   }
 
