@@ -33,6 +33,14 @@ export const mockGameCards: any[] = [
     description: 'Retro maze dot-eating arcade action.',
     totalPlayCount: 890,
   },
+  {
+    id: '76543210-10fe-dcba-9876-543210fedcba',
+    gameId: 'pipemania',
+    title: 'Pipe Mania Classic',
+    coverArtUrl: '/assets/covers/pipemania.png',
+    description: 'Classic path-building puzzle game. Connect pipes before the Flooz flows!',
+    totalPlayCount: 520,
+  },
 ];
 
 export const mockLeaderboardEntries: any[] = [
