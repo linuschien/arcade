@@ -19,15 +19,15 @@ import {
 import { PipeManiaGameState, PlayState, GameStepEvent } from '../logic/PipeManiaGameState';
 import { PipeManiaAudioService } from '../audio/PipeManiaAudioService';
 
-const TILE_SIZE = 64;
+const TILE_SIZE = 74;
 const BOARD_X = 165;
 const BOARD_Y = 96;
 const SIDEBAR_X = 20;
 const SIDEBAR_Y = 96;
 
 // Board geometric center
-const BOARD_CENTER_X = BOARD_X + (GRID_COLS * TILE_SIZE) / 2; // 485
-const BOARD_CENTER_Y = BOARD_Y + (GRID_ROWS * TILE_SIZE) / 2; // 320
+const BOARD_CENTER_X = BOARD_X + (GRID_COLS * TILE_SIZE) / 2; // 165 + 370 = 535
+const BOARD_CENTER_Y = BOARD_Y + (GRID_ROWS * TILE_SIZE) / 2; // 96 + 259 = 355
 
 export class MainGameScene extends Phaser.Scene {
   private gameState!: PipeManiaGameState;
@@ -105,9 +105,9 @@ export class MainGameScene extends Phaser.Scene {
   private createBoardFrame(): void {
     this.boardFrameGfx = this.add.graphics();
     
-    // Glowing Cyberpunk Outer Border around 10x7 Grid
-    const bw = GRID_COLS * TILE_SIZE; // 640
-    const bh = GRID_ROWS * TILE_SIZE; // 448
+    // Glowing Cyberpunk Outer Border around 10x7 Grid (740 x 518)
+    const bw = GRID_COLS * TILE_SIZE; // 740
+    const bh = GRID_ROWS * TILE_SIZE; // 518
 
     // Outer cyan shadow
     this.boardFrameGfx.lineStyle(4, 0x0284c7, 0.4);
@@ -130,8 +130,8 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private createHUD(): void {
-    // Top HUD Bar Background (840 x 74)
-    const hudBg = this.add.rectangle(420, 37, 840, 74, 0x070b14);
+    // Top HUD Bar Background (920 x 74)
+    const hudBg = this.add.rectangle(460, 37, 920, 74, 0x070b14);
     hudBg.setStrokeStyle(1, 0x1e293b);
 
     // 1. Left: Score Text
@@ -143,7 +143,7 @@ export class MainGameScene extends Phaser.Scene {
     });
 
     // 2. Center: Combined Target Pipes & Countdown Timer Text
-    this.hudCenterStatsText = this.add.text(420, 18, 'PIPES: 0 / 10  │  TIME: 10.0s', {
+    this.hudCenterStatsText = this.add.text(460, 18, 'PIPES: 0 / 10  │  TIME: 10.0s', {
       fontFamily: 'monospace',
       fontSize: '18px',
       color: '#38bdf8',
@@ -154,7 +154,7 @@ export class MainGameScene extends Phaser.Scene {
     this.countdownBar = this.add.graphics();
 
     // 3. Right: Level Text & Wrenches (Lives)
-    this.levelText = this.add.text(600, 22, 'LEVEL 1', {
+    this.levelText = this.add.text(670, 22, 'LEVEL 1', {
       fontFamily: 'monospace',
       fontSize: '20px',
       color: '#f59e0b',
@@ -162,7 +162,7 @@ export class MainGameScene extends Phaser.Scene {
     });
 
     for (let i = 0; i < 5; i++) {
-      const wrench = this.add.sprite(715 + i * 24, 34, 'pipemania:wrench');
+      const wrench = this.add.sprite(785 + i * 24, 34, 'pipemania:wrench');
       wrench.setScale(1.0);
       this.wrenchSprites.push(wrench);
     }
@@ -196,8 +196,8 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private createSidebarQueue(): void {
-    // Left Sidebar container (125 x 448)
-    const sidebarBg = this.add.rectangle(SIDEBAR_X + 62.5, SIDEBAR_Y + 224, 125, 448, 0x070b14);
+    // Left Sidebar container (125 x 518, matching grid height)
+    const sidebarBg = this.add.rectangle(SIDEBAR_X + 62.5, SIDEBAR_Y + 259, 125, 518, 0x070b14);
     sidebarBg.setStrokeStyle(1, 0x1e293b);
 
     this.add.text(SIDEBAR_X + 62.5, SIDEBAR_Y + 16, 'NEXT', {
@@ -229,11 +229,11 @@ export class MainGameScene extends Phaser.Scene {
     }
 
     // Fast Forward Button
-    this.ffButtonBg = this.add.rectangle(SIDEBAR_X + 62.5, SIDEBAR_Y + 412, 110, 36, 0x1e293b);
+    this.ffButtonBg = this.add.rectangle(SIDEBAR_X + 62.5, SIDEBAR_Y + 400, 110, 36, 0x1e293b);
     this.ffButtonBg.setStrokeStyle(1, 0x38bdf8);
     this.ffButtonBg.setInteractive({ useHandCursor: true });
 
-    this.ffButtonText = this.add.text(SIDEBAR_X + 62.5, SIDEBAR_Y + 412, '>> FAST [F]', {
+    this.ffButtonText = this.add.text(SIDEBAR_X + 62.5, SIDEBAR_Y + 400, '>> FAST [F]', {
       fontFamily: 'monospace',
       fontSize: '13px',
       color: '#38bdf8',
@@ -252,15 +252,15 @@ export class MainGameScene extends Phaser.Scene {
     });
 
     // Little Plumber Mascot in bottom-left corner below Queue
-    const plumberPlatform = this.add.ellipse(SIDEBAR_X + 62.5, 626, 96, 16, 0x0f172a);
+    const plumberPlatform = this.add.ellipse(SIDEBAR_X + 62.5, SIDEBAR_Y + 500, 96, 16, 0x0f172a);
     plumberPlatform.setStrokeStyle(1.5, 0x38bdf8, 0.7);
 
-    this.plumberSprite = this.add.sprite(SIDEBAR_X + 62.5, 582, 'pipemania:plumber');
+    this.plumberSprite = this.add.sprite(SIDEBAR_X + 62.5, SIDEBAR_Y + 460, 'pipemania:plumber');
     this.plumberSprite.setDisplaySize(68, 68);
 
     this.tweens.add({
       targets: this.plumberSprite,
-      y: 577,
+      y: SIDEBAR_Y + 455,
       duration: 800,
       yoyo: true,
       repeat: -1,
@@ -567,19 +567,19 @@ export class MainGameScene extends Phaser.Scene {
 
       // Static full ready bar during intro fanfare
       this.countdownBar.fillStyle(0x1e293b, 1);
-      this.countdownBar.fillRoundedRect(290, 48, 260, 6, 3);
+      this.countdownBar.fillRoundedRect(330, 48, 260, 6, 3);
       this.countdownBar.fillStyle(0x22c55e, 1);
-      this.countdownBar.fillRoundedRect(290, 48, 260, 6, 3);
+      this.countdownBar.fillRoundedRect(330, 48, 260, 6, 3);
     } else if (state === PlayState.READY_COUNTDOWN) {
       this.hudCenterStatsText.setText(`PIPES: 0 / ${targetLength}  │  TIME: ${remaining.toFixed(1)}s`);
       this.hudCenterStatsText.setColor('#38bdf8');
 
-      // Countdown Bar (260px width at x=290, y=48)
+      // Countdown Bar (260px width at x=330, y=48)
       const pct = Math.max(0, Math.min(1.0, remaining / totalDelay));
       this.countdownBar.fillStyle(0x1e293b, 1);
-      this.countdownBar.fillRoundedRect(290, 48, 260, 6, 3);
+      this.countdownBar.fillRoundedRect(330, 48, 260, 6, 3);
       this.countdownBar.fillStyle(0x22c55e, 1);
-      this.countdownBar.fillRoundedRect(290, 48, 260 * pct, 6, 3);
+      this.countdownBar.fillRoundedRect(330, 48, 260 * pct, 6, 3);
     } else {
       const isFF = this.gameState.isFastForwarding();
       this.hudCenterStatsText.setText(
@@ -590,9 +590,9 @@ export class MainGameScene extends Phaser.Scene {
       // Flooded Pipe Target Bar
       const goalPct = Math.max(0, Math.min(1.0, floodedCount / targetLength));
       this.countdownBar.fillStyle(0x1e293b, 1);
-      this.countdownBar.fillRoundedRect(290, 48, 260, 6, 3);
+      this.countdownBar.fillRoundedRect(330, 48, 260, 6, 3);
       this.countdownBar.fillStyle(floodedCount >= targetLength ? 0xfacc15 : 0x0284c7, 1);
-      this.countdownBar.fillRoundedRect(290, 48, 260 * goalPct, 6, 3);
+      this.countdownBar.fillRoundedRect(330, 48, 260 * goalPct, 6, 3);
     }
 
     // Update Wrenches

@@ -26,7 +26,7 @@ export class PipeManiaGame implements IArcadeGame {
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: 840,
+        width: 920,
         height: 640,
       },
       scene: [PreloadScene, MainGameScene],
