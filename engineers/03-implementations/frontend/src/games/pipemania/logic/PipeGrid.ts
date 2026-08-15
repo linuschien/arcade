@@ -276,35 +276,24 @@ export class PipeGrid {
   }
 
   /**
-   * Distribute obstacles avoiding the tile directly in front of start and end.
+   * Check if a coordinate is within the 3x3 neighborhood (8 surrounding tiles) of Start or End.
+   */
+  public isNearStartOrEnd(col: number, row: number): boolean {
+    const distToStart = Math.max(Math.abs(col - this.startCoord.col), Math.abs(row - this.startCoord.row));
+    const distToEnd = Math.max(Math.abs(col - this.endCoord.col), Math.abs(row - this.endCoord.row));
+    return distToStart <= 1 || distToEnd <= 1;
+  }
+
+  /**
+   * Distribute obstacles avoiding the 3x3 neighborhood surrounding Start and End.
    */
   private placeObstacles(count: number, rng: () => number): void {
     if (count <= 0) return;
 
-    const startCell = this.cells[this.startCoord.row][this.startCoord.col];
-    const startVec = DIRECTION_VECTORS[startCell.startOutflowDir || Direction.RIGHT];
-    const startFront: GridCoord = {
-      col: this.startCoord.col + startVec.dx,
-      row: this.startCoord.row + startVec.dy,
-    };
-
-    const endCell = this.cells[this.endCoord.row][this.endCoord.col];
-    const endInDir = endCell.endInflowDir || Direction.LEFT;
-    const endFrontVec = DIRECTION_VECTORS[OPPOSITE_DIRECTIONS[endInDir]];
-    const endFront: GridCoord = {
-      col: this.endCoord.col + endFrontVec.dx,
-      row: this.endCoord.row + endFrontVec.dy,
-    };
-
     const available: GridCoord[] = [];
     for (let r = 0; r < GRID_ROWS; r++) {
       for (let c = 0; c < GRID_COLS; c++) {
-        if (
-          (c === this.startCoord.col && r === this.startCoord.row) ||
-          (c === this.endCoord.col && r === this.endCoord.row) ||
-          (c === startFront.col && r === startFront.row) ||
-          (c === endFront.col && r === endFront.row)
-        ) {
+        if (this.isNearStartOrEnd(c, r)) {
           continue;
         }
         available.push({ col: c, row: r });
@@ -467,7 +456,7 @@ export class PipeGrid {
   }
 
   /**
-   * Check if a pipe type's required opening ports all face in-bounds, non-obstacle cells.
+   * Check if a pipe type's required opening ports all face in-bounds EMPTY cells.
    */
   public isPipePortsClear(col: number, row: number, type: PipeType): boolean {
     const openings = this.getPipeOpenings(type);
@@ -481,16 +470,17 @@ export class PipeGrid {
       // 1. Must be strictly within grid bounds
       if (nc < 0 || nc >= GRID_COLS || nr < 0 || nr >= GRID_ROWS) return false;
 
-      // 2. Must not face directly into an obstacle stone
+      // 2. Neighbor facing this port must be strictly EMPTY
       const neighborCell = this.cells[nr][nc];
-      if (neighborCell.type === PipeType.OBSTACLE) return false;
+      if (neighborCell.type !== PipeType.EMPTY) return false;
     }
 
     return true;
   }
 
   /**
-   * Place preset fixed golden pipes ensuring all ports have 100% clearance.
+   * Place preset fixed golden pipes outside the Start/End 3x3 neighborhood,
+   * ensuring all opening ports strictly face in-bounds EMPTY cells.
    */
   private placePresetPipes(count: number, level: number, rng: () => number): void {
     if (count <= 0) return;
@@ -498,7 +488,7 @@ export class PipeGrid {
     const available: GridCoord[] = [];
     for (let r = 0; r < GRID_ROWS; r++) {
       for (let c = 0; c < GRID_COLS; c++) {
-        if (this.cells[r][c].type === PipeType.EMPTY) {
+        if (this.cells[r][c].type === PipeType.EMPTY && !this.isNearStartOrEnd(c, r)) {
           available.push({ col: c, row: r });
         }
       }
@@ -516,13 +506,12 @@ export class PipeGrid {
 
       let pipeType = PipeRNG.getRandomPipe(level, rng);
 
-      // If the generated pipe type has clear ports, use it directly!
+      // Fast-Path: If randomly drawn pipe already has 100% port clearance, use it immediately!
       if (!this.isPipePortsClear(coord.col, coord.row, pipeType)) {
-        // Otherwise, filter all placeable pipe types whose ports are 100% clear at this location
+        // Lazy Fallback: Only filter ALL_PLACEABLE_PIPES when the initial pipe fails port clearance
         const validTypes = ALL_PLACEABLE_PIPES.filter((t) => this.isPipePortsClear(coord.col, coord.row, t));
         if (validTypes.length === 0) {
-          // If this cell is too constrained by surrounding stones/walls (< 2 open sides), skip to next candidate cell
-          continue;
+          continue; // Cell is too constrained, skip to next candidate
         }
         pipeType = validTypes[Math.floor(rng() * validTypes.length)];
       }

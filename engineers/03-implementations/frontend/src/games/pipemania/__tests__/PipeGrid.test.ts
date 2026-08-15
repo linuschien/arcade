@@ -62,16 +62,39 @@ describe('PipeGrid Unit Tests', () => {
     expect(grid.computeMaxPotentialPath()).toBeGreaterThanOrEqual(config.targetLength);
   });
 
-  it('should place preset bolted pipes on higher levels with 100% port clearance', () => {
+  it('should enforce Start/End 8-neighborhood clearance (no obstacles or preset pipes)', () => {
+    const grid = new PipeGrid();
+    grid.generateLevel(36); // High difficulty with 12 obstacles & 5 presets
+    const startCoord = grid.getStartCoord();
+    const endCoord = grid.getEndCoord();
+
+    for (let r = 0; r < GRID_ROWS; r++) {
+      for (let c = 0; c < GRID_COLS; c++) {
+        if (grid.isNearStartOrEnd(c, r)) {
+          const cell = grid.getCell(c, r)!;
+          if ((c === startCoord.col && r === startCoord.row) || (c === endCoord.col && r === endCoord.row)) {
+            expect([PipeType.START, PipeType.END]).toContain(cell.type);
+          } else {
+            // Must be completely EMPTY in the 8-neighborhood
+            expect(cell.type).toBe(PipeType.EMPTY);
+            expect(cell.isPreset).toBe(false);
+          }
+        }
+      }
+    }
+  });
+
+  it('should place preset bolted pipes on higher levels with 100% EMPTY port clearance', () => {
     const grid = new PipeGrid();
     grid.generateLevel(15);
     const cells = grid.getCells().flat();
     const presetPipes = cells.filter((c) => c.isPreset);
     expect(presetPipes.length).toBeGreaterThan(0);
 
-    // Verify all preset pipes have clear ports (not pointing to outer borders or obstacles)
+    // Verify all preset pipes have clear ports pointing strictly to in-bounds EMPTY cells
     for (const preset of presetPipes) {
       expect(grid.isPipePortsClear(preset.col, preset.row, preset.type)).toBe(true);
+      expect(grid.isNearStartOrEnd(preset.col, preset.row)).toBe(false);
     }
 
     // Preset pipes cannot be overwritten
