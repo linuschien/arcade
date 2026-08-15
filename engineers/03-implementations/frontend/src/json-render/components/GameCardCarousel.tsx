@@ -35,7 +35,7 @@ export default function GameCardCarousel({
   }
 
   let gamesList: GameCardItem[] = [];
-  let currentActiveId: string = 'tetris';
+  let currentActiveId: string = '';
   let leaderboardRows: any[] = [];
   let currentUserEmail: string = '';
 
@@ -51,9 +51,9 @@ export default function GameCardCarousel({
     }
 
     if (typeof rawActiveId === 'object' && rawActiveId !== null && '$bindState' in rawActiveId) {
-      currentActiveId = store.get(rawActiveId.$bindState) || 'tetris';
+      currentActiveId = store.get(rawActiveId.$bindState) || '';
     } else if (typeof rawActiveId === 'string' && rawActiveId.startsWith('/')) {
-      currentActiveId = store.get(rawActiveId) || 'tetris';
+      currentActiveId = store.get(rawActiveId) || '';
     } else if (typeof rawActiveId === 'string') {
       currentActiveId = rawActiveId;
     }

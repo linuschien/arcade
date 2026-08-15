@@ -36,8 +36,8 @@ const defaultStore = createStateStore({
     listGameCards: [],
     top10Leaderboard: [],
   },
-  activeGameId: 'tetris',
-  activeGameTitle: 'Tetris Classic',
+  activeGameId: '',
+  activeGameTitle: '',
   modals: {
     'admin-grant-credit-modal': false,
     'game-pause-modal': false,
@@ -81,8 +81,9 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
   const { data: whoamiData } = useWhoami();
   const { data: playersData } = useListPlayers(whoamiData?.isAdmin ?? false);
   const { data: gameCardsData } = useListGameCards();
-  const [activeGameId, setActiveGameId] = useState<string>('tetris');
-  const { data: leaderboardData } = useGetTop10Leaderboard(activeGameId);
+  const [activeGameId, setActiveGameId] = useState<string>('');
+  const currentSelectedGameId = activeGameId || (gameCardsData && gameCardsData[0]?.gameId) || '';
+  const { data: leaderboardData } = useGetTop10Leaderboard(currentSelectedGameId);
 
   const deductCreditMutation = useDeductCredit();
   const grantAdminCreditMutation = useGrantAdminCredit();
@@ -93,11 +94,11 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
     store.set('/game/isLobbyVisible', !isPlaying);
 
     if (isPlaying) {
-      const targetGameId = store.get('/activeGameId') || 'tetris';
+      const targetGameId = store.get('/activeGameId') || currentSelectedGameId;
       const timer = setTimeout(() => {
         if (!activeGameInstanceRef.current) {
           const container = document.getElementById('phaser-game-canvas-container');
-          if (container) {
+          if (container && targetGameId) {
             const game = createGameInstance(targetGameId, container);
             if (game) {
               activeGameInstanceRef.current = game;
