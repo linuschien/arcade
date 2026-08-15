@@ -206,14 +206,12 @@ export class PipeGrid {
     startCell.type = PipeType.START;
     startCell.startOutflowDir = startDir;
 
-    // 2. Pick End Position based on Orientation Mode
-    const candidates: Array<{ col: number; row: number; dist: number }> = [];
+    // 2. Pick End Position based on Orientation Mode with Exact-Distance Priority
+    const allCandidates: Array<{ col: number; row: number; dist: number; diff: number }> = [];
 
     for (let r = 0; r < GRID_ROWS; r++) {
       for (let c = 0; c < GRID_COLS; c++) {
         if (c === startCol && r === startRow) continue;
-        const d = Math.abs(c - startCol) + Math.abs(r - startRow);
-        if (Math.abs(d - targetDist) > 2) continue;
 
         if (config.endOrientationMode === 'FACING') {
           // In FACING mode, candidate must be strictly in the forward direction of startDir
@@ -223,34 +221,20 @@ export class PipeGrid {
           if (startDir === Direction.UP && r >= startRow) continue;
         }
 
-        candidates.push({ col: c, row: r, dist: d });
+        const d = Math.abs(c - startCol) + Math.abs(r - startRow);
+        const diff = Math.abs(d - targetDist);
+        allCandidates.push({ col: c, row: r, dist: d, diff });
       }
     }
 
     let chosenEnd: { col: number; row: number; dist: number };
-    if (candidates.length > 0) {
-      chosenEnd = candidates[Math.floor(rng() * candidates.length)];
+    if (allCandidates.length > 0) {
+      // Filter strictly by minimum distance diff (diff = 0 whenever geometrically possible)
+      const minDiff = Math.min(...allCandidates.map(c => c.diff));
+      const optimalCandidates = allCandidates.filter(c => c.diff === minDiff);
+      chosenEnd = optimalCandidates[Math.floor(rng() * optimalCandidates.length)];
     } else {
-      // Fallback: search best candidate
-      let maxD = -1;
-      let best = { col: GRID_COLS - 1, row: GRID_ROWS - 1, dist: 0 };
-      for (let r = 0; r < GRID_ROWS; r++) {
-        for (let c = 0; c < GRID_COLS; c++) {
-          if (c === startCol && r === startRow) continue;
-          if (config.endOrientationMode === 'FACING') {
-            if (startDir === Direction.RIGHT && c <= startCol) continue;
-            if (startDir === Direction.LEFT && c >= startCol) continue;
-            if (startDir === Direction.DOWN && r <= startRow) continue;
-            if (startDir === Direction.UP && r >= startRow) continue;
-          }
-          const d = Math.abs(c - startCol) + Math.abs(r - startRow);
-          if (d > maxD) {
-            maxD = d;
-            best = { col: c, row: r, dist: d };
-          }
-        }
-      }
-      chosenEnd = best;
+      chosenEnd = { col: GRID_COLS - 1, row: GRID_ROWS - 1, dist: 0 };
     }
 
     this.endCoord = { col: chosenEnd.col, row: chosenEnd.row };
