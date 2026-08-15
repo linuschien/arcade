@@ -138,8 +138,9 @@ export class PipeGrid {
       this.cells = this.createEmptyGrid();
       this.setupStartAndEnd(this.levelConfig, rng);
       this.placeObstacles(obstacleCount, rng);
+      this.placePresetPipes(this.levelConfig.presetPipeCount, level, rng);
 
-      // Verify Solvability
+      // Verify Solvability on the COMPLETE generated layout
       const isConnected = this.checkBFSConnectivity();
       const maxPath = isConnected ? this.computeMaxPotentialPath() : 0;
 
@@ -153,9 +154,6 @@ export class PipeGrid {
         }
       }
     }
-
-    // Place Preset Fixed Pipes
-    this.placePresetPipes(this.levelConfig.presetPipeCount, level, rng);
 
     return this.levelConfig;
   }
