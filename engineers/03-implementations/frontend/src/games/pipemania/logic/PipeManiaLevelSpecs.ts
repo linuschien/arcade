@@ -43,7 +43,7 @@ export class PipeManiaLevelSpecs {
       const targetLength = Math.min(40, Math.floor(10 + 0.85 * (L - 1)));
       const obstacleCount = Math.min(12, Math.floor(0.35 * (L - 1)));
       const presetPipeCount = Math.min(6, Math.max(0, Math.floor(0.18 * (L - 3))));
-      const manhattanDistance = Math.max(2, Math.floor(12 - 0.28 * (L - 1)));
+      const manhattanDistance = Math.max(2, Math.floor(6 - 0.11 * (L - 1)));
 
       let endOrientationMode: 'FACING' | 'ORTHOGONAL' | 'AWAY' = 'FACING';
       if (L >= 21) {
@@ -99,7 +99,7 @@ export class PipeManiaLevelSpecs {
       const targetLength = Math.min(40, Math.floor(10 + 0.85 * (baseLevel - 1)));
       const obstacleCount = Math.min(12, Math.floor(0.35 * (baseLevel - 1)));
       const presetPipeCount = Math.min(6, Math.max(0, Math.floor(0.18 * (baseLevel - 3))));
-      const manhattanDistance = Math.max(2, Math.floor(12 - 0.28 * (baseLevel - 1)));
+      const manhattanDistance = Math.max(2, Math.floor(6 - 0.11 * (baseLevel - 1)));
 
       let endOrientationMode: 'FACING' | 'ORTHOGONAL' | 'AWAY' = 'FACING';
       if (baseLevel >= 21) {

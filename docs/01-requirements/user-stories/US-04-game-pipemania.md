@@ -157,7 +157,7 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 - **AC3 (Max Path Capacity Check $\ge N_{\text{target}}$)**：以 DFS 啟發式評估盤面所有可用空白格子，起點至終點的**理論最大無自交路徑長度必須 $\ge N_{\text{target}}$**。
 - **AC4 (Auto Retry Loop)**：若生成的地圖未通過 AC1~AC3 驗證，引擎在 5ms 內自動更換隨機種子重新生成（最多重試 10 次；若仍未通過則自動減少 1 顆障礙石頭以保證 100% 可解）。
 - **AC5 (Start & End Distance Linear Formula)**：
-  - 曼哈頓距離公式：$D_{\text{manhattan}}(L) = \max(2, \lfloor 12 - 0.28 \times (L - 1) \rfloor)$ 格。
+  - 曼哈頓距離公式：$D_{\text{manhattan}}(L) = \max(2, \lfloor 6 - 0.11 \times (L - 1) \rfloor)$ 格。
   - 朝向規則：$L \le 8$ 終點正對起點；$9 \le L \le 20$ 垂直正交 (90°)；$L \ge 21$ 背向起點 (180°)。
 
 ---

@@ -11,7 +11,7 @@ describe('PipeManiaLevelSpecs Unit Tests', () => {
     expect(config.targetLength).toBe(10);
     expect(config.obstacleCount).toBe(0);
     expect(config.presetPipeCount).toBe(0);
-    expect(config.manhattanDistance).toBe(12);
+    expect(config.manhattanDistance).toBe(6);
     expect(config.endOrientationMode).toBe('FACING');
     expect(config.dropRates.pOneWay).toBe(0);
     expect(config.dropRates.pReservoir).toBeCloseTo(0.15, 4);
@@ -26,7 +26,7 @@ describe('PipeManiaLevelSpecs Unit Tests', () => {
     expect(config.targetLength).toBe(13); // 10 + floor(0.85*4) = 13
     expect(config.obstacleCount).toBe(1); // floor(0.35*4) = 1
     expect(config.presetPipeCount).toBe(0); // floor(0.18*2) = 0
-    expect(config.manhattanDistance).toBe(10); // floor(12 - 0.28*4) = 10
+    expect(config.manhattanDistance).toBe(5); // floor(6 - 0.11*4) = 5
     expect(config.endOrientationMode).toBe('FACING');
   });
 
@@ -38,7 +38,7 @@ describe('PipeManiaLevelSpecs Unit Tests', () => {
     expect(config.targetLength).toBe(16); // 10 + floor(0.85*8) = 16
     expect(config.obstacleCount).toBe(2); // floor(0.35*8) = 2
     expect(config.presetPipeCount).toBe(1); // floor(0.18*6) = 1
-    expect(config.manhattanDistance).toBe(9); // floor(12 - 0.28*8) = 9
+    expect(config.manhattanDistance).toBe(5); // floor(6 - 0.11*8) = 5
     expect(config.endOrientationMode).toBe('ORTHOGONAL');
     expect(config.dropRates.pOneWay).toBeCloseTo(0.0072 * 1, 4);
   });
@@ -51,6 +51,7 @@ describe('PipeManiaLevelSpecs Unit Tests', () => {
     expect(config.targetLength).toBe(27);
     expect(config.obstacleCount).toBe(7);
     expect(config.presetPipeCount).toBe(3);
+    expect(config.manhattanDistance).toBe(3); // floor(6 - 0.11*20) = 3
     expect(config.endOrientationMode).toBe('AWAY');
   });
 
@@ -62,7 +63,7 @@ describe('PipeManiaLevelSpecs Unit Tests', () => {
     expect(config.targetLength).toBe(39);
     expect(config.obstacleCount).toBe(12);
     expect(config.presetPipeCount).toBe(5);
-    expect(config.manhattanDistance).toBe(2);
+    expect(config.manhattanDistance).toBe(2); // max(2, floor(6 - 0.11*35)) = 2
     expect(config.endOrientationMode).toBe('AWAY');
     expect(config.dropRates.pOneWay).toBeCloseTo(0.20, 2);
     expect(config.dropRates.pReservoir).toBeCloseTo(0.05, 2);
