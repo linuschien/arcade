@@ -49,15 +49,15 @@ describe('PipeMania PreloadScene Unit Tests', () => {
     scene.preload();
 
     expect((scene as any).make.graphics).toHaveBeenCalled();
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:grid_tile', 56, 56);
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:obstacle_rock', 56, 56);
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:start_valve', 56, 56);
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:end_drain', 56, 56);
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:pipe_horizontal', 56, 56);
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:pipe_vertical', 56, 56);
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:pipe_cross', 56, 56);
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:pipe_oneway_right', 56, 56);
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:pipe_reservoir_h', 56, 56);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:grid_tile', 64, 64);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:obstacle_rock', 64, 64);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:start_valve', 64, 64);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:end_drain', 64, 64);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:pipe_horizontal', 64, 64);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:pipe_vertical', 64, 64);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:pipe_cross', 64, 64);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:pipe_oneway_right', 64, 64);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('pipemania:pipe_reservoir_h', 64, 64);
   });
 
   it('should transition to MainGameScene on create', () => {

@@ -21,9 +21,9 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   private createProceduralTextures(): void {
-    const TILE_SIZE = 56;
-    const PIPE_WIDTH = 26;
-    const PIPE_OFFSET = (TILE_SIZE - PIPE_WIDTH) / 2; // 15
+    const TILE_SIZE = 64;
+    const PIPE_WIDTH = 28;
+    const PIPE_OFFSET = (TILE_SIZE - PIPE_WIDTH) / 2; // 18
 
     // 1. Cyberpunk Grid Tile (Dark Tech with Corner Crosshairs & Subtle Border)
     if (!this.textures.exists('pipemania:grid_tile')) {
@@ -66,22 +66,22 @@ export class PreloadScene extends Phaser.Scene {
       gfx.fillRect(8, 8, TILE_SIZE - 16, TILE_SIZE - 16);
 
       gfx.fillStyle(0x0f172a, 0.9);
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 5; i++) {
         gfx.fillTriangle(
-          12 + i * 8, 8,
-          18 + i * 8, 8,
-          8, 12 + i * 8
+          12 + i * 10, 8,
+          20 + i * 10, 8,
+          8, 20 + i * 10
         );
         gfx.fillTriangle(
-          8, 18 + i * 8,
-          18 + i * 8, 8,
-          12 + i * 8, 8
+          8, 20 + i * 10,
+          20 + i * 10, 8,
+          12 + i * 10, 8
         );
       }
 
       // Center lock icon
       gfx.fillStyle(0xef4444, 1); // Red danger LED
-      gfx.fillCircle(TILE_SIZE / 2, TILE_SIZE / 2, 5);
+      gfx.fillCircle(TILE_SIZE / 2, TILE_SIZE / 2, 6);
       gfx.fillStyle(0xffffff, 0.8);
       gfx.fillCircle(TILE_SIZE / 2 - 1, TILE_SIZE / 2 - 1, 2);
 
@@ -103,14 +103,14 @@ export class PreloadScene extends Phaser.Scene {
 
       // Corner thick brackets
       gfx.fillStyle(0x00f0ff, 1);
-      gfx.fillRect(1, 1, 12, 4);
-      gfx.fillRect(1, 1, 4, 12);
-      gfx.fillRect(TILE_SIZE - 13, 1, 12, 4);
-      gfx.fillRect(TILE_SIZE - 5, 1, 4, 12);
-      gfx.fillRect(1, TILE_SIZE - 5, 12, 4);
-      gfx.fillRect(1, TILE_SIZE - 13, 4, 12);
-      gfx.fillRect(TILE_SIZE - 13, TILE_SIZE - 5, 12, 4);
-      gfx.fillRect(TILE_SIZE - 5, TILE_SIZE - 13, 4, 12);
+      gfx.fillRect(1, 1, 14, 4);
+      gfx.fillRect(1, 1, 4, 14);
+      gfx.fillRect(TILE_SIZE - 15, 1, 14, 4);
+      gfx.fillRect(TILE_SIZE - 5, 1, 4, 14);
+      gfx.fillRect(1, TILE_SIZE - 5, 14, 4);
+      gfx.fillRect(1, TILE_SIZE - 15, 4, 14);
+      gfx.fillRect(TILE_SIZE - 15, TILE_SIZE - 5, 14, 4);
+      gfx.fillRect(TILE_SIZE - 5, TILE_SIZE - 15, 4, 14);
 
       gfx.generateTexture('pipemania:reticle', TILE_SIZE, TILE_SIZE);
       gfx.destroy();

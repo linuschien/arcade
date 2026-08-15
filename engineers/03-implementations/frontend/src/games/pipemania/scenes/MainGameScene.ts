@@ -1,9 +1,9 @@
 /**
  * MainGameScene.ts
  * Core 60fps Phaser 4 Canvas Scene for Pipe Mania.
- * Features Continuous Fill Mask animations, 5-Slot FIFO queue sidebar,
- * combined top HUD countdown & target meter, prominent center board game overlays,
- * stage start opening jingle, and clean memory teardown.
+ * Scaled for high-definition 840x640 canvas layout, 64px crisp tile grid,
+ * 5-Slot FIFO queue sidebar (without ACTIVE text), combined top HUD timer & progress bar,
+ * prominent central board overlays, and stage start fanfare.
  */
 
 import Phaser from 'phaser';
@@ -19,15 +19,15 @@ import {
 import { PipeManiaGameState, PlayState, GameStepEvent } from '../logic/PipeManiaGameState';
 import { PipeManiaAudioService } from '../audio/PipeManiaAudioService';
 
-const TILE_SIZE = 56;
-const BOARD_X = 135;
-const BOARD_Y = 70;
-const SIDEBAR_X = 15;
-const SIDEBAR_Y = 70;
+const TILE_SIZE = 64;
+const BOARD_X = 165;
+const BOARD_Y = 96;
+const SIDEBAR_X = 20;
+const SIDEBAR_Y = 96;
 
 // Board geometric center
-const BOARD_CENTER_X = BOARD_X + (GRID_COLS * TILE_SIZE) / 2; // 415
-const BOARD_CENTER_Y = BOARD_Y + (GRID_ROWS * TILE_SIZE) / 2; // 266
+const BOARD_CENTER_X = BOARD_X + (GRID_COLS * TILE_SIZE) / 2; // 485
+const BOARD_CENTER_Y = BOARD_Y + (GRID_ROWS * TILE_SIZE) / 2; // 320
 
 export class MainGameScene extends Phaser.Scene {
   private gameState!: PipeManiaGameState;
@@ -103,8 +103,8 @@ export class MainGameScene extends Phaser.Scene {
     this.boardFrameGfx = this.add.graphics();
     
     // Glowing Cyberpunk Outer Border around 10x7 Grid
-    const bw = GRID_COLS * TILE_SIZE; // 560
-    const bh = GRID_ROWS * TILE_SIZE; // 392
+    const bw = GRID_COLS * TILE_SIZE; // 640
+    const bh = GRID_ROWS * TILE_SIZE; // 448
 
     // Outer cyan shadow
     this.boardFrameGfx.lineStyle(4, 0x0284c7, 0.4);
@@ -116,33 +116,33 @@ export class MainGameScene extends Phaser.Scene {
 
     // Corner decorative brackets
     this.boardFrameGfx.fillStyle(0x38bdf8, 1);
-    this.boardFrameGfx.fillRect(BOARD_X - 6, BOARD_Y - 6, 12, 3);
-    this.boardFrameGfx.fillRect(BOARD_X - 6, BOARD_Y - 6, 3, 12);
-    this.boardFrameGfx.fillRect(BOARD_X + bw - 6, BOARD_Y - 6, 12, 3);
-    this.boardFrameGfx.fillRect(BOARD_X + bw + 3, BOARD_Y - 6, 3, 12);
-    this.boardFrameGfx.fillRect(BOARD_X - 6, BOARD_Y + bh + 3, 12, 3);
-    this.boardFrameGfx.fillRect(BOARD_X - 6, BOARD_Y + bh - 6, 3, 12);
-    this.boardFrameGfx.fillRect(BOARD_X + bw - 6, BOARD_Y + bh + 3, 12, 3);
-    this.boardFrameGfx.fillRect(BOARD_X + bw + 3, BOARD_Y + bh - 6, 3, 12);
+    this.boardFrameGfx.fillRect(BOARD_X - 6, BOARD_Y - 6, 14, 3);
+    this.boardFrameGfx.fillRect(BOARD_X - 6, BOARD_Y - 6, 3, 14);
+    this.boardFrameGfx.fillRect(BOARD_X + bw - 8, BOARD_Y - 6, 14, 3);
+    this.boardFrameGfx.fillRect(BOARD_X + bw + 3, BOARD_Y - 6, 3, 14);
+    this.boardFrameGfx.fillRect(BOARD_X - 6, BOARD_Y + bh + 3, 14, 3);
+    this.boardFrameGfx.fillRect(BOARD_X - 6, BOARD_Y + bh - 8, 3, 14);
+    this.boardFrameGfx.fillRect(BOARD_X + bw - 8, BOARD_Y + bh + 3, 14, 3);
+    this.boardFrameGfx.fillRect(BOARD_X + bw + 3, BOARD_Y + bh - 8, 3, 14);
   }
 
   private createHUD(): void {
-    // Top HUD Bar Background
-    const hudBg = this.add.rectangle(360, 32, 720, 64, 0x070b14);
+    // Top HUD Bar Background (840 x 74)
+    const hudBg = this.add.rectangle(420, 37, 840, 74, 0x070b14);
     hudBg.setStrokeStyle(1, 0x1e293b);
 
     // 1. Left: Score Text
-    this.scoreText = this.add.text(24, 18, 'SCORE: 0', {
+    this.scoreText = this.add.text(28, 22, 'SCORE: 0', {
       fontFamily: 'monospace',
-      fontSize: '18px',
+      fontSize: '20px',
       color: '#f8fafc',
       fontStyle: 'bold',
     });
 
     // 2. Center: Combined Target Pipes & Countdown Timer Text
-    this.hudCenterStatsText = this.add.text(360, 14, 'PIPES: 0 / 10  │  TIME: 10.0s', {
+    this.hudCenterStatsText = this.add.text(420, 18, 'PIPES: 0 / 10  │  TIME: 10.0s', {
       fontFamily: 'monospace',
-      fontSize: '16px',
+      fontSize: '18px',
       color: '#38bdf8',
       fontStyle: 'bold',
     }).setOrigin(0.5, 0);
@@ -151,16 +151,16 @@ export class MainGameScene extends Phaser.Scene {
     this.countdownBar = this.add.graphics();
 
     // 3. Right: Level Text & Wrenches (Lives)
-    this.levelText = this.add.text(510, 18, 'LEVEL 1', {
+    this.levelText = this.add.text(600, 22, 'LEVEL 1', {
       fontFamily: 'monospace',
-      fontSize: '18px',
+      fontSize: '20px',
       color: '#f59e0b',
       fontStyle: 'bold',
     });
 
     for (let i = 0; i < 5; i++) {
-      const wrench = this.add.sprite(610 + i * 22, 28, 'pipemania:wrench');
-      wrench.setScale(0.9);
+      const wrench = this.add.sprite(715 + i * 24, 34, 'pipemania:wrench');
+      wrench.setScale(1.0);
       this.wrenchSprites.push(wrench);
     }
   }
@@ -177,15 +177,15 @@ export class MainGameScene extends Phaser.Scene {
 
     this.centerTitleText = this.add.text(0, -14, 'STAGE 1', {
       fontFamily: 'monospace',
-      fontSize: '24px',
+      fontSize: '26px',
       color: '#f59e0b',
       fontStyle: 'bold',
     }).setOrigin(0.5);
     this.centerOverlayContainer.add(this.centerTitleText);
 
-    this.centerSubtitleText = this.add.text(0, 18, 'READY! FLOOZ FLOWS IN 10s', {
+    this.centerSubtitleText = this.add.text(0, 18, 'GET READY!', {
       fontFamily: 'monospace',
-      fontSize: '15px',
+      fontSize: '16px',
       color: '#22c55e',
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -193,44 +193,46 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private createSidebarQueue(): void {
-    const sidebarBg = this.add.rectangle(SIDEBAR_X + 50, SIDEBAR_Y + 180, 106, 380, 0x070b14);
+    // Left Sidebar container (125 x 448)
+    const sidebarBg = this.add.rectangle(SIDEBAR_X + 62.5, SIDEBAR_Y + 224, 125, 448, 0x070b14);
     sidebarBg.setStrokeStyle(1, 0x1e293b);
 
-    this.add.text(SIDEBAR_X + 50, SIDEBAR_Y - 5, 'NEXT', {
+    this.add.text(SIDEBAR_X + 62.5, SIDEBAR_Y + 16, 'NEXT', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#94a3b8',
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    // Active Pipe Highlight Frame
+    // Active Pipe Highlight Frame around slot 0 (no ACTIVE text)
     this.queueHighlight = this.add.graphics();
-    this.queueHighlight.lineStyle(2, 0x22c55e, 1);
-    this.queueHighlight.strokeRoundedRect(SIDEBAR_X + 15, SIDEBAR_Y + 10, 70, 70, 6);
-
-    this.add.text(SIDEBAR_X + 50, SIDEBAR_Y + 84, 'ACTIVE', {
-      fontFamily: 'monospace',
-      fontSize: '10px',
-      color: '#22c55e',
-      fontStyle: 'bold',
-    }).setOrigin(0.5);
+    this.queueHighlight.lineStyle(2.5, 0x22c55e, 1);
+    this.queueHighlight.strokeRoundedRect(SIDEBAR_X + 22, SIDEBAR_Y + 34, 81, 81, 8);
 
     // 5 Queue Slots
     for (let i = 0; i < 5; i++) {
-      const y = SIDEBAR_Y + 45 + i * 58 + (i > 0 ? 15 : 0);
-      const sprite = this.add.sprite(SIDEBAR_X + 50, y, 'pipemania:pipe_horizontal');
-      sprite.setDisplaySize(48, 48);
+      let y = 0;
+      let size = 52;
+      if (i === 0) {
+        y = SIDEBAR_Y + 74.5;
+        size = 62;
+      } else {
+        y = SIDEBAR_Y + 155 + (i - 1) * 60;
+        size = 50;
+      }
+      const sprite = this.add.sprite(SIDEBAR_X + 62.5, y, 'pipemania:pipe_horizontal');
+      sprite.setDisplaySize(size, size);
       this.queueSprites.push(sprite);
     }
 
     // Fast Forward Button
-    this.ffButtonBg = this.add.rectangle(SIDEBAR_X + 50, SIDEBAR_Y + 345, 96, 32, 0x1e293b);
+    this.ffButtonBg = this.add.rectangle(SIDEBAR_X + 62.5, SIDEBAR_Y + 412, 110, 36, 0x1e293b);
     this.ffButtonBg.setStrokeStyle(1, 0x38bdf8);
     this.ffButtonBg.setInteractive({ useHandCursor: true });
 
-    this.ffButtonText = this.add.text(SIDEBAR_X + 50, SIDEBAR_Y + 345, '>> FAST [F]', {
+    this.ffButtonText = this.add.text(SIDEBAR_X + 62.5, SIDEBAR_Y + 412, '>> FAST [F]', {
       fontFamily: 'monospace',
-      fontSize: '12px',
+      fontSize: '13px',
       color: '#38bdf8',
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -273,7 +275,7 @@ export class MainGameScene extends Phaser.Scene {
         rowSprites.push(sprite);
 
         // Gold bolt indicator for preset pipes
-        const bolt = this.add.sprite(x - TILE_SIZE / 2 + 6, y - TILE_SIZE / 2 + 6, 'pipemania:preset_bolt');
+        const bolt = this.add.sprite(x - TILE_SIZE / 2 + 7, y - TILE_SIZE / 2 + 7, 'pipemania:preset_bolt');
         bolt.setVisible(false);
         rowBolts.push(bolt);
       }
@@ -546,19 +548,19 @@ export class MainGameScene extends Phaser.Scene {
 
       // Static full ready bar during intro fanfare
       this.countdownBar.fillStyle(0x1e293b, 1);
-      this.countdownBar.fillRoundedRect(260, 38, 200, 6, 3);
+      this.countdownBar.fillRoundedRect(290, 48, 260, 6, 3);
       this.countdownBar.fillStyle(0x22c55e, 1);
-      this.countdownBar.fillRoundedRect(260, 38, 200, 6, 3);
+      this.countdownBar.fillRoundedRect(290, 48, 260, 6, 3);
     } else if (state === PlayState.READY_COUNTDOWN) {
       this.hudCenterStatsText.setText(`PIPES: 0 / ${targetLength}  │  TIME: ${remaining.toFixed(1)}s`);
       this.hudCenterStatsText.setColor('#38bdf8');
 
-      // Countdown Bar (200px width at x=260, y=38)
+      // Countdown Bar (260px width at x=290, y=48)
       const pct = Math.max(0, Math.min(1.0, remaining / totalDelay));
       this.countdownBar.fillStyle(0x1e293b, 1);
-      this.countdownBar.fillRoundedRect(260, 38, 200, 6, 3);
+      this.countdownBar.fillRoundedRect(290, 48, 260, 6, 3);
       this.countdownBar.fillStyle(0x22c55e, 1);
-      this.countdownBar.fillRoundedRect(260, 38, 200 * pct, 6, 3);
+      this.countdownBar.fillRoundedRect(290, 48, 260 * pct, 6, 3);
     } else {
       const isFF = this.gameState.isFastForwarding();
       this.hudCenterStatsText.setText(
@@ -569,9 +571,9 @@ export class MainGameScene extends Phaser.Scene {
       // Flooded Pipe Target Bar
       const goalPct = Math.max(0, Math.min(1.0, floodedCount / targetLength));
       this.countdownBar.fillStyle(0x1e293b, 1);
-      this.countdownBar.fillRoundedRect(260, 38, 200, 6, 3);
+      this.countdownBar.fillRoundedRect(290, 48, 260, 6, 3);
       this.countdownBar.fillStyle(floodedCount >= targetLength ? 0xfacc15 : 0x0284c7, 1);
-      this.countdownBar.fillRoundedRect(260, 38, 200 * goalPct, 6, 3);
+      this.countdownBar.fillRoundedRect(290, 48, 260 * goalPct, 6, 3);
     }
 
     // Update Wrenches
@@ -594,11 +596,11 @@ export class MainGameScene extends Phaser.Scene {
       // 1.5s Opening Fanfare phase - prominent Stage banner
       this.centerOverlayContainer.setVisible(true);
 
-      // Translucent Dark Cyber Glass Box (320x88)
+      // Translucent Dark Cyber Glass Box (340x96)
       this.centerOverlayBg.fillStyle(0x070b14, 0.92);
-      this.centerOverlayBg.fillRoundedRect(-160, -44, 320, 88, 12);
+      this.centerOverlayBg.fillRoundedRect(-170, -48, 340, 96, 12);
       this.centerOverlayBg.lineStyle(2, 0x38bdf8, 1);
-      this.centerOverlayBg.strokeRoundedRect(-160, -44, 320, 88, 12);
+      this.centerOverlayBg.strokeRoundedRect(-170, -48, 340, 96, 12);
 
       this.centerTitleText.setText(`STAGE ${level}`);
       this.centerTitleText.setColor('#f59e0b');
@@ -609,9 +611,9 @@ export class MainGameScene extends Phaser.Scene {
       this.centerOverlayContainer.setVisible(true);
 
       this.centerOverlayBg.fillStyle(0x070b14, 0.92);
-      this.centerOverlayBg.fillRoundedRect(-180, -52, 360, 104, 12);
+      this.centerOverlayBg.fillRoundedRect(-190, -56, 380, 112, 12);
       this.centerOverlayBg.lineStyle(2.5, 0xfacc15, 1);
-      this.centerOverlayBg.strokeRoundedRect(-180, -52, 360, 104, 12);
+      this.centerOverlayBg.strokeRoundedRect(-190, -56, 380, 112, 12);
 
       this.centerTitleText.setText('★ LEVEL COMPLETE! ★');
       this.centerTitleText.setColor('#facc15');
@@ -622,9 +624,9 @@ export class MainGameScene extends Phaser.Scene {
       this.centerOverlayContainer.setVisible(true);
 
       this.centerOverlayBg.fillStyle(0x070b14, 0.92);
-      this.centerOverlayBg.fillRoundedRect(-180, -52, 360, 104, 12);
+      this.centerOverlayBg.fillRoundedRect(-190, -56, 380, 112, 12);
       this.centerOverlayBg.lineStyle(2.5, 0xef4444, 1);
-      this.centerOverlayBg.strokeRoundedRect(-180, -52, 360, 104, 12);
+      this.centerOverlayBg.strokeRoundedRect(-190, -56, 380, 112, 12);
 
       const reason = this.gameState.getFailureReason();
       this.centerTitleText.setText(reason === 'UNDERFLOW' ? '✖ UNDERFLOW! ✖' : '✖ SPILL! BURST PIPE ✖');
@@ -636,9 +638,9 @@ export class MainGameScene extends Phaser.Scene {
       this.centerOverlayContainer.setVisible(true);
 
       this.centerOverlayBg.fillStyle(0x070b14, 0.95);
-      this.centerOverlayBg.fillRoundedRect(-180, -52, 360, 104, 12);
+      this.centerOverlayBg.fillRoundedRect(-190, -56, 380, 112, 12);
       this.centerOverlayBg.lineStyle(3, 0xef4444, 1);
-      this.centerOverlayBg.strokeRoundedRect(-180, -52, 360, 104, 12);
+      this.centerOverlayBg.strokeRoundedRect(-190, -56, 380, 112, 12);
 
       this.centerTitleText.setText('GAME OVER');
       this.centerTitleText.setColor('#ef4444');
@@ -660,7 +662,7 @@ export class MainGameScene extends Phaser.Scene {
 
     const FLUID_COLOR = 0x22c55e; // Neon green
     const FLUID_CORE = 0x86efac; // Glowing core highlight
-    const PIPE_INSET = (TILE_SIZE - 22) / 2; // 17
+    const PIPE_INSET = (TILE_SIZE - 28) / 2; // 18
 
     for (let r = 0; r < GRID_ROWS; r++) {
       for (let c = 0; c < GRID_COLS; c++) {
@@ -686,11 +688,11 @@ export class MainGameScene extends Phaser.Scene {
     inset: number
   ): void {
     const gfx = this.liquidGraphics;
-    const pipeWidth = 22;
+    const pipeWidth = 28;
 
     if (cell.type === PipeType.START) {
       gfx.fillStyle(color, 0.9);
-      gfx.fillCircle(bx + TILE_SIZE / 2, by + TILE_SIZE / 2, 14);
+      gfx.fillCircle(bx + TILE_SIZE / 2, by + TILE_SIZE / 2, 16);
       return;
     }
 
@@ -725,11 +727,11 @@ export class MainGameScene extends Phaser.Scene {
       gfx.fillRect(startX, by + inset + 8, fillW, pipeWidth - 16);
 
       // Expansion glass tank chamber filling smoothly
-      const tankH = 34 * progress;
+      const tankH = 38 * progress;
       gfx.fillStyle(color, 0.85);
-      gfx.fillRect(bx + 11, by + 11 + (34 - tankH), 34, tankH);
+      gfx.fillRect(bx + 13, by + 13 + (38 - tankH), 38, tankH);
       gfx.fillStyle(coreColor, 1);
-      gfx.fillRect(bx + 14, by + 11 + (34 - tankH), 28, 2);
+      gfx.fillRect(bx + 16, by + 13 + (38 - tankH), 32, 2);
     } else if (cell.type === PipeType.RESERVOIR_VERTICAL) {
       // Vertical reservoir pipe flow + tank chamber fill
       const movingDown = cell.entryDir === Direction.DOWN;
@@ -743,11 +745,11 @@ export class MainGameScene extends Phaser.Scene {
       gfx.fillRect(bx + inset + 8, startY, pipeWidth - 16, fillH);
 
       // Expansion glass tank chamber filling smoothly
-      const tankH = 36 * progress;
+      const tankH = 40 * progress;
       gfx.fillStyle(color, 0.85);
-      gfx.fillRect(bx + 12, by + 10 + (36 - tankH), 32, tankH);
+      gfx.fillRect(bx + 14, by + 12 + (40 - tankH), 36, tankH);
       gfx.fillStyle(coreColor, 1);
-      gfx.fillRect(bx + 15, by + 10 + (36 - tankH), 26, 2);
+      gfx.fillRect(bx + 17, by + 12 + (40 - tankH), 30, 2);
     } else if (cell.type === PipeType.CROSS) {
       // Cross pipe dual axes with correct direction-aware fill
       // 1. Horizontal Channel
@@ -859,13 +861,13 @@ export class MainGameScene extends Phaser.Scene {
     const anticlockwise = endAngle < startAngle;
 
     // Green fluid stream
-    gfx.lineStyle(16, color, 0.95);
+    gfx.lineStyle(18, color, 0.95);
     gfx.beginPath();
     gfx.arc(cx, cy, R_mid, startAngle, currentAngle, anticlockwise);
     gfx.strokePath();
 
     // Bright glowing core
-    gfx.lineStyle(6, coreColor, 1);
+    gfx.lineStyle(7, coreColor, 1);
     gfx.beginPath();
     gfx.arc(cx, cy, R_mid, startAngle, currentAngle, anticlockwise);
     gfx.strokePath();
