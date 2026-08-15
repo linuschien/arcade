@@ -32,11 +32,27 @@ describe('PipeManiaGameState Unit Tests', () => {
     // Artificially give score
     (gameState as any).score = 200;
 
-    gameState.placeActivePipe(0, 0);
+    let targetCol = 0;
+    let targetRow = 0;
+    const grid = gameState.getGrid();
+    for (let r = 0; r < 7; r++) {
+      for (let c = 0; c < 10; c++) {
+        if (grid.getCell(c, r)?.type === PipeType.EMPTY) {
+          targetCol = c;
+          targetRow = r;
+          break;
+        }
+      }
+    }
+
+    const firstPlace = gameState.placeActivePipe(targetCol, targetRow);
+    expect(firstPlace.success).toBe(true);
     expect(gameState.getScore()).toBe(200);
 
     // Replace unflooded pipe
-    gameState.placeActivePipe(0, 0);
+    const secondPlace = gameState.placeActivePipe(targetCol, targetRow);
+    expect(secondPlace.success).toBe(true);
+    expect(secondPlace.isReplacement).toBe(true);
     expect(gameState.getScore()).toBe(150);
   });
 

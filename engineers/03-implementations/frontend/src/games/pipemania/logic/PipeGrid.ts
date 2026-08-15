@@ -161,50 +161,88 @@ export class PipeGrid {
 
   /**
    * Position START and END ports based on Manhattan distance and orientation rules.
+   * In FACING mode (Level 1~8), Start and End are positioned to directly face each other across the board.
    */
   private setupStartAndEnd(config: LevelConfig, rng: () => number): void {
     const targetDist = config.manhattanDistance;
 
-    // Pick random start position across the board
-    const startCol = Math.floor(rng() * (GRID_COLS - 2)) + 1; // 1 to 8
-    const startRow = Math.floor(rng() * (GRID_ROWS - 2)) + 1; // 1 to 5
+    // 1. Pick Start position & outflow direction
+    let startCol = 1;
+    let startRow = 3;
+    let startDir = Direction.RIGHT;
 
-    // Choose Start Outflow direction that points into the board
-    const validStartDirs: Direction[] = [];
-    if (startCol + 1 < GRID_COLS) validStartDirs.push(Direction.RIGHT);
-    if (startRow + 1 < GRID_ROWS) validStartDirs.push(Direction.DOWN);
-    if (startRow - 1 >= 0) validStartDirs.push(Direction.UP);
-    if (startCol - 1 >= 0) validStartDirs.push(Direction.LEFT);
+    if (config.endOrientationMode === 'FACING') {
+      // Pick random boundary side for Start: Left, Top, Right, or Bottom
+      const sides = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP];
+      startDir = sides[Math.floor(rng() * sides.length)];
 
-    const startDir = validStartDirs[Math.floor(rng() * validStartDirs.length)] || Direction.RIGHT;
+      if (startDir === Direction.RIGHT) {
+        startCol = Math.floor(rng() * 2) + 1; // col 1 to 2
+        startRow = Math.floor(rng() * (GRID_ROWS - 2)) + 1; // row 1 to 5
+      } else if (startDir === Direction.LEFT) {
+        startCol = GRID_COLS - 2 - Math.floor(rng() * 2); // col 7 to 8
+        startRow = Math.floor(rng() * (GRID_ROWS - 2)) + 1;
+      } else if (startDir === Direction.DOWN) {
+        startCol = Math.floor(rng() * (GRID_COLS - 2)) + 1;
+        startRow = Math.floor(rng() * 2) + 1; // row 1 to 2
+      } else {
+        startCol = Math.floor(rng() * (GRID_COLS - 2)) + 1;
+        startRow = GRID_ROWS - 2 - Math.floor(rng() * 2); // row 4 to 5
+      }
+    } else {
+      startCol = Math.floor(rng() * (GRID_COLS - 2)) + 1;
+      startRow = Math.floor(rng() * (GRID_ROWS - 2)) + 1;
+
+      const validStartDirs: Direction[] = [];
+      if (startCol + 1 < GRID_COLS) validStartDirs.push(Direction.RIGHT);
+      if (startRow + 1 < GRID_ROWS) validStartDirs.push(Direction.DOWN);
+      if (startRow - 1 >= 0) validStartDirs.push(Direction.UP);
+      if (startCol - 1 >= 0) validStartDirs.push(Direction.LEFT);
+      startDir = validStartDirs[Math.floor(rng() * validStartDirs.length)] || Direction.RIGHT;
+    }
 
     this.startCoord = { col: startCol, row: startRow };
     const startCell = this.cells[startRow][startCol];
     startCell.type = PipeType.START;
     startCell.startOutflowDir = startDir;
 
-    // Find candidate End positions matching target Manhattan distance approximately
+    // 2. Pick End Position based on Orientation Mode
     const candidates: Array<{ col: number; row: number; dist: number }> = [];
+
     for (let r = 0; r < GRID_ROWS; r++) {
       for (let c = 0; c < GRID_COLS; c++) {
         if (c === startCol && r === startRow) continue;
         const d = Math.abs(c - startCol) + Math.abs(r - startRow);
-        if (Math.abs(d - targetDist) <= 2) {
-          candidates.push({ col: c, row: r, dist: d });
+        if (Math.abs(d - targetDist) > 2) continue;
+
+        if (config.endOrientationMode === 'FACING') {
+          // In FACING mode, candidate must be strictly in the forward direction of startDir
+          if (startDir === Direction.RIGHT && c <= startCol) continue;
+          if (startDir === Direction.LEFT && c >= startCol) continue;
+          if (startDir === Direction.DOWN && r <= startRow) continue;
+          if (startDir === Direction.UP && r >= startRow) continue;
         }
+
+        candidates.push({ col: c, row: r, dist: d });
       }
     }
 
-    // Select candidate End position with fallback to furthest cell if none in narrow range
     let chosenEnd: { col: number; row: number; dist: number };
     if (candidates.length > 0) {
       chosenEnd = candidates[Math.floor(rng() * candidates.length)];
     } else {
+      // Fallback: search best candidate
       let maxD = -1;
       let best = { col: GRID_COLS - 1, row: GRID_ROWS - 1, dist: 0 };
       for (let r = 0; r < GRID_ROWS; r++) {
         for (let c = 0; c < GRID_COLS; c++) {
           if (c === startCol && r === startRow) continue;
+          if (config.endOrientationMode === 'FACING') {
+            if (startDir === Direction.RIGHT && c <= startCol) continue;
+            if (startDir === Direction.LEFT && c >= startCol) continue;
+            if (startDir === Direction.DOWN && r <= startRow) continue;
+            if (startDir === Direction.UP && r >= startRow) continue;
+          }
           const d = Math.abs(c - startCol) + Math.abs(r - startRow);
           if (d > maxD) {
             maxD = d;
@@ -219,25 +257,21 @@ export class PipeGrid {
     const endCell = this.cells[this.endCoord.row][this.endCoord.col];
     endCell.type = PipeType.END;
 
-    // Determine End Inflow direction purely from config.endOrientationMode
+    // 3. Determine End Inflow Direction
     let endInDir: Direction = Direction.RIGHT;
 
     if (config.endOrientationMode === 'FACING') {
-      // Facing start: Water flows towards End along the primary axis of separation
-      if (Math.abs(this.endCoord.col - startCol) >= Math.abs(this.endCoord.row - startRow)) {
-        endInDir = this.endCoord.col > startCol ? Direction.RIGHT : Direction.LEFT;
-      } else {
-        endInDir = this.endCoord.row > startRow ? Direction.DOWN : Direction.UP;
-      }
+      // Facing: End directly accepts stream moving in startDir (inflow opening faces start)
+      endInDir = startDir;
     } else if (config.endOrientationMode === 'ORTHOGONAL') {
-      // 90° Turn from Start outflow
+      // 90° Turn
       if (startDir === Direction.RIGHT || startDir === Direction.LEFT) {
         endInDir = rng() < 0.5 ? Direction.DOWN : Direction.UP;
       } else {
         endInDir = rng() < 0.5 ? Direction.RIGHT : Direction.LEFT;
       }
     } else {
-      // AWAY from start: Requires 180° loop around End
+      // AWAY: 180° loop
       endInDir = OPPOSITE_DIRECTIONS[startDir];
     }
 
