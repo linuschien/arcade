@@ -13,6 +13,9 @@ describe('PipeManiaLevelSpecs Unit Tests', () => {
     expect(config.presetPipeCount).toBe(0);
     expect(config.manhattanDistance).toBe(12);
     expect(config.endOrientationMode).toBe('FACING');
+    expect(config.dropRates.pOneWay).toBe(0);
+    expect(config.dropRates.pReservoir).toBeCloseTo(0.15, 4);
+    expect(config.dropRates.pStandard).toBeCloseTo(0.85, 4);
   });
 
   it('should match sample specifications for Level 5', () => {
@@ -36,6 +39,7 @@ describe('PipeManiaLevelSpecs Unit Tests', () => {
     expect(config.presetPipeCount).toBe(1); // floor(0.18*6) = 1
     expect(config.manhattanDistance).toBe(9); // floor(12 - 0.28*8) = 9
     expect(config.endOrientationMode).toBe('ORTHOGONAL');
+    expect(config.dropRates.pOneWay).toBeCloseTo(0.0072 * 1, 4);
   });
 
   it('should match sample specifications for Level 21', () => {
@@ -53,11 +57,14 @@ describe('PipeManiaLevelSpecs Unit Tests', () => {
     expect(config.delaySeconds).toBe(1.25);
     expect(config.flowIntervalMs).toBe(520);
     expect(config.reservoirIntervalMs).toBe(2080);
-    expect(config.targetLength).toBe(39); // floor(10 + 0.85*35) = 39
+    expect(config.targetLength).toBe(39);
     expect(config.obstacleCount).toBe(12);
     expect(config.presetPipeCount).toBe(5);
     expect(config.manhattanDistance).toBe(2);
     expect(config.endOrientationMode).toBe('AWAY');
+    expect(config.dropRates.pOneWay).toBeCloseTo(0.20, 2);
+    expect(config.dropRates.pReservoir).toBeCloseTo(0.05, 2);
+    expect(config.dropRates.pStandard).toBeCloseTo(0.75, 2);
   });
 
   it('should calculate Endless Loop specifications for Level > 36', () => {
@@ -74,7 +81,7 @@ describe('PipeManiaLevelSpecs Unit Tests', () => {
     expect(configL72.flowIntervalMs).toBe(468); // 520 * 0.9 = 468
 
     const configL180 = PipeManiaLevelSpecs.getLevelConfig(180); // BaseLevel 36 in Loop 4
-    expect(configL180.delaySeconds).toBe(1.0); // 1.25 * 0.9^4 = 0.82 -> Clamped to 1.0s floor
+    expect(configL180.delaySeconds).toBe(1.0); // Clamped to 1.0s floor
     expect(configL180.flowIntervalMs).toBeGreaterThanOrEqual(350); // Clamped to 350ms floor
   });
 });

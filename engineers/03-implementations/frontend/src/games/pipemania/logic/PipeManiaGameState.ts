@@ -16,7 +16,7 @@ import {
   PipeType,
   PIPE_PORT_CONFIGS,
 } from './PipeTypes';
-import { PipeRNG } from './PipeRNG';
+import { PipeRNG, PipeBagGenerator } from './PipeRNG';
 import { PipeGrid, PlaceResult } from './PipeGrid';
 import { PipeManiaLevelSpecs, LevelConfig } from './PipeManiaLevelSpecs';
 
@@ -81,6 +81,7 @@ export class PipeManiaGameState {
   private totalFlowDurationSec: number = 0;
 
   private rng: () => number;
+  private bagGenerator!: PipeBagGenerator;
 
   constructor(initialLevel: number = 1, customRng: () => number = Math.random) {
     this.rng = customRng;
@@ -107,11 +108,9 @@ export class PipeManiaGameState {
     this.currentHeadDir = Direction.NONE;
     this.currentCellFlowElapsedMs = 0;
 
-    // Fill 5-slot queue
-    this.queue = [];
-    for (let i = 0; i < QUEUE_SIZE; i++) {
-      this.queue.push(PipeRNG.getRandomPipe(this.currentLevel, this.rng));
-    }
+    // Initialize 7-Bag Generator and fill 5-slot queue
+    this.bagGenerator = new PipeBagGenerator(this.currentLevel, this.rng);
+    this.queue = this.bagGenerator.drawN(QUEUE_SIZE);
   }
 
   public getGrid(): PipeGrid {
@@ -194,9 +193,9 @@ export class PipeManiaGameState {
         this.score = Math.max(0, this.score - 50);
       }
 
-      // Pop and Shift Queue
+      // Pop and Shift Queue from 7-Bag Deck
       this.queue.shift();
-      this.queue.push(PipeRNG.getRandomPipe(this.currentLevel, this.rng));
+      this.queue.push(this.bagGenerator.draw());
     }
 
     return result;

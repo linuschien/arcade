@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PipeRNG } from '../logic/PipeRNG';
+import { PipeRNG, PipeBagGenerator } from '../logic/PipeRNG';
 import { PipeType, STANDARD_PIPES, ONE_WAY_PIPES, RESERVOIR_PIPES } from '../logic/PipeTypes';
 
 describe('PipeRNG Unit Tests', () => {
@@ -43,5 +43,41 @@ describe('PipeRNG Unit Tests', () => {
     const oneWayRoll = rates36.pStandard + rates36.pReservoir + 0.01;
     const pipeOneWay = PipeRNG.getRandomPipe(36, () => oneWayRoll);
     expect(ONE_WAY_PIPES).toContain(pipeOneWay);
+  });
+
+  describe('PipeBagGenerator 7-Bag Unit Tests', () => {
+    it('should generate continuous stream of pipes with 7-bag cycle', () => {
+      const generator = new PipeBagGenerator(1);
+      const pipes = generator.drawN(14); // Draw 2 bags (14 pipes)
+      expect(pipes.length).toBe(14);
+
+      // Check that standard pipes and reservoirs are drawn
+      const standardCount = pipes.filter((p) => STANDARD_PIPES.includes(p)).length;
+      const reservoirCount = pipes.filter((p) => RESERVOIR_PIPES.includes(p)).length;
+      expect(standardCount).toBeGreaterThanOrEqual(10);
+      expect(reservoirCount).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should accurately accumulate fractional replacements over multiple bags', () => {
+      // At Level 1, pReservoir = 0.15, per 7-bag expected = 7 * 0.15 = 1.05
+      // Over 20 bags (140 pipes), expected reservoir count is 21 pipes = 15.0%
+      const generator = new PipeBagGenerator(1);
+      const pipes = generator.drawN(140);
+      const reservoirCount = pipes.filter((p) => RESERVOIR_PIPES.includes(p)).length;
+
+      expect(reservoirCount).toBe(21); // Exactly 21 out of 140 = 15.0%
+    });
+
+    it('should include one-way pipes on Level 36', () => {
+      // At Level 36, pOneWay = 0.20 (20%), pReservoir = 0.05 (5%)
+      // Over 100 bags (700 pipes), expected one-way = 700 * 0.20 = 140 pipes
+      const generator = new PipeBagGenerator(36);
+      const pipes = generator.drawN(700);
+      const oneWayCount = pipes.filter((p) => ONE_WAY_PIPES.includes(p)).length;
+      const resCount = pipes.filter((p) => RESERVOIR_PIPES.includes(p)).length;
+
+      expect(oneWayCount).toBe(140); // Exactly 140 / 700 = 20%
+      expect(resCount).toBe(35); // Exactly 35 / 700 = 5%
+    });
   });
 });

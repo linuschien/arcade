@@ -4,6 +4,15 @@
  * 100% pure math formulas eliminating if-else branches, supporting Levels 1~36 and Endless Mode.
  */
 
+export interface DropRates {
+  pOneWay: number; // 0.0 to 0.20
+  pReservoir: number; // 0.15 down to 0.05
+  pStandard: number; // 0.85 down to 0.75
+  standardPerType: number; // pStandard / 7
+  oneWayPerType: number; // pOneWay / 4
+  reservoirPerType: number; // pReservoir / 2
+}
+
 export interface LevelConfig {
   level: number;
   loopRound: number; // 0 for 1-36, 1 for 37-72, etc.
@@ -16,6 +25,7 @@ export interface LevelConfig {
   presetPipeCount: number; // N_fixed: Number of pre-placed golden pipes
   manhattanDistance: number; // D_manhattan: Start to End grid distance
   endOrientationMode: 'FACING' | 'ORTHOGONAL' | 'AWAY';
+  dropRates: DropRates; // Unified linear drop rates for RNG and Presets
 }
 
 export class PipeManiaLevelSpecs {
@@ -42,6 +52,20 @@ export class PipeManiaLevelSpecs {
         endOrientationMode = 'ORTHOGONAL';
       }
 
+      // Linear Drop Rates
+      const pOneWay = Math.min(0.20, Math.max(0.0, 0.0072 * (L - 8)));
+      const pReservoir = Math.max(0.05, 0.15 - 0.0030 * (L - 1));
+      const pStandard = Math.max(0.0, 1.0 - pOneWay - pReservoir);
+
+      const dropRates: DropRates = {
+        pOneWay,
+        pReservoir,
+        pStandard,
+        standardPerType: pStandard / 7,
+        oneWayPerType: pOneWay / 4,
+        reservoirPerType: pReservoir / 2,
+      };
+
       return {
         level: L,
         loopRound: 0,
@@ -54,6 +78,7 @@ export class PipeManiaLevelSpecs {
         presetPipeCount,
         manhattanDistance,
         endOrientationMode,
+        dropRates,
       };
     } else {
       // Endless Mode (L > 36)
@@ -61,7 +86,7 @@ export class PipeManiaLevelSpecs {
       const baseLevel = ((L - 1) % 36) + 1;
       const decayFactor = Math.pow(0.9, loopRound);
 
-      // Delay floor is 1.0s
+      // Delay floor is 1.0s in endless mode
       const baseDelay = 10.0 - 0.25 * (baseLevel - 1);
       const delaySeconds = Math.max(1.0, baseDelay * decayFactor);
 
@@ -83,6 +108,20 @@ export class PipeManiaLevelSpecs {
         endOrientationMode = 'ORTHOGONAL';
       }
 
+      // Linear Drop Rates based on baseLevel
+      const pOneWay = Math.min(0.20, Math.max(0.0, 0.0072 * (baseLevel - 8)));
+      const pReservoir = Math.max(0.05, 0.15 - 0.0030 * (baseLevel - 1));
+      const pStandard = Math.max(0.0, 1.0 - pOneWay - pReservoir);
+
+      const dropRates: DropRates = {
+        pOneWay,
+        pReservoir,
+        pStandard,
+        standardPerType: pStandard / 7,
+        oneWayPerType: pOneWay / 4,
+        reservoirPerType: pReservoir / 2,
+      };
+
       return {
         level: L,
         loopRound,
@@ -95,6 +134,7 @@ export class PipeManiaLevelSpecs {
         presetPipeCount,
         manhattanDistance,
         endOrientationMode,
+        dropRates,
       };
     }
   }

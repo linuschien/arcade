@@ -1,6 +1,6 @@
 /**
  * PipeRNG.ts
- * Pure Linear Unified Weighted Drop Rates generator for Pipe Mania.
+ * Pure Linear Unified Weighted Drop Rates generator & 7-Bag Generator for Pipe Mania.
  * Shared 100% by FIFO Queue and Preset Fixed Pipe generation.
  */
 
@@ -10,45 +10,19 @@ import {
   ONE_WAY_PIPES,
   RESERVOIR_PIPES,
 } from './PipeTypes';
-
-export interface DropRateBreakdown {
-  pOneWay: number; // 0.0 to 0.20
-  pReservoir: number; // 0.15 down to 0.05
-  pStandard: number; // 0.85 down to 0.75
-  standardPerType: number; // pStandard / 7
-  oneWayPerType: number; // pOneWay / 4
-  reservoirPerType: number; // pReservoir / 2
-}
+import { PipeManiaLevelSpecs, DropRates } from './PipeManiaLevelSpecs';
 
 export class PipeRNG {
   /**
-   * Calculate exact linear drop rates for a given level L.
-   * Eliminates branches, pure math formulas with min/max clamps.
+   * Returns the exact linear drop rates computed for level L.
    */
-  public static getDropRates(level: number): DropRateBreakdown {
-    const L = Math.max(1, level);
-
-    // One-Way: L <= 8 is 0%, L > 8 increases by 0.72% per level up to 20% at L=36+
-    const pOneWay = Math.min(0.20, Math.max(0.0, 0.0072 * (L - 8)));
-
-    // Reservoir: Starts at 15% at L=1, decreases by 0.30% per level down to min 5%
-    const pReservoir = Math.max(0.05, 0.15 - 0.0030 * (L - 1));
-
-    // Standard: Remaining probability distributed evenly across 7 standard pipes
-    const pStandard = Math.max(0.0, 1.0 - pOneWay - pReservoir);
-
-    return {
-      pOneWay,
-      pReservoir,
-      pStandard,
-      standardPerType: pStandard / STANDARD_PIPES.length,
-      oneWayPerType: ONE_WAY_PIPES.length > 0 ? pOneWay / ONE_WAY_PIPES.length : 0,
-      reservoirPerType: RESERVOIR_PIPES.length > 0 ? pReservoir / RESERVOIR_PIPES.length : 0,
-    };
+  public static getDropRates(level: number): DropRates {
+    return PipeManiaLevelSpecs.getLevelConfig(level).dropRates;
   }
 
   /**
-   * Generate a random placeable pipe based on the unified linear drop rates.
+   * Generate a single random placeable pipe based on the unified linear drop rates.
+   * Used for single independent rolls (e.g. preset fixed pipes).
    * Accepts an optional deterministic PRNG fn for unit testing.
    */
   public static getRandomPipe(level: number, rng: () => number = Math.random): PipeType {
@@ -83,5 +57,99 @@ export class PipeRNG {
 
     // Fallback to horizontal
     return PipeType.HORIZONTAL;
+  }
+}
+
+/**
+ * PipeBagGenerator
+ * 7-Bag Generator with Fractional Accumulator and Uniform Slot Replacement.
+ * Ensures:
+ * 1. Zero starvation (all standard pipe directions appear every 7-card cycle).
+ * 2. Exactly matches linear drop rates over time.
+ * 3. Continuous deck feed for the 5-slot queue.
+ */
+export class PipeBagGenerator {
+  private level: number;
+  private rng: () => number;
+  private deck: PipeType[] = [];
+  private accReservoir: number = 0;
+  private accOneWay: number = 0;
+
+  constructor(level: number, rng: () => number = Math.random) {
+    this.level = level;
+    this.rng = rng;
+    this.refillBag();
+  }
+
+  public draw(): PipeType {
+    if (this.deck.length < 5) {
+      this.refillBag();
+    }
+    return this.deck.shift() || PipeType.HORIZONTAL;
+  }
+
+  public drawN(count: number): PipeType[] {
+    const result: PipeType[] = [];
+    for (let i = 0; i < count; i++) {
+      result.push(this.draw());
+    }
+    return result;
+  }
+
+  public getDeck(): PipeType[] {
+    return [...this.deck];
+  }
+
+  /**
+   * Refill a 7-Bag with fractional accumulation and uniform slot replacement.
+   */
+  private refillBag(): void {
+    const { pReservoir, pOneWay } = PipeRNG.getDropRates(this.level);
+
+    // 1. Start with the canonical 7 standard pipes
+    const bag: PipeType[] = [...STANDARD_PIPES];
+
+    // 2. Accumulate expected fractional special pipe counts for this 7-bag
+    this.accReservoir += 7 * pReservoir;
+    this.accOneWay += 7 * pOneWay;
+
+    const countReservoir = Math.floor(this.accReservoir);
+    this.accReservoir -= countReservoir;
+
+    const countOneWay = Math.floor(this.accOneWay);
+    this.accOneWay -= countOneWay;
+
+    // 3. Uniform Slot Replacement: pick available slots uniformly at random
+    const availableSlotIndices = [0, 1, 2, 3, 4, 5, 6];
+    this.shuffleArray(availableSlotIndices);
+
+    // Replace for Reservoirs
+    for (let i = 0; i < countReservoir && availableSlotIndices.length > 0; i++) {
+      const slotIndex = availableSlotIndices.pop()!;
+      const resPipe = RESERVOIR_PIPES[Math.floor(this.rng() * RESERVOIR_PIPES.length)];
+      bag[slotIndex] = resPipe;
+    }
+
+    // Replace for One-Ways
+    for (let i = 0; i < countOneWay && availableSlotIndices.length > 0; i++) {
+      const slotIndex = availableSlotIndices.pop()!;
+      const owPipe = ONE_WAY_PIPES[Math.floor(this.rng() * ONE_WAY_PIPES.length)];
+      bag[slotIndex] = owPipe;
+    }
+
+    // 4. Fisher-Yates shuffle the final 7-bag
+    this.shuffleArray(bag);
+
+    // 5. Append to deck
+    this.deck.push(...bag);
+  }
+
+  private shuffleArray<T>(array: T[]): void {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(this.rng() * (i + 1));
+      const temp = array[i];
+      array[i] = array[j];
+      array[j] = temp;
+    }
   }
 }
