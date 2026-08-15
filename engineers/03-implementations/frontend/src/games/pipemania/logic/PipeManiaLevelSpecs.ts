@@ -37,9 +37,9 @@ export class PipeManiaLevelSpecs {
 
     if (L <= 36) {
       // Mainline Levels 1..36
-      const delaySeconds = Math.max(1.0, 10.0 - 0.25 * (L - 1));
-      const flowIntervalMs = Math.max(500, 1500 - 28 * (L - 1));
-      const reservoirIntervalMs = flowIntervalMs * 4.0;
+      const delaySeconds = Math.max(6.0, 20.0 - 0.40 * (L - 1));
+      const flowIntervalMs = Math.max(800, 2500 - 50 * (L - 1));
+      const reservoirIntervalMs = flowIntervalMs * 6.0;
       const targetLength = Math.min(40, Math.floor(10 + 0.85 * (L - 1)));
       const obstacleCount = Math.min(12, Math.floor(0.35 * (L - 1)));
       const presetPipeCount = Math.min(6, Math.max(0, Math.floor(0.18 * (L - 3))));
@@ -86,14 +86,14 @@ export class PipeManiaLevelSpecs {
       const baseLevel = ((L - 1) % 36) + 1;
       const decayFactor = Math.pow(0.9, loopRound);
 
-      // Delay floor is 1.0s in endless mode
-      const baseDelay = 10.0 - 0.25 * (baseLevel - 1);
-      const delaySeconds = Math.max(1.0, baseDelay * decayFactor);
+      // Delay floor is 4.0s in endless mode
+      const baseDelay = Math.max(6.0, 20.0 - 0.40 * (baseLevel - 1));
+      const delaySeconds = Math.max(4.0, baseDelay * decayFactor);
 
-      // Flow speed floor is 350ms in endless mode
-      const baseFlow = 1500 - 28 * (baseLevel - 1);
-      const flowIntervalMs = Math.max(350, Math.round(baseFlow * decayFactor));
-      const reservoirIntervalMs = flowIntervalMs * 4.0;
+      // Flow speed floor is 500ms in endless mode
+      const baseFlow = Math.max(800, 2500 - 50 * (baseLevel - 1));
+      const flowIntervalMs = Math.max(500, Math.round(baseFlow * decayFactor));
+      const reservoirIntervalMs = flowIntervalMs * 6.0;
 
       // Target, Obstacles & Presets scale with baseLevel & cap
       const targetLength = Math.min(40, Math.floor(10 + 0.85 * (baseLevel - 1)));

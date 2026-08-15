@@ -55,10 +55,10 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
   - 4 款無方向性雙向彎管（`╝`, `╚`, `╗`, `╔`），推進耗時為基準 $T_{\text{flow}}$。
   - 1 款立體交叉十字管 (`╬`)：水平與垂直兩路各自獨立直行，液體可先後通過兩軸，禁止轉彎。流經獲得 $+100$ 分。
 - **AC2 (4 One-Way Pipes)**：僅允許指定單一方向進入（`→`, `←`, `↑`, `↓`），反向或側面灌入立即觸發爆管 (Spill Game Over)。
-- **AC3 (2 Reservoir Tank Pipes)**：水流進入水庫直管後，推進填充耗時精確計算為 $T_{\text{reservoir}} = T_{\text{flow}} \times 4.0$（推進時間為普通管的 4 倍，流速降為 $25\%$）。數值區間為 $6000\text{ms} \to 2080\text{ms}$。完全填滿後提供 $+300$ 分高額獎勵，注水期間播放 `SFX_RESERVOIR_FILL`。
+- **AC3 (2 Reservoir Tank Pipes)**：水流進入水庫直管後，推進填充耗時精確計算為 $T_{\text{reservoir}} = T_{\text{flow}} \times 6.0$（推進時間為普通管的 6 倍，流速降為 $16.7\%$）。數值區間為 $15000\text{ms} \to 4800\text{ms}$。完全填滿後提供 $+300$ 分高額獎勵，注水期間播放 `SFX_RESERVOIR_FILL`。
 - **AC4 (Continuous Fill Mask Animation)**：
-  - 普通水管在 $T_{\text{flow}}$ 毫秒內由入口至出口呈現 **$0\% \to 100\%$ 平滑填充遮罩動畫**，伴隨 `SFX_FLOW_BUBBLE` 流水音效。
-  - 水庫水管在 $T_{\text{reservoir}}$ 毫秒內呈現蓄水槽液面由底層緩慢蓄升的平滑注水動畫。
+  - 普通水管在 $T_{\text{flow}}$ 毫秒內由入口至出口呈現 **$0\% \to 100\%$ 平滑連續填充遮罩動畫**，伴隨 `SFX_FLOW_BUBBLE` 流水音效。
+  - 水庫水管在 $T_{\text{reservoir}}$ 毫秒內呈現水體斷面擴展充滿廣口水槽的平滑注水動畫。
 
 ---
 
@@ -124,11 +124,11 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (Delay Time $T_{\text{delay}}$)**：
-  - 公式：$T_{\text{delay}}(L) = \max(1.0, 10.0 - 0.25 \times (L - 1))$ 秒。
-  - 數值區間：$10.00\text{s} \to 1.25\text{s}$。倒數期間播放 `SFX_COUNTDOWN_TICK` 定時脈衝音。
+  - 公式：$T_{\text{delay}}(L) = \max(6.0, 20.0 - 0.40 \times (L - 1))$ 秒。
+  - 數值區間：$20.00\text{s} \to 6.00\text{s}$。倒數期間播放 `SFX_COUNTDOWN_TICK` 定時脈衝音。
 - **AC2 (Flow Speed $T_{\text{flow}}$)**：
-  - 公式：$T_{\text{flow}}(L) = \max(500, 1500 - 28 \times (L - 1))$ 毫秒。
-  - 數值區間：$1500\text{ms} \to 520\text{ms}$（下限封頂 500ms，每秒最多推進 2 格）。
+  - 公式：$T_{\text{flow}}(L) = \max(800, 2500 - 50 \times (L - 1))$ 毫秒。
+  - 數值區間：$2500\text{ms} \to 800\text{ms}$（開局 2.5s，高難度 0.8s）。
 - **AC3 (Target Length $N_{\text{target}}$)**：
   - 公式：$N_{\text{target}}(L) = \min(40, \lfloor 10 + 0.85 \times (L - 1) \rfloor)$ 格。
   - 數值區間：$10 \to 40$ 格（第 36 關封頂 40 格）。
