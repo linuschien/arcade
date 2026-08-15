@@ -353,78 +353,122 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   /**
-   * Procedurally generates all 13 Pipe Textures with 3D cylindrical shading,
+   * Procedurally generates all 13 Pipe Textures with rich vibrant colors,
+   * 3D cylindrical volumetric lighting, polished brass coupling flanges,
    * smooth curved quarter-torus elbows, and high-visibility direction indicators.
    */
   private createHighClarityPipeTextures(tileSize: number, pipeWidth: number, offset: number): void {
-    const BODY_COLOR = 0x243048; // Sleek metallic titanium
-    const BORDER_CYAN = 0x38bdf8; // Glowing cyan edge
-    const INNER_DARK = 0x090d16; // Deep fluid channel
-    const FLANGE_COLOR = 0x64748b; // Metallic pipe flange collars
-
     // 1. Horizontal Pipe (─)
     this.drawAndSaveTexture('pipemania:pipe_horizontal', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
-      // Outer pipe body
-      gfx.fillStyle(BODY_COLOR, 1);
-      gfx.fillRect(0, offset, tileSize, pipeWidth);
-      // Inner fluid lumen groove
-      gfx.fillStyle(INNER_DARK, 1);
-      gfx.fillRect(0, offset + 4, tileSize, pipeWidth - 8);
-      // Specular highlight line along top
-      gfx.fillStyle(0x94a3b8, 0.8);
-      gfx.fillRect(0, offset + 1, tileSize, 2);
-      // Center flow track line
-      gfx.fillStyle(BORDER_CYAN, 0.4);
+
+      // A. Ambient Floor Drop Shadow
+      gfx.fillStyle(0x000000, 0.45);
+      gfx.fillRect(0, offset + 3, tileSize, pipeWidth);
+
+      // B. 3D Cylindrical Metallic Body Layers
+      // 1. Lower Shadow Ridge
+      gfx.fillStyle(0x082f49, 1);
+      gfx.fillRect(0, offset + pipeWidth - 7, tileSize, 7);
+
+      // 2. Midtone Metallic Body
+      gfx.fillStyle(0x0284c7, 1);
+      gfx.fillRect(0, offset + 4, tileSize, pipeWidth - 11);
+
+      // 3. Upper Light Ridge
+      gfx.fillStyle(0x38bdf8, 1);
+      gfx.fillRect(0, offset, tileSize, 6);
+
+      // 4. White Glossy Specular Highlight Line
+      gfx.fillStyle(0xf0fdf4, 0.95);
+      gfx.fillRect(0, offset + 2, tileSize, 2);
+
+      // C. Recessed Fluid Lumen Channel
+      gfx.fillStyle(0x031d38, 0.95);
+      gfx.fillRect(0, offset + 7, tileSize, pipeWidth - 14);
+
+      // Neon Flow Track Guide Rail
+      gfx.fillStyle(0x38bdf8, 0.6);
       gfx.fillRect(0, tileSize / 2 - 1, tileSize, 2);
-      // Border strokes
-      gfx.lineStyle(1.5, BORDER_CYAN, 0.9);
+      gfx.fillStyle(0x86efac, 0.7);
+      gfx.fillCircle(tileSize / 2, tileSize / 2, 2.5);
+
+      // D. Outer Glowing Borders
+      gfx.lineStyle(1.5, 0x0284c7, 0.9);
       gfx.strokeLineShape(new Phaser.Geom.Line(0, offset, tileSize, offset));
+      gfx.lineStyle(1.5, 0x0369a1, 0.9);
       gfx.strokeLineShape(new Phaser.Geom.Line(0, offset + pipeWidth, tileSize, offset + pipeWidth));
-      // End flanges
-      gfx.fillStyle(FLANGE_COLOR, 1);
-      gfx.fillRect(0, offset - 2, 4, pipeWidth + 4);
-      gfx.fillRect(tileSize - 4, offset - 2, 4, pipeWidth + 4);
+
+      // E. Polished Brass / Gold Coupling Flanges on Left & Right
+      this.drawFlange(gfx, 0, offset - 3, 5, pipeWidth + 6, 'vertical');
+      this.drawFlange(gfx, tileSize - 5, offset - 3, 5, pipeWidth + 6, 'vertical');
     });
 
     // 2. Vertical Pipe (│)
     this.drawAndSaveTexture('pipemania:pipe_vertical', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
-      gfx.fillStyle(BODY_COLOR, 1);
-      gfx.fillRect(offset, 0, pipeWidth, tileSize);
-      gfx.fillStyle(INNER_DARK, 1);
-      gfx.fillRect(offset + 4, 0, pipeWidth - 8, tileSize);
-      gfx.fillStyle(0x94a3b8, 0.8);
-      gfx.fillRect(offset + 1, 0, 2, tileSize);
-      gfx.fillStyle(BORDER_CYAN, 0.4);
+
+      // A. Ambient Floor Drop Shadow
+      gfx.fillStyle(0x000000, 0.45);
+      gfx.fillRect(offset + 3, 0, pipeWidth, tileSize);
+
+      // B. 3D Cylindrical Metallic Body Layers
+      // 1. Right Shadow Ridge
+      gfx.fillStyle(0x082f49, 1);
+      gfx.fillRect(offset + pipeWidth - 7, 0, 7, tileSize);
+
+      // 2. Midtone Metallic Body
+      gfx.fillStyle(0x0284c7, 1);
+      gfx.fillRect(offset + 4, 0, pipeWidth - 11, tileSize);
+
+      // 3. Left Light Ridge
+      gfx.fillStyle(0x38bdf8, 1);
+      gfx.fillRect(offset, 0, 6, tileSize);
+
+      // 4. White Glossy Specular Highlight Line
+      gfx.fillStyle(0xf0fdf4, 0.95);
+      gfx.fillRect(offset + 2, 0, 2, tileSize);
+
+      // C. Recessed Fluid Lumen Channel
+      gfx.fillStyle(0x031d38, 0.95);
+      gfx.fillRect(offset + 7, 0, pipeWidth - 14, tileSize);
+
+      // Neon Flow Track Guide Rail
+      gfx.fillStyle(0x38bdf8, 0.6);
       gfx.fillRect(tileSize / 2 - 1, 0, 2, tileSize);
-      gfx.lineStyle(1.5, BORDER_CYAN, 0.9);
+      gfx.fillStyle(0x86efac, 0.7);
+      gfx.fillCircle(tileSize / 2, tileSize / 2, 2.5);
+
+      // D. Outer Glowing Borders
+      gfx.lineStyle(1.5, 0x0284c7, 0.9);
       gfx.strokeLineShape(new Phaser.Geom.Line(offset, 0, offset, tileSize));
+      gfx.lineStyle(1.5, 0x0369a1, 0.9);
       gfx.strokeLineShape(new Phaser.Geom.Line(offset + pipeWidth, 0, offset + pipeWidth, tileSize));
-      gfx.fillStyle(FLANGE_COLOR, 1);
-      gfx.fillRect(offset - 2, 0, pipeWidth + 4, 4);
-      gfx.fillRect(offset - 2, tileSize - 4, pipeWidth + 4, 4);
+
+      // E. Polished Brass / Gold Coupling Flanges on Top & Bottom
+      this.drawFlange(gfx, offset - 3, 0, pipeWidth + 6, 5, 'horizontal');
+      this.drawFlange(gfx, offset - 3, tileSize - 5, pipeWidth + 6, 5, 'horizontal');
     });
 
-    // 3. Corner Top-Right (╝) (Connects TOP and RIGHT with a smooth rounded elbow)
+    // 3. Corner Top-Right (╝) (Connects TOP and RIGHT)
     this.drawAndSaveTexture('pipemania:pipe_corner_tr', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
       this.drawSmoothCornerElbow(gfx, tileSize, pipeWidth, offset, 'TOP_RIGHT');
     });
 
-    // 4. Corner Top-Left (╚) (Connects TOP and LEFT with a smooth rounded elbow)
+    // 4. Corner Top-Left (╚) (Connects TOP and LEFT)
     this.drawAndSaveTexture('pipemania:pipe_corner_tl', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
       this.drawSmoothCornerElbow(gfx, tileSize, pipeWidth, offset, 'TOP_LEFT');
     });
 
-    // 5. Corner Bottom-Right (╗) (Connects BOTTOM and RIGHT with a smooth rounded elbow)
+    // 5. Corner Bottom-Right (╗) (Connects BOTTOM and RIGHT)
     this.drawAndSaveTexture('pipemania:pipe_corner_br', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
       this.drawSmoothCornerElbow(gfx, tileSize, pipeWidth, offset, 'BOTTOM_RIGHT');
     });
 
-    // 6. Corner Bottom-Left (╔) (Connects BOTTOM and LEFT with a smooth rounded elbow)
+    // 6. Corner Bottom-Left (╔) (Connects BOTTOM and LEFT)
     this.drawAndSaveTexture('pipemania:pipe_corner_bl', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
       this.drawSmoothCornerElbow(gfx, tileSize, pipeWidth, offset, 'BOTTOM_LEFT');
@@ -433,187 +477,316 @@ export class PreloadScene extends Phaser.Scene {
     // 7. Cross Pipe (╬) (3D Overpass Bridge)
     this.drawAndSaveTexture('pipemania:pipe_cross', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
-      // Horizontal underpass
-      gfx.fillStyle(0x1a2333, 1);
+
+      // A. Horizontal Underpass Pipe (Darker Metallic Depth)
+      gfx.fillStyle(0x000000, 0.45);
+      gfx.fillRect(0, offset + 3, tileSize, pipeWidth);
+
+      gfx.fillStyle(0x0f2942, 1);
       gfx.fillRect(0, offset, tileSize, pipeWidth);
-      gfx.fillStyle(INNER_DARK, 1);
-      gfx.fillRect(0, offset + 4, tileSize, pipeWidth - 8);
-      // Vertical overpass
-      gfx.fillStyle(BODY_COLOR, 1);
-      gfx.fillRect(offset, 0, pipeWidth, tileSize);
-      gfx.fillStyle(INNER_DARK, 1);
-      gfx.fillRect(offset + 4, 0, pipeWidth - 8, tileSize);
-      // Overpass bridge borders
-      gfx.lineStyle(2, BORDER_CYAN, 1);
-      gfx.strokeLineShape(new Phaser.Geom.Line(offset, 0, offset, tileSize));
-      gfx.strokeLineShape(new Phaser.Geom.Line(offset + pipeWidth, 0, offset + pipeWidth, tileSize));
-      // Overpass center bridge band
-      gfx.fillStyle(0x0284c7, 0.9);
-      gfx.fillRect(offset - 2, offset - 2, pipeWidth + 4, 4);
-      gfx.fillRect(offset - 2, offset + pipeWidth - 2, pipeWidth + 4, 4);
-      // Flanges
-      gfx.fillStyle(FLANGE_COLOR, 1);
-      gfx.fillRect(0, offset - 2, 4, pipeWidth + 4);
-      gfx.fillRect(tileSize - 4, offset - 2, 4, pipeWidth + 4);
-      gfx.fillRect(offset - 2, 0, pipeWidth + 4, 4);
-      gfx.fillRect(offset - 2, tileSize - 4, pipeWidth + 4, 4);
+      gfx.fillStyle(0x021729, 1);
+      gfx.fillRect(0, offset + 6, tileSize, pipeWidth - 12);
+      gfx.fillStyle(0x0284c7, 0.4);
+      gfx.fillRect(0, tileSize / 2 - 1, tileSize, 2);
+
+      // Flanges on Left and Right
+      this.drawFlange(gfx, 0, offset - 3, 5, pipeWidth + 6, 'vertical');
+      this.drawFlange(gfx, tileSize - 5, offset - 3, 5, pipeWidth + 6, 'vertical');
+
+      // B. Vertical Overpass Bridge with Drop Shadow on intersection
+      gfx.fillStyle(0x000000, 0.6);
+      gfx.fillRect(offset - 4, offset - 3, pipeWidth + 8, pipeWidth + 6);
+
+      // Vertical 3D Cylinder Body
+      gfx.fillStyle(0x082f49, 1);
+      gfx.fillRect(offset + pipeWidth - 7, 0, 7, tileSize);
+      gfx.fillStyle(0x0284c7, 1);
+      gfx.fillRect(offset + 4, 0, pipeWidth - 11, tileSize);
+      gfx.fillStyle(0x38bdf8, 1);
+      gfx.fillRect(offset, 0, 6, tileSize);
+      gfx.fillStyle(0xf0fdf4, 0.95);
+      gfx.fillRect(offset + 2, 0, 2, tileSize);
+
+      // Recessed lumen channel for vertical pipe
+      gfx.fillStyle(0x031d38, 0.95);
+      gfx.fillRect(offset + 7, 0, pipeWidth - 14, tileSize);
+      gfx.fillStyle(0x38bdf8, 0.6);
+      gfx.fillRect(tileSize / 2 - 1, 0, 2, tileSize);
+
+      // Overpass reinforced bridge collar brackets
+      gfx.fillStyle(0xd97706, 1);
+      gfx.fillRect(offset - 3, offset - 3, pipeWidth + 6, 4);
+      gfx.fillRect(offset - 3, offset + pipeWidth - 1, pipeWidth + 6, 4);
+      gfx.fillStyle(0xfef08a, 1);
+      gfx.fillRect(offset - 3, offset - 3, pipeWidth + 6, 1.5);
+      gfx.fillRect(offset - 3, offset + pipeWidth - 1, pipeWidth + 6, 1.5);
+
+      // Flanges on Top and Bottom
+      this.drawFlange(gfx, offset - 3, 0, pipeWidth + 6, 5, 'horizontal');
+      this.drawFlange(gfx, offset - 3, tileSize - 5, pipeWidth + 6, 5, 'horizontal');
     });
 
     // 8. One-Way Right (→)
     this.drawAndSaveTexture('pipemania:pipe_oneway_right', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
-      gfx.fillStyle(BODY_COLOR, 1);
-      gfx.fillRect(0, offset, tileSize, pipeWidth);
-      gfx.fillStyle(INNER_DARK, 1);
-      gfx.fillRect(0, offset + 4, tileSize, pipeWidth - 8);
-      gfx.lineStyle(1.5, BORDER_CYAN, 0.9);
-      gfx.strokeLineShape(new Phaser.Geom.Line(0, offset, tileSize, offset));
-      gfx.strokeLineShape(new Phaser.Geom.Line(0, offset + pipeWidth, tileSize, offset + pipeWidth));
-      // Neon Green Directional Chevrons >>>
-      gfx.fillStyle(0x22c55e, 1);
+
+      // 3D Horizontal Pipe Body
+      this.drawStandardHorizontalBody(gfx, tileSize, pipeWidth, offset);
+
+      // Glowing Neon-Green 3D Directional Chevrons >>>
       for (let i = 0; i < 3; i++) {
-        const x = 12 + i * 14;
-        gfx.fillTriangle(x, offset + 6, x, offset + pipeWidth - 6, x + 8, tileSize / 2);
+        const x = 14 + i * 16;
+        gfx.fillStyle(0x15803d, 1); // Dark green shadow
+        gfx.fillTriangle(x, offset + 6, x, offset + pipeWidth - 6, x + 9, tileSize / 2);
+        gfx.fillStyle(0x22c55e, 1); // Bright neon green
+        gfx.fillTriangle(x + 1, offset + 7, x + 1, offset + pipeWidth - 7, x + 8, tileSize / 2);
+        gfx.fillStyle(0x86efac, 1); // Core tip highlight
+        gfx.fillCircle(x + 6, tileSize / 2, 1.5);
       }
-      gfx.fillStyle(FLANGE_COLOR, 1);
-      gfx.fillRect(0, offset - 2, 4, pipeWidth + 4);
-      gfx.fillRect(tileSize - 4, offset - 2, 4, pipeWidth + 4);
     });
 
     // 9. One-Way Left (←)
     this.drawAndSaveTexture('pipemania:pipe_oneway_left', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
-      gfx.fillStyle(BODY_COLOR, 1);
-      gfx.fillRect(0, offset, tileSize, pipeWidth);
-      gfx.fillStyle(INNER_DARK, 1);
-      gfx.fillRect(0, offset + 4, tileSize, pipeWidth - 8);
-      gfx.lineStyle(1.5, BORDER_CYAN, 0.9);
-      gfx.strokeLineShape(new Phaser.Geom.Line(0, offset, tileSize, offset));
-      gfx.strokeLineShape(new Phaser.Geom.Line(0, offset + pipeWidth, tileSize, offset + pipeWidth));
-      // Neon Green Directional Chevrons <<<
-      gfx.fillStyle(0x22c55e, 1);
+
+      // 3D Horizontal Pipe Body
+      this.drawStandardHorizontalBody(gfx, tileSize, pipeWidth, offset);
+
+      // Glowing Neon-Green 3D Directional Chevrons <<<
       for (let i = 0; i < 3; i++) {
-        const x = tileSize - 12 - i * 14;
-        gfx.fillTriangle(x, offset + 6, x, offset + pipeWidth - 6, x - 8, tileSize / 2);
+        const x = tileSize - 14 - i * 16;
+        gfx.fillStyle(0x15803d, 1);
+        gfx.fillTriangle(x, offset + 6, x, offset + pipeWidth - 6, x - 9, tileSize / 2);
+        gfx.fillStyle(0x22c55e, 1);
+        gfx.fillTriangle(x - 1, offset + 7, x - 1, offset + pipeWidth - 7, x - 8, tileSize / 2);
+        gfx.fillStyle(0x86efac, 1);
+        gfx.fillCircle(x - 6, tileSize / 2, 1.5);
       }
-      gfx.fillStyle(FLANGE_COLOR, 1);
-      gfx.fillRect(0, offset - 2, 4, pipeWidth + 4);
-      gfx.fillRect(tileSize - 4, offset - 2, 4, pipeWidth + 4);
     });
 
     // 10. One-Way Down (↓)
     this.drawAndSaveTexture('pipemania:pipe_oneway_down', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
-      gfx.fillStyle(BODY_COLOR, 1);
-      gfx.fillRect(offset, 0, pipeWidth, tileSize);
-      gfx.fillStyle(INNER_DARK, 1);
-      gfx.fillRect(offset + 4, 0, pipeWidth - 8, tileSize);
-      gfx.lineStyle(1.5, BORDER_CYAN, 0.9);
-      gfx.strokeLineShape(new Phaser.Geom.Line(offset, 0, offset, tileSize));
-      gfx.strokeLineShape(new Phaser.Geom.Line(offset + pipeWidth, 0, offset + pipeWidth, tileSize));
-      // Neon Green Directional Chevrons vvv
-      gfx.fillStyle(0x22c55e, 1);
+
+      // 3D Vertical Pipe Body
+      this.drawStandardVerticalBody(gfx, tileSize, pipeWidth, offset);
+
+      // Glowing Neon-Green 3D Directional Chevrons vvv
       for (let i = 0; i < 3; i++) {
-        const y = 12 + i * 14;
-        gfx.fillTriangle(offset + 6, y, offset + pipeWidth - 6, y, tileSize / 2, y + 8);
+        const y = 14 + i * 16;
+        gfx.fillStyle(0x15803d, 1);
+        gfx.fillTriangle(offset + 6, y, offset + pipeWidth - 6, y, tileSize / 2, y + 9);
+        gfx.fillStyle(0x22c55e, 1);
+        gfx.fillTriangle(offset + 7, y + 1, offset + pipeWidth - 7, y + 1, tileSize / 2, y + 8);
+        gfx.fillStyle(0x86efac, 1);
+        gfx.fillCircle(tileSize / 2, y + 6, 1.5);
       }
-      gfx.fillStyle(FLANGE_COLOR, 1);
-      gfx.fillRect(offset - 2, 0, pipeWidth + 4, 4);
-      gfx.fillRect(offset - 2, tileSize - 4, pipeWidth + 4, 4);
     });
 
     // 11. One-Way Up (↑)
     this.drawAndSaveTexture('pipemania:pipe_oneway_up', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
-      gfx.fillStyle(BODY_COLOR, 1);
-      gfx.fillRect(offset, 0, pipeWidth, tileSize);
-      gfx.fillStyle(INNER_DARK, 1);
-      gfx.fillRect(offset + 4, 0, pipeWidth - 8, tileSize);
-      gfx.lineStyle(1.5, BORDER_CYAN, 0.9);
-      gfx.strokeLineShape(new Phaser.Geom.Line(offset, 0, offset, tileSize));
-      gfx.strokeLineShape(new Phaser.Geom.Line(offset + pipeWidth, 0, offset + pipeWidth, tileSize));
-      // Neon Green Directional Chevrons ^^^
-      gfx.fillStyle(0x22c55e, 1);
+
+      // 3D Vertical Pipe Body
+      this.drawStandardVerticalBody(gfx, tileSize, pipeWidth, offset);
+
+      // Glowing Neon-Green 3D Directional Chevrons ^^^
       for (let i = 0; i < 3; i++) {
-        const y = tileSize - 12 - i * 14;
-        gfx.fillTriangle(offset + 6, y, offset + pipeWidth - 6, y, tileSize / 2, y - 8);
+        const y = tileSize - 14 - i * 16;
+        gfx.fillStyle(0x15803d, 1);
+        gfx.fillTriangle(offset + 6, y, offset + pipeWidth - 6, y, tileSize / 2, y - 9);
+        gfx.fillStyle(0x22c55e, 1);
+        gfx.fillTriangle(offset + 7, y - 1, offset + pipeWidth - 7, y - 1, tileSize / 2, y - 8);
+        gfx.fillStyle(0x86efac, 1);
+        gfx.fillCircle(tileSize / 2, y - 6, 1.5);
       }
-      gfx.fillStyle(FLANGE_COLOR, 1);
-      gfx.fillRect(offset - 2, 0, pipeWidth + 4, 4);
-      gfx.fillRect(offset - 2, tileSize - 4, pipeWidth + 4, 4);
     });
 
-    // 12. Reservoir Tank Horizontal (Unmistakable Horizontal Pipe with Expansion Capsule)
+    // 12. Reservoir Tank Horizontal
     this.drawAndSaveTexture('pipemania:pipe_reservoir_h', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
 
-      // Continuous full horizontal pipe body
-      gfx.fillStyle(BODY_COLOR, 1);
-      gfx.fillRect(0, offset, tileSize, pipeWidth);
-      gfx.fillStyle(INNER_DARK, 1);
-      gfx.fillRect(0, offset + 4, tileSize, pipeWidth - 8);
-      gfx.lineStyle(1.5, BORDER_CYAN, 0.9);
-      gfx.strokeLineShape(new Phaser.Geom.Line(0, offset, tileSize, offset));
-      gfx.strokeLineShape(new Phaser.Geom.Line(0, offset + pipeWidth, tileSize, offset + pipeWidth));
+      // 3D Horizontal Pipe Body
+      this.drawStandardHorizontalBody(gfx, tileSize, pipeWidth, offset);
 
-      // Flanges on Left and Right borders ONLY
-      gfx.fillStyle(FLANGE_COLOR, 1);
-      gfx.fillRect(0, offset - 2, 4, pipeWidth + 4);
-      gfx.fillRect(tileSize - 4, offset - 2, 4, pipeWidth + 4);
+      // 3D Translucent Blue Glass Expansion Tank (width: 42, height: 40)
+      const tw = 42;
+      const th = 40;
+      const tx = (tileSize - tw) / 2;
+      const ty = (tileSize - th) / 2;
 
-      // Horizontal Elongated Glass Expansion Tank in center (width: 36, height: 34)
-      gfx.fillStyle(0x0f2942, 0.9); // Dark blue glass
-      gfx.fillRoundedRect(10, 11, 36, 34, 8);
+      // Tank Drop Shadow
+      gfx.fillStyle(0x000000, 0.5);
+      gfx.fillRoundedRect(tx + 2, ty + 3, tw, th, 10);
+
+      // Glass Tank Outer Vessel
+      gfx.fillStyle(0x03254c, 0.95);
+      gfx.fillRoundedRect(tx, ty, tw, th, 10);
       gfx.lineStyle(2, 0x38bdf8, 1);
-      gfx.strokeRoundedRect(10, 11, 36, 34, 8);
+      gfx.strokeRoundedRect(tx, ty, tw, th, 10);
 
-      // Horizontal flow direction guide lines
-      gfx.fillStyle(0x38bdf8, 0.7);
-      gfx.fillRect(14, tileSize / 2 - 1, 28, 2);
-      gfx.fillTriangle(30, tileSize / 2 - 4, 30, tileSize / 2 + 4, 36, tileSize / 2);
+      // Glass Specular Curved Highlight
+      gfx.fillStyle(0xe0f2fe, 0.7);
+      gfx.fillRoundedRect(tx + 4, ty + 4, tw - 8, 4, 2);
 
-      // Tank 4X Slow Badge
+      // Golden Mounting Collar Rings
+      gfx.fillStyle(0xd97706, 1);
+      gfx.fillRect(tx + 2, ty, 3, th);
+      gfx.fillRect(tx + tw - 5, ty, 3, th);
+      gfx.fillStyle(0xfde047, 1);
+      gfx.fillRect(tx + 2, ty, 1.5, th);
+      gfx.fillRect(tx + tw - 5, ty, 1.5, th);
+
+      // Horizontal flow direction guide
+      gfx.fillStyle(0x38bdf8, 0.8);
+      gfx.fillRect(tx + 8, tileSize / 2 - 1, tw - 16, 2);
+      gfx.fillTriangle(tx + tw - 12, tileSize / 2 - 4, tx + tw - 12, tileSize / 2 + 4, tx + tw - 6, tileSize / 2);
+
+      // 4X Slow Indicator Badge
       gfx.fillStyle(0x0284c7, 1);
-      gfx.fillCircle(17, 18, 5);
+      gfx.fillCircle(tx + 10, ty + 10, 5.5);
       gfx.fillStyle(0xffffff, 1);
-      gfx.fillRect(15, 17, 4, 2);
+      gfx.fillRect(tx + 8, ty + 9, 4, 2);
     });
 
-    // 13. Reservoir Tank Vertical (Unmistakable Vertical Pipe with Expansion Capsule)
+    // 13. Reservoir Tank Vertical
     this.drawAndSaveTexture('pipemania:pipe_reservoir_v', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
 
-      // Continuous full vertical pipe body
-      gfx.fillStyle(BODY_COLOR, 1);
-      gfx.fillRect(offset, 0, pipeWidth, tileSize);
-      gfx.fillStyle(INNER_DARK, 1);
-      gfx.fillRect(offset + 4, 0, pipeWidth - 8, tileSize);
-      gfx.lineStyle(1.5, BORDER_CYAN, 0.9);
-      gfx.strokeLineShape(new Phaser.Geom.Line(offset, 0, offset, tileSize));
-      gfx.strokeLineShape(new Phaser.Geom.Line(offset + pipeWidth, 0, offset + pipeWidth, tileSize));
+      // 3D Vertical Pipe Body
+      this.drawStandardVerticalBody(gfx, tileSize, pipeWidth, offset);
 
-      // Flanges on Top and Bottom borders ONLY
-      gfx.fillStyle(FLANGE_COLOR, 1);
-      gfx.fillRect(offset - 2, 0, pipeWidth + 4, 4);
-      gfx.fillRect(offset - 2, tileSize - 4, pipeWidth + 4, 4);
+      // 3D Translucent Blue Glass Expansion Tank (width: 40, height: 42)
+      const tw = 40;
+      const th = 42;
+      const tx = (tileSize - tw) / 2;
+      const ty = (tileSize - th) / 2;
 
-      // Vertical Elongated Glass Expansion Tank in center (width: 34, height: 36)
-      gfx.fillStyle(0x0f2942, 0.9);
-      gfx.fillRoundedRect(11, 10, 34, 36, 8);
+      // Tank Drop Shadow
+      gfx.fillStyle(0x000000, 0.5);
+      gfx.fillRoundedRect(tx + 2, ty + 3, tw, th, 10);
+
+      // Glass Tank Outer Vessel
+      gfx.fillStyle(0x03254c, 0.95);
+      gfx.fillRoundedRect(tx, ty, tw, th, 10);
       gfx.lineStyle(2, 0x38bdf8, 1);
-      gfx.strokeRoundedRect(11, 10, 34, 36, 8);
+      gfx.strokeRoundedRect(tx, ty, tw, th, 10);
 
-      // Vertical flow direction guide lines
-      gfx.fillStyle(0x38bdf8, 0.7);
-      gfx.fillRect(tileSize / 2 - 1, 14, 2, 28);
-      gfx.fillTriangle(tileSize / 2 - 4, 30, tileSize / 2 + 4, 30, tileSize / 2, 36);
+      // Glass Specular Curved Highlight
+      gfx.fillStyle(0xe0f2fe, 0.7);
+      gfx.fillRoundedRect(tx + 4, ty + 4, 4, th - 8, 2);
 
-      // Tank 4X Slow Badge
+      // Golden Mounting Collar Rings
+      gfx.fillStyle(0xd97706, 1);
+      gfx.fillRect(tx, ty + 2, tw, 3);
+      gfx.fillRect(tx, ty + th - 5, tw, 3);
+      gfx.fillStyle(0xfde047, 1);
+      gfx.fillRect(tx, ty + 2, tw, 1.5);
+      gfx.fillRect(tx, ty + th - 5, tw, 1.5);
+
+      // Vertical flow direction guide
+      gfx.fillStyle(0x38bdf8, 0.8);
+      gfx.fillRect(tileSize / 2 - 1, ty + 8, 2, th - 16);
+      gfx.fillTriangle(tileSize / 2 - 4, ty + th - 12, tileSize / 2 + 4, ty + th - 12, tileSize / 2, ty + th - 6);
+
+      // 4X Slow Indicator Badge
       gfx.fillStyle(0x0284c7, 1);
-      gfx.fillCircle(18, 17, 5);
+      gfx.fillCircle(tx + 10, ty + 10, 5.5);
       gfx.fillStyle(0xffffff, 1);
-      gfx.fillRect(17, 15, 2, 4);
+      gfx.fillRect(tx + 9, ty + 8, 2, 4);
     });
+  }
+
+  private drawStandardHorizontalBody(
+    gfx: Phaser.GameObjects.Graphics,
+    tileSize: number,
+    pipeWidth: number,
+    offset: number
+  ): void {
+    // Drop shadow
+    gfx.fillStyle(0x000000, 0.45);
+    gfx.fillRect(0, offset + 3, tileSize, pipeWidth);
+
+    // 3D Cylinder Layers
+    gfx.fillStyle(0x082f49, 1);
+    gfx.fillRect(0, offset + pipeWidth - 7, tileSize, 7);
+    gfx.fillStyle(0x0284c7, 1);
+    gfx.fillRect(0, offset + 4, tileSize, pipeWidth - 11);
+    gfx.fillStyle(0x38bdf8, 1);
+    gfx.fillRect(0, offset, tileSize, 6);
+    gfx.fillStyle(0xf0fdf4, 0.95);
+    gfx.fillRect(0, offset + 2, tileSize, 2);
+
+    // Recessed lumen channel
+    gfx.fillStyle(0x031d38, 0.95);
+    gfx.fillRect(0, offset + 7, tileSize, pipeWidth - 14);
+
+    // Flanges
+    this.drawFlange(gfx, 0, offset - 3, 5, pipeWidth + 6, 'vertical');
+    this.drawFlange(gfx, tileSize - 5, offset - 3, 5, pipeWidth + 6, 'vertical');
+  }
+
+  private drawStandardVerticalBody(
+    gfx: Phaser.GameObjects.Graphics,
+    tileSize: number,
+    pipeWidth: number,
+    offset: number
+  ): void {
+    // Drop shadow
+    gfx.fillStyle(0x000000, 0.45);
+    gfx.fillRect(offset + 3, 0, pipeWidth, tileSize);
+
+    // 3D Cylinder Layers
+    gfx.fillStyle(0x082f49, 1);
+    gfx.fillRect(offset + pipeWidth - 7, 0, 7, tileSize);
+    gfx.fillStyle(0x0284c7, 1);
+    gfx.fillRect(offset + 4, 0, pipeWidth - 11, tileSize);
+    gfx.fillStyle(0x38bdf8, 1);
+    gfx.fillRect(offset, 0, 6, tileSize);
+    gfx.fillStyle(0xf0fdf4, 0.95);
+    gfx.fillRect(offset + 2, 0, 2, tileSize);
+
+    // Recessed lumen channel
+    gfx.fillStyle(0x031d38, 0.95);
+    gfx.fillRect(offset + 7, 0, pipeWidth - 14, tileSize);
+
+    // Flanges
+    this.drawFlange(gfx, offset - 3, 0, pipeWidth + 6, 5, 'horizontal');
+    this.drawFlange(gfx, offset - 3, tileSize - 5, pipeWidth + 6, 5, 'horizontal');
+  }
+
+  private drawFlange(
+    gfx: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    orientation: 'vertical' | 'horizontal'
+  ): void {
+    // 3D Golden Brass Flange Collar
+    gfx.fillStyle(0xb45309, 1); // Dark amber border/shadow
+    gfx.fillRect(x, y, w, h);
+
+    gfx.fillStyle(0xf59e0b, 1); // Polished brass face
+    if (orientation === 'vertical') {
+      gfx.fillRect(x + 1, y + 1, w - 2, h - 2);
+      // Gold specular sheen on top edge
+      gfx.fillStyle(0xfef08a, 1);
+      gfx.fillRect(x + 1, y + 1, w - 2, 3);
+      // Fastener rivets
+      gfx.fillStyle(0x78350f, 1);
+      gfx.fillRect(x + 1.5, y + 4, 2, 2);
+      gfx.fillRect(x + 1.5, y + h - 6, 2, 2);
+    } else {
+      gfx.fillRect(x + 1, y + 1, w - 2, h - 2);
+      // Gold specular sheen on left edge
+      gfx.fillStyle(0xfef08a, 1);
+      gfx.fillRect(x + 1, y + 1, 3, h - 2);
+      // Fastener rivets
+      gfx.fillStyle(0x78350f, 1);
+      gfx.fillRect(x + 4, y + 1.5, 2, 2);
+      gfx.fillRect(x + w - 6, y + 1.5, 2, 2);
+    }
   }
 
   private drawGridBackground(gfx: Phaser.GameObjects.Graphics, size: number): void {
@@ -631,73 +804,93 @@ export class PreloadScene extends Phaser.Scene {
     offset: number,
     cornerType: 'TOP_RIGHT' | 'TOP_LEFT' | 'BOTTOM_RIGHT' | 'BOTTOM_LEFT'
   ): void {
-    const BODY_COLOR = 0x243048;
-    const BORDER_CYAN = 0x38bdf8;
-    const INNER_DARK = 0x090d16;
-    const FLANGE_COLOR = 0x64748b;
-
-    // Correct Geometric Center and Arc Angles for all 4 Corner Elbows
+    // Geometric Center and Arc Angles for all 4 Corner Elbows
     let cx = 0;
     let cy = 0;
     let startAngle = 0;
     let endAngle = Math.PI / 2;
 
     if (cornerType === 'TOP_RIGHT') {
-      // Connects TOP (28, 0) and RIGHT (56, 28) -> Center is Top-Right corner (size, 0)
       cx = size;
       cy = 0;
       startAngle = Math.PI / 2; // 90 deg (Right port)
       endAngle = Math.PI; // 180 deg (Top port)
     } else if (cornerType === 'TOP_LEFT') {
-      // Connects TOP (28, 0) and LEFT (0, 28) -> Center is Top-Left corner (0, 0)
       cx = 0;
       cy = 0;
       startAngle = 0; // 0 deg (Top port)
       endAngle = Math.PI / 2; // 90 deg (Left port)
     } else if (cornerType === 'BOTTOM_RIGHT') {
-      // Connects BOTTOM (28, 56) and RIGHT (56, 28) -> Center is Bottom-Right corner (size, size)
       cx = size;
       cy = size;
       startAngle = Math.PI; // 180 deg (Bottom port)
       endAngle = Math.PI * 1.5; // 270 deg (Right port)
     } else if (cornerType === 'BOTTOM_LEFT') {
-      // Connects BOTTOM (28, 56) and LEFT (0, 28) -> Center is Bottom-Left corner (0, size)
       cx = 0;
       cy = size;
       startAngle = Math.PI * 1.5; // 270 deg (Left port)
       endAngle = Math.PI * 2.0; // 360 deg / 0 deg (Bottom port)
     }
 
-    const R_outer = size - offset; // 56 - 15 = 41
-    const R_inner = offset; // 15
-    const R_mid = (R_outer + R_inner) / 2; // 28
+    const R_outer = size - offset;
+    const R_inner = offset;
+    const R_mid = (R_outer + R_inner) / 2;
 
-    // 1. Draw smooth outer pipe body (Quarter Torus)
-    gfx.fillStyle(BODY_COLOR, 1);
+    // A. Ambient Floor Drop Shadow Arc
+    gfx.fillStyle(0x000000, 0.45);
+    gfx.beginPath();
+    gfx.arc(cx, cy, R_outer + 3, startAngle, endAngle, false);
+    gfx.arc(cx, cy, Math.max(1, R_inner - 2), endAngle, startAngle, true);
+    gfx.closePath();
+    gfx.fillPath();
+
+    // B. 3D Concentric Torus Layers
+    // 1. Outer Torus Shadow Ring
+    gfx.fillStyle(0x082f49, 1);
     gfx.beginPath();
     gfx.arc(cx, cy, R_outer, startAngle, endAngle, false);
     gfx.arc(cx, cy, R_inner, endAngle, startAngle, true);
     gfx.closePath();
     gfx.fillPath();
 
-    // 2. Draw smooth inner dark channel
-    const R_ch_outer = R_mid + (pipeWidth - 8) / 2;
-    const R_ch_inner = R_mid - (pipeWidth - 8) / 2;
-    gfx.fillStyle(INNER_DARK, 1);
+    // 2. Vibrant Midtone Cylinder Body
+    gfx.fillStyle(0x0284c7, 1);
+    gfx.beginPath();
+    gfx.arc(cx, cy, R_outer - 2, startAngle, endAngle, false);
+    gfx.arc(cx, cy, R_inner + 2, endAngle, startAngle, true);
+    gfx.closePath();
+    gfx.fillPath();
+
+    // 3. Highlight Bevel Ridge
+    gfx.lineStyle(3, 0x38bdf8, 1);
+    gfx.beginPath();
+    gfx.arc(cx, cy, R_outer - 3, startAngle, endAngle, false);
+    gfx.strokePath();
+
+    // 4. White Specular Gloss Streak
+    gfx.lineStyle(1.5, 0xf0fdf4, 0.9);
+    gfx.beginPath();
+    gfx.arc(cx, cy, R_outer - 4.5, startAngle, endAngle, false);
+    gfx.strokePath();
+
+    // C. Recessed Lumen Channel
+    const R_ch_outer = R_mid + (pipeWidth - 14) / 2;
+    const R_ch_inner = R_mid - (pipeWidth - 14) / 2;
+    gfx.fillStyle(0x031d38, 0.95);
     gfx.beginPath();
     gfx.arc(cx, cy, R_ch_outer, startAngle, endAngle, false);
     gfx.arc(cx, cy, R_ch_inner, endAngle, startAngle, true);
     gfx.closePath();
     gfx.fillPath();
 
-    // 3. Center luminous line
-    gfx.lineStyle(2, BORDER_CYAN, 0.4);
+    // Neon Center Flow Guide Arc
+    gfx.lineStyle(2, 0x38bdf8, 0.6);
     gfx.beginPath();
     gfx.arc(cx, cy, R_mid, startAngle, endAngle, false);
     gfx.strokePath();
 
-    // 4. Glowing outer and inner borders
-    gfx.lineStyle(1.5, BORDER_CYAN, 0.9);
+    // Outer & Inner Glowing Edges
+    gfx.lineStyle(1.5, 0x0284c7, 0.9);
     gfx.beginPath();
     gfx.arc(cx, cy, R_outer, startAngle, endAngle, false);
     gfx.strokePath();
@@ -705,20 +898,19 @@ export class PreloadScene extends Phaser.Scene {
     gfx.arc(cx, cy, R_inner, startAngle, endAngle, false);
     gfx.strokePath();
 
-    // 5. Connection Flanges on the 2 borders
-    gfx.fillStyle(FLANGE_COLOR, 1);
+    // D. 3D Polished Brass Flanges at Both Open Ports
     if (cornerType === 'TOP_RIGHT') {
-      gfx.fillRect(offset - 2, 0, pipeWidth + 4, 4); // Top flange
-      gfx.fillRect(size - 4, offset - 2, 4, pipeWidth + 4); // Right flange
+      this.drawFlange(gfx, offset - 3, 0, pipeWidth + 6, 5, 'horizontal');
+      this.drawFlange(gfx, size - 5, offset - 3, 5, pipeWidth + 6, 'vertical');
     } else if (cornerType === 'TOP_LEFT') {
-      gfx.fillRect(offset - 2, 0, pipeWidth + 4, 4); // Top flange
-      gfx.fillRect(0, offset - 2, 4, pipeWidth + 4); // Left flange
+      this.drawFlange(gfx, offset - 3, 0, pipeWidth + 6, 5, 'horizontal');
+      this.drawFlange(gfx, 0, offset - 3, 5, pipeWidth + 6, 'vertical');
     } else if (cornerType === 'BOTTOM_RIGHT') {
-      gfx.fillRect(offset - 2, size - 4, pipeWidth + 4, 4); // Bottom flange
-      gfx.fillRect(size - 4, offset - 2, 4, pipeWidth + 4); // Right flange
+      this.drawFlange(gfx, offset - 3, size - 5, pipeWidth + 6, 5, 'horizontal');
+      this.drawFlange(gfx, size - 5, offset - 3, 5, pipeWidth + 6, 'vertical');
     } else if (cornerType === 'BOTTOM_LEFT') {
-      gfx.fillRect(offset - 2, size - 4, pipeWidth + 4, 4); // Bottom flange
-      gfx.fillRect(0, offset - 2, 4, pipeWidth + 4); // Left flange
+      this.drawFlange(gfx, offset - 3, size - 5, pipeWidth + 6, 5, 'horizontal');
+      this.drawFlange(gfx, 0, offset - 3, 5, pipeWidth + 6, 'vertical');
     }
   }
 
