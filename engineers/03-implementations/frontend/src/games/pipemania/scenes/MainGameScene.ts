@@ -653,52 +653,56 @@ export class MainGameScene extends Phaser.Scene {
     let endAngle = 0;
 
     if (cell.type === PipeType.CORNER_TOP_RIGHT) {
-      cx = bx;
-      cy = by + TILE_SIZE;
-      if (cell.entryDir === Direction.DOWN) {
-        // Enters from top (-90 deg) -> flows to right (0 deg)
-        startAngle = -Math.PI / 2;
-        endAngle = 0;
-      } else {
-        // Enters from right (0 deg) -> flows to top (-90 deg)
-        startAngle = 0;
-        endAngle = -Math.PI / 2;
-      }
-    } else if (cell.type === PipeType.CORNER_TOP_LEFT) {
+      // Connects TOP and RIGHT -> Center is Top-Right corner (bx + TILE_SIZE, by)
       cx = bx + TILE_SIZE;
-      cy = by + TILE_SIZE;
+      cy = by;
       if (cell.entryDir === Direction.DOWN) {
-        // Enters from top (-90 deg) -> flows to left (180 deg)
-        startAngle = -Math.PI / 2;
-        endAngle = -Math.PI;
-      } else {
-        // Enters from left (180 deg) -> flows to top (270 deg / -90 deg)
+        // Enters from TOP (180 deg) -> exits RIGHT (90 deg)
         startAngle = Math.PI;
-        endAngle = Math.PI * 1.5;
-      }
-    } else if (cell.type === PipeType.CORNER_BOTTOM_RIGHT) {
-      cx = bx;
-      cy = by;
-      if (cell.entryDir === Direction.UP) {
-        // Enters from bottom (90 deg) -> flows to right (0 deg)
-        startAngle = Math.PI / 2;
-        endAngle = 0;
-      } else {
-        // Enters from right (0 deg) -> flows to bottom (90 deg)
-        startAngle = 0;
         endAngle = Math.PI / 2;
-      }
-    } else if (cell.type === PipeType.CORNER_BOTTOM_LEFT) {
-      cx = bx + TILE_SIZE;
-      cy = by;
-      if (cell.entryDir === Direction.UP) {
-        // Enters from bottom (90 deg) -> flows to left (180 deg)
+      } else {
+        // Enters from RIGHT (90 deg) -> exits TOP (180 deg)
         startAngle = Math.PI / 2;
         endAngle = Math.PI;
-      } else {
-        // Enters from left (180 deg) -> flows to bottom (90 deg)
-        startAngle = Math.PI;
+      }
+    } else if (cell.type === PipeType.CORNER_TOP_LEFT) {
+      // Connects TOP and LEFT -> Center is Top-Left corner (bx, by)
+      cx = bx;
+      cy = by;
+      if (cell.entryDir === Direction.DOWN) {
+        // Enters from TOP (0 deg) -> exits LEFT (90 deg)
+        startAngle = 0;
         endAngle = Math.PI / 2;
+      } else {
+        // Enters from LEFT (90 deg) -> exits TOP (0 deg)
+        startAngle = Math.PI / 2;
+        endAngle = 0;
+      }
+    } else if (cell.type === PipeType.CORNER_BOTTOM_RIGHT) {
+      // Connects BOTTOM and RIGHT -> Center is Bottom-Right corner (bx + TILE_SIZE, by + TILE_SIZE)
+      cx = bx + TILE_SIZE;
+      cy = by + TILE_SIZE;
+      if (cell.entryDir === Direction.UP) {
+        // Enters from BOTTOM (180 deg) -> exits RIGHT (270 deg)
+        startAngle = Math.PI;
+        endAngle = Math.PI * 1.5;
+      } else {
+        // Enters from RIGHT (270 deg) -> exits BOTTOM (180 deg)
+        startAngle = Math.PI * 1.5;
+        endAngle = Math.PI;
+      }
+    } else if (cell.type === PipeType.CORNER_BOTTOM_LEFT) {
+      // Connects BOTTOM and LEFT -> Center is Bottom-Left corner (bx, by + TILE_SIZE)
+      cx = bx;
+      cy = by + TILE_SIZE;
+      if (cell.entryDir === Direction.UP) {
+        // Enters from BOTTOM (360/0 deg) -> exits LEFT (270 deg)
+        startAngle = 0;
+        endAngle = -Math.PI / 2;
+      } else {
+        // Enters from LEFT (270/-90 deg) -> exits BOTTOM (360/0 deg)
+        startAngle = -Math.PI / 2;
+        endAngle = 0;
       }
     }
 

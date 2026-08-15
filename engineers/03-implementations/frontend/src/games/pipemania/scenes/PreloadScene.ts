@@ -574,37 +574,36 @@ export class PreloadScene extends Phaser.Scene {
     const INNER_DARK = 0x090d16;
     const FLANGE_COLOR = 0x64748b;
 
-    // Corner center point & arc angle definitions
+    // Correct Geometric Center and Arc Angles for all 4 Corner Elbows
     let cx = 0;
     let cy = 0;
     let startAngle = 0;
     let endAngle = Math.PI / 2;
 
     if (cornerType === 'TOP_RIGHT') {
-      // Connects TOP and RIGHT (elbow curves around top-right outer corner)
-      // Center of curvature at bottom-left corner of the bend
-      cx = 0;
-      cy = size;
-      startAngle = -Math.PI / 2; // 270 deg (top)
-      endAngle = 0; // 0 deg (right)
+      // Connects TOP (28, 0) and RIGHT (56, 28) -> Center is Top-Right corner (size, 0)
+      cx = size;
+      cy = 0;
+      startAngle = Math.PI / 2; // 90 deg (Right port)
+      endAngle = Math.PI; // 180 deg (Top port)
     } else if (cornerType === 'TOP_LEFT') {
-      // Connects TOP and LEFT
-      cx = size;
-      cy = size;
-      startAngle = Math.PI; // 180 deg (left)
-      endAngle = -Math.PI / 2; // 270 deg (top)
-    } else if (cornerType === 'BOTTOM_RIGHT') {
-      // Connects BOTTOM and RIGHT
+      // Connects TOP (28, 0) and LEFT (0, 28) -> Center is Top-Left corner (0, 0)
       cx = 0;
       cy = 0;
-      startAngle = 0; // 0 deg (right)
-      endAngle = Math.PI / 2; // 90 deg (bottom)
-    } else if (cornerType === 'BOTTOM_LEFT') {
-      // Connects BOTTOM and LEFT
+      startAngle = 0; // 0 deg (Top port)
+      endAngle = Math.PI / 2; // 90 deg (Left port)
+    } else if (cornerType === 'BOTTOM_RIGHT') {
+      // Connects BOTTOM (28, 56) and RIGHT (56, 28) -> Center is Bottom-Right corner (size, size)
       cx = size;
-      cy = 0;
-      startAngle = Math.PI / 2; // 90 deg (bottom)
-      endAngle = Math.PI; // 180 deg (left)
+      cy = size;
+      startAngle = Math.PI; // 180 deg (Bottom port)
+      endAngle = Math.PI * 1.5; // 270 deg (Right port)
+    } else if (cornerType === 'BOTTOM_LEFT') {
+      // Connects BOTTOM (28, 56) and LEFT (0, 28) -> Center is Bottom-Left corner (0, size)
+      cx = 0;
+      cy = size;
+      startAngle = Math.PI * 1.5; // 270 deg (Left port)
+      endAngle = Math.PI * 2.0; // 360 deg / 0 deg (Bottom port)
     }
 
     const R_outer = size - offset; // 56 - 15 = 41
