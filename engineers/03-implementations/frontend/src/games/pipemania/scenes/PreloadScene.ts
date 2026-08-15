@@ -152,13 +152,14 @@ export class PreloadScene extends Phaser.Scene {
 
   /**
    * Generates Directional Start Valves for RIGHT, LEFT, UP, DOWN.
+   * Clearly shows solid casing on 3 sides and an extended OUTFLOW NOZZLE on the active port.
    */
   private createDirectionalStartValves(tileSize: number): void {
     const directions = [
-      { dir: 'right', angleDeg: 0, nx: 1, ny: 0 },
-      { dir: 'left', angleDeg: 180, nx: -1, ny: 0 },
-      { dir: 'up', angleDeg: 270, nx: 0, ny: -1 },
-      { dir: 'down', angleDeg: 90, nx: 0, ny: 1 },
+      { dir: 'right', nx: 1, ny: 0, label: 'START ▶' },
+      { dir: 'left', nx: -1, ny: 0, label: '◀ START' },
+      { dir: 'up', nx: 0, ny: -1, label: '▲ START' },
+      { dir: 'down', nx: 0, ny: 1, label: '▼ START' },
     ];
 
     directions.forEach(({ dir, nx, ny }) => {
@@ -166,78 +167,82 @@ export class PreloadScene extends Phaser.Scene {
       this.drawAndSaveTexture(key, tileSize, (gfx) => {
         const cx = tileSize / 2;
         const cy = tileSize / 2;
+        const nw = 26; // Nozzle width
 
-        // Background tile
+        // Dark tile base
         gfx.fillStyle(0x0a0f1d, 1);
         gfx.fillRect(0, 0, tileSize, tileSize);
 
-        // Outflow Nozzle Collar extending to border
-        gfx.fillStyle(0x0284c7, 1); // Sky blue nozzle
-        const nw = 26;
+        // 1. Outflow Pipe Nozzle extending to the border
+        gfx.fillStyle(0x0284c7, 1); // Sky blue nozzle body
         if (nx !== 0) {
           const x = nx > 0 ? cx : 0;
           gfx.fillRect(x, cy - nw / 2, cx, nw);
+          // Inner green fluid channel
+          gfx.fillStyle(0x15803d, 1);
+          gfx.fillRect(x, cy - (nw - 8) / 2, cx, nw - 8);
+          // Connection Flange Collar on the active border
           gfx.fillStyle(0x38bdf8, 1);
           gfx.fillRect(nx > 0 ? tileSize - 4 : 0, cy - nw / 2 - 2, 4, nw + 4);
         } else {
           const y = ny > 0 ? cy : 0;
           gfx.fillRect(cx - nw / 2, y, nw, cy);
+          gfx.fillStyle(0x15803d, 1);
+          gfx.fillRect(cx - (nw - 8) / 2, y, nw - 8, cy);
           gfx.fillStyle(0x38bdf8, 1);
           gfx.fillRect(cx - nw / 2 - 2, ny > 0 ? tileSize - 4 : 0, nw + 4, 4);
         }
 
-        // Pump circular body
+        // 2. Heavy Pump Center Tank
         gfx.fillStyle(0x0369a1, 1);
         gfx.fillCircle(cx, cy, 21);
         gfx.lineStyle(2, 0x38bdf8, 1);
         gfx.strokeCircle(cx, cy, 21);
 
-        // Inner glowing generator core
-        gfx.fillStyle(0x0284c7, 1);
-        gfx.fillCircle(cx, cy, 14);
-        gfx.fillStyle(0x22c55e, 1); // Neon green fluid core
-        gfx.fillCircle(cx, cy, 8);
+        // 3. Glowing Flooz Chemical Core
+        gfx.fillStyle(0x22c55e, 1); // Neon green
+        gfx.fillCircle(cx, cy, 12);
+        gfx.fillStyle(0x86efac, 1); // Bright core
+        gfx.fillCircle(cx, cy, 6);
 
-        // Big Directional Outflow Arrow
+        // 4. Directional Outflow Arrow in nozzle
         gfx.fillStyle(0xffffff, 1);
         if (nx > 0) {
-          gfx.fillTriangle(cx + 4, cy - 7, cx + 4, cy + 7, cx + 15, cy);
+          gfx.fillTriangle(cx + 8, cy - 6, cx + 8, cy + 6, cx + 18, cy);
         } else if (nx < 0) {
-          gfx.fillTriangle(cx - 4, cy - 7, cx - 4, cy + 7, cx - 15, cy);
+          gfx.fillTriangle(cx - 8, cy - 6, cx - 8, cy + 6, cx - 18, cy);
         } else if (ny > 0) {
-          gfx.fillTriangle(cx - 7, cy + 4, cx + 7, cy + 4, cx, cy + 15);
+          gfx.fillTriangle(cx - 6, cy + 8, cx + 6, cy + 8, cx, cy + 18);
         } else {
-          gfx.fillTriangle(cx - 7, cy - 4, cx + 7, cy - 4, cx, cy - 15);
+          gfx.fillTriangle(cx - 6, cy - 8, cx + 6, cy - 8, cx, cy - 18);
         }
 
-        // START text badge
-        gfx.fillStyle(0x0284c7, 0.9);
-        gfx.fillRoundedRect(cx - 16, cy - (ny !== 0 ? 0 : 7), 32, 14, 3);
+        // Valve metallic wheel rim
+        gfx.lineStyle(1.5, 0x94a3b8, 1);
+        gfx.strokeCircle(cx, cy, 17);
       });
     });
 
-    // Default fallback
     if (!this.textures.exists('pipemania:start_valve')) {
       this.drawAndSaveTexture('pipemania:start_valve', tileSize, (gfx) => {
-        const cx = tileSize / 2;
-        const cy = tileSize / 2;
         gfx.fillStyle(0x0369a1, 1);
-        gfx.fillCircle(cx, cy, 20);
+        gfx.fillCircle(tileSize / 2, tileSize / 2, 20);
         gfx.fillStyle(0x22c55e, 1);
-        gfx.fillCircle(cx, cy, 10);
+        gfx.fillCircle(tileSize / 2, tileSize / 2, 10);
       });
     }
   }
 
   /**
    * Generates Directional End Drains for RIGHT, LEFT, UP, DOWN.
+   * Clearly shows solid vault on 3 sides and an INTAKE FUNNEL MOUTH on the entry port.
    */
   private createDirectionalEndDrains(tileSize: number): void {
     const directions = [
-      { dir: 'right', nx: 1, ny: 0 },
-      { dir: 'left', nx: -1, ny: 0 },
-      { dir: 'up', nx: 0, ny: -1 },
-      { dir: 'down', nx: 0, ny: 1 },
+      { dir: 'right', nx: 1, ny: 0 }, // Water travels RIGHT -> enters from LEFT edge
+      { dir: 'left', nx: -1, ny: 0 },  // Water travels LEFT -> enters from RIGHT edge
+      { dir: 'up', nx: 0, ny: -1 },    // Water travels UP -> enters from BOTTOM edge
+      { dir: 'down', nx: 0, ny: 1 },   // Water travels DOWN -> enters from TOP edge
     ];
 
     directions.forEach(({ dir, nx, ny }) => {
@@ -245,67 +250,76 @@ export class PreloadScene extends Phaser.Scene {
       this.drawAndSaveTexture(key, tileSize, (gfx) => {
         const cx = tileSize / 2;
         const cy = tileSize / 2;
+        const nw = 26;
 
-        // Background tile
+        // Dark tile base
         gfx.fillStyle(0x0a0f1d, 1);
         gfx.fillRect(0, 0, tileSize, tileSize);
 
-        // Inflow Intake Funnel from corresponding edge
-        // Note: dir is the entry flow direction. E.g. dir = 'right' means flow enters moving RIGHT, so intake is on LEFT border
+        // Active Inflow Port location (where water enters from neighbor cell)
         const inSideX = -nx;
         const inSideY = -ny;
 
-        const nw = 26;
+        // 1. Inflow Receiving Intake Collar
+        gfx.fillStyle(0xd97706, 1); // Amber receptor
         if (inSideX !== 0) {
           const x = inSideX > 0 ? cx : 0;
-          gfx.fillStyle(0xd97706, 1);
           gfx.fillRect(x, cy - nw / 2, cx, nw);
-          // Golden collar on receiving border
+          // Dark receiving mouth groove
+          gfx.fillStyle(0x0f172a, 1);
+          gfx.fillRect(x, cy - (nw - 8) / 2, cx, nw - 8);
+          // Golden flange on receiving edge
           gfx.fillStyle(0xf59e0b, 1);
           gfx.fillRect(inSideX > 0 ? tileSize - 4 : 0, cy - nw / 2 - 2, 4, nw + 4);
         } else {
           const y = inSideY > 0 ? cy : 0;
-          gfx.fillStyle(0xd97706, 1);
           gfx.fillRect(cx - nw / 2, y, nw, cy);
+          gfx.fillStyle(0x0f172a, 1);
+          gfx.fillRect(cx - (nw - 8) / 2, y, nw - 8, cy);
           gfx.fillStyle(0xf59e0b, 1);
           gfx.fillRect(cx - nw / 2 - 2, inSideY > 0 ? tileSize - 4 : 0, nw + 4, 4);
         }
 
-        // Drain Tank outer body
-        gfx.fillStyle(0x78350f, 1); // Dark amber
-        gfx.fillRoundedRect(6, 6, tileSize - 12, tileSize - 12, 10);
+        // 2. Heavy Square Drain Housing on non-active edges
+        gfx.fillStyle(0x451a03, 1); // Dark amber vault
+        gfx.fillRoundedRect(5, 5, tileSize - 10, tileSize - 10, 8);
         gfx.lineStyle(2, 0xf59e0b, 1);
-        gfx.strokeRoundedRect(6, 6, tileSize - 12, tileSize - 12, 10);
+        gfx.strokeRoundedRect(5, 5, tileSize - 10, tileSize - 10, 8);
 
-        // Cyclone vortex funnel center
+        // 3. Cyclone Suction Vortex Drain in center
         gfx.fillStyle(0x0f172a, 1);
-        gfx.fillCircle(cx, cy, 14);
+        gfx.fillCircle(cx, cy, 16);
         gfx.lineStyle(2, 0xd97706, 1);
-        gfx.strokeCircle(cx, cy, 14);
+        gfx.strokeCircle(cx, cy, 16);
+        gfx.lineStyle(1.5, 0xf59e0b, 0.8);
+        gfx.strokeCircle(cx, cy, 10);
+        gfx.fillStyle(0x78350f, 1);
+        gfx.fillCircle(cx, cy, 5);
 
-        // Directional Intake Arrow pointing INWARD to center
-        gfx.fillStyle(0xfde047, 1); // Bright yellow
+        // 4. Large Bold Intake Arrow pointing INTO the central drain vortex
+        gfx.fillStyle(0xfde047, 1); // Bright glowing gold/yellow
         if (nx > 0) {
-          gfx.fillTriangle(cx - 14, cy - 6, cx - 14, cy + 6, cx - 4, cy);
+          // Flow moving right into left intake
+          gfx.fillTriangle(cx - 15, cy - 6, cx - 15, cy + 6, cx - 5, cy);
         } else if (nx < 0) {
-          gfx.fillTriangle(cx + 14, cy - 6, cx + 14, cy + 6, cx + 4, cy);
+          // Flow moving left into right intake
+          gfx.fillTriangle(cx + 15, cy - 6, cx + 15, cy + 6, cx + 5, cy);
         } else if (ny > 0) {
-          gfx.fillTriangle(cx - 6, cy - 14, cx + 6, cy - 14, cx, cy - 4);
+          // Flow moving down into top intake
+          gfx.fillTriangle(cx - 6, cy - 15, cx + 6, cy - 15, cx, cy - 5);
         } else {
-          gfx.fillTriangle(cx - 6, cy + 14, cx + 6, cy + 14, cx, cy + 4);
+          // Flow moving up into bottom intake
+          gfx.fillTriangle(cx - 6, cy + 15, cx + 6, cy + 15, cx, cy + 5);
         }
       });
     });
 
-    // Default fallback
     if (!this.textures.exists('pipemania:end_drain')) {
       this.drawAndSaveTexture('pipemania:end_drain', tileSize, (gfx) => {
-        const cx = tileSize / 2;
-        const cy = tileSize / 2;
         gfx.fillStyle(0xd97706, 1);
         gfx.fillRoundedRect(6, 6, tileSize - 12, tileSize - 12, 10);
         gfx.fillStyle(0x0f172a, 1);
-        gfx.fillCircle(cx, cy, 12);
+        gfx.fillCircle(tileSize / 2, tileSize / 2, 12);
       });
     }
   }

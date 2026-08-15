@@ -165,11 +165,11 @@ export class PipeGrid {
   private setupStartAndEnd(config: LevelConfig, rng: () => number): void {
     const targetDist = config.manhattanDistance;
 
-    // Pick random start position
-    let startCol = Math.floor(rng() * 4) + 1; // 1 to 4
-    let startRow = Math.floor(rng() * 5) + 1; // 1 to 5
+    // Pick random start position across the board
+    const startCol = Math.floor(rng() * (GRID_COLS - 2)) + 1; // 1 to 8
+    const startRow = Math.floor(rng() * (GRID_ROWS - 2)) + 1; // 1 to 5
 
-    // Choose Start Outflow direction that doesn't face directly into a border
+    // Choose Start Outflow direction that points into the board
     const validStartDirs: Direction[] = [];
     if (startCol + 1 < GRID_COLS) validStartDirs.push(Direction.RIGHT);
     if (startRow + 1 < GRID_ROWS) validStartDirs.push(Direction.DOWN);
@@ -177,14 +177,13 @@ export class PipeGrid {
     if (startCol - 1 >= 0) validStartDirs.push(Direction.LEFT);
 
     const startDir = validStartDirs[Math.floor(rng() * validStartDirs.length)] || Direction.RIGHT;
-    this.startCoord = { col: startCol, row: startRow };
 
-    // Place START cell
+    this.startCoord = { col: startCol, row: startRow };
     const startCell = this.cells[startRow][startCol];
     startCell.type = PipeType.START;
     startCell.startOutflowDir = startDir;
 
-    // Find valid candidate End positions that match target Manhattan distance approximately
+    // Find candidate End positions matching target Manhattan distance approximately
     const candidates: Array<{ col: number; row: number; dist: number }> = [];
     for (let r = 0; r < GRID_ROWS; r++) {
       for (let c = 0; c < GRID_COLS; c++) {
@@ -196,29 +195,50 @@ export class PipeGrid {
       }
     }
 
-    let chosenEnd = candidates.length > 0
-      ? candidates[Math.floor(rng() * candidates.length)]
-      : { col: GRID_COLS - 2, row: startRow, dist: 0 };
+    // Select candidate End position with fallback to furthest cell if none in narrow range
+    let chosenEnd: { col: number; row: number; dist: number };
+    if (candidates.length > 0) {
+      chosenEnd = candidates[Math.floor(rng() * candidates.length)];
+    } else {
+      let maxD = -1;
+      let best = { col: GRID_COLS - 1, row: GRID_ROWS - 1, dist: 0 };
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          if (c === startCol && r === startRow) continue;
+          const d = Math.abs(c - startCol) + Math.abs(r - startRow);
+          if (d > maxD) {
+            maxD = d;
+            best = { col: c, row: r, dist: d };
+          }
+        }
+      }
+      chosenEnd = best;
+    }
 
     this.endCoord = { col: chosenEnd.col, row: chosenEnd.row };
     const endCell = this.cells[this.endCoord.row][this.endCoord.col];
     endCell.type = PipeType.END;
 
-    // Determine End Inflow direction based on mode
-    let endInDir: Direction = Direction.LEFT;
+    // Determine End Inflow direction purely from config.endOrientationMode
+    let endInDir: Direction = Direction.RIGHT;
+
     if (config.endOrientationMode === 'FACING') {
-      // Facing start
-      if (this.endCoord.col > startCol) endInDir = Direction.RIGHT; // Flowing right into left opening
-      else if (this.endCoord.col < startCol) endInDir = Direction.LEFT;
-      else if (this.endCoord.row > startRow) endInDir = Direction.DOWN;
-      else endInDir = Direction.UP;
+      // Facing start: Water flows towards End along the primary axis of separation
+      if (Math.abs(this.endCoord.col - startCol) >= Math.abs(this.endCoord.row - startRow)) {
+        endInDir = this.endCoord.col > startCol ? Direction.RIGHT : Direction.LEFT;
+      } else {
+        endInDir = this.endCoord.row > startRow ? Direction.DOWN : Direction.UP;
+      }
     } else if (config.endOrientationMode === 'ORTHOGONAL') {
-      endInDir = (startDir === Direction.RIGHT || startDir === Direction.LEFT)
-        ? (rng() < 0.5 ? Direction.DOWN : Direction.UP)
-        : (rng() < 0.5 ? Direction.RIGHT : Direction.LEFT);
+      // 90° Turn from Start outflow
+      if (startDir === Direction.RIGHT || startDir === Direction.LEFT) {
+        endInDir = rng() < 0.5 ? Direction.DOWN : Direction.UP;
+      } else {
+        endInDir = rng() < 0.5 ? Direction.RIGHT : Direction.LEFT;
+      }
     } else {
-      // AWAY from start
-      endInDir = startDir;
+      // AWAY from start: Requires 180° loop around End
+      endInDir = OPPOSITE_DIRECTIONS[startDir];
     }
 
     // Clamp End Inflow: Ensure tile in front of END inflow is inside grid bounds
@@ -227,7 +247,6 @@ export class PipeGrid {
     const frontRow = this.endCoord.row + endInflowFrontVector.dy;
 
     if (frontCol < 0 || frontCol >= GRID_COLS || frontRow < 0 || frontRow >= GRID_ROWS) {
-      // Auto rotate to inside
       if (this.endCoord.col === 0) endInDir = Direction.RIGHT;
       else if (this.endCoord.col === GRID_COLS - 1) endInDir = Direction.LEFT;
       else if (this.endCoord.row === 0) endInDir = Direction.DOWN;
