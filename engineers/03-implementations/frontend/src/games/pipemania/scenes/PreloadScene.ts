@@ -263,7 +263,7 @@ export class PreloadScene extends Phaser.Scene {
 
   /**
    * Generates Directional End Drains for RIGHT, LEFT, UP, DOWN.
-   * Clearly shows solid vault on 3 sides and an INTAKE FUNNEL MOUTH on the entry port.
+   * Features a circular amber drain tank and extended INTAKE PIPE NOZZLE matching START valve.
    */
   private createDirectionalEndDrains(tileSize: number): void {
     const directions = [
@@ -278,7 +278,7 @@ export class PreloadScene extends Phaser.Scene {
       this.drawAndSaveTexture(key, tileSize, (gfx) => {
         const cx = tileSize / 2;
         const cy = tileSize / 2;
-        const nw = 26;
+        const nw = 28; // Matching pipeWidth
 
         // Dark tile base
         gfx.fillStyle(0x0a0f1d, 1);
@@ -288,66 +288,74 @@ export class PreloadScene extends Phaser.Scene {
         const inSideX = -nx;
         const inSideY = -ny;
 
-        // 1. Inflow Receiving Intake Collar
-        gfx.fillStyle(0xd97706, 1); // Amber receptor
+        // 1. Extended Intake Pipe Nozzle reaching the active border
+        gfx.fillStyle(0xd97706, 1); // Amber bronze intake body
         if (inSideX !== 0) {
           const x = inSideX > 0 ? cx : 0;
           gfx.fillRect(x, cy - nw / 2, cx, nw);
           // Dark receiving mouth groove
-          gfx.fillStyle(0x0f172a, 1);
+          gfx.fillStyle(0x031d38, 1);
           gfx.fillRect(x, cy - (nw - 8) / 2, cx, nw - 8);
-          // Golden flange on receiving edge
+          // Golden flange collar on receiving edge
           gfx.fillStyle(0xf59e0b, 1);
           gfx.fillRect(inSideX > 0 ? tileSize - 4 : 0, cy - nw / 2 - 2, 4, nw + 4);
         } else {
           const y = inSideY > 0 ? cy : 0;
           gfx.fillRect(cx - nw / 2, y, nw, cy);
-          gfx.fillStyle(0x0f172a, 1);
+          gfx.fillStyle(0x031d38, 1);
           gfx.fillRect(cx - (nw - 8) / 2, y, nw - 8, cy);
           gfx.fillStyle(0xf59e0b, 1);
           gfx.fillRect(cx - nw / 2 - 2, inSideY > 0 ? tileSize - 4 : 0, nw + 4, 4);
         }
 
-        // 2. Heavy Square Drain Housing on non-active edges
-        gfx.fillStyle(0x451a03, 1); // Dark amber vault
-        gfx.fillRoundedRect(5, 5, tileSize - 10, tileSize - 10, 8);
-        gfx.lineStyle(2, 0xf59e0b, 1);
-        gfx.strokeRoundedRect(5, 5, tileSize - 10, tileSize - 10, 8);
-
-        // 3. Cyclone Suction Vortex Drain in center
-        gfx.fillStyle(0x0f172a, 1);
-        gfx.fillCircle(cx, cy, 16);
-        gfx.lineStyle(2, 0xd97706, 1);
-        gfx.strokeCircle(cx, cy, 16);
-        gfx.lineStyle(1.5, 0xf59e0b, 0.8);
-        gfx.strokeCircle(cx, cy, 10);
+        // 2. Circular Center Drain Cyclone Tank (Matching START circular housing)
         gfx.fillStyle(0x78350f, 1);
-        gfx.fillCircle(cx, cy, 5);
+        gfx.fillCircle(cx, cy, 22);
+        gfx.lineStyle(2.5, 0xf59e0b, 1);
+        gfx.strokeCircle(cx, cy, 22);
 
-        // 4. Large Bold Intake Arrow pointing INTO the central drain vortex
+        // 3. Cyclone Suction Vortex Drain Rings in center
+        gfx.fillStyle(0x451a03, 1);
+        gfx.fillCircle(cx, cy, 16);
+        gfx.lineStyle(1.5, 0xd97706, 0.9);
+        gfx.strokeCircle(cx, cy, 16);
+
+        gfx.fillStyle(0x0f172a, 1); // Deep black vortex center hole
+        gfx.fillCircle(cx, cy, 9);
+        gfx.lineStyle(1.5, 0xfef08a, 0.8);
+        gfx.strokeCircle(cx, cy, 9);
+
+        // 4. Directional Intake Arrow inside the nozzle pointing INTO the drain
         gfx.fillStyle(0xfde047, 1); // Bright glowing gold/yellow
         if (nx > 0) {
-          // Flow moving right into left intake
-          gfx.fillTriangle(cx - 15, cy - 6, cx - 15, cy + 6, cx - 5, cy);
+          // Water moving right into left intake
+          gfx.fillTriangle(cx - 18, cy - 6, cx - 18, cy + 6, cx - 8, cy);
         } else if (nx < 0) {
-          // Flow moving left into right intake
-          gfx.fillTriangle(cx + 15, cy - 6, cx + 15, cy + 6, cx + 5, cy);
+          // Water moving left into right intake
+          gfx.fillTriangle(cx + 18, cy - 6, cx + 18, cy + 6, cx + 8, cy);
         } else if (ny > 0) {
-          // Flow moving down into top intake
-          gfx.fillTriangle(cx - 6, cy - 15, cx + 6, cy - 15, cx, cy - 5);
+          // Water moving down into top intake
+          gfx.fillTriangle(cx - 6, cy - 18, cx + 6, cy - 18, cx, cy - 8);
         } else {
-          // Flow moving up into bottom intake
-          gfx.fillTriangle(cx - 6, cy + 15, cx + 6, cy + 15, cx, cy + 5);
+          // Water moving up into bottom intake
+          gfx.fillTriangle(cx - 6, cy + 18, cx + 6, cy + 18, cx, cy + 8);
         }
+
+        // Metallic rivet details on drain housing
+        gfx.fillStyle(0xfef08a, 1);
+        gfx.fillCircle(cx - 14, cy - 14, 1.5);
+        gfx.fillCircle(cx + 14, cy - 14, 1.5);
+        gfx.fillCircle(cx - 14, cy + 14, 1.5);
+        gfx.fillCircle(cx + 14, cy + 14, 1.5);
       });
     });
 
     if (!this.textures.exists('pipemania:end_drain')) {
       this.drawAndSaveTexture('pipemania:end_drain', tileSize, (gfx) => {
         gfx.fillStyle(0xd97706, 1);
-        gfx.fillRoundedRect(6, 6, tileSize - 12, tileSize - 12, 10);
+        gfx.fillCircle(tileSize / 2, tileSize / 2, 22);
         gfx.fillStyle(0x0f172a, 1);
-        gfx.fillCircle(tileSize / 2, tileSize / 2, 12);
+        gfx.fillCircle(tileSize / 2, tileSize / 2, 10);
       });
     }
   }
@@ -602,7 +610,7 @@ export class PreloadScene extends Phaser.Scene {
       }
     });
 
-    // 12. Reservoir Tank Horizontal (Bidirectional 4X Buffer Tank)
+    // 12. Reservoir Tank Horizontal (Clean 3D Glass Chamber with Fluid Scale)
     this.drawAndSaveTexture('pipemania:pipe_reservoir_h', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
 
@@ -625,7 +633,7 @@ export class PreloadScene extends Phaser.Scene {
       gfx.lineStyle(2, 0x38bdf8, 1);
       gfx.strokeRoundedRect(tx, ty, tw, th, 10);
 
-      // Glass Specular Curved Highlight
+      // Glass Specular Curved Highlights
       gfx.fillStyle(0xe0f2fe, 0.75);
       gfx.fillRoundedRect(tx + 4, ty + 4, tw - 8, 4, 2);
 
@@ -637,29 +645,23 @@ export class PreloadScene extends Phaser.Scene {
       gfx.fillRect(tx + 2, ty, 1.5, th);
       gfx.fillRect(tx + tw - 5, ty, 1.5, th);
 
-      // Bidirectional Fluid Conduit Guide (Straight through, no one-way arrows)
+      // Bidirectional Fluid Conduit Center Track
       gfx.fillStyle(0x38bdf8, 0.8);
       gfx.fillRect(tx + 6, tileSize / 2 - 1, tw - 12, 2);
 
-      // Vertical Fluid Measurement Graduation Ticks (Tank Scale)
+      // Vertical Fluid Measurement Graduation Ticks
       gfx.fillStyle(0x67e8f9, 0.9);
-      gfx.fillRect(tx + 14, ty + 12, 2, 6);
-      gfx.fillRect(tx + 21, ty + 10, 2, 8);
-      gfx.fillRect(tx + 28, ty + 12, 2, 6);
-      gfx.fillRect(tx + 14, ty + th - 18, 2, 6);
-      gfx.fillRect(tx + 21, ty + th - 18, 2, 8);
-      gfx.fillRect(tx + 28, ty + th - 18, 2, 6);
-
-      // Central Buffer Deceleration Gauge Ring
-      gfx.fillStyle(0x082f49, 1);
-      gfx.fillCircle(tileSize / 2, tileSize / 2, 7.5);
-      gfx.lineStyle(1.5, 0x38bdf8, 1);
-      gfx.strokeCircle(tileSize / 2, tileSize / 2, 7.5);
-      gfx.fillStyle(0x22c55e, 1);
-      gfx.fillCircle(tileSize / 2, tileSize / 2, 3);
+      gfx.fillRect(tx + 12, ty + 11, 2, 7);
+      gfx.fillRect(tx + 18, ty + 9, 2, 9);
+      gfx.fillRect(tx + 24, ty + 11, 2, 7);
+      gfx.fillRect(tx + 30, ty + 9, 2, 9);
+      gfx.fillRect(tx + 12, ty + th - 18, 2, 7);
+      gfx.fillRect(tx + 18, ty + th - 18, 2, 9);
+      gfx.fillRect(tx + 24, ty + th - 18, 2, 7);
+      gfx.fillRect(tx + 30, ty + th - 18, 2, 9);
     });
 
-    // 13. Reservoir Tank Vertical (Bidirectional 4X Buffer Tank)
+    // 13. Reservoir Tank Vertical (Clean 3D Glass Chamber with Fluid Scale)
     this.drawAndSaveTexture('pipemania:pipe_reservoir_v', tileSize, (gfx) => {
       this.drawGridBackground(gfx, tileSize);
 
@@ -682,7 +684,7 @@ export class PreloadScene extends Phaser.Scene {
       gfx.lineStyle(2, 0x38bdf8, 1);
       gfx.strokeRoundedRect(tx, ty, tw, th, 10);
 
-      // Glass Specular Curved Highlight
+      // Glass Specular Curved Highlights
       gfx.fillStyle(0xe0f2fe, 0.75);
       gfx.fillRoundedRect(tx + 4, ty + 4, 4, th - 8, 2);
 
@@ -694,26 +696,20 @@ export class PreloadScene extends Phaser.Scene {
       gfx.fillRect(tx, ty + 2, tw, 1.5);
       gfx.fillRect(tx, ty + th - 5, tw, 1.5);
 
-      // Bidirectional Fluid Conduit Guide (Straight through, no one-way arrows)
+      // Bidirectional Fluid Conduit Center Track
       gfx.fillStyle(0x38bdf8, 0.8);
       gfx.fillRect(tileSize / 2 - 1, ty + 6, 2, th - 12);
 
-      // Horizontal Fluid Measurement Graduation Ticks (Tank Scale)
+      // Horizontal Fluid Measurement Graduation Ticks
       gfx.fillStyle(0x67e8f9, 0.9);
-      gfx.fillRect(tx + 12, ty + 14, 6, 2);
-      gfx.fillRect(tx + 10, ty + 21, 8, 2);
-      gfx.fillRect(tx + 12, ty + 28, 6, 2);
-      gfx.fillRect(tx + tw - 18, ty + 14, 6, 2);
-      gfx.fillRect(tx + tw - 18, ty + 21, 8, 2);
-      gfx.fillRect(tx + tw - 18, ty + 28, 6, 2);
-
-      // Central Buffer Deceleration Gauge Ring
-      gfx.fillStyle(0x082f49, 1);
-      gfx.fillCircle(tileSize / 2, tileSize / 2, 7.5);
-      gfx.lineStyle(1.5, 0x38bdf8, 1);
-      gfx.strokeCircle(tileSize / 2, tileSize / 2, 7.5);
-      gfx.fillStyle(0x22c55e, 1);
-      gfx.fillCircle(tileSize / 2, tileSize / 2, 3);
+      gfx.fillRect(tx + 11, ty + 12, 7, 2);
+      gfx.fillRect(tx + 9, ty + 18, 9, 2);
+      gfx.fillRect(tx + 11, ty + 24, 7, 2);
+      gfx.fillRect(tx + 9, ty + 30, 9, 2);
+      gfx.fillRect(tx + tw - 18, ty + 12, 7, 2);
+      gfx.fillRect(tx + tw - 18, ty + 18, 9, 2);
+      gfx.fillRect(tx + tw - 18, ty + 24, 7, 2);
+      gfx.fillRect(tx + tw - 18, ty + 30, 9, 2);
     });
   }
 
