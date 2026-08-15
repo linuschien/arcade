@@ -81,4 +81,65 @@ describe('GhostAI Unit Tests', () => {
     const nextDir = GhostAI.getNextDirection(maze, currentPos, currentDir, targetTile);
     expect(nextDir).not.toBe(Direction.LEFT);
   });
+
+  it('should navigate eaten ghosts successfully from all corners to doorstep using BFS home map', () => {
+    const maze = new PacmanMaze();
+    const cornerStarts: GridPos[] = [
+      { col: 1, row: 3 },   // Top-Left
+      { col: 26, row: 3 },  // Top-Right
+      { col: 1, row: 31 },  // Bottom-Left
+      { col: 26, row: 31 }, // Bottom-Right
+      { col: 0, row: 16 },  // Left Tunnel
+      { col: 27, row: 16 }, // Right Tunnel
+    ];
+
+    for (const start of cornerStarts) {
+      let currentPos = { ...start };
+      let currentDir = Direction.NONE;
+      let steps = 0;
+      const maxSteps = 100;
+
+      while (steps < maxSteps) {
+        if (currentPos.row === 13 && (currentPos.col === 13 || currentPos.col === 14)) {
+          // Successfully reached doorstep!
+          break;
+        }
+
+        const nextDir = GhostAI.getNextDirection(
+          maze,
+          currentPos,
+          currentDir,
+          { col: 13, row: 13 },
+          false,
+          false,
+          true
+        );
+
+        expect(nextDir).not.toBe(Direction.NONE);
+        currentDir = nextDir;
+        const vec = {
+          NONE: { col: 0, row: 0 },
+          UP: { col: 0, row: -1 },
+          DOWN: { col: 0, row: 1 },
+          LEFT: { col: -1, row: 0 },
+          RIGHT: { col: 1, row: 0 },
+        }[currentDir];
+
+        let nextCol = currentPos.col + vec.col;
+        let nextRow = currentPos.row + vec.row;
+        if (nextRow === 16) {
+          if (nextCol < 0) nextCol = 27;
+          else if (nextCol >= 28) nextCol = 0;
+        }
+
+        currentPos = { col: nextCol, row: nextRow };
+        steps++;
+      }
+
+      // Must reach doorstep within maxSteps without getting stuck in corners or loops
+      expect(steps).toBeLessThan(maxSteps);
+      expect(currentPos.row).toBe(13);
+      expect(currentPos.col === 13 || currentPos.col === 14).toBe(true);
+    }
+  });
 });

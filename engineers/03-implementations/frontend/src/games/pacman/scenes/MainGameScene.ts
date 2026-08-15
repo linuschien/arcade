@@ -940,10 +940,12 @@ export class MainGameScene extends Phaser.Scene {
 
       if (dist < 4) {
         const isEaten = ghost.mode === GhostMode.EATEN;
+        let newDir = ghost.direction;
+
         if (isEaten && ghost.gridPos.col === 13 && ghost.gridPos.row === 14) {
-          ghost.direction = Direction.DOWN;
+          newDir = Direction.DOWN;
         } else {
-          ghost.direction = GhostAI.getNextDirection(
+          newDir = GhostAI.getNextDirection(
             this.maze,
             ghost.gridPos,
             ghost.direction,
@@ -952,6 +954,16 @@ export class MainGameScene extends Phaser.Scene {
             false,
             isEaten
           );
+        }
+
+        // Align perpendicular coordinate with corridor centerline upon turning (matching Pac-Man's turn snapping)
+        if (newDir !== ghost.direction) {
+          if (newDir === Direction.UP || newDir === Direction.DOWN) {
+            ghost.x = wCenterX;
+          } else if (newDir === Direction.LEFT || newDir === Direction.RIGHT) {
+            ghost.y = wCenterY;
+          }
+          ghost.direction = newDir;
         }
       }
 

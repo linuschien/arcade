@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PacmanMaze, TileType, MAZE_COLS, MAZE_ROWS, TUNNEL_ROW } from '../logic/PacmanMaze';
+import { PacmanMaze, TileType, MAZE_COLS, MAZE_ROWS, TUNNEL_ROW, Direction } from '../logic/PacmanMaze';
+import { GhostAI } from '../logic/GhostAI';
 
 describe('PacmanMaze Unit Tests', () => {
   let maze: PacmanMaze;
@@ -55,5 +56,30 @@ describe('PacmanMaze Unit Tests', () => {
     const emptyConsumed = maze.consumePellet(1, 3);
     expect(emptyConsumed).toBe(TileType.EMPTY);
     expect(maze.getRemainingPelletCount()).toBe(initialRemaining - 1);
+  });
+
+  it('should ensure all walkable tiles in the maze have a finite BFS distance to home', () => {
+    const grid = maze.getGrid();
+    const unreachableTiles: Array<{ col: number; row: number; type: number }> = [];
+
+    // Check all playable tiles within maze boundaries (rows 3 to 32)
+    for (let r = 3; r <= 32; r++) {
+      for (let c = 0; c < MAZE_COLS; c++) {
+        // Exclude side blank margin areas outside the outer wall boundary on rows 12..14 and 18..20
+        if ((r >= 12 && r <= 14 && (c <= 4 || c >= 23)) || (r >= 18 && r <= 20 && (c <= 4 || c >= 23))) {
+          continue;
+        }
+
+        const tile = grid[r][c];
+        if (tile !== TileType.WALL) {
+          const dist = maze.getHomeBfsDistance(c, r);
+          if (dist === Infinity) {
+            unreachableTiles.push({ col: c, row: r, type: tile });
+          }
+        }
+      }
+    }
+
+    expect(unreachableTiles).toEqual([]);
   });
 });
