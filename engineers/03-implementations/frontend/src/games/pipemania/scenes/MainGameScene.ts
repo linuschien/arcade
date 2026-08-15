@@ -29,6 +29,7 @@ export class MainGameScene extends Phaser.Scene {
   private isPausedState: boolean = false;
 
   // Render Objects
+  private boardFrameGfx!: Phaser.GameObjects.Graphics;
   private tileSprites: Phaser.GameObjects.Sprite[][] = [];
   private presetBoltSprites: Phaser.GameObjects.Sprite[][] = [];
   private liquidGraphics!: Phaser.GameObjects.Graphics;
@@ -62,6 +63,7 @@ export class MainGameScene extends Phaser.Scene {
   public create(): void {
     this.gameState = new PipeManiaGameState(1);
 
+    this.createBoardFrame();
     this.createHUD();
     this.createSidebarQueue();
     this.createBoardGrid();
@@ -85,12 +87,39 @@ export class MainGameScene extends Phaser.Scene {
     }
   }
 
+  private createBoardFrame(): void {
+    this.boardFrameGfx = this.add.graphics();
+    
+    // Glowing Cyberpunk Outer Border around 10x7 Grid
+    const bw = GRID_COLS * TILE_SIZE; // 560
+    const bh = GRID_ROWS * TILE_SIZE; // 392
+
+    // Outer cyan shadow
+    this.boardFrameGfx.lineStyle(4, 0x0284c7, 0.4);
+    this.boardFrameGfx.strokeRoundedRect(BOARD_X - 4, BOARD_Y - 4, bw + 8, bh + 8, 8);
+
+    // Inner bright neon cyan border
+    this.boardFrameGfx.lineStyle(2, 0x38bdf8, 1);
+    this.boardFrameGfx.strokeRoundedRect(BOARD_X - 2, BOARD_Y - 2, bw + 4, bh + 4, 6);
+
+    // Corner decorative brackets
+    this.boardFrameGfx.fillStyle(0x38bdf8, 1);
+    this.boardFrameGfx.fillRect(BOARD_X - 6, BOARD_Y - 6, 12, 3);
+    this.boardFrameGfx.fillRect(BOARD_X - 6, BOARD_Y - 6, 3, 12);
+    this.boardFrameGfx.fillRect(BOARD_X + bw - 6, BOARD_Y - 6, 12, 3);
+    this.boardFrameGfx.fillRect(BOARD_X + bw + 3, BOARD_Y - 6, 3, 12);
+    this.boardFrameGfx.fillRect(BOARD_X - 6, BOARD_Y + bh + 3, 12, 3);
+    this.boardFrameGfx.fillRect(BOARD_X - 6, BOARD_Y + bh - 6, 3, 12);
+    this.boardFrameGfx.fillRect(BOARD_X + bw - 6, BOARD_Y + bh + 3, 12, 3);
+    this.boardFrameGfx.fillRect(BOARD_X + bw + 3, BOARD_Y + bh - 6, 3, 12);
+  }
+
   private createHUD(): void {
     // Top HUD Bar Background
-    const hudBg = this.add.rectangle(360, 32, 720, 64, 0x090d16);
+    const hudBg = this.add.rectangle(360, 32, 720, 64, 0x070b14);
     hudBg.setStrokeStyle(1, 0x1e293b);
 
-    // Score Text
+    // Score Text with glowing green
     this.scoreText = this.add.text(20, 16, 'SCORE: 0', {
       fontFamily: 'monospace',
       fontSize: '18px',
@@ -135,7 +164,7 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private createSidebarQueue(): void {
-    const sidebarBg = this.add.rectangle(SIDEBAR_X + 50, SIDEBAR_Y + 180, 106, 380, 0x090d16);
+    const sidebarBg = this.add.rectangle(SIDEBAR_X + 50, SIDEBAR_Y + 180, 106, 380, 0x070b14);
     sidebarBg.setStrokeStyle(1, 0x1e293b);
 
     this.add.text(SIDEBAR_X + 50, SIDEBAR_Y - 5, 'NEXT', {
@@ -406,10 +435,14 @@ export class MainGameScene extends Phaser.Scene {
         return 'pipemania:grid_tile';
       case PipeType.OBSTACLE:
         return 'pipemania:obstacle_rock';
-      case PipeType.START:
-        return 'pipemania:start_valve';
-      case PipeType.END:
-        return 'pipemania:end_drain';
+      case PipeType.START: {
+        const dir = (cell.startOutflowDir || Direction.RIGHT).toLowerCase();
+        return `pipemania:start_valve_${dir}`;
+      }
+      case PipeType.END: {
+        const dir = (cell.endInflowDir || Direction.LEFT).toLowerCase();
+        return `pipemania:end_drain_${dir}`;
+      }
       case PipeType.HORIZONTAL:
         return 'pipemania:pipe_horizontal';
       case PipeType.VERTICAL:
@@ -480,7 +513,7 @@ export class MainGameScene extends Phaser.Scene {
 
     if (this.gameState.getPlayState() === PlayState.READY_COUNTDOWN) {
       const pct = Math.max(0, Math.min(1.0, remaining / totalDelay));
-      this.countdownBar.fillStyle(0x334155, 1);
+      this.countdownBar.fillStyle(0x1e293b, 1);
       this.countdownBar.fillRect(BOARD_X, 58, GRID_COLS * TILE_SIZE, 6);
       this.countdownBar.fillStyle(0x22c55e, 1);
       this.countdownBar.fillRect(BOARD_X, 58, GRID_COLS * TILE_SIZE * pct, 6);
@@ -596,86 +629,94 @@ export class MainGameScene extends Phaser.Scene {
         gfx.fillRect(bx + inset + 2, by, pipeWidth - 4, TILE_SIZE * p);
       }
     } else {
-      // Corners
-      this.drawCornerFluid(bx, by, cell, progress, color, coreColor, inset, pipeWidth);
+      // Smooth Quarter-Torus Corner fluid stream
+      this.drawCornerFluidStream(bx, by, cell, progress, color, coreColor, inset);
     }
   }
 
-  private drawCornerFluid(
+  /**
+   * Continuous curved fluid stream along the smooth quarter-torus arc.
+   */
+  private drawCornerFluidStream(
     bx: number,
     by: number,
     cell: GridCell,
     progress: number,
     color: number,
     coreColor: number,
-    inset: number,
-    pipeWidth: number
+    offset: number
   ): void {
     const gfx = this.liquidGraphics;
-    const p1 = Math.min(1.0, progress * 2.0);
-    const p2 = Math.max(0.0, (progress - 0.5) * 2.0);
-
-    gfx.fillStyle(color, 0.9);
+    let cx = 0;
+    let cy = 0;
+    let startAngle = 0;
+    let endAngle = 0;
 
     if (cell.type === PipeType.CORNER_TOP_RIGHT) {
+      cx = bx;
+      cy = by + TILE_SIZE;
       if (cell.entryDir === Direction.DOWN) {
-        // Enters from top down to center, then right
-        gfx.fillRect(bx + inset + 2, by, pipeWidth - 4, (inset + pipeWidth) * p1);
-        if (p2 > 0) {
-          gfx.fillRect(bx + inset, by + inset + 2, (TILE_SIZE - inset) * p2, pipeWidth - 4);
-        }
+        // Enters from top (-90 deg) -> flows to right (0 deg)
+        startAngle = -Math.PI / 2;
+        endAngle = 0;
       } else {
-        // Enters from right to center, then up
-        const w = (TILE_SIZE - inset) * p1;
-        gfx.fillRect(bx + TILE_SIZE - w, by + inset + 2, w, pipeWidth - 4);
-        if (p2 > 0) {
-          const h = (inset + pipeWidth) * p2;
-          gfx.fillRect(bx + inset + 2, by + inset + pipeWidth - h, pipeWidth - 4, h);
-        }
+        // Enters from right (0 deg) -> flows to top (-90 deg)
+        startAngle = 0;
+        endAngle = -Math.PI / 2;
       }
     } else if (cell.type === PipeType.CORNER_TOP_LEFT) {
+      cx = bx + TILE_SIZE;
+      cy = by + TILE_SIZE;
       if (cell.entryDir === Direction.DOWN) {
-        gfx.fillRect(bx + inset + 2, by, pipeWidth - 4, (inset + pipeWidth) * p1);
-        if (p2 > 0) {
-          const w = (inset + pipeWidth) * p2;
-          gfx.fillRect(bx + inset + pipeWidth - w, by + inset + 2, w, pipeWidth - 4);
-        }
+        // Enters from top (-90 deg) -> flows to left (180 deg)
+        startAngle = -Math.PI / 2;
+        endAngle = -Math.PI;
       } else {
-        gfx.fillRect(bx, by + inset + 2, (inset + pipeWidth) * p1, pipeWidth - 4);
-        if (p2 > 0) {
-          const h = (inset + pipeWidth) * p2;
-          gfx.fillRect(bx + inset + 2, by + inset + pipeWidth - h, pipeWidth - 4, h);
-        }
+        // Enters from left (180 deg) -> flows to top (270 deg / -90 deg)
+        startAngle = Math.PI;
+        endAngle = Math.PI * 1.5;
       }
     } else if (cell.type === PipeType.CORNER_BOTTOM_RIGHT) {
+      cx = bx;
+      cy = by;
       if (cell.entryDir === Direction.UP) {
-        const h = (TILE_SIZE - inset) * p1;
-        gfx.fillRect(bx + inset + 2, by + TILE_SIZE - h, pipeWidth - 4, h);
-        if (p2 > 0) {
-          gfx.fillRect(bx + inset, by + inset + 2, (TILE_SIZE - inset) * p2, pipeWidth - 4);
-        }
+        // Enters from bottom (90 deg) -> flows to right (0 deg)
+        startAngle = Math.PI / 2;
+        endAngle = 0;
       } else {
-        const w = (TILE_SIZE - inset) * p1;
-        gfx.fillRect(bx + TILE_SIZE - w, by + inset + 2, w, pipeWidth - 4);
-        if (p2 > 0) {
-          gfx.fillRect(bx + inset + 2, by + inset, pipeWidth - 4, (TILE_SIZE - inset) * p2);
-        }
+        // Enters from right (0 deg) -> flows to bottom (90 deg)
+        startAngle = 0;
+        endAngle = Math.PI / 2;
       }
     } else if (cell.type === PipeType.CORNER_BOTTOM_LEFT) {
+      cx = bx + TILE_SIZE;
+      cy = by;
       if (cell.entryDir === Direction.UP) {
-        const h = (TILE_SIZE - inset) * p1;
-        gfx.fillRect(bx + inset + 2, by + TILE_SIZE - h, pipeWidth - 4, h);
-        if (p2 > 0) {
-          const w = (inset + pipeWidth) * p2;
-          gfx.fillRect(bx + inset + pipeWidth - w, by + inset + 2, w, pipeWidth - 4);
-        }
+        // Enters from bottom (90 deg) -> flows to left (180 deg)
+        startAngle = Math.PI / 2;
+        endAngle = Math.PI;
       } else {
-        gfx.fillRect(bx, by + inset + 2, (inset + pipeWidth) * p1, pipeWidth - 4);
-        if (p2 > 0) {
-          gfx.fillRect(bx + inset + 2, by + inset, pipeWidth - 4, (TILE_SIZE - inset) * p2);
-        }
+        // Enters from left (180 deg) -> flows to bottom (90 deg)
+        startAngle = Math.PI;
+        endAngle = Math.PI / 2;
       }
     }
+
+    const R_mid = TILE_SIZE / 2;
+    const currentAngle = startAngle + (endAngle - startAngle) * progress;
+    const anticlockwise = endAngle < startAngle;
+
+    // Green fluid stream
+    gfx.lineStyle(16, color, 0.95);
+    gfx.beginPath();
+    gfx.arc(cx, cy, R_mid, startAngle, currentAngle, anticlockwise);
+    gfx.strokePath();
+
+    // Bright glowing core
+    gfx.lineStyle(6, coreColor, 1);
+    gfx.beginPath();
+    gfx.arc(cx, cy, R_mid, startAngle, currentAngle, anticlockwise);
+    gfx.strokePath();
   }
 
   private cleanup(): void {
@@ -685,6 +726,9 @@ export class MainGameScene extends Phaser.Scene {
 
     if (this.liquidGraphics) {
       this.liquidGraphics.destroy();
+    }
+    if (this.boardFrameGfx) {
+      this.boardFrameGfx.destroy();
     }
   }
 }

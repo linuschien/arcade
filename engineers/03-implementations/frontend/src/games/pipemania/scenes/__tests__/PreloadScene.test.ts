@@ -21,6 +21,11 @@ describe('PipeMania PreloadScene Unit Tests', () => {
       strokeRoundedRect: vi.fn().mockReturnThis(),
       strokeCircle: vi.fn().mockReturnThis(),
       strokeLineShape: vi.fn().mockReturnThis(),
+      beginPath: vi.fn().mockReturnThis(),
+      arc: vi.fn().mockReturnThis(),
+      closePath: vi.fn().mockReturnThis(),
+      fillPath: vi.fn().mockReturnThis(),
+      strokePath: vi.fn().mockReturnThis(),
       generateTexture: vi.fn().mockReturnThis(),
       destroy: vi.fn().mockReturnThis(),
     };
