@@ -165,7 +165,7 @@ export class PipeGrid {
   private setupStartAndEnd(config: LevelConfig, rng: () => number): void {
     const targetDist = config.manhattanDistance;
 
-    // 1. Pick Start position & outflow direction
+    // 1. Pick Start position & outflow direction within inner safe zone (1..GRID_COLS-2, 1..GRID_ROWS-2)
     let startCol = 1;
     let startRow = 3;
     let startDir = Direction.RIGHT;
@@ -191,13 +191,8 @@ export class PipeGrid {
     } else {
       startCol = Math.floor(rng() * (GRID_COLS - 2)) + 1;
       startRow = Math.floor(rng() * (GRID_ROWS - 2)) + 1;
-
-      const validStartDirs: Direction[] = [];
-      if (startCol + 1 < GRID_COLS) validStartDirs.push(Direction.RIGHT);
-      if (startRow + 1 < GRID_ROWS) validStartDirs.push(Direction.DOWN);
-      if (startRow - 1 >= 0) validStartDirs.push(Direction.UP);
-      if (startCol - 1 >= 0) validStartDirs.push(Direction.LEFT);
-      startDir = validStartDirs[Math.floor(rng() * validStartDirs.length)] || Direction.RIGHT;
+      const allDirs = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP];
+      startDir = allDirs[Math.floor(rng() * allDirs.length)];
     }
 
     this.startCoord = { col: startCol, row: startRow };
@@ -205,19 +200,25 @@ export class PipeGrid {
     startCell.type = PipeType.START;
     startCell.startOutflowDir = startDir;
 
-    // 2. Pick End Position based on Orientation Mode with Exact-Distance Priority
+    // 2. Pick End Position strictly within inner safe zone matching Manhattan distance & Mode geometry
     const allCandidates: Array<{ col: number; row: number; dist: number; diff: number }> = [];
 
-    for (let r = 0; r < GRID_ROWS; r++) {
-      for (let c = 0; c < GRID_COLS; c++) {
+    for (let r = 1; r < GRID_ROWS - 1; r++) {
+      for (let c = 1; c < GRID_COLS - 1; c++) {
         if (c === startCol && r === startRow) continue;
 
         if (config.endOrientationMode === 'FACING') {
-          // In FACING mode, candidate must be strictly in the forward direction of startDir
+          // FACING: End must be in the forward direction of startDir
           if (startDir === Direction.RIGHT && c <= startCol) continue;
           if (startDir === Direction.LEFT && c >= startCol) continue;
           if (startDir === Direction.DOWN && r <= startRow) continue;
           if (startDir === Direction.UP && r >= startRow) continue;
+        } else if (config.endOrientationMode === 'AWAY') {
+          // AWAY: True Back-to-Back (Start shoots away from End; End is located behind Start)
+          if (startDir === Direction.RIGHT && c > startCol) continue;
+          if (startDir === Direction.LEFT && c < startCol) continue;
+          if (startDir === Direction.DOWN && r > startRow) continue;
+          if (startDir === Direction.UP && r < startRow) continue;
         }
 
         const d = Math.abs(c - startCol) + Math.abs(r - startRow);
@@ -228,46 +229,29 @@ export class PipeGrid {
 
     let chosenEnd: { col: number; row: number; dist: number };
     if (allCandidates.length > 0) {
-      // Filter strictly by minimum distance diff (diff = 0 whenever geometrically possible)
       const minDiff = Math.min(...allCandidates.map(c => c.diff));
       const optimalCandidates = allCandidates.filter(c => c.diff === minDiff);
       chosenEnd = optimalCandidates[Math.floor(rng() * optimalCandidates.length)];
     } else {
-      chosenEnd = { col: GRID_COLS - 1, row: GRID_ROWS - 1, dist: 0 };
+      chosenEnd = { col: GRID_COLS - 2, row: GRID_ROWS - 2, dist: 0 };
     }
 
     this.endCoord = { col: chosenEnd.col, row: chosenEnd.row };
     const endCell = this.cells[this.endCoord.row][this.endCoord.col];
     endCell.type = PipeType.END;
 
-    // 3. Determine End Inflow Direction
-    let endInDir: Direction = Direction.RIGHT;
-
+    // 3. Determine End Inflow Direction (100% in-bounds by construction)
+    let endInDir: Direction;
     if (config.endOrientationMode === 'FACING') {
-      // Facing: End directly accepts stream moving in startDir (inflow opening faces start)
       endInDir = startDir;
     } else if (config.endOrientationMode === 'ORTHOGONAL') {
-      // 90° Turn
-      if (startDir === Direction.RIGHT || startDir === Direction.LEFT) {
-        endInDir = rng() < 0.5 ? Direction.DOWN : Direction.UP;
-      } else {
-        endInDir = rng() < 0.5 ? Direction.RIGHT : Direction.LEFT;
-      }
+      const isStartHoriz = startDir === Direction.RIGHT || startDir === Direction.LEFT;
+      endInDir = isStartHoriz
+        ? (rng() < 0.5 ? Direction.DOWN : Direction.UP)
+        : (rng() < 0.5 ? Direction.RIGHT : Direction.LEFT);
     } else {
       // AWAY: 180° loop
       endInDir = OPPOSITE_DIRECTIONS[startDir];
-    }
-
-    // Clamp End Inflow: Ensure tile in front of END inflow is inside grid bounds
-    const endInflowFrontVector = DIRECTION_VECTORS[OPPOSITE_DIRECTIONS[endInDir]];
-    const frontCol = this.endCoord.col + endInflowFrontVector.dx;
-    const frontRow = this.endCoord.row + endInflowFrontVector.dy;
-
-    if (frontCol < 0 || frontCol >= GRID_COLS || frontRow < 0 || frontRow >= GRID_ROWS) {
-      if (this.endCoord.col === 0) endInDir = Direction.RIGHT;
-      else if (this.endCoord.col === GRID_COLS - 1) endInDir = Direction.LEFT;
-      else if (this.endCoord.row === 0) endInDir = Direction.DOWN;
-      else endInDir = Direction.UP;
     }
 
     endCell.endInflowDir = endInDir;

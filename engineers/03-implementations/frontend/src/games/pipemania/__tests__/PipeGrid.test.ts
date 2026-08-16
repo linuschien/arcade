@@ -110,4 +110,46 @@ describe('PipeGrid Unit Tests', () => {
     const placeRes = grid.placePipe(preset.col, preset.row, PipeType.HORIZONTAL);
     expect(placeRes.success).toBe(false);
   });
+
+  it('should guarantee that Start and End ports always face strictly in-bounds empty tiles for all levels 1-36', () => {
+    for (let level = 1; level <= 36; level++) {
+      const grid = new PipeGrid();
+      grid.generateLevel(level);
+
+      const startCoord = grid.getStartCoord();
+      const endCoord = grid.getEndCoord();
+      const startCell = grid.getCell(startCoord.col, startCoord.row)!;
+      const endCell = grid.getCell(endCoord.col, endCoord.row)!;
+
+      // 1. Verify Start outflow front tile is inside grid
+      const sDir = startCell.startOutflowDir!;
+      let sFrontCol = startCoord.col;
+      let sFrontRow = startCoord.row;
+      if (sDir === 'RIGHT') sFrontCol++;
+      else if (sDir === 'LEFT') sFrontCol--;
+      else if (sDir === 'DOWN') sFrontRow++;
+      else if (sDir === 'UP') sFrontRow--;
+
+      expect(sFrontCol).toBeGreaterThanOrEqual(0);
+      expect(sFrontCol).toBeLessThan(GRID_COLS);
+      expect(sFrontRow).toBeGreaterThanOrEqual(0);
+      expect(sFrontRow).toBeLessThan(GRID_ROWS);
+      expect(grid.getCell(sFrontCol, sFrontRow)?.type).toBe(PipeType.EMPTY);
+
+      // 2. Verify End inflow source tile is strictly inside grid and is EMPTY
+      const eDir = endCell.endInflowDir!;
+      let eSourceCol = endCoord.col;
+      let eSourceRow = endCoord.row;
+      if (eDir === 'RIGHT') eSourceCol--;
+      else if (eDir === 'LEFT') eSourceCol++;
+      else if (eDir === 'DOWN') eSourceRow--;
+      else if (eDir === 'UP') eSourceRow++;
+
+      expect(eSourceCol).toBeGreaterThanOrEqual(0);
+      expect(eSourceCol).toBeLessThan(GRID_COLS);
+      expect(eSourceRow).toBeGreaterThanOrEqual(0);
+      expect(eSourceRow).toBeLessThan(GRID_ROWS);
+      expect(grid.getCell(eSourceCol, eSourceRow)?.type).toBe(PipeType.EMPTY);
+    }
+  });
 });
