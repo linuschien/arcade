@@ -76,20 +76,24 @@ describe('PacmanGameState Unit Tests', () => {
     expect(state.getScore()).toBe(4600);
   });
 
-  it('should award 1UP extra life when reaching 10,000 points', () => {
+  it('should award 1UP extra life every 10,000 points', () => {
     expect(state.getLives()).toBe(3);
 
     const firstBonus = state.addScore(9990);
     expect(firstBonus).toBe(false);
     expect(state.getLives()).toBe(3);
 
-    const secondBonus = state.addScore(20); // Hits 10,010 pts
+    const secondBonus = state.addScore(20); // Hits 10,010 pts (1st milestone)
     expect(secondBonus).toBe(true);
     expect(state.getLives()).toBe(4);
 
-    const thirdBonus = state.addScore(10000); // 1UP only awarded ONCE
-    expect(thirdBonus).toBe(false);
-    expect(state.getLives()).toBe(4);
+    const thirdBonus = state.addScore(10000); // Hits 20,010 pts (2nd milestone)
+    expect(thirdBonus).toBe(true);
+    expect(state.getLives()).toBe(5);
+
+    const fourthBonus = state.addScore(20000); // Hits 40,010 pts (awards 2 extra lives)
+    expect(fourthBonus).toBe(true);
+    expect(state.getLives()).toBe(7);
   });
 
   it('should handle life loss and transition to GAME_OVER when lives reach 0', () => {

@@ -39,8 +39,6 @@ export class PacmanGameState {
   private fruitTriggered74: boolean = false;
   private eatenFruitHistory: FruitType[] = [];
 
-  private hasEarned1UP: boolean = false;
-
   constructor(initialLevel: number = 1) {
     this.level = initialLevel;
     this.currentSpec = getLevelSpec(this.level);
@@ -92,14 +90,17 @@ export class PacmanGameState {
   }
 
   /**
-   * Add score points and check for 10,000 pts 1UP Extra Life milestone.
+   * Add score points and check for 10,000 pts 1UP Extra Life milestones (awards 1UP every 10,000 points).
    * Returns true if 1UP extra life was awarded.
    */
   public addScore(pts: number): boolean {
+    const prevMilestones = Math.floor(this.score / 10000);
     this.score += pts;
-    if (this.score >= 10000 && !this.hasEarned1UP) {
-      this.hasEarned1UP = true;
-      this.lives += 1;
+    const newMilestones = Math.floor(this.score / 10000);
+
+    if (newMilestones > prevMilestones) {
+      const extraLives = newMilestones - prevMilestones;
+      this.lives += extraLives;
       return true;
     }
     return false;
