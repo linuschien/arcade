@@ -37,13 +37,13 @@ export class PipeManiaLevelSpecs {
 
     if (L <= 36) {
       // Mainline Levels 1..36
-      const delaySeconds = Math.max(6.0, 20.0 - 0.40 * (L - 1));
-      const flowIntervalMs = Math.max(800, 2500 - 50 * (L - 1));
+      const delaySeconds = Math.max(10.0, Math.round((30.0 - (20.0 / 35.0) * (L - 1)) * 100) / 100);
+      const flowIntervalMs = Math.max(1000, Math.round(3000 - (2000.0 / 35.0) * (L - 1)));
       const reservoirIntervalMs = flowIntervalMs * 6.0;
       const targetLength = Math.min(30, Math.floor(10 + 0.58 * (L - 1)));
       const obstacleCount = Math.min(6, Math.floor(0.18 * (L - 1)));
       const presetPipeCount = Math.min(6, Math.max(0, Math.floor(0.19 * (L - 3))));
-      const manhattanDistance = Math.max(2, Math.floor(6 - 0.11 * (L - 1)));
+      const manhattanDistance = Math.max(2, Math.floor(8 - (6.0 / 35.0) * (L - 1)));
 
       let endOrientationMode: 'FACING' | 'ORTHOGONAL' | 'AWAY' = 'FACING';
       if (L >= 21) {
@@ -86,20 +86,20 @@ export class PipeManiaLevelSpecs {
       const baseLevel = ((L - 1) % 36) + 1;
       const decayFactor = Math.pow(0.9, loopRound);
 
-      // Delay floor is 4.0s in endless mode
-      const baseDelay = Math.max(6.0, 20.0 - 0.40 * (baseLevel - 1));
-      const delaySeconds = Math.max(4.0, baseDelay * decayFactor);
+      // Delay floor is 5.0s in endless mode
+      const baseDelay = Math.max(10.0, Math.round((30.0 - (20.0 / 35.0) * (baseLevel - 1)) * 100) / 100);
+      const delaySeconds = Math.max(5.0, Math.round(baseDelay * decayFactor * 100) / 100);
 
-      // Flow speed floor is 500ms in endless mode
-      const baseFlow = Math.max(800, 2500 - 50 * (baseLevel - 1));
-      const flowIntervalMs = Math.max(500, Math.round(baseFlow * decayFactor));
+      // Flow speed floor is 600ms in endless mode
+      const baseFlow = Math.max(1000, Math.round(3000 - (2000.0 / 35.0) * (baseLevel - 1)));
+      const flowIntervalMs = Math.max(600, Math.round(baseFlow * decayFactor));
       const reservoirIntervalMs = flowIntervalMs * 6.0;
 
       // Target, Obstacles & Presets scale with baseLevel & cap
       const targetLength = Math.min(30, Math.floor(10 + 0.58 * (baseLevel - 1)));
       const obstacleCount = Math.min(6, Math.floor(0.18 * (baseLevel - 1)));
       const presetPipeCount = Math.min(6, Math.max(0, Math.floor(0.19 * (baseLevel - 3))));
-      const manhattanDistance = Math.max(2, Math.floor(6 - 0.11 * (baseLevel - 1)));
+      const manhattanDistance = Math.max(2, Math.floor(8 - (6.0 / 35.0) * (baseLevel - 1)));
 
       let endOrientationMode: 'FACING' | 'ORTHOGONAL' | 'AWAY' = 'FACING';
       if (baseLevel >= 21) {

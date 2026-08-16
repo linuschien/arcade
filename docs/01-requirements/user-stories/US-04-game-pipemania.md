@@ -124,11 +124,11 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (Delay Time $T_{\text{delay}}$)**：
-  - 公式：$T_{\text{delay}}(L) = \max(6.0, 20.0 - 0.40 \times (L - 1))$ 秒。
-  - 數值區間：$20.00\text{s} \to 6.00\text{s}$。倒數期間播放 `SFX_COUNTDOWN_TICK` 定時脈衝音。
+  - 公式：$T_{\text{delay}}(L) = \max(10.0, 30.0 - 0.57 \times (L - 1))$ 秒。
+  - 數值區間：$30.00\text{s} \to 10.00\text{s}$。倒數期間播放 `SFX_COUNTDOWN_TICK` 定時脈衝音。
 - **AC2 (Flow Speed $T_{\text{flow}}$)**：
-  - 公式：$T_{\text{flow}}(L) = \max(800, 2500 - 50 \times (L - 1))$ 毫秒。
-  - 數值區間：$2500\text{ms} \to 800\text{ms}$（開局 2.5s，高難度 0.8s）。
+  - 公式：$T_{\text{flow}}(L) = \max(1000, \text{round}(3000 - 57.14 \times (L - 1)))$ 毫秒。
+  - 數值區間：$3000\text{ms} \to 1000\text{ms}$（開局 3.0s，高難度 1.0s）。
 - **AC3 (Target Length $N_{\text{target}}$)**：
   - 公式：$N_{\text{target}}(L) = \min(30, \lfloor 10 + 0.58 \times (L - 1) \rfloor)$ 格。
   - 數值區間：$10 \to 30$ 格（第 36 關封頂 30 格）。
@@ -157,7 +157,7 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 - **AC3 (Max Path Capacity Check $\ge N_{\text{target}}$)**：以 DFS 啟發式評估盤面所有可用空白格子，起點至終點的**理論最大無自交路徑長度必須 $\ge N_{\text{target}}$**。
 - **AC4 (Auto Retry Loop)**：若生成的地圖未通過 AC1~AC3 驗證，引擎在 5ms 內自動更換隨機種子重新生成（最多重試 10 次；若仍未通過則自動減少 1 顆障礙石頭以保證 100% 可解）。
 - **AC5 (Start & End Distance Linear Formula)**：
-  - 曼哈頓距離公式：$D_{\text{manhattan}}(L) = \max(2, \lfloor 6 - 0.11 \times (L - 1) \rfloor)$ 格。
+  - 曼哈頓距離公式：$D_{\text{manhattan}}(L) = \max(2, \lfloor 8 - 0.171 \times (L - 1) \rfloor)$ 格。
   - 朝向規則：$L \le 8$ 終點正對起點；$9 \le L \le 20$ 垂直正交 (90°)；$L \ge 21$ 背向起點 (180°)。
 
 ---
@@ -173,10 +173,10 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (36 Level Mainline)**：通過第 36 關時，播放 `BGM_VICTORY` 並進入 Endless Loop。
 - **AC2 (Endless Loop Multi-Round Numerical Ranges)**：當關卡 $L > 36$ 時，定義循環輪數 $R = \lfloor (L - 1) / 36 \rfloor$ 與基準關卡 $\text{BaseLevel} = ((L - 1) \bmod 36) + 1$：
-  - **第 2 輪 (Loop 1: $L=37\sim 72, R=1$)**：$T_{\text{delay}} = [9.00\text{s} \sim 1.13\text{s}]$, $T_{\text{flow}} = [1350\text{ms} \sim 468\text{ms}]$。
-  - **第 3 輪 (Loop 2: $L=73\sim 108, R=2$)**：$T_{\text{delay}} = [8.10\text{s} \sim 1.01\text{s}]$, $T_{\text{flow}} = [1215\text{ms} \sim 421\text{ms}]$。
-  - **第 4 輪 (Loop 3: $L=109\sim 144, R=3$)**：$T_{\text{delay}} = [7.29\text{s} \sim 1.00\text{s}]$, $T_{\text{flow}} = [1093\text{ms} \sim 379\text{ms}]$。
-  - **第 5 輪+ (極限: $L \ge 145, R \ge 4$)**：$T_{\text{delay}} = 1.00\text{s}$ 保底極限，$T_{\text{flow}} \to 350\text{ms}$ 極限保護牆。
+  - **第 2 輪 (Loop 1: $L=37\sim 72, R=1$)**：$T_{\text{delay}} = [27.00\text{s} \sim 9.00\text{s}]$, $T_{\text{flow}} = [2700\text{ms} \sim 900\text{ms}]$。
+  - **第 3 輪 (Loop 2: $L=73\sim 108, R=2$)**：$T_{\text{delay}} = [24.30\text{s} \sim 8.10\text{s}]$, $T_{\text{flow}} = [2430\text{ms} \sim 810\text{ms}]$。
+  - **第 4 輪 (Loop 3: $L=109\sim 144, R=3$)**：$T_{\text{delay}} = [21.87\text{s} \sim 7.29\text{s}]$, $T_{\text{flow}} = [2187\text{ms} \sim 729\text{ms}]$。
+  - **第 5 輪+ (極限: $L \ge 145, R \ge 4$)**：$T_{\text{delay}} = 5.00\text{s}$ 保底極限，$T_{\text{flow}} \to 600\text{ms}$ 極限保護牆。
 
 ---
 
