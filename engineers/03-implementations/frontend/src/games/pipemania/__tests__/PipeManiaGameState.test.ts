@@ -129,11 +129,19 @@ describe('PipeManiaGameState Unit Tests', () => {
     expect(gameState.getPlayState()).toBe(PlayState.GAME_OVER);
   });
 
-  it('should award extra life (Extend) at 50,000 points threshold', () => {
+  it('should award extra life (Extend) at 10,000 points threshold and cap at 6 wrenches', () => {
     const gameState = new PipeManiaGameState(1);
     (gameState as any).wrenches = 2;
 
-    (gameState as any).addScore(50000, []);
+    (gameState as any).addScore(10000, []);
     expect(gameState.getWrenches()).toBe(3);
+
+    // Score reaches 60,000 -> capped at 6 wrenches
+    (gameState as any).addScore(50000, []);
+    expect(gameState.getWrenches()).toBe(6);
+
+    // Additional score does not exceed 6
+    (gameState as any).addScore(10000, []);
+    expect(gameState.getWrenches()).toBe(6);
   });
 });

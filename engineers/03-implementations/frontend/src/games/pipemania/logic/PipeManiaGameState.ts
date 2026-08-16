@@ -62,7 +62,7 @@ export class PipeManiaGameState {
   private failureReason: FailureReason = FailureReason.NONE;
 
   private score: number = 0;
-  private nextExtendScoreThreshold: number = 50000;
+  private nextExtendScoreThreshold: number = 10000;
   private wrenches: number = 3;
   private floodedCount: number = 0;
   private fastForward: boolean = false;
@@ -452,10 +452,10 @@ export class PipeManiaGameState {
   private addScore(points: number, events: GameStepEvent[]): void {
     this.score += points;
 
-    // Check Extend every 50,000 pts (cap 5 wrenches)
+    // Check Extend every 10,000 pts (cap 6 wrenches total)
     while (this.score >= this.nextExtendScoreThreshold) {
-      this.nextExtendScoreThreshold += 50000;
-      if (this.wrenches < 5) {
+      this.nextExtendScoreThreshold += 10000;
+      if (this.wrenches < 6) {
         this.wrenches++;
         events.push({ type: 'EXTEND_LIFE' });
       }

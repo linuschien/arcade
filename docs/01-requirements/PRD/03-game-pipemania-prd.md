@@ -56,14 +56,15 @@ Pipe Mania 是一部經典的網格路徑規劃益智遊戲。玩家在 $10 \tim
 | **`SFX_GAME_OVER`** | 扳手生命耗盡結算 | 低沈沉重的街機遊戲結束音效 (Game Over Jingle) | 單次播放 |
 
 ### 2.5 生命值（扳手 Wrenches）與加命機制 (Lives & Extends)
-- **初始生命值**：單次投幣 (1 Credit) 獲得 **3 支扳手 (3 條生命 / Lives)**。
+- **初始生命值與備用命顯示 (Reserve Lives Format)**：
+  - 單次投幣 (1 Credit) 獲得 **3 條生命 (3 Lives)**（1 條施工中 + **2 支備用板手**，畫面右上角初始顯示 **2 支板手**）。
 - **扣命與關卡重試**：
   - 當發生「爆管溢出 (Spill)」或「長度未達標 (Underflow)」時，扣除 1 支扳手，播放 `SFX_SPILL_BURST`。
-  - 若剩餘扳手 $> 0$，玩家**原關重試 (Retry Current Level)**，重置盤面並重新發送開局 $T_{\text{delay}}$ 預備時間。
-  - 若扳手 $= 0$，進入平台 10 秒 Continue 倒數。
+  - 若剩餘生命 $> 0$，玩家**原關重試 (Retry Current Level)**，重置盤面並重新發送開局 $T_{\text{delay}}$ 預備時間（剩餘最後 1 條命時右上角備用板手顯示 0 支）。
+  - 若生命 $= 0$，進入平台 10 秒 Continue 倒數。
 - **獎勵加命 (Extend Mechanism)**：
-  - 玩家每累積獲得 **50,000 分**，系統播放 `SFX_EXTEND_LIFE` 並自動獎勵 **+1 支扳手 (Extend)**。
-  - 扳手上限為 **5 支**。
+  - 玩家每累積獲得 **10,000 分**（單向里程碑防刷機制），系統播放 `SFX_EXTEND_LIFE` 並自動獎勵 **+1 條生命 (Extend)**。
+  - 總生命上限為 **6 條命**（畫面右上角最多顯示 **5 支備用板手**）。
 
 ### 2.6 5 格 FIFO 水管發牌佇列 (5-Slot FIFO Pipe Queue)
 - **UI 佇列結構明確定義**：

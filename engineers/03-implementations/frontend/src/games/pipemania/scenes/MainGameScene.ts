@@ -597,10 +597,10 @@ export class MainGameScene extends Phaser.Scene {
       this.countdownBar.fillRoundedRect(330, 46, 260 * goalPct, 6, 3);
     }
 
-    // Update Wrenches
-    const wrenches = this.gameState.getWrenches();
+    // Update Wrenches (Reserve Lives format: displays remaining spare wrenches, max 5 spare)
+    const reserveWrenches = Math.max(0, this.gameState.getWrenches() - 1);
     for (let i = 0; i < 5; i++) {
-      this.wrenchSprites[i].setVisible(i < wrenches);
+      this.wrenchSprites[i].setVisible(i < reserveWrenches);
     }
   }
 
