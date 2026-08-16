@@ -242,16 +242,16 @@ export class PipeGrid {
 
     // 3. Determine End Inflow Direction (100% in-bounds by construction)
     let endInDir: Direction;
-    if (config.endOrientationMode === 'FACING') {
+    if (config.endOrientationMode === 'FACING' || config.endOrientationMode === 'AWAY') {
+      // In FACING (End in front) and AWAY (End behind), endInDir = startDir aligns the stream
+      // In AWAY mode, End is behind Start, so opening faces outwards (true Back-to-Back!)
       endInDir = startDir;
-    } else if (config.endOrientationMode === 'ORTHOGONAL') {
+    } else {
+      // ORTHOGONAL: 90° Turn
       const isStartHoriz = startDir === Direction.RIGHT || startDir === Direction.LEFT;
       endInDir = isStartHoriz
         ? (rng() < 0.5 ? Direction.DOWN : Direction.UP)
         : (rng() < 0.5 ? Direction.RIGHT : Direction.LEFT);
-    } else {
-      // AWAY: 180° loop
-      endInDir = OPPOSITE_DIRECTIONS[startDir];
     }
 
     endCell.endInflowDir = endInDir;
