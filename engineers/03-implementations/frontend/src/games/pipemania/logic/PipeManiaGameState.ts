@@ -54,6 +54,10 @@ export interface GameStepEvent {
 }
 
 export class PipeManiaGameState {
+  public static readonly INITIAL_WRENCHES = 3;
+  public static readonly MAX_WRENCHES = 6;
+  public static readonly EXTEND_SCORE_INTERVAL = 10000;
+
   private grid: PipeGrid;
   private queue: PipeType[] = [];
   private currentLevel: number = 1;
@@ -62,8 +66,8 @@ export class PipeManiaGameState {
   private failureReason: FailureReason = FailureReason.NONE;
 
   private score: number = 0;
-  private nextExtendScoreThreshold: number = 10000;
-  private wrenches: number = 3;
+  private nextExtendScoreThreshold: number = PipeManiaGameState.EXTEND_SCORE_INTERVAL;
+  private wrenches: number = PipeManiaGameState.INITIAL_WRENCHES;
   private floodedCount: number = 0;
   private fastForward: boolean = false;
 
@@ -452,10 +456,10 @@ export class PipeManiaGameState {
   private addScore(points: number, events: GameStepEvent[]): void {
     this.score += points;
 
-    // Check Extend every 10,000 pts (cap 6 wrenches total)
+    // Check Extend every EXTEND_SCORE_INTERVAL pts (cap MAX_WRENCHES wrenches total)
     while (this.score >= this.nextExtendScoreThreshold) {
-      this.nextExtendScoreThreshold += 10000;
-      if (this.wrenches < 6) {
+      this.nextExtendScoreThreshold += PipeManiaGameState.EXTEND_SCORE_INTERVAL;
+      if (this.wrenches < PipeManiaGameState.MAX_WRENCHES) {
         this.wrenches++;
         events.push({ type: 'EXTEND_LIFE' });
       }
