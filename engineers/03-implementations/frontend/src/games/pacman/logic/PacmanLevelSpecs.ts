@@ -38,18 +38,18 @@ const LEVEL_METADATA_MAP: Record<number, { fruit: FruitType; fruitScore: number;
   2:  { fruit: 'Strawberry', fruitScore: 300,  frightDurationSec: 5.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL1_2 },
   3:  { fruit: 'Peach',      fruitScore: 500,  frightDurationSec: 4.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
   4:  { fruit: 'Peach',      fruitScore: 500,  frightDurationSec: 3.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
-  5:  { fruit: 'Apple',      fruitScore: 700,  frightDurationSec: 2.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
+  5:  { fruit: 'Apple',      fruitScore: 700,  frightDurationSec: 3.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
   6:  { fruit: 'Apple',      fruitScore: 700,  frightDurationSec: 5.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS }, // Grace Level
-  7:  { fruit: 'Pineapple',  fruitScore: 1000, frightDurationSec: 2.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
-  8:  { fruit: 'Pineapple',  fruitScore: 1000, frightDurationSec: 2.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
-  9:  { fruit: 'Galaxian',   fruitScore: 2000, frightDurationSec: 1.0, frightFlashCount: 3, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
+  7:  { fruit: 'Pineapple',  fruitScore: 1000, frightDurationSec: 3.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
+  8:  { fruit: 'Pineapple',  fruitScore: 1000, frightDurationSec: 3.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
+  9:  { fruit: 'Galaxian',   fruitScore: 2000, frightDurationSec: 3.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
   10: { fruit: 'Galaxian',   fruitScore: 2000, frightDurationSec: 5.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS }, // Grace Level
-  11: { fruit: 'Bell',       fruitScore: 3000, frightDurationSec: 2.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
-  12: { fruit: 'Bell',       fruitScore: 3000, frightDurationSec: 1.0, frightFlashCount: 3, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
-  13: { fruit: 'Key',        fruitScore: 5000, frightDurationSec: 1.0, frightFlashCount: 3, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
-  14: { fruit: 'Key',        fruitScore: 5000, frightDurationSec: 3.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS }, // Grace Level
-  15: { fruit: 'Key',        fruitScore: 5000, frightDurationSec: 1.0, frightFlashCount: 3, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
-  16: { fruit: 'Key',        fruitScore: 5000, frightDurationSec: 1.0, frightFlashCount: 3, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
+  11: { fruit: 'Bell',       fruitScore: 3000, frightDurationSec: 3.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
+  12: { fruit: 'Bell',       fruitScore: 3000, frightDurationSec: 3.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
+  13: { fruit: 'Key',        fruitScore: 5000, frightDurationSec: 3.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
+  14: { fruit: 'Key',        fruitScore: 5000, frightDurationSec: 5.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS }, // Grace Level
+  15: { fruit: 'Key',        fruitScore: 5000, frightDurationSec: 3.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
+  16: { fruit: 'Key',        fruitScore: 5000, frightDurationSec: 3.0, frightFlashCount: 5, timerArraySec: DEFAULT_TIMERS_LVL3_PLUS },
 };
 
 export function getLevelSpec(level: number): LevelSpec {

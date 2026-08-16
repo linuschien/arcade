@@ -25,8 +25,8 @@ describe('PacmanLevelSpecs Unit Tests', () => {
     expect(spec.pacmanSpeedRatio).toBe(0.925);
     expect(spec.ghostSpeedRatio).toBe(0.82);
     expect(spec.ghostExitDelaysSec).toEqual({ pinky: 1.1, inky: 2.9, clyde: 6.0 });
-    expect(spec.frightDurationSec).toBe(1.0);
-    expect(spec.frightFlashCount).toBe(3);
+    expect(spec.frightDurationSec).toBe(3.0);
+    expect(spec.frightFlashCount).toBe(5);
   });
 
   it('should enforce Level 17+ specs with max speed ratios and min exit delays', () => {
