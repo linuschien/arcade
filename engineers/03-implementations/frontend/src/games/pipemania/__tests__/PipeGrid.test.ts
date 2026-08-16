@@ -92,9 +92,17 @@ describe('PipeGrid Unit Tests', () => {
     expect(presetPipes.length).toBeGreaterThan(0);
 
     // Verify all preset pipes have clear ports pointing strictly to in-bounds EMPTY cells
-    for (const preset of presetPipes) {
-      expect(grid.isPipePortsClear(preset.col, preset.row, preset.type)).toBe(true);
-      expect(grid.isNearStartOrEnd(preset.col, preset.row)).toBe(false);
+    // AND all pairs of preset pipes maintain 3x3 8-neighborhood isolation (Chebyshev distance >= 2)
+    for (let i = 0; i < presetPipes.length; i++) {
+      const p1 = presetPipes[i];
+      expect(grid.isPipePortsClear(p1.col, p1.row, p1.type)).toBe(true);
+      expect(grid.isNearStartOrEnd(p1.col, p1.row)).toBe(false);
+
+      for (let j = i + 1; j < presetPipes.length; j++) {
+        const p2 = presetPipes[j];
+        const chebyshevDist = Math.max(Math.abs(p1.col - p2.col), Math.abs(p1.row - p2.row));
+        expect(chebyshevDist).toBeGreaterThanOrEqual(2);
+      }
     }
 
     // Preset pipes cannot be overwritten

@@ -478,11 +478,16 @@ export class PipeGrid {
 
   /**
    * Place preset fixed golden pipes outside the Start/End 3x3 neighborhood,
-   * ensuring all opening ports strictly face in-bounds EMPTY cells.
+   * with guaranteed 3x3 (8-neighborhood) isolation between all preset pipes
+   * and 100% EMPTY port clearance using an O(1) 2D spatial forbidden mask.
    */
   private placePresetPipes(count: number, level: number, rng: () => number): void {
     if (count <= 0) return;
 
+    // 1. O(1) Spatial Forbidden Mask for 3x3 Moat Protection
+    const forbidden: boolean[][] = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(false));
+
+    // 2. Collect initial empty cells outside Start/End 3x3 neighborhood: O(R x C)
     const available: GridCoord[] = [];
     for (let r = 0; r < GRID_ROWS; r++) {
       for (let c = 0; c < GRID_COLS; c++) {
@@ -492,7 +497,7 @@ export class PipeGrid {
       }
     }
 
-    // Shuffle
+    // 3. In-place Fisher-Yates shuffle: O(N)
     for (let i = available.length - 1; i > 0; i--) {
       const j = Math.floor(rng() * (i + 1));
       [available[i], available[j]] = [available[j], available[i]];
@@ -501,6 +506,9 @@ export class PipeGrid {
     let placed = 0;
     for (const coord of available) {
       if (placed >= count) break;
+
+      // O(1) Spatial Check: Skip if this cell is within another preset pipe's 3x3 moat
+      if (forbidden[coord.row][coord.col]) continue;
 
       let pipeType = PipeRNG.getRandomPipe(level, rng);
 
@@ -518,6 +526,17 @@ export class PipeGrid {
       cell.type = pipeType;
       cell.isPreset = true;
       placed++;
+
+      // O(1) Moat Tagging: Mark this cell and all its 8 neighbors in the forbidden mask
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          const nr = coord.row + dr;
+          const nc = coord.col + dc;
+          if (nr >= 0 && nr < GRID_ROWS && nc >= 0 && nc < GRID_COLS) {
+            forbidden[nr][nc] = true;
+          }
+        }
+      }
     }
   }
 }
