@@ -40,9 +40,9 @@ export class PipeManiaLevelSpecs {
       const delaySeconds = Math.max(6.0, 20.0 - 0.40 * (L - 1));
       const flowIntervalMs = Math.max(800, 2500 - 50 * (L - 1));
       const reservoirIntervalMs = flowIntervalMs * 6.0;
-      const targetLength = Math.min(40, Math.floor(10 + 0.85 * (L - 1)));
-      const obstacleCount = Math.min(12, Math.floor(0.35 * (L - 1)));
-      const presetPipeCount = Math.min(6, Math.max(0, Math.floor(0.18 * (L - 3))));
+      const targetLength = Math.min(30, Math.floor(10 + 0.58 * (L - 1)));
+      const obstacleCount = Math.min(6, Math.floor(0.18 * (L - 1)));
+      const presetPipeCount = Math.min(6, Math.max(0, Math.floor(0.19 * (L - 3))));
       const manhattanDistance = Math.max(2, Math.floor(6 - 0.11 * (L - 1)));
 
       let endOrientationMode: 'FACING' | 'ORTHOGONAL' | 'AWAY' = 'FACING';
@@ -96,9 +96,9 @@ export class PipeManiaLevelSpecs {
       const reservoirIntervalMs = flowIntervalMs * 6.0;
 
       // Target, Obstacles & Presets scale with baseLevel & cap
-      const targetLength = Math.min(40, Math.floor(10 + 0.85 * (baseLevel - 1)));
-      const obstacleCount = Math.min(12, Math.floor(0.35 * (baseLevel - 1)));
-      const presetPipeCount = Math.min(6, Math.max(0, Math.floor(0.18 * (baseLevel - 3))));
+      const targetLength = Math.min(30, Math.floor(10 + 0.58 * (baseLevel - 1)));
+      const obstacleCount = Math.min(6, Math.floor(0.18 * (baseLevel - 1)));
+      const presetPipeCount = Math.min(6, Math.max(0, Math.floor(0.19 * (baseLevel - 3))));
       const manhattanDistance = Math.max(2, Math.floor(6 - 0.11 * (baseLevel - 1)));
 
       let endOrientationMode: 'FACING' | 'ORTHOGONAL' | 'AWAY' = 'FACING';

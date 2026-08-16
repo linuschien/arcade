@@ -130,14 +130,14 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
   - 公式：$T_{\text{flow}}(L) = \max(800, 2500 - 50 \times (L - 1))$ 毫秒。
   - 數值區間：$2500\text{ms} \to 800\text{ms}$（開局 2.5s，高難度 0.8s）。
 - **AC3 (Target Length $N_{\text{target}}$)**：
-  - 公式：$N_{\text{target}}(L) = \min(40, \lfloor 10 + 0.85 \times (L - 1) \rfloor)$ 格。
-  - 數值區間：$10 \to 40$ 格（第 36 關封頂 40 格）。
+  - 公式：$N_{\text{target}}(L) = \min(30, \lfloor 10 + 0.58 \times (L - 1) \rfloor)$ 格。
+  - 數值區間：$10 \to 30$ 格（第 36 關封頂 30 格）。
 - **AC4 (Obstacles Count $N_{\text{obstacle}}$)**：
-  - 公式：$N_{\text{obstacle}}(L) = \min(12, \lfloor 0.35 \times (L - 1) \rfloor)$ 顆。
-  - 數值區解：$0 \to 12$ 顆（第 36 關封頂 12 顆）。
+  - 公式：$N_{\text{obstacle}}(L) = \min(6, \lfloor 0.18 \times (L - 1) \rfloor)$ 顆。
+  - 數值區間：$0 \to 6$ 顆（第 36 關封頂 6 顆）。
 - **AC5 (Preset Fixed Pipes Count $N_{\text{fixed}}$)**：
-  - 公式：$N_{\text{fixed}}(L) = \min(6, \max(0, \lfloor 0.18 \times (L - 3) \rfloor))$ 根。
-  - 數值區間：$L=1\sim 8$ 自然為 $0$ 根；$L \ge 9$ 平滑遞增至 $1 \sim 5$ 根。
+  - 公式：$N_{\text{fixed}}(L) = \min(6, \max(0, \lfloor 0.19 \times (L - 3) \rfloor))$ 根。
+  - 數值區間：$L=1\sim 8$ 自然為 $0$ 根；$L \ge 9$ 平滑遞增至 $1 \sim 6$ 根。
 
 ---
 

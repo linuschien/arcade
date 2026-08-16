@@ -23,9 +23,9 @@ describe('PipeManiaLevelSpecs Unit Tests', () => {
     expect(config.delaySeconds).toBeCloseTo(18.4, 1);
     expect(config.flowIntervalMs).toBe(2300); // 2500 - 50 * 4 = 2300ms
     expect(config.reservoirIntervalMs).toBe(2300 * 6.0); // 13800ms
-    expect(config.targetLength).toBe(13); // 10 + floor(0.85*4) = 13
-    expect(config.obstacleCount).toBe(1); // floor(0.35*4) = 1
-    expect(config.presetPipeCount).toBe(0); // floor(0.18*2) = 0
+    expect(config.targetLength).toBe(12); // 10 + floor(0.58*4) = 12
+    expect(config.obstacleCount).toBe(0); // floor(0.18*4) = 0
+    expect(config.presetPipeCount).toBe(0); // floor(0.19*2) = 0
     expect(config.manhattanDistance).toBe(5); // floor(6 - 0.11*4) = 5
     expect(config.endOrientationMode).toBe('FACING');
   });
@@ -35,9 +35,9 @@ describe('PipeManiaLevelSpecs Unit Tests', () => {
     expect(config.delaySeconds).toBeCloseTo(16.8, 1);
     expect(config.flowIntervalMs).toBe(2100); // 2500 - 50 * 8 = 2100ms
     expect(config.reservoirIntervalMs).toBe(2100 * 6.0); // 12600ms
-    expect(config.targetLength).toBe(16); // 10 + floor(0.85*8) = 16
-    expect(config.obstacleCount).toBe(2); // floor(0.35*8) = 2
-    expect(config.presetPipeCount).toBe(1); // floor(0.18*6) = 1
+    expect(config.targetLength).toBe(14); // 10 + floor(0.58*8) = 14
+    expect(config.obstacleCount).toBe(1); // floor(0.18*8) = 1
+    expect(config.presetPipeCount).toBe(1); // floor(0.19*6) = 1
     expect(config.manhattanDistance).toBe(5); // floor(6 - 0.11*8) = 5
     expect(config.endOrientationMode).toBe('ORTHOGONAL');
     expect(config.dropRates.pOneWay).toBeCloseTo(0.0072 * 1, 4);
@@ -48,9 +48,9 @@ describe('PipeManiaLevelSpecs Unit Tests', () => {
     expect(config.delaySeconds).toBeCloseTo(12.0, 1);
     expect(config.flowIntervalMs).toBe(1500); // 2500 - 50 * 20 = 1500ms
     expect(config.reservoirIntervalMs).toBe(1500 * 6.0); // 9000ms
-    expect(config.targetLength).toBe(27);
-    expect(config.obstacleCount).toBe(7);
-    expect(config.presetPipeCount).toBe(3);
+    expect(config.targetLength).toBe(21); // 10 + floor(0.58*20) = 21
+    expect(config.obstacleCount).toBe(3); // floor(0.18*20) = 3
+    expect(config.presetPipeCount).toBe(3); // floor(0.19*18) = 3
     expect(config.manhattanDistance).toBe(3); // floor(6 - 0.11*20) = 3
     expect(config.endOrientationMode).toBe('AWAY');
   });
@@ -60,9 +60,9 @@ describe('PipeManiaLevelSpecs Unit Tests', () => {
     expect(config.delaySeconds).toBe(6.0);
     expect(config.flowIntervalMs).toBe(800);
     expect(config.reservoirIntervalMs).toBe(4800);
-    expect(config.targetLength).toBe(39);
-    expect(config.obstacleCount).toBe(12);
-    expect(config.presetPipeCount).toBe(5);
+    expect(config.targetLength).toBe(30); // max 30
+    expect(config.obstacleCount).toBe(6); // max 6
+    expect(config.presetPipeCount).toBe(6); // max 6
     expect(config.manhattanDistance).toBe(2); // max(2, floor(6 - 0.11*35)) = 2
     expect(config.endOrientationMode).toBe('AWAY');
     expect(config.dropRates.pOneWay).toBeCloseTo(0.20, 2);
