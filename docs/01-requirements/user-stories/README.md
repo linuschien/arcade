@@ -79,24 +79,37 @@
 
 ### 流程一：玩家經由 GCP IAP 登入與單局啟動 (GCP IAP Auth & Game Startup Flow)
 1. 會員玩家經由 GCP IAP 認證存取平台，系統自動取得 `X-Goog-Authenticated-User-Email` Header，並發放/重置 10 枚「每日免費代幣」 (`US-01-05`)。
-2. 玩家於大廳選單選擇 Pipe Mania，點擊「START (1 Coin)」 (`US-01-02`)。
-3. 系統直接從帳號錢包扣除 1 枚免費代幣，透過 `ArcadeBridge.emit('COIN_INSERTED')` 啟動遊戲 (`US-01-03`)。
+2. 玩家於大廳選單選擇目標遊戲（Tetris / Pac-Man / Pipe Mania / 台灣16張麻將），點擊「START (1 Coin)」 (`US-01-02`)。
+3. 系統直接從帳號錢包扣除 1 枚免費代幣，透過 `ArcadeBridge.emit('COIN_INSERTED')` 動態載入並啟動對應 Canvas 遊戲 (`US-01-03`)。
 
 ### 流程二：手動/自動暫停與離場 (Pause & Exit Flow)
 1. 玩家手動點擊 UI 按鈕或按下 `ESC`/`P`/Gamepad 按鍵（或切換分頁失焦），觸發 `US-01-08` 發送 `PAUSE_REQUESTED` 暫停遊戲。
 2. 玩家遊玩中途點擊「返回大廳」，系統調用 `destroyGame()` 清理記憶體，無 Soft Reset。
-3. 玩家失誤爆管扣除 1 支扳手並原地重試 (`US-04-04`)；扳手歸零時跳出 10 秒倒數，點擊「CONTINUE (1 Coin)」續關。
+3. 玩家 Game Over 時跳出 10 秒倒數，點擊「CONTINUE (1 Coin)」，扣除 1 枚硬幣續關。
 
-### 流程三：Pipe Mania 鋪路與 Fast Forward 加速通關流程 (Pipe Placement & Fast Forward Flow)
-1. 遊戲開局倒數 $T_{\text{delay}}$ 秒播放 `SFX_COUNTDOWN_TICK`，玩家利用 $5$ 格 FIFO 佇列在 $10 \times 7$ 網格放置水管 (`US-04-01`, `US-04-05`)。
+### 流程三：俄羅斯方塊消除與 SRS 旋轉流程 (Tetris Gameplay Flow)
+1. 系統透過 7-Bag 演算法公平發送方塊，玩家利用 NEXT 視窗與 Hold 暫存區規劃落點 (`US-02-01`)。
+2. 玩家位移並利用 SRS Wall Kick 旋轉方塊，執行 Hard Drop 瞬間落底鎖定 (`US-02-02`)。
+3. 達成滿行消除累積得分，等級由 Level 1 舒適平緩加速至 Level 15 封頂 (`US-02-03`)。
+4. 方塊堆疊至頂部 Block Out 觸發 GameOver，發送 `ArcadeBridge.emit('GAME_OVER', summary)` 結算分數 (`US-02-04`)。
+
+### 流程四：小精靈迷宮巡邏與幽靈 AI 追逐流程 (Pac-Man Gameplay Flow)
+1. 玩家在 28x36 迷宮中操控 Pac-Man 移動並吞食普通豆與水果 (`US-03-01`, `US-03-02`)。
+2. 4 隻幽靈 (Blinky, Pinky, Inky, Clyde) 依定時器在 Scatter 與 Chase 模式間切換，實時計算各自的目標網格進行圍捕 (`US-03-03`)。
+3. Pac-Man 吞食能量豆後幽靈進入驚恐模式，反吞幽靈獲得翻倍高分；若被幽靈碰觸則扣減生命 (`US-03-02`, `US-03-04`)。
+4. 吃光全場豆子進入下一關（共 17+ 關參數推進），生命耗盡觸發結算 (`US-03-04`)。
+
+### 流程五：Pipe Mania 鋪路與 Fast Forward 加速通關流程 (Pipe Placement & Fast Forward Flow)
+1. 遊戲開局倒數 $T_{\text{delay}}$ 秒播放 `SFX_COUNTDOWN_TICK`，玩家利用 5 格 FIFO 佇列在 $10 \times 7$ 網格放置水管 (`US-04-01`, `US-04-05`)。
 2. 液體由起點開始以 $T_{\text{flow}}$ 速度推進，播放 `SFX_FLOW_BUBBLE` (`US-04-03`)。
 3. 玩家長按 Fast Forward 加速 (`US-04-10`)，播放 `SFX_FAST_FORWARD`，水流以 $50\text{ ms}$ 極速前進並獲得 $2\times$ 得分倍率。
 4. 液體成功流入終點且水管格數 $\ge N_{\text{target}}$，播放 `SFX_LEVEL_CLEAR` 與 `BGM_VICTORY` 宣告通關，載入下一個 Level (`US-04-08`, `US-04-11`)。
 
-### 流程四：台灣16張麻將一將對局與 AI 攻防流程 (Taiwanese Mahjong Match Flow)
+### 流程六：台灣16張麻將一將對局與 AI 攻防流程 (Taiwanese Mahjong Match Flow)
 1. 開局執行搬風抓位與莊家擲骰開門 (`US-05-11`, `US-05-12`)，配發 16 張牌並完成自動補花 (`US-05-01`)。
 2. 牌局推進東、南、西、北四圈 (`US-05-13`)，玩家與三家 AI 依摸牌、打牌、向聽數最大化或危險度棄胡進行攻防 (`US-05-08`, `US-05-09`, `US-05-10`)。
 3. 遇到打牌宣告吃碰槓胡時，仲裁器依優先權裁決 (`US-05-03`, `US-05-04`, `US-05-06`)。
 4. 胡牌時依 500底/200台 精確結算莊家連莊台、牌型台與事件台數 (`US-05-05`, `US-05-14`, `US-05-15`)，若摸至剩 16 張鐵牌則宣告流局荒莊 (`US-05-07`)。
 5. 北風圈北家下莊完成一將，拋出總戰績並上載至 Top 10 排行榜。
+
 
