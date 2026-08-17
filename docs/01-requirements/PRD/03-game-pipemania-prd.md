@@ -61,7 +61,7 @@ Pipe Mania 是一部經典的網格路徑規劃益智遊戲。玩家在 $10 \tim
 - **扣命與關卡重試**：
   - 當發生「爆管溢出 (Spill)」或「長度未達標 (Underflow)」時，扣除 1 支扳手，播放 `SFX_SPILL_BURST`。
   - 若剩餘生命 $> 0$，玩家**原關重試 (Retry Current Level)**，重置盤面並重新發送開局 $T_{\text{delay}}$ 預備時間（剩餘最後 1 條命時右上角備用板手顯示 0 支）。
-  - 若生命 $= 0$，進入平台 10 秒 Continue 倒數。
+  - 若生命 $= 0$，立即判定 Game Over，播放 `SFX_GAME_OVER` 與 `BGM_GAMEOVER` 並發送 `ArcadeBridge.emit('GAME_OVER', summary)` 結算分數。
 - **獎勵加命 (Extend Mechanism)**：
   - 玩家每累積獲得 **10,000 分**（單向里程碑防刷機制），系統播放 `SFX_EXTEND_LIFE` 並自動獎勵 **+1 條生命 (Extend)**。
   - 總生命上限為 **6 條命**（畫面右上角最多顯示 **5 支備用板手**）。
@@ -147,4 +147,4 @@ Pipe Mania 是一部經典的網格路徑規劃益智遊戲。玩家在 $10 \tim
   - **通關 (Level Complete)**：水流由終點指定合法開口進入，且累積流經格數 $\ge N_{\text{target}}$，播放 `SFX_LEVEL_CLEAR` 與 `BGM_VICTORY`。
   - **未達標失敗 (Underflow)**：水流進入終點開口，但累積格數 $< N_{\text{target}}$，扣除 1 支扳手。
   - **溢出爆管失敗 (Spill)**：水流撞擊邊界、錯位或反向單向管，扣除 1 支扳手，播放 `SFX_SPILL_BURST`。
-  - **ArcadeBridge 廣播**：扳手歸零或放棄續關時，播放 `BGM_GAMEOVER` 並發送 `ArcadeBridge.emit('GAME_OVER', summary)`。
+  - **ArcadeBridge 廣播**：扳手生命耗盡時，播放 `BGM_GAMEOVER` 並發送 `ArcadeBridge.emit('GAME_OVER', summary)`。

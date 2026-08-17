@@ -74,7 +74,7 @@ Pipe Mania 是 Arcade Stadium 平台上的第三個益智路徑規劃類子遊�
 - **AC1 (Initial 3 Lives & 2 Reserve Wrenches)**：單局投幣開局獲得 **3 條生命 (3 Lives)**（1 條施工中 + **2 支備用板手**，畫面右上角初始顯示 **2 支板手**）。
 - **AC2 (Spill & Retry Current Level)**：當發生溢出爆管 (Spill) 或長度未達標 (Underflow) 時，扣除 1 條生命，播放 `SFX_SPILL_BURST`。若剩餘生命 $> 0$，**立即原關重試 (Retry Current Level)**，重置盤面並重新倒數 $T_{\text{delay}}$ 預備時間（剩餘最後 1 條命時右上角備用板手顯示 0 支）。
 - **AC3 (Extend Every 10k Pts)**：玩家每累積獲得 **10,000 分**（單向里程碑防刷機制），系統播放 `SFX_EXTEND_LIFE` 並自動獎勵 **+1 條生命**（總生命上限為 6 條命，右上角最多顯示 5 支備用板手）。
-- **AC4 (Game Over Trigger)**：當生命 $= 0$ 時，觸發平台 10 秒 Continue 倒數。若倒數結束未續幣，播放 `BGM_GAMEOVER` 並發送 `ArcadeBridge.emit('GAME_OVER', summary)`。
+- **AC4 (Game Over Trigger)**：當生命 $= 0$ 時，立即判定 Game Over，播放 `BGM_GAMEOVER` 並發送 `ArcadeBridge.emit('GAME_OVER', summary)` 結束遊戲。
 
 ---
 

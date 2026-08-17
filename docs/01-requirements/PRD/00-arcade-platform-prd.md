@@ -16,14 +16,13 @@ Arcade Stadium 是一個模組化、極致沉浸的 HTML5 Web 大型電玩合輯
 - **進入/離開遊戲**：點擊「START」選擇遊戲後，發動原子化扣幣並以流暢動畫掛載對應遊戲之 HTML5 Canvas，背景音樂自動切換。
 
 ### 2.3 跨裝置控制架構 (Multi-Device Control & InputService)
-- **鍵盤控制**：支援 `WASD` / `Arrow Keys` 移動，`Space`/`Enter` 動作與 `C` 鍵投幣/續關，`ESC`/`P` 鍵暫停。
+- **鍵盤控制**：支援 `WASD` / `Arrow Keys` 移動，`Space`/`Enter` 動作與 `C` 鍵投幣啟動，`ESC`/`P` 鍵暫停。
 - **實體 Gamepad / 街機搖桿**：透過 W3C Gamepad API 自動辨識連線之 USB/藍牙街機搖桿與 Xbox/PlayStation 控制器。
 - **手機/平板虛擬觸控盤**：於行動裝置觸控屏自動渲染 Web 虛擬 D-Pad 與按鈕。
 
 ### 2.4 代幣與單局直接扣幣機制 (Direct Credit Deduction System)
 - **統一帳號錢包 (Single Universal Wallet)**：平台維護單一簡潔的「帳號代幣餘額」，摒棄複雜的機台二次轉幣與退幣邏輯。
-- **單局啟動扣幣 (Start Game Deduct)**：玩家在選單點擊「START (1 Coin)」或按下手把/鍵盤 `START` 鍵時，系統直接從帳號錢包原子化扣除 1 枚 Credit 並啟動遊戲。
-- **續關扣幣 (Game Over Continue Deduct)**：遊戲 Game Over 時跳出經典街機 10 秒倒數視窗，玩家按下 `C` / `START` / 點擊「CONTINUE (1 Coin)」，直接從帳號錢包扣除 1 枚 Credit 恢復生命續關。中途離場不留殘幣、無需退幣手續。
+- **單局啟動扣幣 (Start Game Deduct)**：玩家在選單點擊「START (1 Coin)」或按下手把/鍵盤 `START` 鍵時，系統直接從帳號錢包原子化扣除 1 枚 Credit 並啟動遊戲。中途離場不留殘幣、無需退幣手續。
 - **每日免費代幣 (Daily Free Quota)**：玩家每日登入可獲得 **10 枚免費硬幣**。每日 00:00 (Local/UTC) 重置為 10 枚，**不可跨日累積**。
 - **管理員獎勵發幣 (Admin Bonus Credits)**：管理員 (Admin) 可透過後台或 API 賦予玩家額外獎勵代幣。管理員獎勵代幣**不受每日重置影響**，且可長期保存。
 - **代幣扣除優先權**：扣除代幣時，優先扣除「每日免費代幣」，免費代幣扣完後才扣除「管理員獎勵代幣」。

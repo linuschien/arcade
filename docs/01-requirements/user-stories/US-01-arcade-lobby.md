@@ -20,19 +20,18 @@ Arcade Lobby 是 Arcade Stadium 平台的最上層使用者介面。負責 GCP I
 
 ---
 
-## US-01-02：單局啟動/續關直接扣幣機制 (Direct Credit Deduct on Start & Continue)
+## US-01-02：單局啟動直接扣幣機制 (Direct Credit Deduct on Start)
 
 **身份**：街機玩家 (Arcade Player)
 
 > **As a** 街機玩家，  
-> **I want to** 點擊「START (1 Coin)」、按下鍵盤 `C`/`START` 或 Gamepad 的 `START` 鍵直接啟動遊戲或續關，  
+> **I want to** 點擊「START (1 Coin)」、按下鍵盤 `C`/`START` 或 Gamepad 的 `START` 鍵直接啟動遊戲，  
 > **So that** 系統直接從我的錢包扣除 1 枚 Credit 並開始遊玩，無須複雜的二次轉幣與退幣。
 
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (Atomic Deduction on Start)**：玩家點擊 START 或按鍵啟動遊戲時，系統從帳號錢包原子化扣除 1 枚 Credit，發出掉幣音效，並透過 `ArcadeBridge.emit('COIN_INSERTED', remainingCredits)` 廣播啟動遊戲。
-- **AC2 (Continue Deduction)**：Game Over 畫面 10 秒倒數期間，玩家按下 `C` / `START` 或點擊「CONTINUE (1 Coin)」，系統扣除 1 枚 Credit 恢復生命續關。
-- **AC3 (Zero Credit Block)**：當 Credit $= 0$ 時按下 START 或 CONTINUE，阻擋發射並跳出「OUT OF CREDITS」警示提示。
-- **AC4 (No Soft Reset)**：遵循實體街機傳統，遊戲中不提供 Soft Reset 按鈕，離場僅能選擇返回大廳。
+- **AC2 (Zero Credit Block)**：當 Credit $= 0$ 時按下 START，阻擋發射並跳出「OUT OF CREDITS」警示提示。
+- **AC3 (No Soft Reset)**：遵循實體街機傳統，遊戲中不提供 Soft Reset 按鈕，離場僅能選擇返回大廳。
 
 ---
 
@@ -93,7 +92,7 @@ Arcade Lobby 是 Arcade Stadium 平台的最上層使用者介面。負責 GCP I
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (Admin Grant Action)**：Admin 可透過 API/後台介面給予玩家指定數量的 `Admin Bonus Credit`。
 - **AC2 (Bonus Non-Expiration Rule)**：`Admin Bonus Credit` **不受每日 00:00 重置影響**，可長期保留於玩家帳號。
-- **AC3 (Consumption Priority)**：當玩家 START 或 CONTINUE 扣幣時，系統扣除優先順序為：
+- **AC3 (Consumption Priority)**：當玩家 START 扣幣時，系統扣除優先順序為：
   1. 優先扣除 `Daily Free Credit`（每日免費硬幣）。
   2. 若 `Daily Free Credit` $= 0$，才扣除 `Admin Bonus Credit`（管理員獎勵硬幣）。
 
