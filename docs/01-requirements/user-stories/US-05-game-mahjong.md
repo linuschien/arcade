@@ -281,7 +281,7 @@
 - **AC1 (Initial Bankroll)**：單次投幣 (1 Coin) 開局獲得 **10,000 點籌碼**。
 - **AC2 (Bankruptcy Game Over & No Leaderboard)**：當真人玩家籌碼點數 $\le 0$（破產）時，立即判定 Game Over，發送 `ArcadeBridge.emit('GAME_OVER', summary)` 結束遊戲（**破產淘汰者不提交成績至排行榜**）。
 - **AC3 (4-Wind Flow Progression)**：一將固定由 **「東風圈 $\rightarrow$ 南風圈 $\rightarrow$ 西風圈 $\rightarrow$ 北風圈」** 依序進行。
-- **AC4 (Match Over & Leaderboard Summary)**：當且僅當真人玩家順利打滿完整四圈（一將）且籌碼 $> 0$ 順利通關時，北風圈北家下莊後總籌碼換算為最終結算積分並透過 `ArcadeBridge.emit('GAME_OVER', summary)` 拋出四家總成績上載至 Top 10 排行榜。
+- **AC4 (Match Over & Leaderboard Summary)**：當且僅當真人玩家順利打滿完整四圈（一將）且籌碼 $> 0$ 順利通關時，北風圈北家下莊後將真人玩家（P1）的最終剩餘籌碼換算為結算積分，並透過 `ArcadeBridge.emit('GAME_OVER', summary)` 上載真人玩家的成績至 Top 10 排行榜。
 
 ---
 
