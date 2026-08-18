@@ -240,9 +240,10 @@ export class MainGameScene extends Phaser.Scene {
 
   private createDiscardMarker(): void {
     this.discardMarker = this.add.graphics();
-    this.discardMarker.lineStyle(2, 0xfacc15, 0.9);
-    this.discardMarker.strokeRect(-18, -24, 36, 48);
-    this.discardMarker.setVisible(true);
+    this.discardMarker.lineStyle(2, 0xfacc15, 1);
+    this.discardMarker.strokeRoundedRect(-14, -18, 28, 36, 4);
+    this.discardMarker.setDepth(50);
+    this.discardMarker.setVisible(false);
   }
 
   private highlightLatestDiscard(seat: PlayerSeat, _tile: Tile): void {
@@ -605,11 +606,11 @@ export class MainGameScene extends Phaser.Scene {
     this.turnPointer.fill();
   }
 
-  private refreshAllSeats(): void {
+  private refreshAllSeats(revealAllHands: boolean = false): void {
     const lastSeat = this.gameState.lastDiscard?.fromSeat;
     for (let i = 0; i < 4; i++) {
       const p = this.gameState.players[i];
-      this.seatContainers[i].renderPlayerState(p, p.isHuman, lastSeat === i);
+      this.seatContainers[i].renderPlayerState(p, p.isHuman, lastSeat === i, revealAllHands);
     }
   }
 
@@ -900,22 +901,37 @@ export class MainGameScene extends Phaser.Scene {
     MahjongAudioService.stopBGM();
     MahjongAudioService.playVictory();
 
+    // 2.1 Reveal all 4 players' hands for player review
+    this.refreshAllSeats(true);
+
     this.settlementContainer.removeAll(true);
     this.settlementContainer.setVisible(true);
 
     const bg = this.add.graphics();
-    bg.fillStyle(0x020617, 0.95);
-    bg.fillRoundedRect(-260, -220, 520, 440, 16);
+    bg.fillStyle(0x020617, 0.96);
+    bg.fillRoundedRect(-310, -240, 620, 480, 16);
     bg.lineStyle(2, 0xd4af37, 1);
-    bg.strokeRoundedRect(-260, -220, 520, 440, 16);
+    bg.strokeRoundedRect(-310, -240, 620, 480, 16);
     this.settlementContainer.add(bg);
 
-    const titleText = breakdown.isDraw
-      ? '=== 流局 (荒莊) ==='
-      : `=== ${breakdown.winnerName} ${breakdown.isSelfDrawn ? '自摸' : '胡牌'} ===`;
+    const isDraw = breakdown.isDraw;
+    const winner = this.gameState.players[breakdown.winnerSeat];
+    const loser = breakdown.loserSeat !== undefined ? this.gameState.players[breakdown.loserSeat] : null;
 
-    const title = this.add.text(0, -185, titleText, {
-      fontSize: '22px',
+    // 2.3 Title showing winner & who discarded (放槍者)
+    let titleText = '=== 流局 (荒莊，莊家連莊) ===';
+    if (!isDraw) {
+      if (breakdown.isSelfDrawn) {
+        titleText = `=== 【${winner.name}】 自摸胡牌！ ===`;
+      } else if (loser) {
+        titleText = `=== 【${winner.name}】 胡牌！ (${loser.name} 放槍) ===`;
+      } else {
+        titleText = `=== 【${winner.name}】 胡牌！ ===`;
+      }
+    }
+
+    const title = this.add.text(0, -210, titleText, {
+      fontSize: '20px',
       fontFamily: '"Microsoft JhengHei", serif',
       color: '#facc15',
       fontStyle: 'bold',
@@ -923,71 +939,142 @@ export class MainGameScene extends Phaser.Scene {
     title.setOrigin(0.5);
     this.settlementContainer.add(title);
 
-    // Fan breakdown sequence display
-    let curY = -140;
-    breakdown.fans.forEach((item, idx) => {
-      this.time.delayedCall(idx * 150, () => {
-        MahjongAudioService.playFanTally();
-      });
+    let curY = -180;
 
-      const fanLine = this.add.text(-220, curY, `${item.name}`, {
-        fontSize: '14px',
+    // 2.2 Winning Hand Pattern Display (胡牌牌型)
+    if (!isDraw) {
+      const meldStr = winner.melds
+        .map((m) => `[${m.tiles.map((t) => t.name).join('')}]`)
+        .join(' ');
+      const handStr = winner.hand.map((t) => t.name).join(' ');
+      const drawnStr = winner.drawnTile ? ` [胡:${winner.drawnTile.name}]` : '';
+      const patternText = (meldStr ? `${meldStr} ` : '') + handStr + drawnStr;
+
+      const patternLine = this.add.text(-280, curY, `牌型: ${patternText}`, {
+        fontSize: '12px',
+        fontFamily: '"Microsoft JhengHei", monospace',
+        color: '#93c5fd',
+        fontStyle: 'bold',
+      });
+      this.settlementContainer.add(patternLine);
+      curY += 24;
+    }
+
+    // 2.4 Fan Breakdown (台數明細 + 莊連拉台數)
+    const fanBoxBg = this.add.graphics();
+    fanBoxBg.fillStyle(0x0f172a, 0.8);
+    fanBoxBg.fillRoundedRect(-285, curY, 570, 95, 8);
+    fanBoxBg.lineStyle(1, 0x334155, 0.8);
+    fanBoxBg.strokeRoundedRect(-285, curY, 570, 95, 8);
+    this.settlementContainer.add(fanBoxBg);
+
+    let fanY = curY + 8;
+    if (isDraw) {
+      const drawLine = this.add.text(-270, fanY, '海底牌盡無人胡牌，莊家連莊保留莊位', {
+        fontSize: '13px',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
+        color: '#94a3b8',
+      });
+      this.settlementContainer.add(drawLine);
+    } else {
+      const fanSummary = breakdown.fans.map((f) => `${f.name} (${f.fan}台)`).join('  ');
+      const fanText = this.add.text(-270, fanY, `台數明細: ${fanSummary}`, {
+        fontSize: '12px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#f8fafc',
+        wordWrap: { width: 540 },
       });
-      const fanVal = this.add.text(220, curY, `${item.fan} 台`, {
-        fontSize: '14px',
-        fontFamily: 'monospace',
-        color: '#38bdf8',
-        fontStyle: 'bold',
-      });
-      fanVal.setOrigin(1, 0);
+      this.settlementContainer.add(fanText);
 
-      this.settlementContainer.add([fanLine, fanVal]);
-      curY += 24;
-    });
+      fanY += 28;
+      let dealerNote = '';
+      if (breakdown.winnerSeat === this.gameState.dealerSeat) {
+        dealerNote = `莊家獲勝加計: 莊家 1台 + 連${breakdown.dealerStreak}拉${breakdown.dealerStreak} ${2 * breakdown.dealerStreak}台 (計加收 ${breakdown.dealerMultiplierFan}台)`;
+      } else if (breakdown.loserSeat === this.gameState.dealerSeat) {
+        dealerNote = `莊家放槍額外負擔: 莊家 1台 + 連${breakdown.dealerStreak}拉${breakdown.dealerStreak} ${2 * breakdown.dealerStreak}台 (計加收 ${breakdown.dealerMultiplierFan}台)`;
+      } else if (breakdown.isSelfDrawn) {
+        dealerNote = `莊家自摸額外負擔: 莊家 1台 + 連${breakdown.dealerStreak}拉${breakdown.dealerStreak} ${2 * breakdown.dealerStreak}台 (莊家計加收 ${breakdown.dealerMultiplierFan}台)`;
+      } else {
+        dealerNote = '閒家互相放槍，不計莊家連拉加台';
+      }
 
-    // Total Fans & Points
-    curY = Math.max(curY + 10, 50);
-    const totalLine = this.add.text(
-      0,
-      curY,
-      `總計: ${breakdown.totalFans} 台 (500底 / 200台)`,
-      {
-        fontSize: '16px',
+      const dealerText = this.add.text(-270, fanY, dealerNote, {
+        fontSize: '12px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#fbbf24',
-        fontStyle: 'bold',
-      }
-    );
-    totalLine.setOrigin(0.5);
-    this.settlementContainer.add(totalLine);
+      });
+      this.settlementContainer.add(dealerText);
 
-    // Chip Deltas
-    curY += 35;
-    const deltaText = this.add.text(
-      0,
-      curY,
-      `賭神: ${breakdown.chipDeltas[0] >= 0 ? '+' : ''}${breakdown.chipDeltas[0]} 點 | 剩餘: ${breakdown.remainingChips[0]} 點`,
-      {
-        fontSize: '13px',
-        fontFamily: 'monospace',
-        color: breakdown.chipDeltas[0] >= 0 ? '#4ade80' : '#f87171',
-        fontStyle: 'bold',
-      }
-    );
-    deltaText.setOrigin(0.5);
-    this.settlementContainer.add(deltaText);
+      fanY += 26;
+      const totalText = this.add.text(
+        -270,
+        fanY,
+        `結算基礎: 500 底 / 200 台 | 牌型計 ${breakdown.totalFans} 台`,
+        {
+          fontSize: '12px',
+          fontFamily: '"Microsoft JhengHei", sans-serif',
+          color: '#38bdf8',
+          fontStyle: 'bold',
+        }
+      );
+      this.settlementContainer.add(totalText);
+    }
 
-    // Continue button
+    curY += 105;
+
+    // 2.3 Four-player Ledger Table (四家點數計算清單)
+    const tableHeader = this.add.text(-280, curY, '座位 / 玩家        門風   身份    角色       點數變動       剩餘籌碼', {
+      fontSize: '12px',
+      fontFamily: '"Microsoft JhengHei", monospace',
+      color: '#94a3b8',
+      fontStyle: 'bold',
+    });
+    this.settlementContainer.add(tableHeader);
+
+    curY += 20;
+
+    const arrows = ['▼', '▶', '▲', '◀'];
+    const winds = ['東風', '南風', '西風', '北風'];
+
+    for (let i = 0; i < 4; i++) {
+      const p = this.gameState.players[i];
+      const isWinner = !isDraw && breakdown.winnerSeat === i;
+      const isLoser = !isDraw && breakdown.loserSeat === i;
+      const roleText = isDraw
+        ? '流局'
+        : isWinner
+        ? breakdown.isSelfDrawn
+          ? '自摸'
+          : '胡牌'
+        : isLoser
+        ? '放槍'
+        : '陪打';
+
+      const delta = breakdown.chipDeltas[i];
+      const deltaStr = delta > 0 ? `+${delta.toLocaleString()} 點` : delta < 0 ? `${delta.toLocaleString()} 點` : '0 點';
+      const remainingStr = `${breakdown.remainingChips[i].toLocaleString()} 點`;
+
+      const lineText = `${arrows[i]} ${p.name.padEnd(6, ' ')}  ${winds[i]}   ${p.isDealer ? '莊家' : '閒家'}    ${roleText.padEnd(4, ' ')}   ${deltaStr.padStart(10, ' ')}   ${remainingStr.padStart(10, ' ')}`;
+
+      const rowText = this.add.text(-280, curY, lineText, {
+        fontSize: '12px',
+        fontFamily: '"Microsoft JhengHei", monospace',
+        color: isWinner ? '#4ade80' : isLoser ? '#f87171' : '#e2e8f0',
+        fontStyle: isWinner || p.isDealer ? 'bold' : 'normal',
+      });
+      this.settlementContainer.add(rowText);
+      curY += 20;
+    }
+
+    // Continue Button (繼續下一局)
     const nextBtn = this.add.graphics();
     nextBtn.fillStyle(0x2563eb, 1);
-    nextBtn.fillRoundedRect(-70, 160, 140, 36, 6);
+    nextBtn.fillRoundedRect(-80, 190, 160, 36, 6);
     nextBtn.lineStyle(1, 0x93c5fd, 0.8);
-    nextBtn.strokeRoundedRect(-70, 160, 140, 36, 6);
+    nextBtn.strokeRoundedRect(-80, 190, 160, 36, 6);
     this.settlementContainer.add(nextBtn);
 
-    const nextTxt = this.add.text(0, 178, '繼續下一局', {
+    const nextTxt = this.add.text(0, 208, '繼續下一局', {
       fontSize: '14px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#ffffff',
@@ -996,9 +1083,10 @@ export class MainGameScene extends Phaser.Scene {
     nextTxt.setOrigin(0.5);
     this.settlementContainer.add(nextTxt);
 
-    nextBtn.setInteractive(new Phaser.Geom.Rectangle(-70, 160, 140, 36), Phaser.Geom.Rectangle.Contains);
+    nextBtn.setInteractive(new Phaser.Geom.Rectangle(-80, 190, 160, 36), Phaser.Geom.Rectangle.Contains);
     nextBtn.on('pointerdown', () => {
       this.settlementContainer.setVisible(false);
+      this.refreshAllSeats(false);
       MahjongAudioService.playBGM();
       this.gameState.startDealing();
     });

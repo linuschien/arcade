@@ -125,11 +125,16 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     this.dealerBadge.setVisible(profile.isDealer);
   }
 
-  public renderPlayerState(profile: PlayerProfile, isHuman: boolean, isLastDiscardSeat: boolean = false): void {
+  public renderPlayerState(
+    profile: PlayerProfile,
+    isHuman: boolean,
+    isLastDiscardSeat: boolean = false,
+    revealHand: boolean = false
+  ): void {
     this.updatePlayerInfo(profile);
     this.renderFlowerRack(profile.flowers, profile.wind);
-    this.renderMelds(profile.melds, isHuman);
-    this.renderHand(profile, isHuman);
+    this.renderMelds(profile.melds, isHuman, revealHand);
+    this.renderHand(profile, isHuman, revealHand);
     this.renderDiscards(profile.discards, isLastDiscardSeat);
   }
 
@@ -203,14 +208,13 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   /**
    * Modular 3-tile width melds with positional encoding (PRD 6.2).
    */
-  private renderMelds(melds: Meld[], isHuman: boolean): void {
+  private renderMelds(melds: Meld[], isHuman: boolean, revealHand: boolean = false): void {
     this.meldGroup.removeAll(true);
 
     const meldW = isHuman ? SeatLayoutContainer.TILE_W * 3 : 20 * 3;
     const meldBlockW = meldW + (isHuman ? 8 : 6);
     const meldRightEdge = isHuman ? 330 : 180;
-    const totalMeldsW = melds.length * meldBlockW;
-    const meldStartX = meldRightEdge - totalMeldsW;
+    const meldStartX = meldRightEdge - melds.length * meldBlockW;
 
     melds.forEach((meld, idx) => {
       const meldX = meldStartX + idx * meldBlockW + meldW / 2;
@@ -218,55 +222,35 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
       const tileStep = isHuman ? SeatLayoutContainer.TILE_W : 20;
 
-      // Determine sideways tile position based on sourceSeat relative to current seat (PRD 6.2)
-      // Left (上家): relative 3 -> index 0
-      // Opposite (對家): relative 2 -> index 1
-      // Right (下家): relative 1 -> index 2
-      let sidewaysIdx = 1;
-      if (meld.sourceSeat !== undefined) {
-        const rel = (meld.sourceSeat - this.seat + 4) % 4;
-        if (rel === 3) sidewaysIdx = 0; // 上家
-        else if (rel === 2) sidewaysIdx = 1; // 對家
-        else if (rel === 1) sidewaysIdx = 2; // 下家
-      }
-
       if (meld.type === 'CONCEALED_KONG') {
-        for (let i = 0; i < 3; i++) {
-          const x = (i - 1) * tileStep;
-          // Human sees their own outer 2 face tiles; AI concealed kong is 100% face-down
-          const tex = (isHuman && (i === 0 || i === 2))
-            ? `mahjong:tile_${meld.tiles[0].shortCode}`
-            : 'mahjong:tile_back';
-          const sprite = this.scene.add.sprite(x, 0, tex);
+        for (let i = 0; i < 4; i++) {
+          const x = (i - 1.5) * tileStep;
+          let texture = 'mahjong:tile_back';
+          if (revealHand) {
+            texture = `mahjong:tile_${meld.tiles[i].shortCode}`;
+          } else if (isHuman && (i === 0 || i === 3)) {
+            texture = `mahjong:tile_${meld.tiles[i].shortCode}`;
+          }
+          const sprite = this.scene.add.sprite(x, 0, texture);
           if (!isHuman) sprite.setDisplaySize(18, 24);
           container.add(sprite);
         }
-        const topSprite = this.scene.add.sprite(0, -12, 'mahjong:tile_back');
-        if (!isHuman) topSprite.setDisplaySize(18, 24);
-        container.add(topSprite);
       } else if (meld.type === 'MELDED_KONG' || meld.type === 'ADDED_KONG') {
-        for (let i = 0; i < 3; i++) {
-          const x = (i - 1) * tileStep;
+        for (let i = 0; i < 4; i++) {
+          const x = (i - 1.5) * tileStep;
           const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
           if (!isHuman) sprite.setDisplaySize(18, 24);
-          if (i === sidewaysIdx) {
+          if (i === 1) {
             sprite.setAngle(90);
           }
           container.add(sprite);
         }
-        // 4th tile vertically stacked above the sideways tile (PRD 6.2)
-        const topX = (sidewaysIdx - 1) * tileStep;
-        const topSprite = this.scene.add.sprite(topX, -12, `mahjong:tile_${meld.tiles[3].shortCode}`);
-        if (!isHuman) topSprite.setDisplaySize(18, 24);
-        topSprite.setAngle(90);
-        container.add(topSprite);
       } else if (meld.type === 'PONG') {
         for (let i = 0; i < 3; i++) {
           const x = (i - 1) * tileStep;
           const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
           if (!isHuman) sprite.setDisplaySize(18, 24);
-          // Sideways orientation based on source seat (PRD 6.2)
-          if (i === sidewaysIdx) {
+          if (i === 1) {
             sprite.setAngle(90);
           }
           container.add(sprite);
@@ -288,7 +272,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   /**
    * Hand tiles with automatic leftward shift as melds expand on the right.
    */
-  private renderHand(profile: PlayerProfile, isHuman: boolean): void {
+  private renderHand(profile: PlayerProfile, isHuman: boolean, revealHand: boolean = false): void {
     this.handGroup.removeAll(true);
 
     const meldCount = profile.melds.length;
@@ -312,9 +296,11 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     const handAreaRightEdge = meldCount > 0 ? (meldStartX - marginBeforeMelds) : (isHuman ? 260 : 150);
     const startX = handAreaRightEdge - totalHandAreaW;
 
+    const showFace = isHuman || revealHand;
+
     hand.forEach((tile, idx) => {
       const x = startX + idx * stepX + stepX / 2;
-      const textureKey = isHuman ? `mahjong:tile_${tile.shortCode}` : 'mahjong:tile_back';
+      const textureKey = showFace ? `mahjong:tile_${tile.shortCode}` : 'mahjong:tile_back';
 
       const sprite = this.scene.add.sprite(x, 0, textureKey);
       if (!isHuman) sprite.setDisplaySize(18, 24);
@@ -351,7 +337,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     // 17th Drawn tile (rendered into the reserved slot on the right with 12px gap)
     if (profile.drawnTile) {
       const drawnX = startX + maxHandTilesW + gapDrawn + stepX / 2;
-      const textureKey = isHuman
+      const textureKey = showFace
         ? `mahjong:tile_${profile.drawnTile.shortCode}`
         : 'mahjong:tile_back';
 
@@ -387,7 +373,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   /**
    * 9x2 Compact Discard River in local coordinate frame (PRD 5.2 / AC4).
    */
-  private renderDiscards(discards: Tile[], isLastDiscardSeat: boolean = false): void {
+  private renderDiscards(discards: Tile[], _isLastDiscardSeat: boolean = false): void {
     this.riverGroup.removeAll(true);
 
     const cols = 9;
@@ -406,11 +392,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       const sprite = this.scene.add.sprite(x, y, `mahjong:tile_${tile.shortCode}`);
       sprite.setDisplaySize(dw, dh);
       sprite.setData('shortCode', tile.shortCode);
-
-      // Latest Discard Focus indicator per PRD 5.2
-      if (isLastDiscardSeat && idx === discards.length - 1) {
-        sprite.setTint(0xffea00);
-      }
+      // Clean tile presentation: outer marker box in MainGameScene highlights without color tinting
 
       this.riverGroup.add(sprite);
     });

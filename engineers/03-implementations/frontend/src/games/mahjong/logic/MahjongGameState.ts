@@ -1032,12 +1032,9 @@ export class MahjongGameState {
     this.dealerSeat = ((this.dealerSeat + 1) % 4) as PlayerSeat;
     this.dealerRoundsPlayed++;
 
-    // Update dynamic seat winds (Banker is East)
-    const winds: SeatWind[] = ['EAST', 'SOUTH', 'WEST', 'NORTH'];
+    // Update isDealer while keeping fixed physical door winds (Seat 0=East, 1=South, 2=West, 3=North)
     for (let i = 0; i < 4; i++) {
-      const seat = ((this.dealerSeat + i) % 4) as PlayerSeat;
-      this.players[seat].wind = winds[i];
-      this.players[seat].isDealer = i === 0;
+      this.players[i].isDealer = (i === this.dealerSeat);
     }
 
     // If 4 dealer rotations completed, advance round wind
