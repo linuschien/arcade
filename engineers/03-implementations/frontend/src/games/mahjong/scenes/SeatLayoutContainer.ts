@@ -139,25 +139,25 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Renders Banker Dice directly to the RIGHT of the single-row Flower Rack (X = +160, Y = -56).
+   * Renders Banker Dice directly to the RIGHT of the full-sized single-row Flower Rack (X = +195, Y = -62).
    */
   public showBankerDice(diceResult: number[] | null, isDealer: boolean = false): void {
     this.bankerDiceGroup.removeAll(true);
     if (!isDealer || !diceResult || diceResult.length < 3) return;
 
-    const diceX = 160;
-    const diceY = -56;
+    const diceX = 195;
+    const diceY = -62;
 
     const bg = this.scene.add.graphics();
     bg.fillStyle(0x020617, 0.9);
-    bg.fillRoundedRect(diceX - 38, diceY - 14, 76, 28, 5);
+    bg.fillRoundedRect(diceX - 42, diceY - 16, 84, 32, 6);
     bg.lineStyle(1.5, 0xd4af37, 0.9);
-    bg.strokeRoundedRect(diceX - 38, diceY - 14, 76, 28, 5);
+    bg.strokeRoundedRect(diceX - 42, diceY - 16, 84, 32, 6);
     this.bankerDiceGroup.add(bg);
 
     for (let i = 0; i < 3; i++) {
-      const sprite = this.scene.add.sprite(diceX - 22 + i * 22, diceY, `mahjong:dice_${diceResult[i]}`);
-      sprite.setDisplaySize(16, 16);
+      const sprite = this.scene.add.sprite(diceX - 24 + i * 24, diceY, `mahjong:dice_${diceResult[i]}`);
+      sprite.setDisplaySize(18, 18);
       this.bankerDiceGroup.add(sprite);
     }
   }
@@ -197,15 +197,15 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 4x1, 4x1 Single-Row Centered Flower Rack situated between Hand and Tile Wall (Y = -56).
+   * 4x1, 4x1 Single-Row Centered Flower Rack with full 36x48 standard tiles (Y = -62).
    */
   private renderFlowerRack(flowers: Tile[], wind?: string): void {
     this.flowerGroup.removeAll(true);
 
-    const cellW = 24;
-    const cellH = 32;
-    const cellStep = 26;
-    const baseY = -56;
+    const cellW = SeatLayoutContainer.TILE_W;
+    const cellH = SeatLayoutContainer.TILE_H;
+    const cellStep = 38;
+    const baseY = -62;
 
     const slotKeys = [
       'spring', 'summer', 'autumn', 'winter',
@@ -221,11 +221,11 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     };
     const playerPositives = wind ? (positiveIndices[wind] || []) : [];
 
-    // Left 4 Seasons: x in [-112, -34], Right 4 Plants: x in [+10, +88]
+    // Left 4 Seasons: x in [-160, -8], Right 4 Plants: x in [+8, +160]
     for (let i = 0; i < 8; i++) {
       const isPlant = i >= 4;
       const groupCol = i % 4;
-      const groupStartX = isPlant ? 8 : -112;
+      const groupStartX = isPlant ? 8 : -160;
       const x = groupStartX + groupCol * cellStep + cellW / 2;
       const y = baseY;
 
@@ -241,7 +241,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
         // Highlight positive flowers with coral orange border
         if (isPositive) {
           const frame = this.scene.add.graphics();
-          frame.lineStyle(2, 0xf97316, 1);
+          frame.lineStyle(2.5, 0xf97316, 1);
           frame.strokeRoundedRect(x - cellW / 2, y - cellH / 2, cellW, cellH, 3);
           this.flowerGroup.add(frame);
         }
@@ -482,22 +482,22 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 9x2 Standard Discard River positioned INSIDE the Tile Wall facing towards the Central Compass.
-   * Top/Bottom seats: baseY = -158 (Row 0: -158, Row 1: -193).
-   * Left/Right side seats: baseY = -275 (Row 0: -275, Row 1: -310).
+   * 9x2 Standard Discard River with full 36x48 tiles positioned INSIDE the Tile Wall.
+   * Top/Bottom seats: baseY = -124 (Row 0: -124, Row 1: -174).
+   * Left/Right side seats: baseY = -228 (Row 0: -228, Row 1: -278).
    */
   private renderDiscards(discards: Tile[], _isLastDiscardSeat: boolean = false): void {
     this.riverGroup.removeAll(true);
 
     const cols = 9;
-    const dw = 26;
-    const dh = 34;
-    const stepX = 27;
-    const stepY = 35;
+    const dw = SeatLayoutContainer.TILE_W;
+    const dh = SeatLayoutContainer.TILE_H;
+    const stepX = 38;
+    const stepY = 50;
     const riverStartX = -((cols * stepX) / 2);
 
     const isSideSeat = this.seat === 1 || this.seat === 3;
-    const baseY = isSideSeat ? -275 : -158;
+    const baseY = isSideSeat ? -228 : -124;
 
     // 1. Draw 18 placeholder grid cells (9x2)
     for (let r = 0; r < 2; r++) {
