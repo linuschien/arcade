@@ -235,7 +235,7 @@ export class MainGameScene extends Phaser.Scene {
       container.add(bg);
       this.compassPlayerBgs.push(bg);
 
-      const pText = this.add.text(-60, -7, '東 玩家', {
+      const pText = this.add.text(-60, -7, '[東] 玩家', {
         fontSize: '11px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#f8fafc',
@@ -760,7 +760,7 @@ export class MainGameScene extends Phaser.Scene {
 
       const pText = this.compassPlayerTexts[i];
       if (pText) {
-        pText.setText(`${char}${dealerBadge} ${p.name}`);
+        pText.setText(`[${char}] ${p.name}`);
         pText.setColor?.(isCurrentTurn ? '#fef08a' : (isRoundWind ? '#facc15' : '#e2e8f0'));
       }
 

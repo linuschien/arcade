@@ -97,8 +97,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     const isRoundWind = profile.wind === roundWind;
     const windColor = isRoundWind ? '#facc15' : '#e2e8f0';
 
-    const dealerBadge = profile.isDealer ? ' [莊]' : '';
-    this.hudText.setText(`${windName}${dealerBadge} ${profile.name}`);
+    this.hudText.setText(`[${windName}] ${profile.name}`);
     this.hudText.setColor?.(windColor);
     this.hudChipsText.setText(`${profile.chips.toLocaleString()} 點`);
   }

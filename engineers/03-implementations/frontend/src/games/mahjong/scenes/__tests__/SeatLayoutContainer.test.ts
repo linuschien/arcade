@@ -271,7 +271,7 @@ describe('SeatLayoutContainer Unit Tests', () => {
     profile0.isDealer = true;
     profile0.name = '賭神';
     seat0.updatePlayerInfo(profile0, 'EAST');
-    expect((seat0 as any).hudText.setText).toHaveBeenCalledWith('東 [莊] 賭神');
+    expect((seat0 as any).hudText.setText).toHaveBeenCalledWith('[東] 賭神');
 
     const seat1 = new SeatLayoutContainer(mockScene, 1180, 360, 270, 1);
     const profile1 = createMockProfile();
@@ -279,7 +279,7 @@ describe('SeatLayoutContainer Unit Tests', () => {
     profile1.isDealer = false;
     profile1.name = '賭俠小刀';
     seat1.updatePlayerInfo(profile1, 'EAST');
-    expect((seat1 as any).hudText.setText).toHaveBeenCalledWith('南 賭俠小刀');
+    expect((seat1 as any).hudText.setText).toHaveBeenCalledWith('[南] 賭俠小刀');
 
     const seat2 = new SeatLayoutContainer(mockScene, 640, 75, 180, 2);
     const profile2 = createMockProfile();
@@ -287,7 +287,7 @@ describe('SeatLayoutContainer Unit Tests', () => {
     profile2.isDealer = false;
     profile2.name = '賭聖阿星';
     seat2.updatePlayerInfo(profile2, 'EAST');
-    expect((seat2 as any).hudText.setText).toHaveBeenCalledWith('西 賭聖阿星');
+    expect((seat2 as any).hudText.setText).toHaveBeenCalledWith('[西] 賭聖阿星');
 
     const seat3 = new SeatLayoutContainer(mockScene, 100, 360, 90, 3);
     const profile3 = createMockProfile();
@@ -295,7 +295,7 @@ describe('SeatLayoutContainer Unit Tests', () => {
     profile3.isDealer = false;
     profile3.name = '陳金城';
     seat3.updatePlayerInfo(profile3, 'EAST');
-    expect((seat3 as any).hudText.setText).toHaveBeenCalledWith('北 陳金城');
+    expect((seat3 as any).hudText.setText).toHaveBeenCalledWith('[北] 陳金城');
   });
 
   it('should rotate the correct tile sideways in PONG based on discard source relative seat', () => {
