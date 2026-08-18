@@ -175,67 +175,90 @@ export class MainGameScene extends Phaser.Scene {
     });
   }
 
+  // Central Compass Integrated 4-Player HUD
+  private compassPlayerContainers: Phaser.GameObjects.Container[] = [];
+  private compassPlayerTexts: Phaser.GameObjects.Text[] = [];
+  private compassPlayerChipsTexts: Phaser.GameObjects.Text[] = [];
+  private compassPlayerBgs: Phaser.GameObjects.Graphics[] = [];
+
   private createCentralCompass(): void {
     const cx = 640;
     const cy = 360;
 
     const dial = this.add.sprite(cx, cy, 'mahjong:compass_dial');
-    dial.setDisplaySize(140, 140);
+    dial.setDisplaySize(160, 160);
 
     // Turn pointer (Breathing gold needle)
     this.turnPointer = this.add.graphics();
 
-    this.roundWindText = this.add.text(cx, cy - 20, '東風東', {
-      fontSize: '14px',
+    // Center Round Wind / Tile Info Core
+    this.roundWindText = this.add.text(cx, cy - 14, '東風東', {
+      fontSize: '13px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#facc15',
       fontStyle: 'bold',
-    });
-    this.roundWindText.setOrigin(0.5);
+    }).setOrigin(0.5);
 
     this.dealerStreakText = this.add.text(cx, cy, '連 0 拉 0', {
-      fontSize: '11px',
+      fontSize: '10px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#94a3b8',
       fontStyle: 'bold',
-    });
-    this.dealerStreakText.setOrigin(0.5);
+    }).setOrigin(0.5);
 
-    this.remainingTilesText = this.add.text(cx, cy + 20, '餘 70 張', {
-      fontSize: '11px',
+    this.remainingTilesText = this.add.text(cx, cy + 14, '餘 70 張', {
+      fontSize: '10px',
       fontFamily: 'monospace',
       color: '#38bdf8',
       fontStyle: 'bold',
-    });
-    this.remainingTilesText.setOrigin(0.5);
+    }).setOrigin(0.5);
 
-    // Fixed Seat Winds on Compass Dial (Bottom Seat 0, Right Seat 1, Top Seat 2, Left Seat 3)
-    this.compassSeatWindTexts = [
-      this.add.text(cx, cy + 46, '東', {
-        fontSize: '13px',
-        fontFamily: '"Microsoft JhengHei", sans-serif',
-        color: '#fef08a',
-        fontStyle: 'bold',
-      }).setOrigin(0.5),
-      this.add.text(cx + 46, cy, '南', {
-        fontSize: '13px',
-        fontFamily: '"Microsoft JhengHei", sans-serif',
-        color: '#fef08a',
-        fontStyle: 'bold',
-      }).setOrigin(0.5),
-      this.add.text(cx, cy - 46, '西', {
-        fontSize: '13px',
-        fontFamily: '"Microsoft JhengHei", sans-serif',
-        color: '#fef08a',
-        fontStyle: 'bold',
-      }).setOrigin(0.5),
-      this.add.text(cx - 46, cy, '北', {
-        fontSize: '13px',
-        fontFamily: '"Microsoft JhengHei", sans-serif',
-        color: '#fef08a',
-        fontStyle: 'bold',
-      }).setOrigin(0.5),
+    // 4 Integrated Player HUD Strips around the 4 borders of the square compass:
+    // Seat 0: Bottom (Human), Seat 1: Right (AI), Seat 2: Top (AI), Seat 3: Left (AI)
+    const hudConfigs = [
+      { x: cx, y: cy + 62, angle: 0 },    // Seat 0 (Bottom)
+      { x: cx + 62, y: cy, angle: 270 },  // Seat 1 (Right)
+      { x: cx, y: cy - 62, angle: 180 },  // Seat 2 (Top)
+      { x: cx - 62, y: cy, angle: 90 },   // Seat 3 (Left)
     ];
+
+    this.compassPlayerContainers = [];
+    this.compassPlayerTexts = [];
+    this.compassPlayerChipsTexts = [];
+    this.compassPlayerBgs = [];
+
+    hudConfigs.forEach((cfg) => {
+      const container = this.add.container(cfg.x, cfg.y);
+      container.setAngle(cfg.angle);
+
+      const bg = this.add.graphics();
+      container.add(bg);
+      this.compassPlayerBgs.push(bg);
+
+      const pText = this.add.text(-62, -7, '東 玩家', {
+        fontSize: '10px',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
+        color: '#f8fafc',
+        fontStyle: 'bold',
+      });
+      container.add(pText);
+      this.compassPlayerTexts.push(pText);
+
+      const chipsText = this.add.text(62, -7, '10,000', {
+        fontSize: '10px',
+        fontFamily: 'monospace',
+        color: '#facc15',
+        fontStyle: 'bold',
+      });
+      chipsText.setOrigin?.(1, 0);
+      container.add(chipsText);
+      this.compassPlayerChipsTexts.push(chipsText);
+
+      this.compassPlayerContainers.push(container);
+    });
+
+    // Backwards compatibility list
+    this.compassSeatWindTexts = this.compassPlayerTexts;
 
     // Dice Container for roll animation
     this.diceContainer = this.add.container(cx, cy);
@@ -717,12 +740,34 @@ export class MainGameScene extends Phaser.Scene {
     const dealerWind = windChars[dealer.wind] || '東';
     this.roundWindText.setText(`${roundWind}風${dealerWind}`);
 
-    // Update 4 cardinal Seat Wind labels around compass dial (fixed after seating)
+    // Update 4 Integrated Player HUD Strips inside the Square Compass
     for (let i = 0; i < 4; i++) {
       const p = this.gameState.players[i];
-      if (p && this.compassSeatWindTexts[i]) {
-        const char = windChars[p.wind] || '東';
-        this.compassSeatWindTexts[i].setText(char);
+      if (!p) continue;
+      const char = windChars[p.wind] || '東';
+      const dealerBadge = p.isDealer ? ' [莊]' : '';
+      const isCurrentTurn = this.gameState.currentTurnSeat === i;
+      const isRoundWind = p.wind === this.gameState.roundWind;
+
+      const bg = this.compassPlayerBgs[i];
+      if (bg) {
+        bg.clear();
+        bg.fillStyle(isCurrentTurn ? 0x854d0e : 0x020617, 0.95);
+        bg.fillRoundedRect(-70, -10, 140, 20, 4);
+        bg.lineStyle(1.5, isCurrentTurn ? 0xfacc15 : 0x334155, 1);
+        bg.strokeRoundedRect(-70, -10, 140, 20, 4);
+      }
+
+      const pText = this.compassPlayerTexts[i];
+      if (pText) {
+        pText.setText(`${char}${dealerBadge} ${p.name}`);
+        pText.setColor?.(isCurrentTurn ? '#fef08a' : (isRoundWind ? '#facc15' : '#e2e8f0'));
+      }
+
+      const chipsText = this.compassPlayerChipsTexts[i];
+      if (chipsText) {
+        chipsText.setText(`${p.chips.toLocaleString()}`);
+        chipsText.setColor?.(isCurrentTurn ? '#ffffff' : '#facc15');
       }
     }
 

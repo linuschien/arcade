@@ -79,6 +79,8 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     this.hudChipsText.setOrigin?.(1, 0);
 
     this.hudGroup.add([this.hudText, this.hudChipsText]);
+    // Hide redundant external HUD group as all player HUD info is now integrated into the central square compass
+    this.hudGroup.setVisible(false);
   }
 
   /**
