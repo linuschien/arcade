@@ -85,6 +85,7 @@ vi.mock('../../audio/MahjongAudioService', () => ({
     playGameOver: vi.fn(),
     playTileSelect: vi.fn(),
     playTileDiscard: vi.fn(),
+    playTileSort: vi.fn(),
     playDiceRoll: vi.fn(),
     playFlowerReplace: vi.fn(),
     playFanTally: vi.fn(),

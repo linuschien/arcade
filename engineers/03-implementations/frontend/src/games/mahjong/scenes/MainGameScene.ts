@@ -417,18 +417,79 @@ export class MainGameScene extends Phaser.Scene {
     this.diceContainer.removeAll(true);
     this.diceContainer.setVisible(true);
 
+    const winds = ['東', '南', '西', '北'];
     const d = this.gameState.diceResult;
+    const diceSum = d[0] + d[1] + d[2];
+    const breakSeat = (this.gameState.dealerSeat + (diceSum - 1)) % 4;
+    const breakWind = winds[breakSeat];
+
+    // Background badge for dice roll
+    const bg = this.add.graphics();
+    bg.fillStyle(0x020617, 0.9);
+    bg.fillRoundedRect(-140, -45, 280, 90, 12);
+    bg.lineStyle(1.5, 0xd4af37, 0.9);
+    bg.strokeRoundedRect(-140, -45, 280, 90, 12);
+    this.diceContainer.add(bg);
+
+    const diceSprites: Phaser.GameObjects.Sprite[] = [];
     for (let i = 0; i < 3; i++) {
-      const sprite = this.add.sprite((i - 1) * 36, 0, `mahjong:dice_${d[i]}`);
+      const sprite = this.add.sprite((i - 1) * 44, -10, `mahjong:dice_${d[i]}`);
+      sprite.setDisplaySize(32, 32);
+      diceSprites.push(sprite);
       this.diceContainer.add(sprite);
+
+      // Rolling tumble tween
+      if (this.tweens) {
+        this.tweens.add({
+          targets: sprite,
+          angle: { from: -180, to: 180 },
+          scale: { from: 0.7, to: 1.0 },
+          duration: 600,
+          ease: 'Cubic.easeOut',
+        });
+      }
     }
 
-    this.time.delayedCall(1200, () => {
+    const infoText = this.add.text(
+      0,
+      25,
+      `🎲 擲骰 ${d[0]}+${d[1]}+${d[2]}=${diceSum} 點 (${breakWind}風第${diceSum}墩開門)`,
+      {
+        fontSize: '12px',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
+        color: '#facc15',
+        fontStyle: 'bold',
+      }
+    );
+    infoText.setOrigin(0.5);
+    this.diceContainer.add(infoText);
+
+    this.time.delayedCall(1400, () => {
       this.diceContainer.setVisible(false);
       if (this.gameState.phase === 'SEATING_DRAW') {
         this.gameState.startDealing();
+        this.animateTileSort();
       }
     });
+  }
+
+  /**
+   * Animates card sorting cascade after dealing.
+   */
+  private animateTileSort(): void {
+    MahjongAudioService.playTileSort();
+    this.refreshAllSeats();
+
+    // Human player hand ripple lift
+    const humanContainer = this.seatContainers[0];
+    if (this.tweens && humanContainer) {
+      this.tweens.add({
+        targets: humanContainer,
+        y: { from: 655, to: 645 },
+        duration: 400,
+        ease: 'Back.easeOut',
+      });
+    }
   }
 
   private handleHumanTileClick(tileId: string): void {
@@ -502,26 +563,29 @@ export class MainGameScene extends Phaser.Scene {
 
   private checkHumanSelfActions(): void {
     const p1 = this.gameState.players[0];
-    if (p1.isAutoPlay) return;
+    const fullHand = p1.drawnTile ? [...p1.hand, p1.drawnTile] : p1.hand;
 
     const canHu =
-      p1.drawnTile &&
+      p1.drawnTile !== null &&
       MahjongHandEvaluator.isWinningHand(p1.hand, p1.melds, p1.drawnTile);
 
-    const kongOpts = MahjongHandEvaluator.getSelfKongOptions(
-      p1.drawnTile ? [...p1.hand, p1.drawnTile] : p1.hand,
-      p1.melds
-    );
+    const kongOptions = MahjongHandEvaluator.getSelfKongOptions(fullHand, p1.melds);
+    const allVisible = this.gameState.getAllVisibleTiles();
+    const tingInfo = MahjongHandEvaluator.evaluateTing(p1.hand, p1.melds, allVisible);
 
-    if (canHu || kongOpts.length > 0) {
+    if (canHu || kongOptions.length > 0) {
       this.showActionBar({
-        canHu: !!canHu,
-        canKong: kongOpts.length > 0,
-        kongOptions: kongOpts,
+        canHu,
+        canKong: kongOptions.length > 0,
+        kongOptions: kongOptions.map((k) => ({
+          type: k.type,
+          tileCode: k.tileCode,
+          handTileIds: k.handTileIds,
+        })),
         canPong: false,
         canChow: false,
         chowOptions: [],
-        canTing: false,
+        canTing: tingInfo.winningTiles.length > 0,
         canPass: true,
       });
     } else {
@@ -530,19 +594,20 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private checkHumanClaimActions(): void {
-    const p1 = this.gameState.players[0];
-    if (p1.isAutoPlay || !this.gameState.lastDiscard) return;
+    const last = this.gameState.lastDiscard;
+    if (!last || last.fromSeat === 0) return;
 
-    const tile = this.gameState.lastDiscard.tile;
-    const fromSeat = this.gameState.lastDiscard.fromSeat;
+    const p1 = this.gameState.players[0];
+    const fullHand = [...p1.hand];
+    const fromSeat = last.fromSeat;
 
     const canHu =
       !p1.isPassLockout &&
-      MahjongHandEvaluator.isWinningHand(p1.hand, p1.melds, tile);
+      MahjongHandEvaluator.isWinningHand(p1.hand, p1.melds, last.tile);
 
-    const canPong = MahjongHandEvaluator.canPong(p1.hand, tile, p1.passPongCodesInTurn);
-    const canKong = MahjongHandEvaluator.canMeldedKong(p1.hand, tile, fromSeat, 0);
-    const chowOptions = MahjongHandEvaluator.getChowOptions(p1.hand, tile, fromSeat, 0);
+    const canPong = MahjongHandEvaluator.canPong(fullHand, last.tile, p1.passPongCodesInTurn);
+    const canKong = MahjongHandEvaluator.canMeldedKong(fullHand, last.tile, fromSeat, 0);
+    const chowOptions = MahjongHandEvaluator.getChowOptions(fullHand, last.tile, fromSeat, 0);
 
     if (canHu || canPong || canKong || chowOptions.length > 0) {
       this.showActionBar({
@@ -553,10 +618,8 @@ export class MainGameScene extends Phaser.Scene {
           ? [
               {
                 type: 'MELDED_KONG',
-                tileCode: tile.shortCode,
-                handTileIds: p1.hand
-                  .filter((t) => t.shortCode === tile.shortCode)
-                  .map((t) => t.id),
+                tileCode: last.tile.shortCode,
+                handTileIds: fullHand.filter((t) => t.shortCode === last.tile.shortCode).map((t) => t.id),
               },
             ]
           : [],
@@ -582,7 +645,6 @@ export class MainGameScene extends Phaser.Scene {
         label: '胡',
         action: () => {
           this.actionBarContainer.setVisible(false);
-          MahjongAudioService.playVoiceHu();
           if (this.gameState.currentTurnSeat === 0 && this.gameState.phase === 'PLAYER_TURN') {
             this.gameState.settleWin(0, true);
           } else {
@@ -598,7 +660,6 @@ export class MainGameScene extends Phaser.Scene {
         label: '槓',
         action: () => {
           this.actionBarContainer.setVisible(false);
-          MahjongAudioService.playVoiceKong();
           if (this.gameState.phase === 'PLAYER_TURN') {
             const kong = actions.kongOptions[0];
             const p1 = this.gameState.players[0];
@@ -627,7 +688,6 @@ export class MainGameScene extends Phaser.Scene {
         label: '碰',
         action: () => {
           this.actionBarContainer.setVisible(false);
-          MahjongAudioService.playVoicePong();
           this.gameState.humanRespondAction('PONG');
         },
       });
@@ -640,7 +700,6 @@ export class MainGameScene extends Phaser.Scene {
         action: () => {
           if (actions.chowOptions.length === 1) {
             this.actionBarContainer.setVisible(false);
-            MahjongAudioService.playVoiceChow();
             this.gameState.humanRespondAction('CHOW', actions.chowOptions[0]);
           } else {
             this.showChowSubMenu(actions.chowOptions);

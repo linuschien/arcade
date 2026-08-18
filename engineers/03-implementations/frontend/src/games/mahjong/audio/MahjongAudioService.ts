@@ -147,6 +147,19 @@ class MahjongAudioServiceImpl {
   }
 
   /**
+   * SFX_TILE_SORT (Crisp shuffling / card sorting cascade sound).
+   */
+  public playTileSort(): void {
+    const sweep = [
+      { freq: 400, delayMs: 0, durationSeconds: 0.04, type: 'triangle' as OscillatorType, vol: 0.1 },
+      { freq: 600, delayMs: 35, durationSeconds: 0.04, type: 'triangle' as OscillatorType, vol: 0.12 },
+      { freq: 850, delayMs: 70, durationSeconds: 0.05, type: 'triangle' as OscillatorType, vol: 0.14 },
+      { freq: 1100, delayMs: 110, durationSeconds: 0.06, type: 'sine' as OscillatorType, vol: 0.12 },
+    ];
+    SoundEngine.playSequence(sweep);
+  }
+
+  /**
    * SFX_FLOWER_REPLACE (Crisp bell chime for flower replacement).
    */
   public playFlowerReplace(): void {

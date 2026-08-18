@@ -216,6 +216,7 @@ export class MahjongGameState {
       p.flowers = [];
       p.discards = [];
       p.isTing = false;
+      p.isAutoPlay = false;
       p.isPassLockout = false;
       p.passPongCodesInTurn = new Set();
     });

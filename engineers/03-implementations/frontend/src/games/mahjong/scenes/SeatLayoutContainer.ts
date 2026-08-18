@@ -50,26 +50,26 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   private initHUD(): void {
     this.hudGroup.setAngle(-this.seatAngle);
 
-    // Position HUD at player's subjective LEFT across all 4 seats
+    // Position HUD at player's physical LEFT arm across all 4 seats
     let hudX = 0;
     let hudY = 0;
 
     if (this.seat === 0) {
-      // Bottom Human: Subjective LEFT = Screen Bottom-Left
+      // Bottom Human: Physical LEFT = Screen Bottom-Left
       hudX = -540;
       hudY = 0;
     } else if (this.seat === 1) {
-      // Right AI: Subjective LEFT = Screen Top-Right (safely inside table felt)
-      hudX = 285;
-      hudY = -30;
+      // Right AI (facing Left): Physical LEFT = Screen Bottom-Right (inside felt)
+      hudX = -200;
+      hudY = -40;
     } else if (this.seat === 2) {
-      // Top AI: Subjective LEFT = Screen Top-Right
-      hudX = -380;
+      // Top AI (facing Down): Physical LEFT = Screen Top-Right
+      hudX = -340;
       hudY = 0;
     } else if (this.seat === 3) {
-      // Left AI: Subjective LEFT = Screen Bottom-Left
-      hudX = 180;
-      hudY = 0;
+      // Left AI (facing Right): Physical LEFT = Screen Top-Left
+      hudX = -200;
+      hudY = -10;
     }
 
     this.hudGroup.setPosition(hudX, hudY);
@@ -135,7 +135,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 4x2 Flower Rack at player's subjective RIGHT (never overlapping hand).
+   * 4x2 Flower Rack at player's physical RIGHT arm.
    */
   private renderFlowerRack(flowers: Tile[]): void {
     this.flowerGroup.removeAll(true);
@@ -148,24 +148,24 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       'plum', 'orchid', 'bamboo_f', 'chrysanthemum',
     ];
 
-    let startX = 330;
+    let startX = 340;
     let startY = 0;
 
     if (this.seat === 0) {
-      // Bottom Human: Subjective RIGHT = Screen Bottom-Right
-      startX = 330;
+      // Bottom Human: Physical RIGHT = Screen Bottom-Right
+      startX = 340;
       startY = 0;
     } else if (this.seat === 1) {
-      // Right AI: Subjective RIGHT = Screen Bottom-Right (beyond hand edge)
-      startX = -260;
+      // Right AI: Physical RIGHT = Screen Top-Right
+      startX = 200;
       startY = 0;
     } else if (this.seat === 2) {
-      // Top AI: Subjective RIGHT = Screen Top-Left
-      startX = 330;
+      // Top AI: Physical RIGHT = Screen Top-Left
+      startX = 340;
       startY = 0;
     } else if (this.seat === 3) {
-      // Left AI: Subjective RIGHT = Screen Top-Left (beyond hand edge)
-      startX = -260;
+      // Left AI: Physical RIGHT = Screen Bottom-Left
+      startX = 200;
       startY = 0;
     }
 
@@ -192,7 +192,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Modular 3-tile width melds.
+   * Modular 3-tile width melds positioned strictly between hand and flower rack.
    */
   private renderMelds(melds: Meld[], isHuman: boolean): void {
     this.meldGroup.removeAll(true);
@@ -200,13 +200,19 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     const meldW = SeatLayoutContainer.TILE_W * 3;
 
     melds.forEach((meld, idx) => {
-      const meldX = isHuman ? -360 - idx * (meldW + 6) : -180 - idx * (meldW + 6);
+      // Place melds towards the flower rack side
+      const meldX = isHuman
+        ? 150 + idx * (meldW + 6)
+        : 110 + idx * (meldW + 6);
       const container = this.scene.add.container(meldX, 0);
 
       if (meld.type === 'CONCEALED_KONG') {
         for (let i = 0; i < 3; i++) {
           const x = (i - 1) * SeatLayoutContainer.TILE_W;
-          const tex = i === 1 ? 'mahjong:tile_back' : `mahjong:tile_${meld.tiles[0].shortCode}`;
+          // Human sees their own outer 2 face tiles; AI concealed kong is 100% face-down
+          const tex = (isHuman && (i === 0 || i === 2))
+            ? `mahjong:tile_${meld.tiles[0].shortCode}`
+            : 'mahjong:tile_back';
           const sprite = this.scene.add.sprite(x, 0, tex);
           container.add(sprite);
         }
@@ -233,17 +239,21 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Hand tiles with leftward shrink as melds increase.
-   * For AI: uses compact step so it never exceeds screen borders.
+   * Hand tiles positioned in center before melds.
    */
   private renderHand(profile: PlayerProfile, isHuman: boolean): void {
     this.handGroup.removeAll(true);
 
+    const meldCount = profile.melds.length;
+    const meldW = SeatLayoutContainer.TILE_W * 3 + 6;
+
     const hand = profile.hand;
     const stepX = isHuman ? SeatLayoutContainer.TILE_W : 20;
-    const rightEdge = isHuman ? 240 : 160;
     const totalHandW = hand.length * stepX;
-    const startX = rightEdge - totalHandW;
+    // Hand shifts slightly to the left as melds expand on the right
+    const startX = isHuman
+      ? -totalHandW / 2 - (meldCount > 0 ? meldCount * 25 : 0)
+      : -totalHandW / 2;
 
     hand.forEach((tile, idx) => {
       const x = startX + idx * stepX;
@@ -280,9 +290,9 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       this.handGroup.add(sprite);
     });
 
-    // Drawn tile
+    // 17th Drawn tile (placed on the far right with 12px gap per PRD 6.1)
     if (profile.drawnTile) {
-      const drawnX = rightEdge + 16;
+      const drawnX = startX + hand.length * stepX + 12;
       const textureKey = isHuman
         ? `mahjong:tile_${profile.drawnTile.shortCode}`
         : 'mahjong:tile_back';
