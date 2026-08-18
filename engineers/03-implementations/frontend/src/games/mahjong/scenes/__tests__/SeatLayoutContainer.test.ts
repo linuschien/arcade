@@ -140,6 +140,76 @@ describe('SeatLayoutContainer Unit Tests', () => {
     expect(() => seatContainer.renderPlayerState(profile, true)).not.toThrow();
   });
 
+  it('should render AI concealed kong with 100% face-down tiles and human concealed kong with outer tiles revealed', () => {
+    const seatContainer = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
+    const profile = createMockProfile();
+    profile.hand = [];
+    profile.drawnTile = null;
+    profile.melds = [
+      {
+        type: 'CONCEALED_KONG',
+        tiles: [
+          { id: '1m_1', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+          { id: '1m_2', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+          { id: '1m_3', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+          { id: '1m_4', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+        ],
+        sourceSeat: 1,
+      },
+    ];
+
+    // Render for AI (isHuman = false)
+    mockScene.add.sprite.mockClear();
+    seatContainer.renderPlayerState(profile, false);
+    const aiSpriteCalls = mockScene.add.sprite.mock.calls;
+    const aiTile1mCalls = aiSpriteCalls.filter((c: any[]) => c[2] === 'mahjong:tile_1m');
+    const aiTileBackCalls = aiSpriteCalls.filter((c: any[]) => c[2] === 'mahjong:tile_back');
+    // AI concealed kong must NOT reveal tile_1m to human player
+    expect(aiTile1mCalls.length).toBe(0);
+    expect(aiTileBackCalls.length).toBeGreaterThanOrEqual(4);
+
+    // Render for Human (isHuman = true)
+    mockScene.add.sprite.mockClear();
+    seatContainer.renderPlayerState(profile, true);
+    const humanSpriteCalls = mockScene.add.sprite.mock.calls;
+    const humanTile1mCalls = humanSpriteCalls.filter((c: any[]) => c[2] === 'mahjong:tile_1m');
+    const humanTileBackCalls = humanSpriteCalls.filter((c: any[]) => c[2] === 'mahjong:tile_back');
+    // Human concealed kong reveals outer 2 tiles for self identification
+    expect(humanTile1mCalls.length).toBe(2);
+    expect(humanTileBackCalls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should initialize HUD and Flower Rack positions correctly across all 4 seats', () => {
+    // Seat 0: Bottom Human (Angle 0)
+    const seat0 = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
+    expect((seat0 as any).hudGroup.setPosition).toHaveBeenCalledWith(-540, 0);
+
+    // Seat 1: Right AI (Angle 270)
+    const seat1 = new SeatLayoutContainer(mockScene, 1180, 360, 270, 1);
+    expect((seat1 as any).hudGroup.setPosition).toHaveBeenCalledWith(-200, -40);
+
+    // Seat 2: Top AI (Angle 180)
+    const seat2 = new SeatLayoutContainer(mockScene, 640, 75, 180, 2);
+    expect((seat2 as any).hudGroup.setPosition).toHaveBeenCalledWith(-340, 0);
+
+    // Seat 3: Left AI (Angle 90)
+    const seat3 = new SeatLayoutContainer(mockScene, 100, 360, 90, 3);
+    expect((seat3 as any).hudGroup.setPosition).toHaveBeenCalledWith(-200, -10);
+  });
+
+  it('should place melds strictly between hand and flower rack (positive X offset)', () => {
+    const seatContainer = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
+    const profile = createMockProfile();
+
+    mockScene.add.container.mockClear();
+    seatContainer.renderPlayerState(profile, true);
+
+    const containerCalls = mockScene.add.container.mock.calls;
+    // Melds are placed at startX = 150 + idx * ...
+    const meldContainerCall = containerCalls.find((c: any[]) => c[0] >= 150 && c[1] === 0);
+    expect(meldContainerCall).toBeDefined();
+  });
+
   it('should highlight matching discards correctly', () => {
     const seatContainer = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
     expect(() => seatContainer.highlightMatchingDiscards('1m')).not.toThrow();

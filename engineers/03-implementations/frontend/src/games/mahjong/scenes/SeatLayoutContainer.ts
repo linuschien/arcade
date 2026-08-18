@@ -369,12 +369,23 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
    * Returns world position of the latest discarded tile.
    */
   public getLatestDiscardWorldPosition(): { x: number; y: number } | null {
-    if (this.riverGroup.length === 0) return null;
-    const lastSprite = this.riverGroup.getAt(this.riverGroup.length - 1) as Phaser.GameObjects.Sprite;
+    if (!this.riverGroup) return null;
+    const count = this.riverGroup.length ?? (this.riverGroup as any).list?.length ?? 0;
+    if (count === 0) return null;
+
+    const lastSprite = typeof (this.riverGroup as any).getAt === 'function'
+      ? (this.riverGroup as any).getAt(count - 1)
+      : (this.riverGroup as any).list?.[count - 1];
+
     if (!lastSprite) return null;
-    const matrix = this.getWorldTransformMatrix();
-    const worldPoint = matrix.transformPoint(lastSprite.x, lastSprite.y);
+    const matrix = typeof this.getWorldTransformMatrix === 'function'
+      ? this.getWorldTransformMatrix()
+      : null;
+
+    if (!matrix) {
+      return { x: this.x + (lastSprite.x || 0), y: this.y + (lastSprite.y || 0) };
+    }
+    const worldPoint = matrix.transformPoint(lastSprite.x || 0, lastSprite.y || 0, new Phaser.Math.Vector2());
     return { x: worldPoint.x, y: worldPoint.y };
   }
 }
-

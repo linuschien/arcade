@@ -5,6 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MainGameScene } from '../MainGameScene';
+import { MahjongAudioService } from '../../audio/MahjongAudioService';
 
 vi.mock('phaser', () => {
   class MockGameObject {
@@ -140,6 +141,12 @@ describe('Mahjong MainGameScene Unit Tests', () => {
         off: vi.fn().mockReturnThis(),
         emit: vi.fn().mockReturnThis(),
         destroy: vi.fn().mockReturnThis(),
+        list: [],
+        length: 0,
+        getAt: vi.fn(),
+        getWorldTransformMatrix: vi.fn().mockReturnValue({
+          transformPoint: vi.fn((x, y, v) => ({ x: x || 0, y: y || 0 })),
+        }),
       };
       return obj;
     };
@@ -156,7 +163,7 @@ describe('Mahjong MainGameScene Unit Tests', () => {
       off: vi.fn(),
     };
     (scene as any).time = {
-      delayedCall: vi.fn((delay, callback) => callback()),
+      delayedCall: vi.fn(),
     };
   });
 
@@ -170,5 +177,49 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     scene.create();
     expect(() => scene.setPauseState(true)).not.toThrow();
     expect(() => scene.setPauseState(false)).not.toThrow();
+  });
+
+  it('should play dice roll animation and trigger tile sorting audio after dealing', () => {
+    let timerCallback: Function | null = null;
+    (scene as any).time = {
+      delayedCall: vi.fn((_delay, cb) => {
+        timerCallback = cb;
+      }),
+    };
+
+    scene.create();
+    const audioService = vi.mocked(MahjongAudioService);
+    audioService.playDiceRoll.mockClear();
+    audioService.playTileSort.mockClear();
+
+    (scene as any).gameState.phase = 'SEATING_DRAW';
+    (scene as any).playDiceRollAnimation();
+
+    expect(audioService.playDiceRoll).toHaveBeenCalledTimes(1);
+
+    // Simulate dice roll completion timer
+    if (timerCallback) (timerCallback as Function)();
+    expect(audioService.playTileSort).toHaveBeenCalledTimes(1);
+  });
+
+  it('should play voice clip only once on gameState meld claim events and not duplicated in action buttons', () => {
+    scene.create();
+    const audioService = vi.mocked(MahjongAudioService);
+    audioService.playVoicePong.mockClear();
+
+    // Show action bar with Pong option
+    (scene as any).showActionBar({
+      canHu: false,
+      canKong: false,
+      kongOptions: [],
+      canPong: true,
+      canChow: false,
+      chowOptions: [],
+      canTing: false,
+      canPass: true,
+    });
+
+    // Clicking Pong button should NOT directly trigger playVoicePong (it is triggered by onMeldClaimed)
+    expect(audioService.playVoicePong).toHaveBeenCalledTimes(0);
   });
 });

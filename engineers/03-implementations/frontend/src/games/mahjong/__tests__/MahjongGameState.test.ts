@@ -239,4 +239,21 @@ describe('MahjongGameState Unit Tests', () => {
       expect(dealer.discards.length).toBe(1);
     }
   });
+
+  it('should reset isAutoPlay and isTing to false when dealing a new round', () => {
+    state.startNewMatch();
+    // Simulate player activating AutoPlay / Ting in current round
+    state.players[0].isAutoPlay = true;
+    state.players[0].isTing = true;
+    state.players[1].isAutoPlay = true;
+
+    // Start a new dealing
+    state.startDealing();
+
+    // All players must have isAutoPlay and isTing reset to false
+    expect(state.players[0].isAutoPlay).toBe(false);
+    expect(state.players[0].isTing).toBe(false);
+    expect(state.players[1].isAutoPlay).toBe(false);
+    expect(state.players[1].isTing).toBe(false);
+  });
 });
