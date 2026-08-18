@@ -455,6 +455,7 @@ export class MainGameScene extends Phaser.Scene {
    * 1. 抓風位擲骰動畫 (Seating Draw Dice Animation).
    */
   private playSeatingDiceAnimation(): void {
+    this.bankerDiceOutsideCompassContainer.setVisible(false);
     MahjongAudioService.playDiceRoll();
     this.diceContainer.removeAll(true);
     this.diceContainer.setVisible(true);
@@ -511,6 +512,7 @@ export class MainGameScene extends Phaser.Scene {
    * 2. 莊家開門擲骰動畫 (Dealer Wall Break & Dealing Animation).
    */
   private playDealerWallBreakDiceAnimation(): void {
+    this.bankerDiceOutsideCompassContainer.setVisible(false);
     MahjongAudioService.playDiceRoll();
     this.diceContainer.removeAll(true);
     this.diceContainer.setVisible(true);
@@ -559,9 +561,10 @@ export class MainGameScene extends Phaser.Scene {
     infoText.setOrigin(0.5);
     this.diceContainer.add(infoText);
 
-    // 1. Center dice roll completes after 1400ms -> Relocate dice outside compass facing Banker and animate tile sort
+    // 1. Center dice roll completes after 1400ms -> Central dice disappears, THEN Banker outer dice appear!
     this.time.delayedCall(1400, () => {
       this.diceContainer.setVisible(false);
+      this.bankerDiceOutsideCompassContainer.setVisible(true);
       this.updateBankerDicePosition();
       this.updateTileWalls();
       this.animateTileSort();
@@ -573,8 +576,21 @@ export class MainGameScene extends Phaser.Scene {
    */
   private updateBankerDicePosition(): void {
     this.bankerDiceOutsideCompassContainer.removeAll(true);
+
+    // Only show outer Banker dice after central rolling dice have finished and disappeared!
+    if (
+      this.diceContainer.visible ||
+      this.gameState.phase === 'SEATING_DRAW' ||
+      this.gameState.phase === 'DEALING'
+    ) {
+      this.bankerDiceOutsideCompassContainer.setVisible(false);
+      return;
+    }
+
     const d = this.gameState.diceResult;
     if (!d || d.length < 3) return;
+
+    this.bankerDiceOutsideCompassContainer.setVisible(true);
 
     const dealerSeat = this.gameState.dealerSeat;
     // Coordinates placed right outside compass (radius 70px) facing the current dealer seat
