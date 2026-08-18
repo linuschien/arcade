@@ -157,10 +157,10 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
     // Calculate symmetrical centering for Hand + Reserved Drawn Slot + Melds
     const meldCount = profile.melds.length;
-    const stepX = SeatLayoutContainer.TILE_W;
+    const stepX = isHuman ? SeatLayoutContainer.TILE_W : 28;
     const meldW = SeatLayoutContainer.TILE_W * 3;
     const meldBlockW = meldW + 8;
-    const gapDrawn = 12;
+    const gapDrawn = isHuman ? 12 : 8;
 
     const maxConcealedTiles = 16 - meldCount * 3;
     const maxHandTilesW = maxConcealedTiles * stepX;
@@ -173,7 +173,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     const meldStartX = handStartX + maxHandTilesW + fixedDrawnSlotW + marginBeforeMelds;
 
     this.renderMelds(profile.melds, isHuman, revealHand, meldStartX);
-    this.renderHand(profile, isHuman, revealHand, handStartX, maxHandTilesW);
+    this.renderHand(profile, isHuman, revealHand, handStartX, maxHandTilesW, stepX, gapDrawn);
     this.renderDiscards(profile.discards, isLastDiscardSeat);
   }
 
@@ -202,7 +202,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
     // Combined River (342px) + Gap (16px) + FlowerRack (152px) = 510px, centered from -255 to +255
     const flowerStartX = 103;
-    const baseY = -140;
+    const baseY = -128;
 
     for (let r = 0; r < 2; r++) {
       for (let c = 0; c < 4; c++) {
@@ -324,14 +324,13 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     isHuman: boolean,
     revealHand: boolean = false,
     startX: number = -312,
-    maxHandTilesW: number = 576
+    maxHandTilesW: number = 576,
+    stepX: number = SeatLayoutContainer.TILE_W,
+    gapDrawn: number = 12
   ): void {
     this.handGroup.removeAll(true);
 
     const hand = profile.hand;
-    const stepX = SeatLayoutContainer.TILE_W;
-    const gapDrawn = 12;
-
     const showFace = isHuman || revealHand;
 
     hand.forEach((tile, idx) => {
@@ -369,7 +368,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       this.handGroup.add(sprite);
     });
 
-    // 17th Drawn tile (rendered into the reserved slot on the right with 12px gap)
+    // 17th Drawn tile (rendered into the reserved slot on the right with gap)
     if (profile.drawnTile) {
       const drawnX = startX + maxHandTilesW + gapDrawn + stepX / 2;
       const textureKey = showFace
@@ -406,7 +405,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
   /**
    * 9x2 Compact Discard River with pre-rendered placeholder cells and full 36x48 tiles.
-   * Aligned with Flower Rack on baseY = -140 and horizontally centered together ([-255, +255]).
+   * Aligned with Flower Rack on baseY = -128 and horizontally centered together ([-255, +255]).
    */
   private renderDiscards(discards: Tile[], _isLastDiscardSeat: boolean = false): void {
     this.riverGroup.removeAll(true);
@@ -415,7 +414,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     const dw = SeatLayoutContainer.TILE_W;
     const dh = SeatLayoutContainer.TILE_H;
     const riverStartX = -255;
-    const baseY = -140;
+    const baseY = -128;
 
     // 1. Draw 18 placeholder grid cells (like Flower Rack)
     for (let r = 0; r < 2; r++) {

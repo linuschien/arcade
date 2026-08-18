@@ -122,7 +122,7 @@ export class MainGameScene extends Phaser.Scene {
     // 1. South Wall (Bottom): Right to Left (0 to 17)
     for (let i = 0; i < stacksPerSide; i++) {
       const x = 810 - i * step;
-      const y = 495;
+      const y = 482;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       this.wallSprites.push(sprite);
       this.wallContainer.add(sprite);
@@ -131,7 +131,7 @@ export class MainGameScene extends Phaser.Scene {
     // 2. West Wall (Left): Bottom to Top (18 to 35)
     for (let i = 0; i < stacksPerSide; i++) {
       const x = 425;
-      const y = 480 - i * 14;
+      const y = 470 - i * 13;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       sprite.setAngle(90);
       this.wallSprites.push(sprite);
@@ -141,7 +141,7 @@ export class MainGameScene extends Phaser.Scene {
     // 3. North Wall (Top): Left to Right (36 to 53)
     for (let i = 0; i < stacksPerSide; i++) {
       const x = 470 + i * step;
-      const y = 225;
+      const y = 238;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       this.wallSprites.push(sprite);
       this.wallContainer.add(sprite);
@@ -150,7 +150,7 @@ export class MainGameScene extends Phaser.Scene {
     // 4. East Wall (Right): Top to Bottom (54 to 71)
     for (let i = 0; i < stacksPerSide; i++) {
       const x = 855;
-      const y = 240 + i * 14;
+      const y = 250 + i * 13;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       sprite.setAngle(90);
       this.wallSprites.push(sprite);
@@ -599,10 +599,10 @@ export class MainGameScene extends Phaser.Scene {
     const dealerSeat = this.gameState.dealerSeat;
     // Coordinates placed right outside compass (radius 70px) facing the current dealer seat
     const positions = [
-      { x: 640, y: 450 }, // Seat 0 (Bottom Human)
-      { x: 730, y: 360 }, // Seat 1 (Right AI)
-      { x: 640, y: 270 }, // Seat 2 (Top AI)
-      { x: 550, y: 360 }, // Seat 3 (Left AI)
+      { x: 640, y: 442 }, // Seat 0 (Bottom Human)
+      { x: 722, y: 360 }, // Seat 1 (Right AI)
+      { x: 640, y: 278 }, // Seat 2 (Top AI)
+      { x: 558, y: 360 }, // Seat 3 (Left AI)
     ];
     const angles = [0, 270, 180, 90];
     const pos = positions[dealerSeat];
