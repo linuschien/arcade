@@ -482,22 +482,25 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 6x3 Standard Discard River positioned INSIDE the Tile Wall facing towards the Central Compass.
-   * Local Y: Row 0 at -140, Row 1 at -177, Row 2 at -214.
+   * 9x2 Standard Discard River positioned INSIDE the Tile Wall facing towards the Central Compass.
+   * Top/Bottom seats: baseY = -158 (Row 0: -158, Row 1: -193).
+   * Left/Right side seats: baseY = -275 (Row 0: -275, Row 1: -310).
    */
   private renderDiscards(discards: Tile[], _isLastDiscardSeat: boolean = false): void {
     this.riverGroup.removeAll(true);
 
-    const cols = 6;
-    const dw = 28;
-    const dh = 36;
-    const stepX = 29;
-    const stepY = 37;
+    const cols = 9;
+    const dw = 26;
+    const dh = 34;
+    const stepX = 27;
+    const stepY = 35;
     const riverStartX = -((cols * stepX) / 2);
-    const baseY = -140;
 
-    // 1. Draw 18 placeholder grid cells (6x3)
-    for (let r = 0; r < 3; r++) {
+    const isSideSeat = this.seat === 1 || this.seat === 3;
+    const baseY = isSideSeat ? -275 : -158;
+
+    // 1. Draw 18 placeholder grid cells (9x2)
+    for (let r = 0; r < 2; r++) {
       for (let c = 0; c < cols; c++) {
         const x = riverStartX + c * stepX + dw / 2;
         const y = baseY - r * stepY;
@@ -509,7 +512,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
     // 2. Render actual discarded tiles on top of cells
     discards.forEach((tile, idx) => {
-      if (idx >= 24) return;
+      if (idx >= 27) return;
       const col = idx % cols;
       const row = Math.floor(idx / cols);
 
