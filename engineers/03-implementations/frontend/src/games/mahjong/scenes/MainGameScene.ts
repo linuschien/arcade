@@ -235,8 +235,8 @@ export class MainGameScene extends Phaser.Scene {
       container.add(bg);
       this.compassPlayerBgs.push(bg);
 
-      const pText = this.add.text(-86, -8, '東 玩家', {
-        fontSize: '12px',
+      const pText = this.add.text(-60, -7, '東 玩家', {
+        fontSize: '11px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#f8fafc',
         fontStyle: 'bold',
@@ -244,8 +244,8 @@ export class MainGameScene extends Phaser.Scene {
       container.add(pText);
       this.compassPlayerTexts.push(pText);
 
-      const chipsText = this.add.text(86, -8, '10,000 點', {
-        fontSize: '12px',
+      const chipsText = this.add.text(60, -7, '10,000 點', {
+        fontSize: '11px',
         fontFamily: 'monospace',
         color: '#facc15',
         fontStyle: 'bold',
@@ -753,9 +753,9 @@ export class MainGameScene extends Phaser.Scene {
       if (bg) {
         bg.clear();
         bg.fillStyle(isCurrentTurn ? 0x854d0e : 0x020617, 0.95);
-        bg.fillRoundedRect(-94, -14, 188, 28, 6);
+        bg.fillRoundedRect(-68, -12, 136, 24, 5);
         bg.lineStyle(1.5, isCurrentTurn ? 0xfacc15 : 0x334155, 1);
-        bg.strokeRoundedRect(-94, -14, 188, 28, 6);
+        bg.strokeRoundedRect(-68, -12, 136, 24, 5);
       }
 
       const pText = this.compassPlayerTexts[i];
