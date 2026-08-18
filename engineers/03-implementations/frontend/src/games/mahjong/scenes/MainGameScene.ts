@@ -34,6 +34,7 @@ export class MainGameScene extends Phaser.Scene {
   private turnPointer!: Phaser.GameObjects.Graphics;
   private diceContainer!: Phaser.GameObjects.Container;
   private bankerDiceOutsideCompassContainer!: Phaser.GameObjects.Container;
+  private compassSeatWindTexts: Phaser.GameObjects.Text[] = [];
 
   // 3D Physical Tile Walls (東南西北 72 墩)
   private wallContainer!: Phaser.GameObjects.Container;
@@ -207,6 +208,34 @@ export class MainGameScene extends Phaser.Scene {
       fontStyle: 'bold',
     });
     this.remainingTilesText.setOrigin(0.5);
+
+    // Fixed Seat Winds on Compass Dial (Bottom Seat 0, Right Seat 1, Top Seat 2, Left Seat 3)
+    this.compassSeatWindTexts = [
+      this.add.text(cx, cy + 46, '東', {
+        fontSize: '13px',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
+        color: '#fef08a',
+        fontStyle: 'bold',
+      }).setOrigin(0.5),
+      this.add.text(cx + 46, cy, '南', {
+        fontSize: '13px',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
+        color: '#fef08a',
+        fontStyle: 'bold',
+      }).setOrigin(0.5),
+      this.add.text(cx, cy - 46, '西', {
+        fontSize: '13px',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
+        color: '#fef08a',
+        fontStyle: 'bold',
+      }).setOrigin(0.5),
+      this.add.text(cx - 46, cy, '北', {
+        fontSize: '13px',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
+        color: '#fef08a',
+        fontStyle: 'bold',
+      }).setOrigin(0.5),
+    ];
 
     // Dice Container for roll animation
     this.diceContainer = this.add.container(cx, cy);
@@ -567,6 +596,11 @@ export class MainGameScene extends Phaser.Scene {
     this.gameState.sortHandTiles();
     this.refreshAllSeats();
 
+    // Trigger cascading 3D spin animation on hand tiles across all seats
+    this.seatContainers.forEach((container) => {
+      container.animateTileSortSpin();
+    });
+
     // Human player hand ripple lift
     const humanContainer = this.seatContainers[0];
     if (this.tweens && humanContainer) {
@@ -579,7 +613,7 @@ export class MainGameScene extends Phaser.Scene {
     }
 
     // Proceed to multi-round flower replacement after sorting
-    this.time.delayedCall(600, () => {
+    this.time.delayedCall(700, () => {
       this.gameState.startFlowerReplacement();
     });
   }
@@ -610,6 +644,15 @@ export class MainGameScene extends Phaser.Scene {
     const dealer = this.gameState.players[this.gameState.dealerSeat];
     const dealerWind = windChars[dealer.wind] || '東';
     this.roundWindText.setText(`${roundWind}風${dealerWind}`);
+
+    // Update 4 cardinal Seat Wind labels around compass dial (fixed after seating)
+    for (let i = 0; i < 4; i++) {
+      const p = this.gameState.players[i];
+      if (p && this.compassSeatWindTexts[i]) {
+        const char = windChars[p.wind] || '東';
+        this.compassSeatWindTexts[i].setText(char);
+      }
+    }
 
     const streak = this.gameState.dealerStreak;
     this.dealerStreakText.setText(`連 ${streak} 拉 ${streak}`);

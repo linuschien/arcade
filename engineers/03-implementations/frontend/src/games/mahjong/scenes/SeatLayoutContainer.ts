@@ -101,7 +101,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Updates player HUD status with directional arrows & seat wind + fan bonus tip (PRD 5.3).
+   * Updates player HUD status with directional arrows & seat wind bonus (PRD 5.3).
    */
   public updatePlayerInfo(profile: PlayerProfile, roundWind: string = 'EAST'): void {
     const arrows = ['▼', '▶', '▲', '◀'];
@@ -114,9 +114,28 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     };
     const windName = windNames[profile.wind] || '東風';
     const isDoubleWind = profile.wind === roundWind;
-    const windBonusTip = isDoubleWind ? '圈/門2台' : '門風1台';
-    this.hudText.setText(`${arrow} [${windName}・${windBonusTip}] ${profile.name}`);
+    const taiText = isDoubleWind ? `${windName}2台` : `${windName}1台`;
+    this.hudText.setText(`${arrow} [${taiText}] ${profile.name}`);
     this.hudChipsText.setText(`${profile.chips.toLocaleString()} 點`);
+  }
+
+  /**
+   * Performs dynamic 3D-like spinning / flip animation on hand tiles when sorting after dealing.
+   */
+  public animateTileSortSpin(): void {
+    if (!this.scene.tweens) return;
+    const children = (this.handGroup.list || []) as Phaser.GameObjects.Sprite[];
+    children.forEach((child, idx) => {
+      this.scene.tweens.add({
+        targets: child,
+        angle: { from: -180, to: 0 },
+        scale: { from: 0.4, to: 1.0 },
+        y: { from: -20, to: 0 },
+        delay: idx * 25,
+        duration: 400,
+        ease: 'Cubic.easeOut',
+      });
+    });
   }
 
   /**

@@ -262,34 +262,34 @@ describe('SeatLayoutContainer Unit Tests', () => {
     expect(drawnTileRightEdge).toBeLessThan(meldLeftEdge);
   });
 
-  it('should render directional arrows and wind bonus tip in HUD matching seat orientation', () => {
+  it('should render directional arrows and wind bonus in HUD matching seat orientation', () => {
     const seat0 = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
     const profile0 = createMockProfile();
     profile0.wind = 'EAST';
     profile0.name = '賭神';
     seat0.updatePlayerInfo(profile0, 'EAST');
-    expect((seat0 as any).hudText.setText).toHaveBeenCalledWith('▼ [東風・圈/門2台] 賭神');
+    expect((seat0 as any).hudText.setText).toHaveBeenCalledWith('▼ [東風2台] 賭神');
 
     const seat1 = new SeatLayoutContainer(mockScene, 1180, 360, 270, 1);
     const profile1 = createMockProfile();
     profile1.wind = 'SOUTH';
     profile1.name = '賭俠小刀';
     seat1.updatePlayerInfo(profile1, 'EAST');
-    expect((seat1 as any).hudText.setText).toHaveBeenCalledWith('▶ [南風・門風1台] 賭俠小刀');
+    expect((seat1 as any).hudText.setText).toHaveBeenCalledWith('▶ [南風1台] 賭俠小刀');
 
     const seat2 = new SeatLayoutContainer(mockScene, 640, 75, 180, 2);
     const profile2 = createMockProfile();
     profile2.wind = 'WEST';
     profile2.name = '賭聖阿星';
     seat2.updatePlayerInfo(profile2, 'EAST');
-    expect((seat2 as any).hudText.setText).toHaveBeenCalledWith('▲ [西風・門風1台] 賭聖阿星');
+    expect((seat2 as any).hudText.setText).toHaveBeenCalledWith('▲ [西風1台] 賭聖阿星');
 
     const seat3 = new SeatLayoutContainer(mockScene, 100, 360, 90, 3);
     const profile3 = createMockProfile();
     profile3.wind = 'NORTH';
     profile3.name = '賭霸有喜';
     seat3.updatePlayerInfo(profile3, 'EAST');
-    expect((seat3 as any).hudText.setText).toHaveBeenCalledWith('◀ [北風・門風1台] 賭霸有喜');
+    expect((seat3 as any).hudText.setText).toHaveBeenCalledWith('◀ [北風1台] 賭霸有喜');
   });
 
   it('should rotate the correct tile sideways in PONG based on discard source relative seat', () => {
