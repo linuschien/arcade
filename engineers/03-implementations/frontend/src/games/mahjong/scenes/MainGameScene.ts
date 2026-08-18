@@ -275,7 +275,7 @@ export class MainGameScene extends Phaser.Scene {
   private createDiscardMarker(): void {
     this.discardMarker = this.add.graphics();
     this.discardMarker.lineStyle(2, 0xfacc15, 1);
-    this.discardMarker.strokeRoundedRect(-18, -24, 36, 48, 3);
+    this.discardMarker.strokeRoundedRect(-18, -24, 34, 46, 3);
     this.discardMarker.setDepth(50);
     this.discardMarker.setVisible(false);
   }
@@ -1160,7 +1160,7 @@ export class MainGameScene extends Phaser.Scene {
         tileX += 8;
         const winBox = this.add.graphics();
         winBox.lineStyle(1.5, 0xfacc15, 1);
-        winBox.strokeRoundedRect(tileX - 1, curY, tileW + 2, tileH + 2, 3);
+        winBox.strokeRoundedRect(tileX, curY, tileW - 2, tileH - 2, 3);
         this.settlementContainer.add(winBox);
 
         const sp = this.add.sprite(tileX + tileW / 2, curY + 16, `mahjong:tile_${winTile.shortCode}`);
