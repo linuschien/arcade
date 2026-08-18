@@ -1,0 +1,938 @@
+/**
+ * MahjongGameState.ts
+ * Master State Machine for Taiwanese 16-Tile Mahjong.
+ * Coordinates 144-tile deck, seating draw, dice roll, dealing, multi-round flower replacement,
+ * turn cycles, action arbitration (Hu > Pong/Kong > Chow), pass lockout lifecycle,
+ * bankroll elimination, and 4-wind match progression.
+ */
+
+import {
+  Tile,
+  Meld,
+  SeatWind,
+  PlayerSeat,
+  PlayerProfile,
+  GamePhase,
+  AvailableActions,
+  SettlementBreakdown,
+  ChowOption,
+  KongOption,
+} from './MahjongTypes';
+import { MahjongDeck } from './MahjongDeck';
+import { MahjongHandEvaluator } from './MahjongHandEvaluator';
+import { MahjongScoreCalculator } from './MahjongScoreCalculator';
+import { MahjongAI } from './MahjongAI';
+
+export interface GameStateListener {
+  onPhaseChange?: (phase: GamePhase) => void;
+  onDealingStep?: (seat: PlayerSeat, tile: Tile) => void;
+  onFlowerReplaced?: (seat: PlayerSeat, flower: Tile, replacement: Tile) => void;
+  onTurnStart?: (seat: PlayerSeat, drawnTile: Tile | null) => void;
+  onTileDiscarded?: (seat: PlayerSeat, tile: Tile) => void;
+  onMeldClaimed?: (seat: PlayerSeat, meld: Meld) => void;
+  onSettlement?: (breakdown: SettlementBreakdown) => void;
+  onGameOver?: (summary: { score: number; cleared: boolean; reason: string }) => void;
+}
+
+export class MahjongGameState {
+  public phase: GamePhase = 'SEATING_DRAW';
+  public roundWind: SeatWind = 'EAST';
+  public dealerSeat: PlayerSeat = 0;
+  public dealerStreak: number = 0; // N (連 N 拉 N)
+  public currentTurnSeat: PlayerSeat = 0;
+
+  public deck: MahjongDeck = new MahjongDeck();
+  public players: PlayerProfile[] = [];
+
+  public lastDiscard: {
+    tile: Tile;
+    fromSeat: PlayerSeat;
+  } | null = null;
+
+  public lastDiscardTurnIndex: number = 0;
+  public currentTurnCount: number = 0;
+  public continuousSameTileDiscard: { code: string; safeSeats: Set<PlayerSeat> } | null = null;
+
+  public diceResult: number[] = [1, 1, 1];
+  public diceSum: number = 3;
+
+  public roundWindIndex: number = 0; // 0=East, 1=South, 2=West, 3=North
+  public dealerRoundsPlayed: number = 0;
+
+  public isFirstTurnCycle: boolean = true;
+  public currentSettlement: SettlementBreakdown | null = null;
+  public autoStepAI: boolean = true;
+
+  private listeners: GameStateListener[] = [];
+
+  constructor() {
+    this.initPlayers();
+  }
+
+  public addListener(listener: GameStateListener): void {
+    this.listeners.push(listener);
+  }
+
+  public removeListener(listener: GameStateListener): void {
+    this.listeners = this.listeners.filter((l) => l !== listener);
+  }
+
+  private initPlayers(): void {
+    const names = ['賭神', '賭俠小刀', '賭聖阿星', '賭霸有喜'];
+    const winds: SeatWind[] = ['EAST', 'SOUTH', 'WEST', 'NORTH'];
+
+    this.players = [];
+    for (let i = 0; i < 4; i++) {
+      this.players.push({
+        seat: i as PlayerSeat,
+        name: names[i],
+        isHuman: i === 0,
+        wind: winds[i],
+        isDealer: i === 0,
+        chips: 10000,
+        hand: [],
+        drawnTile: null,
+        melds: [],
+        flowers: [],
+        discards: [],
+        isTing: false,
+        isAutoPlay: false,
+        isPassLockout: false,
+        passPongCodesInTurn: new Set(),
+      });
+    }
+  }
+
+  /**
+   * Starts a new match (一將).
+   */
+  public startNewMatch(): void {
+    this.roundWindIndex = 0;
+    this.roundWind = 'EAST';
+    this.dealerSeat = 0;
+    this.dealerStreak = 0;
+    this.dealerRoundsPlayed = 0;
+
+    this.initPlayers();
+    this.startSeatingDraw();
+  }
+
+  /**
+   * Phase 1: 搬風抓位 (Seating Draw).
+   */
+  public startSeatingDraw(): void {
+    this.phase = 'SEATING_DRAW';
+    this.notifyPhase();
+
+    // Roll 3 dice
+    const d1 = Math.floor(Math.random() * 6) + 1;
+    const d2 = Math.floor(Math.random() * 6) + 1;
+    const d3 = Math.floor(Math.random() * 6) + 1;
+    this.diceResult = [d1, d2, d3];
+    this.diceSum = d1 + d2 + d3;
+
+    // First drawer = (diceSum - 1) % 4
+    const firstDrawer = (this.diceSum - 1) % 4;
+
+    // Assign dynamic winds based on draw
+    const windChoices: SeatWind[] = ['EAST', 'SOUTH', 'WEST', 'NORTH'];
+    for (let i = 0; i < 4; i++) {
+      const seat = ((firstDrawer + i) % 4) as PlayerSeat;
+      this.players[seat].wind = windChoices[i];
+      if (windChoices[i] === 'EAST') {
+        this.dealerSeat = seat;
+        this.players[seat].isDealer = true;
+      } else {
+        this.players[seat].isDealer = false;
+      }
+    }
+  }
+
+  /**
+   * Phase 2: 莊家擲骰開門與配牌 (Dice Roll & Dealing).
+   */
+  public startDealing(): void {
+    this.phase = 'DEALING';
+    this.notifyPhase();
+
+    // Reset player round hands
+    this.players.forEach((p) => {
+      p.hand = [];
+      p.drawnTile = null;
+      p.melds = [];
+      p.flowers = [];
+      p.discards = [];
+      p.isTing = false;
+      p.isPassLockout = false;
+      p.passPongCodesInTurn = new Set();
+    });
+
+    // Dealer rolls 3 dice for wall breaking
+    const d1 = Math.floor(Math.random() * 6) + 1;
+    const d2 = Math.floor(Math.random() * 6) + 1;
+    const d3 = Math.floor(Math.random() * 6) + 1;
+    this.diceResult = [d1, d2, d3];
+    this.diceSum = d1 + d2 + d3;
+
+    this.deck.reset();
+    this.deck.setupWallBreak(this.diceSum, this.dealerSeat);
+
+    // Deal 4 rounds of 4 tiles (16 tiles each in CCW order starting from East)
+    const dealingOrder: PlayerSeat[] = [];
+    for (let i = 0; i < 4; i++) {
+      dealingOrder.push(((this.dealerSeat + i) % 4) as PlayerSeat);
+    }
+
+    for (let round = 0; round < 4; round++) {
+      for (const seat of dealingOrder) {
+        for (let k = 0; k < 4; k++) {
+          const tile = this.deck.drawHead();
+          if (tile) {
+            this.players[seat].hand.push(tile);
+            this.listeners.forEach((l) => l.onDealingStep?.(seat, tile));
+          }
+        }
+      }
+    }
+
+    // Dealer draws 17th jump tile (跳牌)
+    const jumpTile = this.deck.drawHead();
+    if (jumpTile) {
+      this.players[this.dealerSeat].drawnTile = jumpTile;
+      this.listeners.forEach((l) => l.onDealingStep?.(this.dealerSeat, jumpTile));
+    }
+
+    // Sort all player hands into standard order
+    this.players.forEach((p) => {
+      p.hand = MahjongHandEvaluator.sortTiles(p.hand);
+    });
+
+    // Proceed to multi-round flower replacement
+    this.startFlowerReplacement();
+  }
+
+  /**
+   * Phase 3: 多輪輪替補花 (Multi-Round Flower Replacement).
+   */
+  public startFlowerReplacement(): void {
+    this.phase = 'FLOWER_REPLACEMENT';
+    this.notifyPhase();
+
+    const dealingOrder: PlayerSeat[] = [];
+    for (let i = 0; i < 4; i++) {
+      dealingOrder.push(((this.dealerSeat + i) % 4) as PlayerSeat);
+    }
+
+    let hasAnyFlower = true;
+    let iterations = 0;
+
+    while (hasAnyFlower && iterations < 10) {
+      hasAnyFlower = false;
+      iterations++;
+
+      for (const seat of dealingOrder) {
+        const p = this.players[seat];
+
+        // Check drawn tile if flower
+        if (p.drawnTile && p.drawnTile.isFlower) {
+          const flower = p.drawnTile;
+          p.flowers.push(flower);
+          const replacement = this.deck.drawTail();
+          p.drawnTile = replacement;
+          hasAnyFlower = true;
+          this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, flower, replacement!));
+        }
+
+        // Check hand tiles for flowers
+        const nonFlowers: Tile[] = [];
+        for (const t of p.hand) {
+          if (t.isFlower) {
+            p.flowers.push(t);
+            const replacement = this.deck.drawTail();
+            if (replacement) {
+              nonFlowers.push(replacement);
+              this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, t, replacement));
+            }
+            hasAnyFlower = true;
+          } else {
+            nonFlowers.push(t);
+          }
+        }
+        p.hand = MahjongHandEvaluator.sortTiles(nonFlowers);
+      }
+    }
+
+    // Check instant flower wins (八仙過海 / 七搶一)
+    for (const p of this.players) {
+      if (p.flowers.length === 8) {
+        this.settleFlowerWin(p.seat);
+        return;
+      }
+    }
+
+    // Check dealer Heavenly Win (天胡)
+    const dealer = this.players[this.dealerSeat];
+    if (
+      dealer.drawnTile &&
+      MahjongHandEvaluator.isWinningHand(dealer.hand, dealer.melds, dealer.drawnTile)
+    ) {
+      // Heavenly Win!
+      this.settleWin(this.dealerSeat, true, undefined, { isHeavenlyWin: true });
+      return;
+    }
+
+    // Start playing phase
+    this.isFirstTurnCycle = true;
+    this.currentTurnCount = 0;
+    this.currentTurnSeat = this.dealerSeat;
+    this.startPlayerTurn(this.dealerSeat, false);
+  }
+
+  /**
+   * Starts a player's turn.
+   */
+  public startPlayerTurn(seat: PlayerSeat, needDraw: boolean = true): void {
+    this.phase = 'PLAYER_TURN';
+    this.currentTurnSeat = seat;
+    this.notifyPhase();
+
+    const player = this.players[seat];
+
+    if (needDraw) {
+      if (!this.deck.hasRegularTilesLeft()) {
+        this.settleDraw();
+        return;
+      }
+
+      const drawn = this.deck.drawHead();
+      if (!drawn) {
+        this.settleDraw();
+        return;
+      }
+
+      if (drawn.isFlower) {
+        // Flower replenishment
+        player.flowers.push(drawn);
+        if (player.flowers.length === 8) {
+          this.settleFlowerWin(seat);
+          return;
+        }
+        const rep = this.deck.drawTail();
+        player.drawnTile = rep;
+        this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, drawn, rep!));
+      } else {
+        player.drawnTile = drawn;
+      }
+
+      this.listeners.forEach((l) => l.onTurnStart?.(seat, player.drawnTile));
+    }
+
+    // If human is in Auto-Draw Ting mode
+    if (player.isHuman && player.isAutoPlay) {
+      this.executeAutoPlay(seat);
+      return;
+    }
+
+    // If AI turn, execute AI turn
+    if (!player.isHuman && this.autoStepAI) {
+      this.executeAITurn(seat);
+    }
+  }
+
+  public stepAITurn(seat?: PlayerSeat): void {
+    const targetSeat = seat ?? this.currentTurnSeat;
+    if (!this.players[targetSeat].isHuman) {
+      this.executeAITurn(targetSeat);
+    }
+  }
+
+  /**
+   * Discards a tile from the player's hand.
+   */
+  public discardTile(seat: PlayerSeat, tileId: string): void {
+    const player = this.players[seat];
+
+    let discarded: Tile | null = null;
+
+    if (player.drawnTile && player.drawnTile.id === tileId) {
+      discarded = player.drawnTile;
+      player.drawnTile = null;
+    } else {
+      const idx = player.hand.findIndex((t) => t.id === tileId);
+      if (idx !== -1) {
+        discarded = player.hand[idx];
+        player.hand.splice(idx, 1);
+        if (player.drawnTile) {
+          player.hand.push(player.drawnTile);
+          player.drawnTile = null;
+        }
+        player.hand = MahjongHandEvaluator.sortTiles(player.hand);
+      }
+    }
+
+    if (!discarded) {
+      throw new Error(`Tile ${tileId} not found in player ${seat}'s hand`);
+    }
+
+    // Add to discard river
+    player.discards.push(discarded);
+    this.lastDiscard = { tile: discarded, fromSeat: seat };
+    this.lastDiscardTurnIndex = this.currentTurnCount++;
+
+    // Reset pass lockout on successful discard
+    player.isPassLockout = false;
+    player.passPongCodesInTurn.clear();
+
+    this.listeners.forEach((l) => l.onTileDiscarded?.(seat, discarded!));
+
+    // Arbitrate opponent actions
+    this.arbitrateDiscard(seat, discarded);
+  }
+
+  /**
+   * Arbitrates available actions (Hu > Pong/Kong > Chow) after a discard.
+   */
+  public arbitrateDiscard(fromSeat: PlayerSeat, tile: Tile): void {
+    this.phase = 'ACTION_WAIT';
+
+    const claims: {
+      seat: PlayerSeat;
+      action: 'HU' | 'PONG' | 'KONG' | 'CHOW' | 'PASS';
+      option?: any;
+    }[] = [];
+
+    // Collect options from other 3 players
+    for (let seat = 0; seat < 4; seat++) {
+      if (seat === fromSeat) continue;
+      const p = this.players[seat as PlayerSeat];
+
+      const canHu =
+        !p.isPassLockout &&
+        MahjongHandEvaluator.isWinningHand(p.hand, p.melds, tile);
+
+      const canPong = MahjongHandEvaluator.canPong(p.hand, tile, p.passPongCodesInTurn);
+      const canMeldedKong = MahjongHandEvaluator.canMeldedKong(p.hand, tile, fromSeat, seat);
+      const chowOptions = MahjongHandEvaluator.getChowOptions(p.hand, tile, fromSeat, seat);
+      const canChow = chowOptions.length > 0;
+
+      const actions: AvailableActions = {
+        canHu,
+        canPong,
+        canKong: canMeldedKong,
+        kongOptions: canMeldedKong
+          ? [
+              {
+                type: 'MELDED_KONG',
+                tileCode: tile.shortCode,
+                handTileIds: p.hand
+                  .filter((t) => t.shortCode === tile.shortCode)
+                  .map((t) => t.id),
+              },
+            ]
+          : [],
+        canChow,
+        chowOptions,
+        canTing: false,
+        canPass: true,
+      };
+
+      if (p.isHuman) {
+        if (canHu || canPong || canMeldedKong || canChow) {
+          if (p.isAutoPlay && canHu) {
+            // Auto Hu
+            claims.push({ seat: p.seat, action: 'HU' });
+          } else if (p.isAutoPlay) {
+            // In auto ting mode, pass on melds
+            claims.push({ seat: p.seat, action: 'PASS' });
+          } else {
+            // Wait for human input
+            this.notifyPhase();
+            return;
+          }
+        } else {
+          claims.push({ seat: p.seat, action: 'PASS' });
+        }
+      } else {
+        // AI decision
+        const choice = MahjongAI.decideAction(
+          actions,
+          p.hand,
+          p.melds,
+          this.roundWind,
+          p.wind
+        );
+        claims.push({
+          seat: p.seat,
+          action: choice,
+          option: choice === 'CHOW' ? chowOptions[0] : undefined,
+        });
+      }
+    }
+
+    this.resolveClaims(fromSeat, tile, claims);
+  }
+
+  /**
+   * Resolves actions by priority: Hu (with Intercept rule) > Pong / Kong > Chow > Pass.
+   */
+  public resolveClaims(
+    fromSeat: PlayerSeat,
+    tile: Tile,
+    claims: { seat: PlayerSeat; action: 'HU' | 'PONG' | 'KONG' | 'CHOW' | 'PASS'; option?: any }[]
+  ): void {
+    // 1. Check Hu (Intercept Rule 攔胡: closest in CCW order from fromSeat wins)
+    const huClaims = claims.filter((c) => c.action === 'HU');
+    if (huClaims.length > 0) {
+      let winnerSeat = huClaims[0].seat;
+      let minDistance = 99;
+      for (const c of huClaims) {
+        const dist = (c.seat - fromSeat + 4) % 4;
+        if (dist < minDistance) {
+          minDistance = dist;
+          winnerSeat = c.seat;
+        }
+      }
+      this.settleWin(winnerSeat, false, fromSeat);
+      return;
+    }
+
+    // 2. Check Pong / Melded Kong
+    const pongOrKong = claims.find((c) => c.action === 'PONG' || c.action === 'KONG');
+    if (pongOrKong) {
+      const claimant = this.players[pongOrKong.seat];
+      // Remove last tile from discard river
+      const discarder = this.players[fromSeat];
+      discarder.discards.pop();
+
+      if (pongOrKong.action === 'PONG') {
+        const handTiles = claimant.hand.filter((t) => t.shortCode === tile.shortCode).slice(0, 2);
+        claimant.hand = claimant.hand.filter(
+          (t) => t.id !== handTiles[0].id && t.id !== handTiles[1].id
+        );
+
+        const meld: Meld = {
+          type: 'PONG',
+          tiles: [handTiles[0], tile, handTiles[1]],
+          calledTile: tile,
+          sourceSeat: fromSeat,
+          relativeSourceIndex: (fromSeat - pongOrKong.seat + 4) % 4 === 3 ? 0 : (fromSeat - pongOrKong.seat + 4) % 4 === 2 ? 1 : 2,
+        };
+        claimant.melds.push(meld);
+        this.listeners.forEach((l) => l.onMeldClaimed?.(pongOrKong.seat, meld));
+
+        // Jump turn to claimant to discard
+        this.startPlayerTurn(pongOrKong.seat, false);
+      } else {
+        // Melded Kong
+        const handTiles = claimant.hand.filter((t) => t.shortCode === tile.shortCode).slice(0, 3);
+        claimant.hand = claimant.hand.filter(
+          (t) => !handTiles.some((ht) => ht.id === t.id)
+        );
+
+        const meld: Meld = {
+          type: 'MELDED_KONG',
+          tiles: [...handTiles, tile],
+          calledTile: tile,
+          sourceSeat: fromSeat,
+        };
+        claimant.melds.push(meld);
+        this.listeners.forEach((l) => l.onMeldClaimed?.(pongOrKong.seat, meld));
+
+        // Replenishment draw from tail
+        const rep = this.deck.drawTail();
+        claimant.drawnTile = rep;
+        this.listeners.forEach((l) => l.onTurnStart?.(pongOrKong.seat, rep));
+      }
+      return;
+    }
+
+    // 3. Check Chow
+    const chow = claims.find((c) => c.action === 'CHOW');
+    if (chow && chow.option) {
+      const claimant = this.players[chow.seat];
+      const discarder = this.players[fromSeat];
+      discarder.discards.pop();
+
+      const option = chow.option as ChowOption;
+      claimant.hand = claimant.hand.filter((t) => !option.discardTileIds.includes(t.id));
+
+      const meld: Meld = {
+        type: 'CHOW',
+        tiles: option.tiles,
+        calledTile: tile,
+        sourceSeat: fromSeat,
+        relativeSourceIndex: 1, // Chow centered
+      };
+      claimant.melds.push(meld);
+      this.listeners.forEach((l) => l.onMeldClaimed?.(chow.seat, meld));
+
+      // Jump turn to claimant to discard
+      this.startPlayerTurn(chow.seat, false);
+      return;
+    }
+
+    // 4. All Passed -> Proceed to next CCW player regular turn
+    const nextSeat = ((fromSeat + 1) % 4) as PlayerSeat;
+    this.startPlayerTurn(nextSeat, true);
+  }
+
+  /**
+   * Human responds to available actions.
+   */
+  public humanRespondAction(action: 'HU' | 'PONG' | 'KONG' | 'CHOW' | 'PASS', option?: any): void {
+    if (this.phase !== 'ACTION_WAIT' || !this.lastDiscard) return;
+
+    if (action === 'PASS') {
+      // If human passed on a Hu -> trigger Pass Lockout
+      const p1 = this.players[0];
+      if (MahjongHandEvaluator.isWinningHand(p1.hand, p1.melds, this.lastDiscard.tile)) {
+        p1.isPassLockout = true;
+      }
+      // If passed on Pong -> record pass pong code
+      if (MahjongHandEvaluator.canPong(p1.hand, this.lastDiscard.tile, p1.passPongCodesInTurn)) {
+        p1.passPongCodesInTurn.add(this.lastDiscard.tile.shortCode);
+      }
+    }
+
+    const claims: {
+      seat: PlayerSeat;
+      action: 'HU' | 'PONG' | 'KONG' | 'CHOW' | 'PASS';
+      option?: any;
+    }[] = [{ seat: 0, action, option }];
+
+    // Collect other AI responses
+    for (let seat = 1; seat < 4; seat++) {
+      const p = this.players[seat as PlayerSeat];
+      const canHu =
+        !p.isPassLockout &&
+        MahjongHandEvaluator.isWinningHand(p.hand, p.melds, this.lastDiscard.tile);
+
+      const canPong = MahjongHandEvaluator.canPong(p.hand, this.lastDiscard.tile, p.passPongCodesInTurn);
+      const canMeldedKong = MahjongHandEvaluator.canMeldedKong(
+        p.hand,
+        this.lastDiscard.tile,
+        this.lastDiscard.fromSeat,
+        seat
+      );
+      const chowOptions = MahjongHandEvaluator.getChowOptions(
+        p.hand,
+        this.lastDiscard.tile,
+        this.lastDiscard.fromSeat,
+        seat
+      );
+
+      const actions: AvailableActions = {
+        canHu,
+        canPong,
+        canKong: canMeldedKong,
+        kongOptions: canMeldedKong
+          ? [
+              {
+                type: 'MELDED_KONG',
+                tileCode: this.lastDiscard.tile.shortCode,
+                handTileIds: p.hand
+                  .filter((t) => t.shortCode === this.lastDiscard!.tile.shortCode)
+                  .map((t) => t.id),
+              },
+            ]
+          : [],
+        canChow: chowOptions.length > 0,
+        chowOptions,
+        canTing: false,
+        canPass: true,
+      };
+
+      const choice = MahjongAI.decideAction(
+        actions,
+        p.hand,
+        p.melds,
+        this.roundWind,
+        p.wind
+      );
+      claims.push({
+        seat: p.seat,
+        action: choice,
+        option: choice === 'CHOW' ? chowOptions[0] : undefined,
+      });
+    }
+
+    this.resolveClaims(this.lastDiscard.fromSeat, this.lastDiscard.tile, claims);
+  }
+
+  /**
+   * Executes AI player's turn logic.
+   */
+  private executeAITurn(seat: PlayerSeat): void {
+    const p = this.players[seat];
+
+    // Check Self Hu
+    if (p.drawnTile && MahjongHandEvaluator.isWinningHand(p.hand, p.melds, p.drawnTile)) {
+      this.settleWin(seat, true);
+      return;
+    }
+
+    // Check Self Kongs (Concealed or Added)
+    const kongOpts = MahjongHandEvaluator.getSelfKongOptions(
+      p.drawnTile ? [...p.hand, p.drawnTile] : p.hand,
+      p.melds
+    );
+
+    if (kongOpts.length > 0 && Math.random() > 0.4) {
+      const kong = kongOpts[0];
+      if (kong.type === 'CONCEALED_KONG') {
+        const fullHand = p.drawnTile ? [...p.hand, p.drawnTile] : p.hand;
+        p.hand = fullHand.filter((t) => !kong.handTileIds.includes(t.id));
+        p.drawnTile = null;
+
+        const meld: Meld = {
+          type: 'CONCEALED_KONG',
+          tiles: fullHand.filter((t) => kong.handTileIds.includes(t.id)),
+          sourceSeat: seat,
+        };
+        p.melds.push(meld);
+        this.listeners.forEach((l) => l.onMeldClaimed?.(seat, meld));
+
+        const rep = this.deck.drawTail();
+        p.drawnTile = rep;
+        this.listeners.forEach((l) => l.onTurnStart?.(seat, rep));
+      }
+    }
+
+    // Choose discard
+    const fullHand = p.drawnTile ? [...p.hand, p.drawnTile] : p.hand;
+    const allVisible = this.getAllVisibleTiles();
+    const opponents = this.players.filter((_, i) => i !== seat);
+
+    const bestDiscard = MahjongAI.chooseBestDiscard(
+      fullHand,
+      p.melds,
+      allVisible,
+      opponents,
+      this.deck.getRegularRemainingCount()
+    );
+
+    this.discardTile(seat, bestDiscard.id);
+  }
+
+  /**
+   * Executes human auto play in Ting mode.
+   */
+  private executeAutoPlay(seat: PlayerSeat): void {
+    const p = this.players[seat];
+
+    if (p.drawnTile && MahjongHandEvaluator.isWinningHand(p.hand, p.melds, p.drawnTile)) {
+      this.settleWin(seat, true);
+      return;
+    }
+
+    if (p.drawnTile) {
+      this.discardTile(seat, p.drawnTile.id);
+    } else if (p.hand.length > 0) {
+      this.discardTile(seat, p.hand[p.hand.length - 1].id);
+    }
+  }
+
+  /**
+   * Collects all visible tiles across the table (melds, flowers, discards).
+   */
+  public getAllVisibleTiles(): Tile[] {
+    const tiles: Tile[] = [];
+    this.players.forEach((p) => {
+      tiles.push(...p.flowers);
+      tiles.push(...p.discards);
+      p.melds.forEach((m) => tiles.push(...m.tiles));
+    });
+    return tiles;
+  }
+
+  /**
+   * Round Settlement for Win.
+   */
+  public settleWin(
+    winnerSeat: PlayerSeat,
+    isSelfDrawn: boolean,
+    loserSeat?: PlayerSeat,
+    extraFlags: {
+      isHeavenlyWin?: boolean;
+      isEarthlyWin?: boolean;
+      isHumanWin?: boolean;
+      isRobbingKong?: boolean;
+    } = {}
+  ): void {
+    this.phase = 'ROUND_SETTLEMENT';
+    this.notifyPhase();
+
+    const winner = this.players[winnerSeat];
+    const winningTile = isSelfDrawn
+      ? winner.drawnTile || winner.hand[winner.hand.length - 1]
+      : this.lastDiscard?.tile || winner.hand[winner.hand.length - 1];
+
+    const breakdown = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat,
+      winnerHand: winner.hand,
+      winnerMelds: winner.melds,
+      winnerFlowers: winner.flowers,
+      winningTile,
+      isSelfDrawn,
+      loserSeat,
+      isRobbingKong: extraFlags.isRobbingKong,
+      isKongBloom: isSelfDrawn && this.deck.getDeadWallCount() < 16,
+      isLastTileDraw: this.deck.getRegularRemainingCount() === 0,
+      isHeavenlyWin: extraFlags.isHeavenlyWin,
+      isEarthlyWin: extraFlags.isEarthlyWin,
+      isHumanWin: extraFlags.isHumanWin,
+      roundWind: this.roundWind,
+      playerWind: winner.wind,
+      dealerSeat: this.dealerSeat,
+      dealerStreak: this.dealerStreak,
+      currentChips: this.players.map((p) => p.chips),
+    });
+
+    // Update chip balances
+    for (let i = 0; i < 4; i++) {
+      this.players[i].chips = breakdown.remainingChips[i];
+    }
+
+    this.currentSettlement = breakdown;
+    this.listeners.forEach((l) => l.onSettlement?.(breakdown));
+
+    // Update dealer streak / rotation
+    if (winnerSeat === this.dealerSeat) {
+      this.dealerStreak++;
+    } else {
+      this.dealerStreak = 0;
+      this.rotateDealer();
+    }
+
+    this.checkGameOrMatchEnd();
+  }
+
+  /**
+   * Round Settlement for Special Flower Win (八仙過海 / 七搶一).
+   */
+  public settleFlowerWin(winnerSeat: PlayerSeat): void {
+    this.phase = 'ROUND_SETTLEMENT';
+    this.notifyPhase();
+
+    const winner = this.players[winnerSeat];
+    const breakdown = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat,
+      winnerHand: winner.hand,
+      winnerMelds: winner.melds,
+      winnerFlowers: winner.flowers,
+      winningTile: winner.flowers[winner.flowers.length - 1],
+      isSelfDrawn: winner.flowers.length === 8,
+      isFlowerWin: true,
+      roundWind: this.roundWind,
+      playerWind: winner.wind,
+      dealerSeat: this.dealerSeat,
+      dealerStreak: this.dealerStreak,
+      currentChips: this.players.map((p) => p.chips),
+    });
+
+    for (let i = 0; i < 4; i++) {
+      this.players[i].chips = breakdown.remainingChips[i];
+    }
+
+    this.currentSettlement = breakdown;
+    this.listeners.forEach((l) => l.onSettlement?.(breakdown));
+
+    if (winnerSeat === this.dealerSeat) {
+      this.dealerStreak++;
+    } else {
+      this.dealerStreak = 0;
+      this.rotateDealer();
+    }
+
+    this.checkGameOrMatchEnd();
+  }
+
+  /**
+   * Round Settlement for Draw (流局 / 荒莊).
+   */
+  public settleDraw(): void {
+    this.phase = 'ROUND_SETTLEMENT';
+    this.notifyPhase();
+
+    // Dealer retains bankership: N = N + 1
+    this.dealerStreak++;
+
+    const breakdown: SettlementBreakdown = {
+      winnerSeat: this.dealerSeat,
+      isSelfDrawn: false,
+      isDraw: true,
+      basePoints: 0,
+      fanRate: 0,
+      dealerMultiplierFan: 2 * this.dealerStreak + 1,
+      dealerStreak: this.dealerStreak,
+      fans: [{ name: '流局 (荒莊)', fan: 0, description: '海底16張鐵牌流局，莊家連莊' }],
+      totalFans: 0,
+      chipDeltas: [0, 0, 0, 0],
+      remainingChips: this.players.map((p) => p.chips),
+      winnerName: '流局',
+    };
+
+    this.currentSettlement = breakdown;
+    this.listeners.forEach((l) => l.onSettlement?.(breakdown));
+
+    this.checkGameOrMatchEnd();
+  }
+
+  private rotateDealer(): void {
+    this.dealerSeat = ((this.dealerSeat + 1) % 4) as PlayerSeat;
+    this.dealerRoundsPlayed++;
+
+    // Update dynamic seat winds (Banker is East)
+    const winds: SeatWind[] = ['EAST', 'SOUTH', 'WEST', 'NORTH'];
+    for (let i = 0; i < 4; i++) {
+      const seat = ((this.dealerSeat + i) % 4) as PlayerSeat;
+      this.players[seat].wind = winds[i];
+      this.players[seat].isDealer = i === 0;
+    }
+
+    // If 4 dealer rotations completed, advance round wind
+    if (this.dealerRoundsPlayed >= 4) {
+      this.dealerRoundsPlayed = 0;
+      this.roundWindIndex++;
+      const roundWinds: SeatWind[] = ['EAST', 'SOUTH', 'WEST', 'NORTH'];
+      if (this.roundWindIndex < 4) {
+        this.roundWind = roundWinds[this.roundWindIndex];
+      }
+    }
+  }
+
+  private checkGameOrMatchEnd(): void {
+    const p1 = this.players[0];
+
+    // Check Human Bankruptcy
+    if (p1.chips <= 0) {
+      this.phase = 'GAME_OVER';
+      this.notifyPhase();
+      this.listeners.forEach((l) =>
+        l.onGameOver?.({
+          score: 0,
+          cleared: false,
+          reason: '真人玩家籌碼破產淘汰！',
+        })
+      );
+      return;
+    }
+
+    // Check 4-wind match completion
+    if (this.roundWindIndex >= 4) {
+      this.phase = 'MATCH_OVER';
+      this.notifyPhase();
+      this.listeners.forEach((l) =>
+        l.onGameOver?.({
+          score: p1.chips,
+          cleared: true,
+          reason: '恭喜順利打滿四圈通關一將！',
+        })
+      );
+    }
+  }
+
+  private notifyPhase(): void {
+    this.listeners.forEach((l) => l.onPhaseChange?.(this.phase));
+  }
+}

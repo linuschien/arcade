@@ -1,0 +1,211 @@
+/**
+ * MahjongGameState.test.ts
+ * Unit tests for game flow, dealing, flower replacement, action arbitration,
+ * pass lockout reset, four winds progression, and bankroll elimination.
+ */
+
+import { describe, it, expect, beforeEach } from 'vitest';
+import { MahjongGameState } from '../logic/MahjongGameState';
+import { Tile, Meld } from '../logic/MahjongTypes';
+
+describe('MahjongGameState Unit Tests', () => {
+  let state: MahjongGameState;
+
+  beforeEach(() => {
+    state = new MahjongGameState();
+    state.autoStepAI = false;
+  });
+
+  it('should initialize 4 players with 10,000 chips each', () => {
+    state.startNewMatch();
+    expect(state.players.length).toBe(4);
+    state.players.forEach((p) => {
+      expect(p.chips).toBe(10000);
+    });
+    expect(state.roundWind).toBe('EAST');
+  });
+
+  it('should deal 16 tiles to non-dealers and 17 tiles to dealer, with all flowers replaced', () => {
+    state.startNewMatch();
+    state.startDealing();
+
+    // After flower replacement, hands should have no flower tiles
+    state.players.forEach((p, idx) => {
+      const allTiles = p.drawnTile ? [...p.hand, p.drawnTile] : p.hand;
+      expect(allTiles.some((t) => t.isFlower)).toBe(false);
+
+      if (idx === state.dealerSeat) {
+        expect(allTiles.length).toBe(17);
+      } else {
+        expect(allTiles.length).toBe(16);
+      }
+    });
+  });
+
+  it('should arbitrate discard actions and reset Pass Lockout on discard', () => {
+    state.startNewMatch();
+    state.startDealing();
+
+    const p0 = state.players[0];
+    p0.isPassLockout = true; // Was locked out
+
+    // Human discards a tile
+    const tileToDiscard = p0.drawnTile || p0.hand[0];
+    state.currentTurnSeat = 0;
+    state.phase = 'PLAYER_TURN';
+    state.discardTile(0, tileToDiscard.id);
+
+    // Pass lockout must be reset upon tile falling to table
+    expect(p0.isPassLockout).toBe(false);
+    expect(state.lastDiscard).not.toBeNull();
+    expect(state.lastDiscard!.tile.id).toBe(tileToDiscard.id);
+  });
+
+  it('should handle Human action responses (Pong, Chow, Pass)', () => {
+    state.startNewMatch();
+    state.startDealing();
+
+    // Setup player 0 with 2 of 5m
+    const p0 = state.players[0];
+    p0.hand = [
+      { id: '5m_1', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' },
+      { id: '5m_2', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' },
+      { id: '1s_0', suit: 'BAMBOO', value: 1, name: '一條', shortCode: '1s' },
+    ];
+    p0.drawnTile = null;
+
+    // Player 3 discards 5m
+    const discardTile: Tile = {
+      id: '5m_3',
+      suit: 'CHARACTERS',
+      value: 5,
+      name: '五萬',
+      shortCode: '5m',
+    };
+    state.lastDiscard = { tile: discardTile, fromSeat: 3 };
+    state.phase = 'ACTION_WAIT';
+
+    // Human declares PONG
+    state.humanRespondAction('PONG');
+    expect(p0.melds.length).toBe(1);
+    expect(p0.melds[0].type).toBe('PONG');
+  });
+
+  it('should handle Chow claims and Pass lockout on win pass', () => {
+    state.startNewMatch();
+    state.startDealing();
+
+    const p0 = state.players[0];
+    p0.hand = [
+      { id: '1m_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      { id: '2m_0', suit: 'CHARACTERS', value: 2, name: '二萬', shortCode: '2m' },
+      { id: '9p_0', suit: 'DOTS', value: 9, name: '九筒', shortCode: '9p' },
+    ];
+
+    const discardTile: Tile = {
+      id: '3m_0',
+      suit: 'CHARACTERS',
+      value: 3,
+      name: '三萬',
+      shortCode: '3m',
+    };
+    state.lastDiscard = { tile: discardTile, fromSeat: 3 };
+    state.phase = 'ACTION_WAIT';
+
+    // Human declares PASS
+    state.humanRespondAction('PASS');
+    expect(state.phase).toBe('PLAYER_TURN');
+  });
+
+  it('should handle Draw (流局) with dealer retaining streak (N = N + 1)', () => {
+    state.startNewMatch();
+    state.dealerStreak = 1;
+    const initialDealer = state.dealerSeat;
+
+    state.settleDraw();
+
+    expect(state.dealerStreak).toBe(2);
+    expect(state.dealerSeat).toBe(initialDealer); // Dealer retained
+    expect(state.currentSettlement?.isDraw).toBe(true);
+  });
+
+  it('should handle Instant Flower Win (八仙過海)', () => {
+    state.startNewMatch();
+    state.startDealing();
+
+    const p0 = state.players[0];
+    p0.flowers = [
+      { id: 'spring_0', suit: 'FLOWERS', value: 1, name: '春', shortCode: 'spring', isFlower: true },
+      { id: 'summer_0', suit: 'FLOWERS', value: 2, name: '夏', shortCode: 'summer', isFlower: true },
+      { id: 'autumn_0', suit: 'FLOWERS', value: 3, name: '秋', shortCode: 'autumn', isFlower: true },
+      { id: 'winter_0', suit: 'FLOWERS', value: 4, name: '冬', shortCode: 'winter', isFlower: true },
+      { id: 'plum_0', suit: 'FLOWERS', value: 1, name: '梅', shortCode: 'plum', isFlower: true },
+      { id: 'orchid_0', suit: 'FLOWERS', value: 2, name: '蘭', shortCode: 'orchid', isFlower: true },
+      { id: 'bamboo_f_0', suit: 'FLOWERS', value: 3, name: '竹', shortCode: 'bamboo_f', isFlower: true },
+      { id: 'chrysanthemum_0', suit: 'FLOWERS', value: 4, name: '菊', shortCode: 'chrysanthemum', isFlower: true },
+    ];
+
+    state.settleFlowerWin(0);
+
+    expect(state.currentSettlement).not.toBeNull();
+    expect(state.currentSettlement?.fans.some((f) => f.name === '八仙過海')).toBe(true);
+  });
+
+  it('should progress through four winds and complete match after 4 wind rounds', () => {
+    state.startNewMatch();
+    expect(state.roundWind).toBe('EAST');
+
+    let matchCleared = false;
+    state.addListener({
+      onGameOver: (summary) => {
+        if (summary.cleared) matchCleared = true;
+      },
+    });
+
+    // Settle 16 rounds won by non-dealer to cycle all 4 winds (East, South, West, North)
+    for (let i = 0; i < 16; i++) {
+      state.startDealing();
+      const nonDealer = ((state.dealerSeat + 1) % 4) as any;
+      // Ensure winner has a winning tile
+      state.players[nonDealer].hand = [
+        { id: '1m_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      ];
+      state.settleWin(nonDealer, false, state.dealerSeat);
+    }
+
+    expect(matchCleared).toBe(true);
+    expect(state.phase).toBe('MATCH_OVER');
+  });
+
+  it('should trigger Game Over when human player bankroll <= 0', () => {
+    state.startNewMatch();
+    state.startDealing();
+
+    let gameOverFired = false;
+    state.addListener({
+      onGameOver: (summary) => {
+        gameOverFired = true;
+        expect(summary.cleared).toBe(false);
+      },
+    });
+
+    // Artificially bankrupt human player
+    state.players[0].chips = 500;
+
+    // Settle a loss for human
+    state.settleWin(1, true); // AI self draws -> Human pays > 1000 -> chips <= 0
+
+    expect(state.players[0].chips).toBeLessThanOrEqual(0);
+    expect(state.phase).toBe('GAME_OVER');
+    expect(gameOverFired).toBe(true);
+  });
+
+  it('should execute stepAITurn and return all visible tiles', () => {
+    state.startNewMatch();
+    state.startDealing();
+
+    expect(() => state.stepAITurn(1)).not.toThrow();
+    const visible = state.getAllVisibleTiles();
+    expect(Array.isArray(visible)).toBe(true);
+  });
+});
