@@ -66,8 +66,8 @@ describe('MahjongDeck Unit Tests', () => {
     expect(deck.getDeadWallCount()).toBe(16); // Always maintains 16 dead wall reserve
   });
 
-  it('should stop regular draws when 16 dead wall boundary is reached', () => {
-    deck.setupWallBreak(3, 0);
+  it('should handle running out of regular tiles (reaching 16 dead wall reserve)', () => {
+    deck.setupWallBreak(7, 0);
 
     // Draw all 128 regular tiles
     for (let i = 0; i < 128; i++) {
@@ -76,9 +76,28 @@ describe('MahjongDeck Unit Tests', () => {
       expect(t).not.toBeNull();
     }
 
-    // 129th draw must return null to preserve 16 dead wall
+    // Now regular tiles should be 0, and 16 dead wall tiles remain untouched
+    expect(deck.getRegularRemainingCount()).toBe(0);
     expect(deck.hasRegularTilesLeft()).toBe(false);
     expect(deck.drawHead()).toBeNull();
     expect(deck.drawTail()).toBeNull();
+  });
+
+  it('should map breakStackIndex to physical clockwise walls correctly for all seats', () => {
+    // Seat 0 (Bottom Wall, start 0): dice sum 17 -> (0 + 17) % 72 = 17
+    deck.setupWallBreak(17, 0);
+    expect(deck.getBreakStackIndex()).toBe(17);
+
+    // Seat 1 (Right Wall, start 54): dice sum 17 -> (54 + 17) % 72 = 71
+    deck.setupWallBreak(17, 1);
+    expect(deck.getBreakStackIndex()).toBe(71);
+
+    // Seat 2 (Top Wall, start 36): dice sum 17 -> (36 + 17) % 72 = 53
+    deck.setupWallBreak(17, 2);
+    expect(deck.getBreakStackIndex()).toBe(53);
+
+    // Seat 3 (Left Wall, start 18): dice sum 17 -> (18 + 17) % 72 = 35
+    deck.setupWallBreak(17, 3);
+    expect(deck.getBreakStackIndex()).toBe(35);
   });
 });

@@ -166,8 +166,13 @@ export class MahjongDeck {
 
     // Reorganize tiles array starting from Head
     // Total 72 stacks (18 stacks per player seat).
-    // Break position in stacks = (breakSeat * 18 + breakStack) % 72
-    const breakStackIndex = (breakSeat * 18 + breakStack) % 72;
+    // Clockwise physical wall mapping:
+    // Seat 0 (Bottom Wall): Stacks 0..17
+    // Seat 1 (Right Wall): Stacks 54..71
+    // Seat 2 (Top Wall): Stacks 36..53
+    // Seat 3 (Left Wall): Stacks 18..35
+    const seatWallStarts = [0, 54, 36, 18];
+    const breakStackIndex = (seatWallStarts[breakSeat] + breakStack) % 72;
     this.breakStackIndex = breakStackIndex;
     const breakTileIndex = breakStackIndex * 2; // 2 tiles per stack
 

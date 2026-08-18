@@ -521,11 +521,17 @@ export class MainGameScene extends Phaser.Scene {
     this.diceContainer.removeAll(true);
     this.diceContainer.setVisible(true);
 
-    const winds = ['東', '南', '西', '北'];
+    const windNames: Record<string, string> = {
+      EAST: '東',
+      SOUTH: '南',
+      WEST: '西',
+      NORTH: '北',
+    };
     const d = this.gameState.diceResult;
     const diceSum = d[0] + d[1] + d[2];
     const breakSeat = (this.gameState.dealerSeat + (diceSum - 1)) % 4;
-    const breakWind = winds[breakSeat];
+    const breakPlayer = this.gameState.players[breakSeat];
+    const breakWind = windNames[breakPlayer.wind] || '東';
     const dealerName = this.gameState.players[this.gameState.dealerSeat].name;
 
     const bg = this.add.graphics();
