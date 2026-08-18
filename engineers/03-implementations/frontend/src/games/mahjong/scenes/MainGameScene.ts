@@ -826,9 +826,7 @@ export class MainGameScene extends Phaser.Scene {
         .join(' ');
       const statusLabel = p1.isAutoPlay ? ' [極速託管中]' : p1.isTing ? ' [已聽牌]' : '';
       this.tingText.setText(`聽牌: ${tileSummary}${statusLabel}`);
-      if (p1.isAutoPlay) {
-        this.tingAutoBtn.setVisible(false);
-      }
+      this.tingAutoBtn.setVisible(!p1.isAutoPlay);
     } else {
       this.tingContainer.setVisible(false);
     }

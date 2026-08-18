@@ -405,8 +405,8 @@ export class MahjongGameState {
     // Always emit onTurnStart for both drawn turns and non-drawn turns
     this.listeners.forEach((l) => l.onTurnStart?.(seat, player.drawnTile));
 
-    // If human is in Auto-Draw Ting mode (託管摸打)
-    if (player.isHuman && player.isAutoPlay) {
+    // If human is in Auto-Draw Ting mode (託管摸打) and in headless test mode
+    if (player.isHuman && player.isAutoPlay && this.autoStepAI) {
       this.executeAutoPlay(seat);
       return;
     }
@@ -465,6 +465,13 @@ export class MahjongGameState {
    */
   public discardTile(seat: PlayerSeat, tileId: string): void {
     const player = this.players[seat];
+
+    // Flower tiles must never be discarded - if attempted, replace flower instead
+    if (player.drawnTile && player.drawnTile.isFlower && player.drawnTile.id === tileId) {
+      console.warn(`[MahjongGameState] Player ${seat} attempted to discard flower tile ${tileId} - replacing flower instead`);
+      this.replaceDrawnFlower(seat);
+      return;
+    }
 
     const totalTiles = player.hand.length + (player.drawnTile ? 1 : 0) + player.melds.length * 3;
     if (totalTiles < 17) {
@@ -943,6 +950,12 @@ export class MahjongGameState {
    */
   private executeAutoPlay(seat: PlayerSeat): void {
     const p = this.players[seat];
+
+    // If drawn tile is a flower, replace flower instead of discarding
+    if (p.drawnTile && p.drawnTile.isFlower) {
+      this.replaceDrawnFlower(seat);
+      return;
+    }
 
     if (p.drawnTile && MahjongHandEvaluator.isWinningHand(p.hand, p.melds, p.drawnTile)) {
       this.settleWin(seat, true);
