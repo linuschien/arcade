@@ -126,19 +126,19 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     this.bankerDiceGroup.removeAll(true);
     if (!d || d.length < 3) return;
 
-    const diceStartX = 260;
-    const diceStartY = -85;
+    const diceStartX = 345;
+    const diceStartY = -115;
 
     const bg = this.scene.add.graphics();
     bg.fillStyle(0x020617, 0.92);
-    bg.fillRoundedRect(diceStartX - 5, diceStartY - 14, 86, 28, 6);
+    bg.fillRoundedRect(diceStartX - 5, diceStartY - 14, 88, 28, 6);
     bg.lineStyle(1, 0xd4af37, 0.9);
-    bg.strokeRoundedRect(diceStartX - 5, diceStartY - 14, 86, 28, 6);
+    bg.strokeRoundedRect(diceStartX - 5, diceStartY - 14, 88, 28, 6);
     this.bankerDiceGroup.add(bg);
 
     for (let i = 0; i < 3; i++) {
-      const sprite = this.scene.add.sprite(diceStartX + 10 + i * 24, diceStartY, `mahjong:dice_${d[i]}`);
-      sprite.setDisplaySize(18, 18);
+      const sprite = this.scene.add.sprite(diceStartX + 11 + i * 24, diceStartY, `mahjong:dice_${d[i]}`);
+      sprite.setDisplaySize(20, 20);
       this.bankerDiceGroup.add(sprite);
     }
   }
@@ -152,19 +152,37 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   ): void {
     this.updatePlayerInfo(profile, roundWind);
     this.renderFlowerRack(profile.flowers, profile.wind);
-    this.renderMelds(profile.melds, isHuman, revealHand);
-    this.renderHand(profile, isHuman, revealHand);
+
+    // Calculate symmetrical centering for Hand + Reserved Drawn Slot + Melds
+    const meldCount = profile.melds.length;
+    const stepX = SeatLayoutContainer.TILE_W;
+    const meldW = SeatLayoutContainer.TILE_W * 3;
+    const meldBlockW = meldW + 8;
+    const gapDrawn = 12;
+
+    const maxConcealedTiles = 16 - meldCount * 3;
+    const maxHandTilesW = maxConcealedTiles * stepX;
+    const fixedDrawnSlotW = gapDrawn + stepX;
+    const totalMeldsW = meldCount > 0 ? meldCount * meldBlockW - 8 : 0;
+    const marginBeforeMelds = meldCount > 0 ? 16 : 0;
+
+    const totalWidth = maxHandTilesW + fixedDrawnSlotW + marginBeforeMelds + totalMeldsW;
+    const handStartX = -totalWidth / 2;
+    const meldStartX = handStartX + maxHandTilesW + fixedDrawnSlotW + marginBeforeMelds;
+
+    this.renderMelds(profile.melds, isHuman, revealHand, meldStartX);
+    this.renderHand(profile, isHuman, revealHand, handStartX, maxHandTilesW);
     this.renderDiscards(profile.discards, isLastDiscardSeat);
   }
 
   /**
-   * 4x2 Flower Rack situated to the RIGHT of Discard River.
+   * 4x2 Flower Rack situated to the RIGHT of Discard River with 100% full 36x48 tiles.
    */
   private renderFlowerRack(flowers: Tile[], wind?: string): void {
     this.flowerGroup.removeAll(true);
 
-    const cellW = 24;
-    const cellH = 34;
+    const cellW = SeatLayoutContainer.TILE_W;
+    const cellH = SeatLayoutContainer.TILE_H;
 
     const slotKeys = [
       'spring', 'summer', 'autumn', 'winter',
@@ -180,14 +198,14 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     };
     const playerPositives = wind ? (positiveIndices[wind] || []) : [];
 
-    const startX = 150;
-    const startY = -104;
+    const startX = 180;
+    const startY = -140;
 
     for (let r = 0; r < 2; r++) {
       for (let c = 0; c < 4; c++) {
         const idx = r * 4 + c;
-        const x = startX + c * (cellW + 2);
-        const y = startY + r * (cellH + 2);
+        const x = startX + c * (cellW + 2) + cellW / 2;
+        const y = startY + r * (cellH + 2) + cellH / 2;
 
         const slotCode = slotKeys[idx];
         const hasFlower = flowers.some((f) => f.shortCode === slotCode);
@@ -211,15 +229,18 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Modular 3-tile width melds with positional encoding (PRD 6.2).
+   * Modular 3-tile width melds positioned cleanly to the right of hand & drawn tile.
    */
-  private renderMelds(melds: Meld[], isHuman: boolean, revealHand: boolean = false): void {
+  private renderMelds(
+    melds: Meld[],
+    isHuman: boolean,
+    revealHand: boolean = false,
+    meldStartX: number = 0
+  ): void {
     this.meldGroup.removeAll(true);
 
     const meldW = SeatLayoutContainer.TILE_W * 3;
     const meldBlockW = meldW + 8;
-    const meldRightEdge = 330;
-    const meldStartX = meldRightEdge - melds.length * meldBlockW;
 
     melds.forEach((meld, idx) => {
       const meldX = meldStartX + idx * meldBlockW + meldW / 2;
@@ -278,31 +299,20 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Hand tiles with automatic leftward shift as melds expand on the right.
+   * Hand tiles with reserved drawn slot, symmetrically centered around X = 0.
    */
-  private renderHand(profile: PlayerProfile, isHuman: boolean, revealHand: boolean = false): void {
+  private renderHand(
+    profile: PlayerProfile,
+    isHuman: boolean,
+    revealHand: boolean = false,
+    startX: number = -312,
+    maxHandTilesW: number = 576
+  ): void {
     this.handGroup.removeAll(true);
-
-    const meldCount = profile.melds.length;
-    const meldW = SeatLayoutContainer.TILE_W * 3;
-    const meldBlockW = meldW + 8;
-    const meldRightEdge = 330;
-    const meldStartX = meldRightEdge - meldCount * meldBlockW;
 
     const hand = profile.hand;
     const stepX = SeatLayoutContainer.TILE_W;
     const gapDrawn = 12;
-    
-    // Fixed max concealed capacity for current meld count (16 - 3*M) + reserved 17th drawn slot
-    const maxConcealedTiles = 16 - meldCount * 3;
-    const maxHandTilesW = maxConcealedTiles * stepX;
-    const fixedDrawnSlotW = gapDrawn + stepX;
-    const totalHandAreaW = maxHandTilesW + fixedDrawnSlotW;
-
-    // Right edge of the entire hand area (including reserved drawn tile slot) stays cleanly left of melds
-    const marginBeforeMelds = 20;
-    const handAreaRightEdge = meldCount > 0 ? (meldStartX - marginBeforeMelds) : 260;
-    const startX = handAreaRightEdge - totalHandAreaW;
 
     const showFace = isHuman || revealHand;
 
@@ -377,16 +387,16 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 9x2 Compact Discard River with pre-rendered placeholder cells (PRD 5.2 / AC4).
+   * 9x2 Compact Discard River with pre-rendered placeholder cells and full 36x48 tiles.
    */
   private renderDiscards(discards: Tile[], _isLastDiscardSeat: boolean = false): void {
     this.riverGroup.removeAll(true);
 
     const cols = 9;
-    const dw = 28;
-    const dh = 38;
-    const riverStartX = -(cols * (dw + 2)) / 2 + (dw / 2);
-    const riverStartY = -120;
+    const dw = SeatLayoutContainer.TILE_W;
+    const dh = SeatLayoutContainer.TILE_H;
+    const riverStartX = -(cols * (dw + 2)) / 2 + dw / 2;
+    const riverStartY = -140;
 
     // 1. Draw 18 placeholder grid cells (like Flower Rack)
     for (let r = 0; r < 2; r++) {
