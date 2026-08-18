@@ -1067,7 +1067,6 @@ export class MainGameScene extends Phaser.Scene {
       label.on('pointerdown', () => {
         this.subMenuContainer.setVisible(false);
         this.actionBarContainer.setVisible(false);
-        MahjongAudioService.playVoiceChow();
         this.gameState.humanRespondAction('CHOW', opt);
       });
 
