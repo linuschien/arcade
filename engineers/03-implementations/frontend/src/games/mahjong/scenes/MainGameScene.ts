@@ -662,18 +662,7 @@ export class MainGameScene extends Phaser.Scene {
           this.actionBarContainer.setVisible(false);
           if (this.gameState.phase === 'PLAYER_TURN') {
             const kong = actions.kongOptions[0];
-            const p1 = this.gameState.players[0];
-            const fullHand = p1.drawnTile ? [...p1.hand, p1.drawnTile] : p1.hand;
-            p1.hand = fullHand.filter((t) => !kong.handTileIds.includes(t.id));
-            p1.drawnTile = null;
-
-            p1.melds.push({
-              type: kong.type,
-              tiles: fullHand.filter((t) => kong.handTileIds.includes(t.id)),
-              sourceSeat: 0,
-            });
-            const rep = this.gameState.deck.drawTail();
-            p1.drawnTile = rep;
+            this.gameState.performSelfKong(0, kong as any);
             this.refreshAllSeats();
           } else {
             this.gameState.humanRespondAction('KONG');

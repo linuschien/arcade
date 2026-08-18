@@ -256,4 +256,81 @@ describe('MahjongGameState Unit Tests', () => {
     expect(state.players[1].isAutoPlay).toBe(false);
     expect(state.players[1].isTing).toBe(false);
   });
+
+  it('should handle Melded Kong (明槓) claim with tail replenishment draw and player turn transition', () => {
+    state.startNewMatch();
+    state.startDealing();
+
+    // Setup player 1 (AI) with 3 '1m' tiles in hand
+    const p1 = state.players[1];
+    p1.hand = [
+      { id: '1m_1', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      { id: '1m_2', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      { id: '1m_3', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      { id: '2m_1', suit: 'CHARACTERS', value: 2, name: '二萬', shortCode: '2m' },
+    ];
+    p1.drawnTile = null;
+
+    // Player 3 discards 1m
+    const discardedTile: Tile = { id: '1m_4', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' };
+    state.players[3].discards.push(discardedTile);
+
+    let turnStarted = false;
+    let turnSeat = -1;
+    let meldClaimed = false;
+
+    state.addListener({
+      onMeldClaimed: (seat, meld) => {
+        if (seat === 1 && meld.type === 'MELDED_KONG') {
+          meldClaimed = true;
+        }
+      },
+      onTurnStart: (seat) => {
+        turnStarted = true;
+        turnSeat = seat;
+      },
+    });
+
+    // Resolve claims with Player 1 claiming Melded Kong
+    state.resolveClaims(3, discardedTile, [
+      { seat: 1, action: 'KONG' },
+    ]);
+
+    expect(meldClaimed).toBe(true);
+    expect(p1.melds.length).toBe(1);
+    expect(p1.melds[0].type).toBe('MELDED_KONG');
+    expect(p1.melds[0].tiles.length).toBe(4);
+    // Claimant must have received a replenishment tile drawn from tail
+    expect(p1.drawnTile).not.toBeNull();
+    // Phase must be PLAYER_TURN and turn seat must be Player 1
+    expect(state.phase).toBe('PLAYER_TURN');
+    expect(state.currentTurnSeat).toBe(1);
+    expect(turnStarted).toBe(true);
+    expect(turnSeat).toBe(1);
+  });
+
+  it('should handle performSelfKong (暗槓 / 加槓) with tail replenishment draw', () => {
+    state.startNewMatch();
+    state.startDealing();
+
+    const p0 = state.players[0];
+    p0.hand = [
+      { id: '5s_1', suit: 'BAMBOO', value: 5, name: '五條', shortCode: '5s' },
+      { id: '5s_2', suit: 'BAMBOO', value: 5, name: '五條', shortCode: '5s' },
+      { id: '5s_3', suit: 'BAMBOO', value: 5, name: '五條', shortCode: '5s' },
+      { id: '5s_4', suit: 'BAMBOO', value: 5, name: '五條', shortCode: '5s' },
+      { id: '9p_1', suit: 'DOTS', value: 9, name: '九筒', shortCode: '9p' },
+    ];
+    p0.drawnTile = null;
+
+    state.performSelfKong(0, {
+      type: 'CONCEALED_KONG',
+      tileCode: '5s',
+      handTileIds: ['5s_1', '5s_2', '5s_3', '5s_4'],
+    });
+
+    expect(p0.melds.length).toBe(1);
+    expect(p0.melds[0].type).toBe('CONCEALED_KONG');
+    expect(p0.drawnTile).not.toBeNull();
+  });
 });

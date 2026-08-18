@@ -604,10 +604,40 @@ export class MahjongGameState {
         claimant.melds.push(meld);
         this.listeners.forEach((l) => l.onMeldClaimed?.(pongOrKong.seat, meld));
 
+        // Switch turn to claimant
+        this.currentTurnSeat = pongOrKong.seat;
+        this.phase = 'PLAYER_TURN';
+        this.notifyPhase();
+
         // Replenishment draw from tail
         const rep = this.deck.drawTail();
         claimant.drawnTile = rep;
-        this.listeners.forEach((l) => l.onTurnStart?.(pongOrKong.seat, rep));
+
+        // Auto flower replacement on tail draw
+        while (claimant.drawnTile && claimant.drawnTile.isFlower) {
+          const flower = claimant.drawnTile;
+          claimant.flowers.push(flower);
+          if (claimant.flowers.length === 8) {
+            this.settleFlowerWin(pongOrKong.seat);
+            return;
+          }
+          const flowerRep = this.deck.drawTail();
+          claimant.drawnTile = flowerRep;
+          this.listeners.forEach((l) => l.onFlowerReplaced?.(pongOrKong.seat, flower, flowerRep!));
+        }
+
+        this.listeners.forEach((l) => l.onTurnStart?.(pongOrKong.seat, claimant.drawnTile));
+
+        // If human is in Auto-Draw Ting mode
+        if (claimant.isHuman && claimant.isAutoPlay) {
+          this.executeAutoPlay(pongOrKong.seat);
+          return;
+        }
+
+        // If AI turn and autoStepAI enabled
+        if (!claimant.isHuman && this.autoStepAI) {
+          this.executeAITurn(pongOrKong.seat);
+        }
       }
       return;
     }
@@ -726,6 +756,61 @@ export class MahjongGameState {
   }
 
   /**
+   * Performs a self kong (Concealed or Added) for the player at seat.
+   */
+  public performSelfKong(seat: PlayerSeat, kong: KongOption): void {
+    const p = this.players[seat];
+    const fullHand = p.drawnTile ? [...p.hand, p.drawnTile] : p.hand;
+
+    if (kong.type === 'CONCEALED_KONG') {
+      p.hand = fullHand.filter((t) => !kong.handTileIds.includes(t.id));
+      p.drawnTile = null;
+
+      const meld: Meld = {
+        type: 'CONCEALED_KONG',
+        tiles: fullHand.filter((t) => kong.handTileIds.includes(t.id)),
+        sourceSeat: seat,
+      };
+      p.melds.push(meld);
+      this.listeners.forEach((l) => l.onMeldClaimed?.(seat, meld));
+    } else if (kong.type === 'ADDED_KONG') {
+      const addedTile = fullHand.find((t) => kong.handTileIds.includes(t.id));
+      if (addedTile) {
+        p.hand = fullHand.filter((t) => t.id !== addedTile.id);
+        p.drawnTile = null;
+
+        const targetMeld = p.melds.find(
+          (m) => m.type === 'PONG' && m.tiles[0].shortCode === kong.tileCode
+        );
+        if (targetMeld) {
+          targetMeld.type = 'ADDED_KONG';
+          targetMeld.tiles.push(addedTile);
+          this.listeners.forEach((l) => l.onMeldClaimed?.(seat, targetMeld));
+        }
+      }
+    }
+
+    // Replenishment draw from tail
+    const rep = this.deck.drawTail();
+    p.drawnTile = rep;
+
+    // Auto flower replacement on tail draw
+    while (p.drawnTile && p.drawnTile.isFlower) {
+      const flower = p.drawnTile;
+      p.flowers.push(flower);
+      if (p.flowers.length === 8) {
+        this.settleFlowerWin(seat);
+        return;
+      }
+      const flowerRep = this.deck.drawTail();
+      p.drawnTile = flowerRep;
+      this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, flower, flowerRep!));
+    }
+
+    this.listeners.forEach((l) => l.onTurnStart?.(seat, p.drawnTile));
+  }
+
+  /**
    * Executes AI player's turn logic.
    */
   private executeAITurn(seat: PlayerSeat): void {
@@ -745,23 +830,7 @@ export class MahjongGameState {
 
     if (kongOpts.length > 0 && Math.random() > 0.4) {
       const kong = kongOpts[0];
-      if (kong.type === 'CONCEALED_KONG') {
-        const fullHand = p.drawnTile ? [...p.hand, p.drawnTile] : p.hand;
-        p.hand = fullHand.filter((t) => !kong.handTileIds.includes(t.id));
-        p.drawnTile = null;
-
-        const meld: Meld = {
-          type: 'CONCEALED_KONG',
-          tiles: fullHand.filter((t) => kong.handTileIds.includes(t.id)),
-          sourceSeat: seat,
-        };
-        p.melds.push(meld);
-        this.listeners.forEach((l) => l.onMeldClaimed?.(seat, meld));
-
-        const rep = this.deck.drawTail();
-        p.drawnTile = rep;
-        this.listeners.forEach((l) => l.onTurnStart?.(seat, rep));
-      }
+      this.performSelfKong(seat, kong);
     }
 
     // Choose discard
