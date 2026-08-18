@@ -119,31 +119,84 @@ export class MahjongGameState {
 
   /**
    * Phase 1: 搬風抓位 (Seating Draw).
+   * 1. 蓋著洗勻東、南、西、北四張風牌。
+   * 2. 擲 3 顆骰子決定開抓方位，四位角色依序各抽一張風牌。
+   * 3. 真人玩家（賭神）固定於螢幕正下方（Seat 0），依抽到的風位動態賦予門風。
+   * 4. 依照麻將物理座次（東->南->西->北逆時針依序為本家->下家->對家->上家），
+   *    將抽到對應風位的 AI 角色（賭俠、賭聖、賭霸）安排入座於 Seat 1（下家）、Seat 2（對家）、Seat 3（上家）。
+   * 5. 抽到東風者為第一圈第一盤之起莊（dealerSeat）。
    */
   public startSeatingDraw(): void {
     this.phase = 'SEATING_DRAW';
     this.notifyPhase();
 
-    // Roll 3 dice
+    // 1. 擲 3 顆骰子決定抓位起抽順序
     const d1 = Math.floor(Math.random() * 6) + 1;
     const d2 = Math.floor(Math.random() * 6) + 1;
     const d3 = Math.floor(Math.random() * 6) + 1;
     this.diceResult = [d1, d2, d3];
     this.diceSum = d1 + d2 + d3;
 
-    // First drawer = (diceSum - 1) % 4
-    const firstDrawer = (this.diceSum - 1) % 4;
+    // 2. 蓋著洗勻四張風牌 (東、南、西、北)
+    const windPool: SeatWind[] = ['EAST', 'SOUTH', 'WEST', 'NORTH'];
+    for (let i = windPool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [windPool[i], windPool[j]] = [windPool[j], windPool[i]];
+    }
 
-    // Assign dynamic winds based on draw
-    const windChoices: SeatWind[] = ['EAST', 'SOUTH', 'WEST', 'NORTH'];
+    // 3. 四位角色按起抽順序各抽一張洗勻的風牌
+    const firstDrawer = (this.diceSum - 1) % 4;
+    const characters = [
+      { name: '賭神', isHuman: true },
+      { name: '賭俠小刀', isHuman: false },
+      { name: '賭聖阿星', isHuman: false },
+      { name: '賭霸有喜', isHuman: false },
+    ];
+
+    const drawnResults: { name: string; isHuman: boolean; wind: SeatWind }[] = [];
     for (let i = 0; i < 4; i++) {
-      const seat = ((firstDrawer + i) % 4) as PlayerSeat;
-      this.players[seat].wind = windChoices[i];
-      if (windChoices[i] === 'EAST') {
-        this.dealerSeat = seat;
-        this.players[seat].isDealer = true;
+      const charIndex = (firstDrawer + i) % 4;
+      drawnResults.push({
+        name: characters[charIndex].name,
+        isHuman: characters[charIndex].isHuman,
+        wind: windPool[i],
+      });
+    }
+
+    // 4. 第一人稱視角映射：
+    // 賭神必定坐在 Seat 0 (螢幕下方)，門風由其抽到的風牌決定
+    const humanResult = drawnResults.find((r) => r.isHuman)!;
+    const allWindsOrder: SeatWind[] = ['EAST', 'SOUTH', 'WEST', 'NORTH'];
+    const humanWindIdx = allWindsOrder.indexOf(humanResult.wind);
+
+    // 四個座位（0=下/真人, 1=右/下家, 2=上/對家, 3=左/上家）的門風按麻將逆時針規律依序排列
+    const seatWinds: SeatWind[] = [
+      allWindsOrder[humanWindIdx], // Seat 0 (賭神)
+      allWindsOrder[(humanWindIdx + 1) % 4], // Seat 1 (下家)
+      allWindsOrder[(humanWindIdx + 2) % 4], // Seat 2 (對家)
+      allWindsOrder[(humanWindIdx + 3) % 4], // Seat 3 (上家)
+    ];
+
+    // 將抽到對應風位之角色分派至對應座位
+    const aiResults = drawnResults.filter((r) => !r.isHuman);
+    for (let s = 0; s < 4; s++) {
+      const targetWind = seatWinds[s];
+      if (s === 0) {
+        this.players[0].name = humanResult.name;
+        this.players[0].isHuman = true;
+        this.players[0].wind = targetWind;
       } else {
-        this.players[seat].isDealer = false;
+        const matchingAI = aiResults.find((r) => r.wind === targetWind)!;
+        this.players[s].name = matchingAI.name;
+        this.players[s].isHuman = false;
+        this.players[s].wind = targetWind;
+      }
+
+      if (targetWind === 'EAST') {
+        this.dealerSeat = s as PlayerSeat;
+        this.players[s].isDealer = true;
+      } else {
+        this.players[s].isDealer = false;
       }
     }
   }
