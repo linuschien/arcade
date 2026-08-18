@@ -382,25 +382,27 @@ export class MainGameScene extends Phaser.Scene {
         this.updateSmartTing();
         this.updateTileWalls();
 
-        if (seat === 0) {
-          this.checkHumanSelfActions();
-          const hasSelfAction = this.actionBarContainer.visible;
-          if (this.gameState.players[0].isAutoPlay && !hasSelfAction) {
-            this.time.delayedCall(400, () => {
-              if (this.gameState.currentTurnSeat === 0 && this.gameState.phase === 'PLAYER_TURN') {
-                this.gameState.stepAITurn(0);
+        // Audio Gating: wait until active voice announcement (補花 / 碰 / 槓) completes before proceeding!
+        MahjongAudioService.waitForVoiceComplete().then(() => {
+          if (seat === 0) {
+            this.checkHumanSelfActions();
+            const hasSelfAction = this.actionBarContainer.visible;
+            if (this.gameState.players[0].isAutoPlay && !hasSelfAction) {
+              this.time.delayedCall(400, () => {
+                if (this.gameState.currentTurnSeat === 0 && this.gameState.phase === 'PLAYER_TURN') {
+                  this.gameState.stepAITurn(0);
+                }
+              });
+            }
+          } else {
+            // AI turn: schedule async turn step with 600ms thinking delay AFTER voice is done
+            this.time.delayedCall(600, () => {
+              if (this.gameState.currentTurnSeat === seat && this.gameState.phase === 'PLAYER_TURN') {
+                this.gameState.stepAITurn(seat);
               }
             });
           }
-        } else {
-          // AI turn: schedule async turn step with 600ms delay (1200ms on first turn to let opening flower replace announcements breathe)
-          const aiDelay = this.gameState.isFirstTurnCycle ? 1200 : 600;
-          this.time.delayedCall(aiDelay, () => {
-            if (this.gameState.currentTurnSeat === seat && this.gameState.phase === 'PLAYER_TURN') {
-              this.gameState.stepAITurn(seat);
-            }
-          });
-        }
+        });
       },
       onTileDiscarded: (seat: PlayerSeat, tile) => {
         MahjongAudioService.playTileDiscard();

@@ -164,7 +164,7 @@ class MahjongAudioServiceImpl {
   /**
    * SFX_FLOWER_REPLACE (Chinese voice "補花" + crisp bell chime for flower replacement).
    */
-  public playFlowerReplace(): void {
+  public playFlowerReplace(): Promise<void> {
     const chime = [
       { freq: 880.0, delayMs: 0, durationSeconds: 0.08, type: 'sine' as OscillatorType, vol: 0.12 }, // A5
       { freq: 1318.51, delayMs: 80, durationSeconds: 0.25, type: 'sine' as OscillatorType, vol: 0.16 }, // E6
@@ -174,8 +174,9 @@ class MahjongAudioServiceImpl {
     const now = Date.now();
     if (now - this.lastFlowerSpeechTime > 800) {
       this.lastFlowerSpeechTime = now;
-      this.speakOrTone('補花', [880, 1318.51]);
+      return this.speakOrTone('補花', [880, 1318.51]);
     }
+    return Promise.resolve();
   }
 
   /**
@@ -190,51 +191,80 @@ class MahjongAudioServiceImpl {
     });
   }
 
+  private activeVoicePromise: Promise<void> | null = null;
+
+  /**
+   * Waits for the currently active speech/voice announcement to finish playing before proceeding.
+   */
+  public waitForVoiceComplete(): Promise<void> {
+    if (!this.activeVoicePromise) return Promise.resolve();
+    return this.activeVoicePromise;
+  }
+
   /**
    * VOICE Announcements with speech synthesis or distinctive audio chords.
    */
-  private speakOrTone(text: string, frequencies: number[]): void {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window && !SoundEngine.isMutedState()) {
-      try {
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'zh-TW';
-        u.rate = 1.2;
-        u.volume = 0.8;
-        window.speechSynthesis.speak(u);
-      } catch {
-        // Fallback to tone sequence
-      }
-    }
+  private speakOrTone(text: string, frequencies: number[]): Promise<void> {
+    const p = new Promise<void>((resolve) => {
+      let resolved = false;
+      const done = () => {
+        if (!resolved) {
+          resolved = true;
+          resolve();
+        }
+      };
 
-    // Always play distinctive audio signature
-    frequencies.forEach((freq, idx) => {
-      SoundEngine.playTone({
-        type: 'square',
-        frequency: freq,
-        durationSeconds: 0.12,
-        volume: 0.14,
+      // Always play distinctive audio signature
+      frequencies.forEach((freq) => {
+        SoundEngine.playTone({
+          type: 'square',
+          frequency: freq,
+          durationSeconds: 0.12,
+          volume: 0.14,
+        });
       });
+
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window && !SoundEngine.isMutedState()) {
+        try {
+          const u = new SpeechSynthesisUtterance(text);
+          u.lang = 'zh-TW';
+          u.rate = 1.2;
+          u.volume = 0.8;
+          u.onend = () => done();
+          u.onerror = () => done();
+          window.speechSynthesis.speak(u);
+          // Safety timeout in case onend doesn't fire
+          setTimeout(done, 900);
+        } catch {
+          setTimeout(done, 300);
+        }
+      } else {
+        setTimeout(done, 300);
+      }
     });
+
+    this.activeVoicePromise = p;
+    return p;
   }
 
-  public playVoiceChow(): void {
-    this.speakOrTone('吃', [440, 554]);
+  public playVoiceChow(): Promise<void> {
+    return this.speakOrTone('吃', [440, 554]);
   }
 
-  public playVoicePong(): void {
-    this.speakOrTone('碰', [523, 659]);
+  public playVoicePong(): Promise<void> {
+    return this.speakOrTone('碰', [523, 659]);
   }
 
-  public playVoiceKong(): void {
-    this.speakOrTone('槓', [587, 880]);
+  public playVoiceKong(): Promise<void> {
+    return this.speakOrTone('槓', [587, 880]);
   }
 
-  public playVoiceTing(): void {
-    this.speakOrTone('聽', [659, 987]);
+  public playVoiceTing(): Promise<void> {
+    return this.speakOrTone('聽', [659, 987]);
   }
 
-  public playVoiceHu(): void {
-    this.speakOrTone('胡', [784, 1046]);
+  public playVoiceHu(): Promise<void> {
+    return this.speakOrTone('胡', [784, 1046]);
   }
 }
 
