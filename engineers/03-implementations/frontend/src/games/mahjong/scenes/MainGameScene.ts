@@ -18,6 +18,7 @@ import {
   GamePhase,
   AvailableActions,
   ChowOption,
+  KongOption,
   Tile,
 } from '../logic/MahjongTypes';
 
@@ -115,18 +116,19 @@ export class MainGameScene extends Phaser.Scene {
     const stacksPerSide = 18;
     const step = 20;
 
-    // South Wall (Bottom, near Seat 0)
+    // Clockwise Wall Progression around the table:
+    // 1. South Wall (Bottom): Right to Left (0 to 17)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 470 + i * step;
+      const x = 810 - i * step;
       const y = 495;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       this.wallSprites.push(sprite);
       this.wallContainer.add(sprite);
     }
 
-    // East Wall (Right, near Seat 1)
+    // 2. West Wall (Left): Bottom to Top (18 to 35)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 855;
+      const x = 425;
       const y = 480 - i * 14;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       sprite.setAngle(90);
@@ -134,18 +136,18 @@ export class MainGameScene extends Phaser.Scene {
       this.wallContainer.add(sprite);
     }
 
-    // North Wall (Top, near Seat 2)
+    // 3. North Wall (Top): Left to Right (36 to 53)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 810 - i * step;
+      const x = 470 + i * step;
       const y = 225;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       this.wallSprites.push(sprite);
       this.wallContainer.add(sprite);
     }
 
-    // West Wall (Left, near Seat 3)
+    // 4. East Wall (Right): Top to Bottom (54 to 71)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 425;
+      const x = 855;
       const y = 240 + i * 14;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       sprite.setAngle(90);
@@ -193,6 +195,7 @@ export class MainGameScene extends Phaser.Scene {
       fontSize: '11px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#94a3b8',
+      fontStyle: 'bold',
     });
     this.dealerStreakText.setOrigin(0.5);
 
@@ -237,19 +240,9 @@ export class MainGameScene extends Phaser.Scene {
 
   private createDiscardMarker(): void {
     this.discardMarker = this.add.graphics();
-    this.discardMarker.fillStyle(0xfacc15, 1);
-    this.discardMarker.setVisible(false);
-
-    // Subtle pulsing animation
-    if (this.tweens) {
-      this.tweens.add({
-        targets: this.discardMarker,
-        alpha: { from: 0.4, to: 1 },
-        yoyo: true,
-        repeat: -1,
-        duration: 500,
-      });
-    }
+    this.discardMarker.lineStyle(2, 0xfacc15, 0.9);
+    this.discardMarker.strokeRect(-18, -24, 36, 48);
+    this.discardMarker.setVisible(true);
   }
 
   private highlightLatestDiscard(seat: PlayerSeat, _tile: Tile): void {
@@ -258,30 +251,23 @@ export class MainGameScene extends Phaser.Scene {
       this.discardMarker.setVisible(false);
       return;
     }
-
-    this.discardMarker.clear();
-    this.discardMarker.fillStyle(0xfacc15, 1);
-    this.discardMarker.beginPath();
-    this.discardMarker.moveTo(pos.x, pos.y - 12);
-    this.discardMarker.lineTo(pos.x - 6, pos.y - 20);
-    this.discardMarker.lineTo(pos.x + 6, pos.y - 20);
-    this.discardMarker.closePath();
-    this.discardMarker.fill();
+    this.discardMarker.setPosition(pos.x, pos.y);
     this.discardMarker.setVisible(true);
   }
 
   private createSmartTingUI(): void {
-    this.tingContainer = this.add.container(180, 580);
+    // Smart Ting positioned directly centered beneath player's hand
+    this.tingContainer = this.add.container(640, 690);
     this.tingContainer.setVisible(false);
 
     const bg = this.add.graphics();
-    bg.fillStyle(0x0f172a, 0.9);
-    bg.fillRoundedRect(0, 0, 320, 32, 6);
-    bg.lineStyle(1, 0x8b5cf6, 0.8);
-    bg.strokeRoundedRect(0, 0, 320, 32, 6);
+    bg.fillStyle(0x0f172a, 0.92);
+    bg.fillRoundedRect(-190, -13, 380, 26, 6);
+    bg.lineStyle(1, 0x8b5cf6, 0.85);
+    bg.strokeRoundedRect(-190, -13, 380, 26, 6);
     this.tingContainer.add(bg);
 
-    this.tingText = this.add.text(10, 8, '聽牌: ', {
+    this.tingText = this.add.text(-180, -7, '聽牌: ', {
       fontSize: '12px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#c4b5fd',
@@ -290,13 +276,13 @@ export class MainGameScene extends Phaser.Scene {
     this.tingContainer.add(this.tingText);
 
     // Auto Play Button (聽牌託管)
-    this.tingAutoBtn = this.add.container(240, 4);
+    this.tingAutoBtn = this.add.container(115, -11);
     const btnBg = this.add.graphics();
     btnBg.fillStyle(0x7c3aed, 1);
-    btnBg.fillRoundedRect(0, 0, 70, 24, 4);
+    btnBg.fillRoundedRect(0, 0, 70, 22, 4);
     this.tingAutoBtn.add(btnBg);
 
-    const btnTxt = this.add.text(35, 12, '聽牌託管', {
+    const btnTxt = this.add.text(35, 11, '聽牌託管', {
       fontSize: '11px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#ffffff',
@@ -305,7 +291,7 @@ export class MainGameScene extends Phaser.Scene {
     btnTxt.setOrigin(0.5);
     this.tingAutoBtn.add(btnTxt);
 
-    btnBg.setInteractive(new Phaser.Geom.Rectangle(0, 0, 70, 24), Phaser.Geom.Rectangle.Contains);
+    btnBg.setInteractive(new Phaser.Geom.Rectangle(0, 0, 70, 22), Phaser.Geom.Rectangle.Contains);
     btnBg.on('pointerdown', () => {
       this.gameState.players[0].isAutoPlay = true;
       MahjongAudioService.playVoiceTing();
@@ -317,21 +303,24 @@ export class MainGameScene extends Phaser.Scene {
     });
 
     this.tingContainer.add(this.tingAutoBtn);
+    this.tingContainer.setDepth(90);
   }
 
   private createActionBar(): void {
     // Action bar positioned above hand and below discard river
     this.actionBarContainer = this.add.container(640, 580);
     this.actionBarContainer.setVisible(false);
+    this.actionBarContainer.setDepth(100);
 
-    // Submenu placed directly above action bar
-    this.subMenuContainer = this.add.container(640, 528);
+    this.subMenuContainer = this.add.container(640, 520);
     this.subMenuContainer.setVisible(false);
+    this.subMenuContainer.setDepth(110);
   }
 
   private createSettlementModal(): void {
     this.settlementContainer = this.add.container(640, 360);
     this.settlementContainer.setVisible(false);
+    this.settlementContainer.setDepth(200);
   }
 
   private setupGameStateListeners(): void {
@@ -358,7 +347,8 @@ export class MainGameScene extends Phaser.Scene {
 
         if (seat === 0) {
           this.checkHumanSelfActions();
-          if (this.gameState.players[0].isAutoPlay) {
+          const hasSelfAction = this.actionBarContainer.visible;
+          if (this.gameState.players[0].isAutoPlay && !hasSelfAction) {
             this.time.delayedCall(400, () => {
               if (this.gameState.currentTurnSeat === 0 && this.gameState.phase === 'PLAYER_TURN') {
                 this.gameState.stepAITurn(0);
@@ -605,15 +595,17 @@ export class MainGameScene extends Phaser.Scene {
     );
 
     if (tingInfo.winningTiles.length > 0) {
-      p1.isTing = true;
       this.tingContainer.setVisible(true);
 
       const tileSummary = tingInfo.winningTiles
         .map((t) => `${t.tileName} (${t.remainingCount}張)`)
         .join(' ');
-      this.tingText.setText(`聽牌: ${tileSummary}`);
+      const statusLabel = p1.isAutoPlay ? ' [極速託管中]' : p1.isTing ? ' [已聽牌]' : '';
+      this.tingText.setText(`聽牌: ${tileSummary}${statusLabel}`);
+      if (p1.isAutoPlay) {
+        this.tingAutoBtn.setVisible(false);
+      }
     } else {
-      p1.isTing = false;
       this.tingContainer.setVisible(false);
     }
   }
@@ -703,6 +695,7 @@ export class MainGameScene extends Phaser.Scene {
         label: '胡',
         action: () => {
           this.actionBarContainer.setVisible(false);
+          this.subMenuContainer.setVisible(false);
           if (this.gameState.currentTurnSeat === 0 && this.gameState.phase === 'PLAYER_TURN') {
             this.gameState.settleWin(0, true);
           } else {
@@ -717,13 +710,18 @@ export class MainGameScene extends Phaser.Scene {
         key: 'action_btn_kong',
         label: '槓',
         action: () => {
-          this.actionBarContainer.setVisible(false);
-          if (this.gameState.phase === 'PLAYER_TURN') {
-            const kong = actions.kongOptions[0];
-            this.gameState.performSelfKong(0, kong as any);
-            this.refreshAllSeats();
-          } else {
-            this.gameState.humanRespondAction('KONG');
+          if (actions.kongOptions.length === 1) {
+            this.actionBarContainer.setVisible(false);
+            this.subMenuContainer.setVisible(false);
+            if (this.gameState.phase === 'PLAYER_TURN') {
+              const kong = actions.kongOptions[0];
+              this.gameState.performSelfKong(0, kong as any);
+              this.refreshAllSeats();
+            } else {
+              this.gameState.humanRespondAction('KONG');
+            }
+          } else if (actions.kongOptions.length > 1) {
+            this.showKongSubMenu(actions.kongOptions as any);
           }
         },
       });
@@ -735,6 +733,7 @@ export class MainGameScene extends Phaser.Scene {
         label: '碰',
         action: () => {
           this.actionBarContainer.setVisible(false);
+          this.subMenuContainer.setVisible(false);
           this.gameState.humanRespondAction('PONG');
         },
       });
@@ -747,6 +746,7 @@ export class MainGameScene extends Phaser.Scene {
         action: () => {
           if (actions.chowOptions.length === 1) {
             this.actionBarContainer.setVisible(false);
+            this.subMenuContainer.setVisible(false);
             this.gameState.humanRespondAction('CHOW', actions.chowOptions[0]);
           } else {
             this.showChowSubMenu(actions.chowOptions);
@@ -755,19 +755,16 @@ export class MainGameScene extends Phaser.Scene {
       });
     }
 
-    if (actions.canTing && !this.gameState.players[0].isAutoPlay) {
+    if (actions.canTing && !this.gameState.players[0].isTing && !this.gameState.players[0].isAutoPlay) {
       buttons.push({
         key: 'action_btn_ting',
         label: '聽',
         action: () => {
           this.actionBarContainer.setVisible(false);
+          this.subMenuContainer.setVisible(false);
           MahjongAudioService.playVoiceTing();
-          this.gameState.players[0].isAutoPlay = true;
           this.gameState.players[0].isTing = true;
           this.updateSmartTing();
-          if (this.gameState.phase === 'PLAYER_TURN' && this.gameState.currentTurnSeat === 0) {
-            this.gameState.stepAITurn(0);
-          }
         },
       });
     }
@@ -794,6 +791,45 @@ export class MainGameScene extends Phaser.Scene {
       sprite.setInteractive({ useHandCursor: true });
       sprite.on('pointerdown', btn.action);
       this.actionBarContainer.add(sprite);
+    });
+  }
+
+  private showKongSubMenu(options: KongOption[]): void {
+    this.subMenuContainer.removeAll(true);
+    this.subMenuContainer.setVisible(true);
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x0f172a, 0.95);
+    bg.fillRoundedRect(-160, -30, 320, 60, 8);
+    bg.lineStyle(1, 0xef4444, 0.8);
+    bg.strokeRoundedRect(-160, -30, 320, 60, 8);
+    this.subMenuContainer.add(bg);
+
+    options.forEach((opt, idx) => {
+      const optBtn = this.add.container((idx - (options.length - 1) / 2) * 90, 0);
+      const labelText = opt.type === 'CONCEALED_KONG' ? `暗槓 ${opt.tileCode}` : `加槓 ${opt.tileCode}`;
+      const label = this.add.text(0, 0, labelText, {
+        fontSize: '12px',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
+        color: '#f87171',
+        fontStyle: 'bold',
+      });
+      label.setOrigin(0.5);
+      label.setInteractive({ useHandCursor: true });
+
+      label.on('pointerdown', () => {
+        this.subMenuContainer.setVisible(false);
+        this.actionBarContainer.setVisible(false);
+        if (this.gameState.phase === 'PLAYER_TURN') {
+          this.gameState.performSelfKong(0, opt);
+          this.refreshAllSeats();
+        } else {
+          this.gameState.humanRespondAction('KONG');
+        }
+      });
+
+      optBtn.add(label);
+      this.subMenuContainer.add(optBtn);
     });
   }
 

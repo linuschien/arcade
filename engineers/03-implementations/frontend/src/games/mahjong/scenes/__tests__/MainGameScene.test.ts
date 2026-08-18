@@ -226,4 +226,35 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     // Clicking Pong button should NOT directly trigger playVoicePong (it is triggered by onMeldClaimed)
     expect(audioService.playVoicePong).toHaveBeenCalledTimes(0);
   });
+
+  it('should pop up action bar with Kong button when human draws a 4th matching tile', () => {
+    scene.create();
+    const gameState = (scene as any).gameState;
+    const p1 = gameState.players[0];
+
+    // Give player three 5m in hand and draw the 4th 5m
+    p1.hand = [
+      { id: '1', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' },
+      { id: '2', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' },
+      { id: '3', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' },
+      ...Array.from({ length: 13 }, (_, i) => ({
+        id: `dummy_${i}`,
+        suit: 'BAMBOO',
+        value: (i % 9) + 1,
+        name: `${(i % 9) + 1}條`,
+        shortCode: `${(i % 9) + 1}s`,
+      })),
+    ];
+    p1.drawnTile = { id: '4', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' };
+    p1.isTing = true;
+    p1.isAutoPlay = false;
+
+    (scene as any).checkHumanSelfActions();
+
+    expect((scene as any).actionBarContainer.setVisible).toHaveBeenCalledWith(true);
+    // Find sprite call for 'mahjong:action_btn_kong'
+    const spriteCalls = (scene as any).add.sprite.mock.calls;
+    const kongBtnCall = spriteCalls.find((c: any[]) => c[2] === 'mahjong:action_btn_kong');
+    expect(kongBtnCall).toBeDefined();
+  });
 });

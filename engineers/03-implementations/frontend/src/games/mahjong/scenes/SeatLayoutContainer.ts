@@ -300,12 +300,14 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     const hand = profile.hand;
     const stepX = isHuman ? SeatLayoutContainer.TILE_W : 18;
     const gapDrawn = isHuman ? 12 : 8;
-    const hasDrawn = !!profile.drawnTile;
-    const handTilesW = hand.length * stepX;
-    const drawnTileW = hasDrawn ? (gapDrawn + stepX) : 0;
-    const totalHandAreaW = handTilesW + drawnTileW;
+    
+    // Fixed max concealed capacity for current meld count (16 - 3*M) + reserved 17th drawn slot
+    const maxConcealedTiles = 16 - meldCount * 3;
+    const maxHandTilesW = maxConcealedTiles * stepX;
+    const fixedDrawnSlotW = gapDrawn + stepX;
+    const totalHandAreaW = maxHandTilesW + fixedDrawnSlotW;
 
-    // Right edge of the entire hand area (including drawn tile) stays cleanly to the left of the melds
+    // Right edge of the entire hand area (including reserved drawn tile slot) stays cleanly left of melds
     const marginBeforeMelds = isHuman ? 24 : 16;
     const handAreaRightEdge = meldCount > 0 ? (meldStartX - marginBeforeMelds) : (isHuman ? 260 : 150);
     const startX = handAreaRightEdge - totalHandAreaW;
@@ -346,9 +348,9 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       this.handGroup.add(sprite);
     });
 
-    // 17th Drawn tile (placed on the right of the hand with 12px gap per PRD 6.1)
+    // 17th Drawn tile (rendered into the reserved slot on the right with 12px gap)
     if (profile.drawnTile) {
-      const drawnX = startX + handTilesW + gapDrawn + stepX / 2;
+      const drawnX = startX + maxHandTilesW + gapDrawn + stepX / 2;
       const textureKey = isHuman
         ? `mahjong:tile_${profile.drawnTile.shortCode}`
         : 'mahjong:tile_back';

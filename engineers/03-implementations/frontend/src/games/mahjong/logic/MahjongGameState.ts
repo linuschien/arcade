@@ -392,7 +392,7 @@ export class MahjongGameState {
     // Always emit onTurnStart for both drawn turns and non-drawn turns (e.g. dealer Turn 1 or after Chow)
     this.listeners.forEach((l) => l.onTurnStart?.(seat, player.drawnTile));
 
-    // If human is in Auto-Draw Ting mode
+    // If human is in Auto-Draw Ting mode (託管摸打)
     if (player.isHuman && player.isAutoPlay) {
       this.executeAutoPlay(seat);
       return;
@@ -408,6 +408,8 @@ export class MahjongGameState {
     const targetSeat = seat ?? this.currentTurnSeat;
     if (!this.players[targetSeat].isHuman) {
       this.executeAITurn(targetSeat);
+    } else if (this.players[targetSeat].isAutoPlay) {
+      this.executeAutoPlay(targetSeat);
     }
   }
 

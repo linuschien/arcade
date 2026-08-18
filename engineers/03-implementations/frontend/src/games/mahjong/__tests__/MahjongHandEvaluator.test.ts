@@ -138,7 +138,11 @@ describe('MahjongHandEvaluator Unit Tests', () => {
 
     // Called from upper player (seat 3 to seat 0 -> (3 + 1) % 4 === 0)
     const chowFromUpper = MahjongHandEvaluator.getChowOptions(hand, calledTile, 3, 0);
-    expect(chowFromUpper.length).toBe(3); // [1m, 2m, 3m], [2m, 3m, 4m], [3m, 4m, 5m]
+    expect(chowFromUpper.length).toBe(3); // [1m, 3m, 2m], [2m, 3m, 4m], [4m, 3m, 5m]
+    // Called tile must strictly be placed in the center (index 1) per PRD 6.2 & US-05 AC4
+    chowFromUpper.forEach((opt) => {
+      expect(opt.tiles[1].shortCode).toBe('3m');
+    });
 
     // Called from across player (seat 2 to seat 0 -> not allowed)
     const chowFromAcross = MahjongHandEvaluator.getChowOptions(hand, calledTile, 2, 0);
