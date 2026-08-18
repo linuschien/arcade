@@ -122,7 +122,7 @@ export class MainGameScene extends Phaser.Scene {
     // 1. South Wall (Bottom): Right to Left (0 to 17)
     for (let i = 0; i < stacksPerSide; i++) {
       const x = 810 - i * step;
-      const y = 596;
+      const y = 606;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       this.wallSprites.push(sprite);
       this.wallContainer.add(sprite);
@@ -130,8 +130,8 @@ export class MainGameScene extends Phaser.Scene {
 
     // 2. West Wall (Left): Bottom to Top (18 to 35)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 404;
-      const y = 560 - i * 24;
+      const x = 394;
+      const y = 530 - i * 23;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       sprite.setAngle(90);
       this.wallSprites.push(sprite);
@@ -141,7 +141,7 @@ export class MainGameScene extends Phaser.Scene {
     // 3. North Wall (Top): Left to Right (36 to 53)
     for (let i = 0; i < stacksPerSide; i++) {
       const x = 470 + i * step;
-      const y = 124;
+      const y = 114;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       this.wallSprites.push(sprite);
       this.wallContainer.add(sprite);
@@ -149,8 +149,8 @@ export class MainGameScene extends Phaser.Scene {
 
     // 4. East Wall (Right): Top to Bottom (54 to 71)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 876;
-      const y = 160 + i * 24;
+      const x = 886;
+      const y = 190 + i * 23;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       sprite.setAngle(90);
       this.wallSprites.push(sprite);
