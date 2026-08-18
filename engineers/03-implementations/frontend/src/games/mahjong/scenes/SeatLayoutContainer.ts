@@ -332,9 +332,28 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
     const hand = profile.hand;
     const showFace = isHuman || revealHand;
+    const meldCount = profile.melds.length;
+    const maxConcealedTiles = 16 - meldCount * 3;
+
+    // Reserved Drawn Slot Outline (進牌/棄牌區虛線定位格)
+    const drawnSlotW = stepX;
+    const drawnSlotH = SeatLayoutContainer.TILE_H;
+    const drawnX = startX + maxHandTilesW + gapDrawn + stepX / 2;
+
+    const slotGraphics = this.scene.add.graphics();
+    // Faint translucent slot base
+    slotGraphics.fillStyle(0x020617, 0.35);
+    slotGraphics.fillRoundedRect(drawnX - drawnSlotW / 2, -drawnSlotH / 2, drawnSlotW, drawnSlotH, 4);
+    // Delicate dashed champagne gold border
+    slotGraphics.lineStyle(1.5, 0xd4af37, 0.65);
+    this.drawDashedRect(slotGraphics, drawnX - drawnSlotW / 2, -drawnSlotH / 2, drawnSlotW, drawnSlotH, 4, 3);
+    this.handGroup.add(slotGraphics);
 
     hand.forEach((tile, idx) => {
-      const x = startX + idx * stepX + stepX / 2;
+      // If hand has an extra tile (e.g. 14th tile after Chow/Pong claim when drawnTile is null),
+      // place the extra tile directly into the reserved drawn slot (drawnX)!
+      const isExtraTileInSlot = idx >= maxConcealedTiles && !profile.drawnTile;
+      const x = isExtraTileInSlot ? drawnX : startX + idx * stepX + stepX / 2;
       const textureKey = showFace ? `mahjong:tile_${tile.shortCode}` : 'mahjong:tile_back';
 
       const sprite = this.scene.add.sprite(x, 0, textureKey);
@@ -367,20 +386,6 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
       this.handGroup.add(sprite);
     });
-
-    // Reserved Drawn Slot Outline (進牌區虛線定位格)
-    const drawnSlotW = stepX;
-    const drawnSlotH = SeatLayoutContainer.TILE_H;
-    const drawnX = startX + maxHandTilesW + gapDrawn + stepX / 2;
-
-    const slotGraphics = this.scene.add.graphics();
-    // Faint translucent slot base
-    slotGraphics.fillStyle(0x020617, 0.35);
-    slotGraphics.fillRoundedRect(drawnX - drawnSlotW / 2, -drawnSlotH / 2, drawnSlotW, drawnSlotH, 4);
-    // Delicate dashed champagne gold border
-    slotGraphics.lineStyle(1.5, 0xd4af37, 0.65);
-    this.drawDashedRect(slotGraphics, drawnX - drawnSlotW / 2, -drawnSlotH / 2, drawnSlotW, drawnSlotH, 4, 3);
-    this.handGroup.add(slotGraphics);
 
     // 17th Drawn tile (rendered into the reserved slot on the right with gap)
     if (profile.drawnTile) {
