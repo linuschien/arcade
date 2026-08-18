@@ -382,7 +382,14 @@ export class MainGameScene extends Phaser.Scene {
         this.updateSmartTing();
         this.updateTileWalls();
 
-        // Audio Gating: wait until active voice announcement (補花 / 碰 / 槓) completes before proceeding!
+        // 1. 摸到花要有時間顯示花 (Display drawn flower tile before replacing)
+        const p = this.gameState.players[seat];
+        if (p.drawnTile && p.drawnTile.isFlower) {
+          this.handleInTurnFlowerSequence(seat);
+          return;
+        }
+
+        // 2. Audio Gating: wait until active voice announcement (補花 / 碰 / 槓) completes before proceeding!
         MahjongAudioService.waitForVoiceComplete().then(() => {
           if (seat === 0) {
             this.checkHumanSelfActions();
@@ -625,6 +632,62 @@ export class MainGameScene extends Phaser.Scene {
     // Proceed to multi-round flower replacement after sorting
     this.time.delayedCall(700, () => {
       this.gameState.startFlowerReplacement();
+    });
+  }
+
+  /**
+   * In-turn step-by-step visual flower replacement sequence:
+   * 1. 摸到花要有時間顯示花 (shown in drawn slot for 550ms)
+   * 2. 然後置放到花槽後播放音效補花 (moves flower to rack & plays "補花")
+   * 3. 播放完才顯示補的牌 (waits for voice complete, then displays replacement in drawn slot)
+   * 4. 如果又補到花就回到第 1 步 (recursive loop until non-flower drawn)
+   */
+  private handleInTurnFlowerSequence(seat: PlayerSeat): void {
+    const p = this.gameState.players[seat];
+    if (!p.drawnTile || !p.drawnTile.isFlower) return;
+
+    // Step 1: Flower is displayed in the drawn tile slot (refresh UI so player sees it)
+    this.refreshAllSeats();
+    this.updateCompass();
+
+    this.time.delayedCall(550, () => {
+      // Step 2: Move flower to flower rack & trigger "補花" voice + chime
+      const rep = this.gameState.replaceDrawnFlower(seat);
+      this.refreshAllSeats();
+      this.updateCompass();
+      this.updateTileWalls();
+
+      // Step 3: Wait for "補花" voice to completely finish, then reveal replacement tile!
+      MahjongAudioService.waitForVoiceComplete().then(() => {
+        this.refreshAllSeats();
+        this.updateCompass();
+        this.updateSmartTing();
+        this.updateTileWalls();
+
+        // Step 4: If replacement tile is ANOTHER flower, repeat from Step 1!
+        if (rep && rep.isFlower) {
+          this.handleInTurnFlowerSequence(seat);
+        } else {
+          // Normal turn continuation with the valid replacement tile
+          if (seat === 0) {
+            this.checkHumanSelfActions();
+            const hasSelfAction = this.actionBarContainer.visible;
+            if (this.gameState.players[0].isAutoPlay && !hasSelfAction) {
+              this.time.delayedCall(400, () => {
+                if (this.gameState.currentTurnSeat === 0 && this.gameState.phase === 'PLAYER_TURN') {
+                  this.gameState.stepAITurn(0);
+                }
+              });
+            }
+          } else {
+            this.time.delayedCall(600, () => {
+              if (this.gameState.currentTurnSeat === seat && this.gameState.phase === 'PLAYER_TURN') {
+                this.gameState.stepAITurn(seat);
+              }
+            });
+          }
+        }
+      });
     });
   }
 

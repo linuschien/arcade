@@ -386,21 +386,23 @@ export class MahjongGameState {
 
       player.drawnTile = drawn;
 
-      // Auto flower replacement on draw (handle multiple consecutive flower draws)
-      while (player.drawnTile && player.drawnTile.isFlower) {
-        const flower = player.drawnTile;
-        player.flowers.push(flower);
-        if (player.flowers.length === 8) {
-          this.settleFlowerWin(seat);
-          return;
+      // In headless unit tests (autoStepAI = true), replace flowers synchronously
+      if (this.autoStepAI) {
+        while (player.drawnTile && player.drawnTile.isFlower) {
+          const flower = player.drawnTile;
+          player.flowers.push(flower);
+          if (player.flowers.length === 8) {
+            this.settleFlowerWin(seat);
+            return;
+          }
+          const rep = this.deck.drawTail();
+          player.drawnTile = rep;
+          this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, flower, rep!));
         }
-        const rep = this.deck.drawTail();
-        player.drawnTile = rep;
-        this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, flower, rep!));
       }
     }
 
-    // Always emit onTurnStart for both drawn turns and non-drawn turns (e.g. dealer Turn 1 or after Chow)
+    // Always emit onTurnStart for both drawn turns and non-drawn turns
     this.listeners.forEach((l) => l.onTurnStart?.(seat, player.drawnTile));
 
     // If human is in Auto-Draw Ting mode (託管摸打)
@@ -413,6 +415,28 @@ export class MahjongGameState {
     if (!player.isHuman && this.autoStepAI) {
       this.executeAITurn(seat);
     }
+  }
+
+  /**
+   * Step-by-step visual flower replacement: moves drawn flower to rack and draws replacement from tail.
+   */
+  public replaceDrawnFlower(seat: PlayerSeat): Tile | null {
+    const player = this.players[seat];
+    if (!player.drawnTile || !player.drawnTile.isFlower) return null;
+
+    const flower = player.drawnTile;
+    player.flowers.push(flower);
+    player.drawnTile = null;
+
+    if (player.flowers.length === 8) {
+      this.settleFlowerWin(seat);
+      return null;
+    }
+
+    const rep = this.deck.drawTail();
+    player.drawnTile = rep;
+    this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, flower, rep!));
+    return rep;
   }
 
   public stepAITurn(seat?: PlayerSeat): void {
@@ -813,17 +837,19 @@ export class MahjongGameState {
     const rep = this.deck.drawTail();
     p.drawnTile = rep;
 
-    // Auto flower replacement on tail draw
-    while (p.drawnTile && p.drawnTile.isFlower) {
-      const flower = p.drawnTile;
-      p.flowers.push(flower);
-      if (p.flowers.length === 8) {
-        this.settleFlowerWin(seat);
-        return;
+    // In headless unit tests (autoStepAI = true), replace flowers synchronously
+    if (this.autoStepAI) {
+      while (p.drawnTile && p.drawnTile.isFlower) {
+        const flower = p.drawnTile;
+        p.flowers.push(flower);
+        if (p.flowers.length === 8) {
+          this.settleFlowerWin(seat);
+          return;
+        }
+        const flowerRep = this.deck.drawTail();
+        p.drawnTile = flowerRep;
+        this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, flower, flowerRep!));
       }
-      const flowerRep = this.deck.drawTail();
-      p.drawnTile = flowerRep;
-      this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, flower, flowerRep!));
     }
 
     this.listeners.forEach((l) => l.onTurnStart?.(seat, p.drawnTile));
