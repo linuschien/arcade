@@ -120,25 +120,25 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Displays the 3 dice above Banker's Flower Rack without overlapping (moved to Y = -72).
+   * Displays the 3 dice to the RIGHT of the Banker's Flower Rack (PRD 5.2).
    */
   public showBankerDice(d: number[] | null): void {
     this.bankerDiceGroup.removeAll(true);
     if (!d || d.length < 3) return;
 
-    const diceStartX = 340;
-    const diceStartY = -72;
+    const diceStartX = 260;
+    const diceStartY = -85;
 
     const bg = this.scene.add.graphics();
     bg.fillStyle(0x020617, 0.92);
-    bg.fillRoundedRect(diceStartX - 5, diceStartY - 5, 96, 28, 6);
+    bg.fillRoundedRect(diceStartX - 5, diceStartY - 14, 86, 28, 6);
     bg.lineStyle(1, 0xd4af37, 0.9);
-    bg.strokeRoundedRect(diceStartX - 5, diceStartY - 5, 96, 28, 6);
+    bg.strokeRoundedRect(diceStartX - 5, diceStartY - 14, 86, 28, 6);
     this.bankerDiceGroup.add(bg);
 
     for (let i = 0; i < 3; i++) {
-      const sprite = this.scene.add.sprite(diceStartX + 12 + i * 26, diceStartY + 9, `mahjong:dice_${d[i]}`);
-      sprite.setDisplaySize(20, 20);
+      const sprite = this.scene.add.sprite(diceStartX + 10 + i * 24, diceStartY, `mahjong:dice_${d[i]}`);
+      sprite.setDisplaySize(18, 18);
       this.bankerDiceGroup.add(sprite);
     }
   }
@@ -158,13 +158,13 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 4x2 Flower Rack at player's physical RIGHT arm.
+   * 4x2 Flower Rack situated to the RIGHT of Discard River.
    */
   private renderFlowerRack(flowers: Tile[], wind?: string): void {
     this.flowerGroup.removeAll(true);
 
-    const cellW = 28;
-    const cellH = 38;
+    const cellW = 24;
+    const cellH = 34;
 
     const slotKeys = [
       'spring', 'summer', 'autumn', 'winter',
@@ -180,14 +180,14 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     };
     const playerPositives = wind ? (positiveIndices[wind] || []) : [];
 
-    const startX = 340;
-    const startY = 0;
+    const startX = 150;
+    const startY = -104;
 
     for (let r = 0; r < 2; r++) {
       for (let c = 0; c < 4; c++) {
         const idx = r * 4 + c;
         const x = startX + c * (cellW + 2);
-        const y = startY + (r - 0.5) * (cellH + 2);
+        const y = startY + r * (cellH + 2);
 
         const slotCode = slotKeys[idx];
         const hasFlower = flowers.some((f) => f.shortCode === slotCode);
@@ -377,18 +377,31 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 9x2 Compact Discard River in local coordinate frame (PRD 5.2 / AC4).
+   * 9x2 Compact Discard River with pre-rendered placeholder cells (PRD 5.2 / AC4).
    */
   private renderDiscards(discards: Tile[], _isLastDiscardSeat: boolean = false): void {
     this.riverGroup.removeAll(true);
 
     const cols = 9;
-    const dw = 30;
-    const dh = 40;
+    const dw = 28;
+    const dh = 38;
     const riverStartX = -(cols * (dw + 2)) / 2 + (dw / 2);
     const riverStartY = -120;
 
+    // 1. Draw 18 placeholder grid cells (like Flower Rack)
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = riverStartX + c * (dw + 2);
+        const y = riverStartY + r * (dh + 2);
+        const cell = this.scene.add.sprite(x, y, 'mahjong:flower_cell');
+        cell.setDisplaySize(dw, dh);
+        this.riverGroup.add(cell);
+      }
+    }
+
+    // 2. Render actual discarded tiles on top of cells
     discards.forEach((tile, idx) => {
+      if (idx >= 18) return;
       const col = idx % cols;
       const row = Math.floor(idx / cols);
 
@@ -397,6 +410,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
       const sprite = this.scene.add.sprite(x, y, `mahjong:tile_${tile.shortCode}`);
       sprite.setDisplaySize(dw, dh);
+      sprite.setData('isDiscardTile', true);
       sprite.setData('shortCode', tile.shortCode);
 
       this.riverGroup.add(sprite);
@@ -409,10 +423,12 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   public highlightMatchingDiscards(targetCode: string | null): void {
     this.riverGroup.each((child: Phaser.GameObjects.GameObject) => {
       const sprite = child as Phaser.GameObjects.Sprite;
-      if (targetCode && sprite.getData('shortCode') === targetCode) {
-        sprite.setTint(0xfacc15);
-      } else {
-        sprite.clearTint();
+      if (sprite.getData && sprite.getData('isDiscardTile')) {
+        if (targetCode && sprite.getData('shortCode') === targetCode) {
+          sprite.setTint(0xfacc15);
+        } else {
+          sprite.clearTint();
+        }
       }
     });
   }
@@ -422,14 +438,13 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
    */
   public getLatestDiscardWorldPosition(): { x: number; y: number } | null {
     if (!this.riverGroup) return null;
-    const count = this.riverGroup.length ?? (this.riverGroup as any).list?.length ?? 0;
-    if (count === 0) return null;
+    const children = (this.riverGroup as any).list || [];
+    const discardTiles = children.filter((c: any) => c.getData && c.getData('isDiscardTile'));
+    if (discardTiles.length === 0) return null;
 
-    const lastSprite = typeof (this.riverGroup as any).getAt === 'function'
-      ? (this.riverGroup as any).getAt(count - 1)
-      : (this.riverGroup as any).list?.[count - 1];
-
+    const lastSprite = discardTiles[discardTiles.length - 1];
     if (!lastSprite) return null;
+
     const matrix = typeof this.getWorldTransformMatrix === 'function'
       ? this.getWorldTransformMatrix()
       : null;
