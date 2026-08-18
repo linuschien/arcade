@@ -123,21 +123,18 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     this.dealerBadge.setVisible(profile.isDealer);
   }
 
-  /**
-   * Renders hand, melds, flowers, and discards.
-   */
-  public renderPlayerState(profile: PlayerProfile, isHuman: boolean): void {
+  public renderPlayerState(profile: PlayerProfile, isHuman: boolean, isLastDiscardSeat: boolean = false): void {
     this.updatePlayerInfo(profile);
-    this.renderFlowerRack(profile.flowers);
+    this.renderFlowerRack(profile.flowers, profile.wind);
     this.renderMelds(profile.melds, isHuman);
     this.renderHand(profile, isHuman);
-    this.renderDiscards(profile.discards);
+    this.renderDiscards(profile.discards, isLastDiscardSeat);
   }
 
   /**
    * 4x2 Flower Rack at player's physical RIGHT arm.
    */
-  private renderFlowerRack(flowers: Tile[]): void {
+  private renderFlowerRack(flowers: Tile[], wind?: string): void {
     this.flowerGroup.removeAll(true);
 
     const cellW = SeatLayoutContainer.TILE_W * 0.65;
@@ -148,23 +145,28 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       'plum', 'orchid', 'bamboo_f', 'chrysanthemum',
     ];
 
+    // Positive flower indices matching player's current seat wind per PRD 4.3 & 6.3
+    const positiveIndices: Record<string, number[]> = {
+      EAST: [0, 4], // 春1, 梅1
+      SOUTH: [1, 5], // 夏2, 蘭2
+      WEST: [2, 6], // 秋3, 竹3
+      NORTH: [3, 7], // 冬4, 菊4
+    };
+    const playerPositives = wind ? (positiveIndices[wind] || []) : [];
+
     let startX = 340;
     let startY = 0;
 
     if (this.seat === 0) {
-      // Bottom Human: Physical RIGHT = Screen Bottom-Right
       startX = 340;
       startY = 0;
     } else if (this.seat === 1) {
-      // Right AI: Physical RIGHT = Screen Top-Right
       startX = 200;
       startY = 0;
     } else if (this.seat === 2) {
-      // Top AI: Physical RIGHT = Screen Top-Left
       startX = 340;
       startY = 0;
     } else if (this.seat === 3) {
-      // Left AI: Physical RIGHT = Screen Bottom-Left
       startX = 200;
       startY = 0;
     }
@@ -177,10 +179,15 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
         const slotCode = slotKeys[idx];
         const hasFlower = flowers.some((f) => f.shortCode === slotCode);
+        const isPositive = playerPositives.includes(idx);
 
         if (hasFlower) {
           const sprite = this.scene.add.sprite(x, y, `mahjong:tile_${slotCode}`);
           sprite.setDisplaySize(cellW, cellH);
+          // Highlight positive flowers with golden glow per PRD 6.3
+          if (isPositive) {
+            sprite.setTint(0xffe082);
+          }
           this.flowerGroup.add(sprite);
         } else {
           const cell = this.scene.add.sprite(x, y, 'mahjong:flower_cell');
@@ -192,7 +199,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Modular 3-tile width melds positioned strictly between hand and flower rack.
+   * Modular 3-tile width melds with positional encoding (PRD 6.2).
    */
   private renderMelds(melds: Meld[], isHuman: boolean): void {
     this.meldGroup.removeAll(true);
@@ -208,6 +215,18 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       const container = this.scene.add.container(meldX, 0);
 
       const tileStep = isHuman ? SeatLayoutContainer.TILE_W : 20;
+
+      // Determine sideways tile position based on sourceSeat relative to current seat (PRD 6.2)
+      // Left (上家): relative 3 -> index 0
+      // Opposite (對家): relative 2 -> index 1
+      // Right (下家): relative 1 -> index 2
+      let sidewaysIdx = 1;
+      if (meld.sourceSeat !== undefined) {
+        const rel = (meld.sourceSeat - this.seat + 4) % 4;
+        if (rel === 3) sidewaysIdx = 0; // 上家
+        else if (rel === 2) sidewaysIdx = 1; // 對家
+        else if (rel === 1) sidewaysIdx = 2; // 下家
+      }
 
       if (meld.type === 'CONCEALED_KONG') {
         for (let i = 0; i < 3; i++) {
@@ -228,12 +247,30 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
           const x = (i - 1) * tileStep;
           const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
           if (!isHuman) sprite.setDisplaySize(18, 24);
+          if (i === sidewaysIdx) {
+            sprite.setAngle(90);
+          }
           container.add(sprite);
         }
-        const topSprite = this.scene.add.sprite(0, -12, `mahjong:tile_${meld.tiles[3].shortCode}`);
+        // 4th tile vertically stacked above the sideways tile (PRD 6.2)
+        const topX = (sidewaysIdx - 1) * tileStep;
+        const topSprite = this.scene.add.sprite(topX, -12, `mahjong:tile_${meld.tiles[3].shortCode}`);
         if (!isHuman) topSprite.setDisplaySize(18, 24);
+        topSprite.setAngle(90);
         container.add(topSprite);
+      } else if (meld.type === 'PONG') {
+        for (let i = 0; i < 3; i++) {
+          const x = (i - 1) * tileStep;
+          const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
+          if (!isHuman) sprite.setDisplaySize(18, 24);
+          // Sideways orientation based on source seat (PRD 6.2)
+          if (i === sidewaysIdx) {
+            sprite.setAngle(90);
+          }
+          container.add(sprite);
+        }
       } else {
+        // CHOW: 3 tiles
         for (let i = 0; i < 3; i++) {
           const x = (i - 1) * tileStep;
           const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
@@ -346,7 +383,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   /**
    * 6x3 Discard River in local coordinate frame.
    */
-  private renderDiscards(discards: Tile[]): void {
+  private renderDiscards(discards: Tile[], isLastDiscardSeat: boolean = false): void {
     this.riverGroup.removeAll(true);
 
     const riverStartX = -90;
@@ -364,6 +401,11 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       const sprite = this.scene.add.sprite(x, y, `mahjong:tile_${tile.shortCode}`);
       sprite.setDisplaySize(dw, dh);
       sprite.setData('shortCode', tile.shortCode);
+
+      // Latest Discard Focus indicator per PRD 5.2
+      if (isLastDiscardSeat && idx === discards.length - 1) {
+        sprite.setTint(0xffea00);
+      }
 
       this.riverGroup.add(sprite);
     });

@@ -589,9 +589,10 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private refreshAllSeats(): void {
+    const lastSeat = this.gameState.lastDiscard?.fromSeat;
     for (let i = 0; i < 4; i++) {
       const p = this.gameState.players[i];
-      this.seatContainers[i].renderPlayerState(p, p.isHuman);
+      this.seatContainers[i].renderPlayerState(p, p.isHuman, lastSeat === i);
     }
   }
 
@@ -628,8 +629,9 @@ export class MainGameScene extends Phaser.Scene {
     const kongOptions = MahjongHandEvaluator.getSelfKongOptions(fullHand, p1.melds);
     const allVisible = this.gameState.getAllVisibleTiles();
     const tingInfo = MahjongHandEvaluator.evaluateTing(p1.hand, p1.melds, allVisible);
+    const canTing = tingInfo.winningTiles.length > 0 && !p1.isTing && !p1.isAutoPlay;
 
-    if (canHu || kongOptions.length > 0) {
+    if (canHu || kongOptions.length > 0 || canTing) {
       this.showActionBar({
         canHu,
         canKong: kongOptions.length > 0,
@@ -641,7 +643,7 @@ export class MainGameScene extends Phaser.Scene {
         canPong: false,
         canChow: false,
         chowOptions: [],
-        canTing: tingInfo.winningTiles.length > 0,
+        canTing,
         canPass: true,
       });
     } else {
@@ -748,6 +750,23 @@ export class MainGameScene extends Phaser.Scene {
             this.gameState.humanRespondAction('CHOW', actions.chowOptions[0]);
           } else {
             this.showChowSubMenu(actions.chowOptions);
+          }
+        },
+      });
+    }
+
+    if (actions.canTing && !this.gameState.players[0].isAutoPlay) {
+      buttons.push({
+        key: 'action_btn_ting',
+        label: '聽',
+        action: () => {
+          this.actionBarContainer.setVisible(false);
+          MahjongAudioService.playVoiceTing();
+          this.gameState.players[0].isAutoPlay = true;
+          this.gameState.players[0].isTing = true;
+          this.updateSmartTing();
+          if (this.gameState.phase === 'PLAYER_TURN' && this.gameState.currentTurnSeat === 0) {
+            this.gameState.stepAITurn(0);
           }
         },
       });
