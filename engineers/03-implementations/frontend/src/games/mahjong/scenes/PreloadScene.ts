@@ -164,47 +164,66 @@ export class PreloadScene extends Phaser.Scene {
       ctx.fill();
     };
 
-    // Reusable Helper: 1p Giant Multi-Petal Sunburst Rosette (大餅)
+    // Reusable Helper: 1p Giant Multi-Petal Sunburst Rosette with Outer Enclosing Ring (大餅)
     const drawBigDot = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
-      // Outer 8 rosette petals (Jade Green)
+      // 1. Outermost solid enclosing ring (翡翠綠大外圈)
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = '#15803d'; // Jade Green outer ring
+      ctx.fill();
+
+      // 2. Outer ring white decorative groove
+      ctx.beginPath();
+      ctx.arc(x, y, r - 1.2, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+
+      // 3. Inner base inside the outer ring
+      ctx.beginPath();
+      ctx.arc(x, y, r - 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#fdfbf7'; // Ivory white inner face
+      ctx.fill();
+
+      // 4. 8 Petals nested inside the outer ring (翡翠綠內嵌花瓣)
       const petals = 8;
       for (let i = 0; i < petals; i++) {
         const angle = (i * Math.PI * 2) / petals;
-        const px = x + Math.cos(angle) * (r * 0.76);
-        const py = y + Math.sin(angle) * (r * 0.76);
+        const px = x + Math.cos(angle) * (r * 0.58);
+        const py = y + Math.sin(angle) * (r * 0.58);
         ctx.beginPath();
-        ctx.arc(px, py, r * 0.3, 0, Math.PI * 2);
+        ctx.arc(px, py, r * 0.26, 0, Math.PI * 2);
         ctx.fillStyle = '#15803d';
         ctx.fill();
       }
 
-      // Red main circle
+      // 5. Red concentric ring
       ctx.beginPath();
-      ctx.arc(x, y, r * 0.76, 0, Math.PI * 2);
+      ctx.arc(x, y, r * 0.60, 0, Math.PI * 2);
       ctx.fillStyle = '#dc2626';
       ctx.fill();
 
-      // White ring
+      // 6. White groove
       ctx.beginPath();
-      ctx.arc(x, y, r * 0.52, 0, Math.PI * 2);
+      ctx.arc(x, y, r * 0.40, 0, Math.PI * 2);
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = 1.0;
       ctx.stroke();
 
-      // Sapphire Blue core
+      // 7. Sapphire Blue core
       ctx.beginPath();
-      ctx.arc(x, y, r * 0.38, 0, Math.PI * 2);
+      ctx.arc(x, y, r * 0.28, 0, Math.PI * 2);
       ctx.fillStyle = '#0284c7';
       ctx.fill();
 
-      // Golden sunburst center dot
+      // 8. Golden sunburst center dot
       ctx.beginPath();
-      ctx.arc(x, y, r * 0.16, 0, Math.PI * 2);
+      ctx.arc(x, y, r * 0.12, 0, Math.PI * 2);
       ctx.fillStyle = '#facc15';
       ctx.fill();
     };
 
-    // Reusable Helper: Bamboo Stick Joint (竹節)
+    // Reusable Helper: Bamboo Stick Joint (竹節，支援角度旋轉)
     const drawBambooStick = (
       ctx: CanvasRenderingContext2D,
       x: number,
@@ -212,32 +231,41 @@ export class PreloadScene extends Phaser.Scene {
       w: number,
       h: number,
       color: string,
-      nodeColor: string = '#ffffff'
+      nodeColor: string = '#ffffff',
+      angle: number = 0
     ) => {
+      ctx.save();
+      ctx.translate(x, y);
+      if (angle !== 0) {
+        ctx.rotate(angle);
+      }
+
       const halfW = w / 2;
       const halfH = h / 2;
 
       // 1. Bamboo stick main shaft
       ctx.fillStyle = color;
-      ctx.fillRect(x - halfW + 0.5, y - halfH + 1, w - 1, h - 2);
+      ctx.fillRect(-halfW + 0.5, -halfH + 1, w - 1, h - 2);
 
       // 2. Top & Bottom flared nodes (rounded knobs)
       ctx.beginPath();
-      ctx.arc(x, y - halfH + 1.2, halfW * 0.9, 0, Math.PI * 2);
+      ctx.arc(0, -halfH + 1.2, halfW * 0.9, 0, Math.PI * 2);
       ctx.fill();
       ctx.beginPath();
-      ctx.arc(x, y + halfH - 1.2, halfW * 0.9, 0, Math.PI * 2);
+      ctx.arc(0, halfH - 1.2, halfW * 0.9, 0, Math.PI * 2);
       ctx.fill();
 
       // 3. Center joint band (white with accent dot)
       ctx.fillStyle = nodeColor;
-      ctx.fillRect(x - halfW, y - 0.75, w, 1.5);
+      ctx.fillRect(-halfW, -0.75, w, 1.5);
 
       // 4. Center accent dot
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(x, y, 0.75, 0, Math.PI * 2);
+      ctx.arc(0, 0, 0.75, 0, Math.PI * 2);
       ctx.fill();
+
+      ctx.restore();
     };
 
     // Reusable Helper: 1s Perched Sparrow / Bird (麻雀鳥)
@@ -344,7 +372,7 @@ export class PreloadScene extends Phaser.Scene {
     };
 
     // 4. Dots (1p ~ 9p) - Authentic Traditional Concentric Circles & Rosettes
-    // 1p (Big Dot / 大餅)
+    // 1p (Big Dot / 大餅 with outer enclosing green ring)
     createTileCanvas('mahjong:tile_1p', (ctx) => {
       drawBigDot(ctx, cx, cy, 14);
     });
@@ -379,23 +407,27 @@ export class PreloadScene extends Phaser.Scene {
       drawDot(ctx, cx + 7.5, cy + 10, 4.0, '#0284c7');
     });
 
-    // 6p (Top 2 Green, Bottom 4 Red)
+    // 6p (Top 2 Green, Bottom 4 Red with clear vertical separation)
     createTileCanvas('mahjong:tile_6p', (ctx) => {
-      drawDot(ctx, cx - 6.5, cy - 10, 4.0, '#15803d');
-      drawDot(ctx, cx + 6.5, cy - 10, 4.0, '#15803d');
-      drawDot(ctx, cx - 6.5, cy, 4.0, '#dc2626');
-      drawDot(ctx, cx + 6.5, cy, 4.0, '#dc2626');
-      drawDot(ctx, cx - 6.5, cy + 10, 4.0, '#dc2626');
-      drawDot(ctx, cx + 6.5, cy + 10, 4.0, '#dc2626');
+      // Top 2 Green (separated from bottom)
+      drawDot(ctx, cx - 6.5, cy - 12, 4.0, '#15803d');
+      drawDot(ctx, cx + 6.5, cy - 12, 4.0, '#15803d');
+
+      // Bottom 4 Red
+      drawDot(ctx, cx - 6.5, cy + 2, 4.0, '#dc2626');
+      drawDot(ctx, cx + 6.5, cy + 2, 4.0, '#dc2626');
+      drawDot(ctx, cx - 6.5, cy + 12, 4.0, '#dc2626');
+      drawDot(ctx, cx + 6.5, cy + 12, 4.0, '#dc2626');
     });
 
-    // 7p (Top 3 slanted + Bottom 4 square)
+    // 7p (Top 3 slanted ALL GREEN + Bottom 4 square RED)
     createTileCanvas('mahjong:tile_7p', (ctx) => {
-      // Top 3 slanted
+      // Top 3 slanted ALL GREEN
       drawDot(ctx, cx - 8, cy - 12, 3.6, '#15803d');
-      drawDot(ctx, cx, cy - 9, 3.6, '#dc2626');
+      drawDot(ctx, cx, cy - 9, 3.6, '#15803d');
       drawDot(ctx, cx + 8, cy - 6, 3.6, '#15803d');
-      // Bottom 4
+
+      // Bottom 4 RED
       drawDot(ctx, cx - 6.5, cy + 5, 3.8, '#dc2626');
       drawDot(ctx, cx + 6.5, cy + 5, 3.8, '#dc2626');
       drawDot(ctx, cx - 6.5, cy + 13.5, 3.8, '#dc2626');
@@ -411,13 +443,20 @@ export class PreloadScene extends Phaser.Scene {
       }
     });
 
-    // 9p (3x3 grid: Left Blue, Middle Red, Right Green)
+    // 9p (3x3 grid: Top Row 3 Blue, Middle Row 3 Red, Bottom Row 3 Green)
     createTileCanvas('mahjong:tile_9p', (ctx) => {
-      const yOffsets = [-11, 0, 11];
-      for (const dy of yOffsets) {
-        drawDot(ctx, cx - 7.5, cy + dy, 3.7, '#0284c7');
-        drawDot(ctx, cx, cy + dy, 3.7, '#dc2626');
-        drawDot(ctx, cx + 7.5, cy + dy, 3.7, '#15803d');
+      const xOffsets = [-7.5, 0, 7.5];
+      // Row 1 (Top): Blue
+      for (const dx of xOffsets) {
+        drawDot(ctx, cx + dx, cy - 11, 3.7, '#0284c7');
+      }
+      // Row 2 (Middle): Red
+      for (const dx of xOffsets) {
+        drawDot(ctx, cx + dx, cy, 3.7, '#dc2626');
+      }
+      // Row 3 (Bottom): Green
+      for (const dx of xOffsets) {
+        drawDot(ctx, cx + dx, cy + 11, 3.7, '#15803d');
       }
     });
 
@@ -457,42 +496,49 @@ export class PreloadScene extends Phaser.Scene {
       drawBambooStick(ctx, cx + 7.5, cy + 10, 4.2, 11.5, '#15803d');
     });
 
-    // 6s (Top 3 Green, Bottom 3 Red)
+    // 6s (All 6 Bamboo Sticks are Green)
     createTileCanvas('mahjong:tile_6s', (ctx) => {
+      // Top 3 Green
       drawBambooStick(ctx, cx - 7.5, cy - 9, 4.0, 12, '#15803d');
       drawBambooStick(ctx, cx, cy - 9, 4.0, 12, '#15803d');
       drawBambooStick(ctx, cx + 7.5, cy - 9, 4.0, 12, '#15803d');
 
-      drawBambooStick(ctx, cx - 7.5, cy + 9, 4.0, 12, '#dc2626');
-      drawBambooStick(ctx, cx, cy + 9, 4.0, 12, '#dc2626');
-      drawBambooStick(ctx, cx + 7.5, cy + 9, 4.0, 12, '#dc2626');
+      // Bottom 3 Green
+      drawBambooStick(ctx, cx - 7.5, cy + 9, 4.0, 12, '#15803d');
+      drawBambooStick(ctx, cx, cy + 9, 4.0, 12, '#15803d');
+      drawBambooStick(ctx, cx + 7.5, cy + 9, 4.0, 12, '#15803d');
     });
 
-    // 7s (Top 1 Red, Middle 2 Green, Bottom 4 Green)
+    // 7s (1 / 3 / 3 Stacking: Top 1 Red, Middle 3 Green, Bottom 3 Green)
     createTileCanvas('mahjong:tile_7s', (ctx) => {
-      drawBambooStick(ctx, cx, cy - 12, 4.2, 10, '#dc2626');
-      drawBambooStick(ctx, cx - 6.5, cy - 1, 4.0, 9.5, '#15803d');
-      drawBambooStick(ctx, cx + 6.5, cy - 1, 4.0, 9.5, '#15803d');
+      // Top 1 Red
+      drawBambooStick(ctx, cx, cy - 13, 4.0, 8.5, '#dc2626');
 
-      drawBambooStick(ctx, cx - 8.5, cy + 11, 3.4, 9.5, '#15803d');
-      drawBambooStick(ctx, cx - 2.8, cy + 11, 3.4, 9.5, '#15803d');
-      drawBambooStick(ctx, cx + 2.8, cy + 11, 3.4, 9.5, '#15803d');
-      drawBambooStick(ctx, cx + 8.5, cy + 11, 3.4, 9.5, '#15803d');
+      // Middle 3 Green
+      drawBambooStick(ctx, cx - 7.5, cy, 3.8, 8.5, '#15803d');
+      drawBambooStick(ctx, cx, cy, 3.8, 8.5, '#15803d');
+      drawBambooStick(ctx, cx + 7.5, cy, 3.8, 8.5, '#15803d');
+
+      // Bottom 3 Green
+      drawBambooStick(ctx, cx - 7.5, cy + 12, 3.8, 8.5, '#15803d');
+      drawBambooStick(ctx, cx, cy + 12, 3.8, 8.5, '#15803d');
+      drawBambooStick(ctx, cx + 7.5, cy + 12, 3.8, 8.5, '#15803d');
     });
 
-    // 8s (8 sticks arranged in M & W inverted-V patterns)
+    // 8s (Inverted-M ^ ^ on top, M v v on bottom, All Green)
     createTileCanvas('mahjong:tile_8s', (ctx) => {
-      // Top 4 Green inverted V
-      drawBambooStick(ctx, cx - 8.5, cy - 11, 3.8, 9, '#15803d');
-      drawBambooStick(ctx, cx - 3.0, cy - 8, 3.8, 9, '#15803d');
-      drawBambooStick(ctx, cx + 3.0, cy - 8, 3.8, 9, '#15803d');
-      drawBambooStick(ctx, cx + 8.5, cy - 11, 3.8, 9, '#15803d');
+      const rot = 0.35; // ~20 degrees
+      // Top 4 Green (Inverted-M / ^ ^)
+      drawBambooStick(ctx, cx - 9.0, cy - 8, 3.8, 9.5, '#15803d', '#ffffff', rot);
+      drawBambooStick(ctx, cx - 3.5, cy - 8, 3.8, 9.5, '#15803d', '#ffffff', -rot);
+      drawBambooStick(ctx, cx + 3.5, cy - 8, 3.8, 9.5, '#15803d', '#ffffff', rot);
+      drawBambooStick(ctx, cx + 9.0, cy - 8, 3.8, 9.5, '#15803d', '#ffffff', -rot);
 
-      // Bottom 4 Blue V
-      drawBambooStick(ctx, cx - 8.5, cy + 11, 3.8, 9, '#0284c7');
-      drawBambooStick(ctx, cx - 3.0, cy + 8, 3.8, 9, '#0284c7');
-      drawBambooStick(ctx, cx + 3.0, cy + 8, 3.8, 9, '#0284c7');
-      drawBambooStick(ctx, cx + 8.5, cy + 11, 3.8, 9, '#0284c7');
+      // Bottom 4 Green (M / v v)
+      drawBambooStick(ctx, cx - 9.0, cy + 8, 3.8, 9.5, '#15803d', '#ffffff', -rot);
+      drawBambooStick(ctx, cx - 3.5, cy + 8, 3.8, 9.5, '#15803d', '#ffffff', rot);
+      drawBambooStick(ctx, cx + 3.5, cy + 8, 3.8, 9.5, '#15803d', '#ffffff', -rot);
+      drawBambooStick(ctx, cx + 9.0, cy + 8, 3.8, 9.5, '#15803d', '#ffffff', rot);
     });
 
     // 9s (3x3 grid: Left Green, Middle Red, Right Blue)
