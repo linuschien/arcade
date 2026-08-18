@@ -159,6 +159,8 @@ class MahjongAudioServiceImpl {
     SoundEngine.playSequence(sweep);
   }
 
+  private lastFlowerSpeechTime: number = 0;
+
   /**
    * SFX_FLOWER_REPLACE (Chinese voice "補花" + crisp bell chime for flower replacement).
    */
@@ -168,7 +170,12 @@ class MahjongAudioServiceImpl {
       { freq: 1318.51, delayMs: 80, durationSeconds: 0.25, type: 'sine' as OscillatorType, vol: 0.16 }, // E6
     ];
     SoundEngine.playSequence(chime);
-    this.speakOrTone('補花', [880, 1318.51]);
+
+    const now = Date.now();
+    if (now - this.lastFlowerSpeechTime > 800) {
+      this.lastFlowerSpeechTime = now;
+      this.speakOrTone('補花', [880, 1318.51]);
+    }
   }
 
   /**

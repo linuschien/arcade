@@ -393,8 +393,9 @@ export class MainGameScene extends Phaser.Scene {
             });
           }
         } else {
-          // AI turn: schedule async turn step with 600ms thinking delay
-          this.time.delayedCall(600, () => {
+          // AI turn: schedule async turn step with 600ms delay (1200ms on first turn to let opening flower replace announcements breathe)
+          const aiDelay = this.gameState.isFirstTurnCycle ? 1200 : 600;
+          this.time.delayedCall(aiDelay, () => {
             if (this.gameState.currentTurnSeat === seat && this.gameState.phase === 'PLAYER_TURN') {
               this.gameState.stepAITurn(seat);
             }
