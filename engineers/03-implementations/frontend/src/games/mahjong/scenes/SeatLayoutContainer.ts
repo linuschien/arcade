@@ -197,39 +197,47 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   private renderMelds(melds: Meld[], isHuman: boolean): void {
     this.meldGroup.removeAll(true);
 
-    const meldW = SeatLayoutContainer.TILE_W * 3;
+    const meldW = isHuman ? SeatLayoutContainer.TILE_W * 3 : 20 * 3;
+    const meldBlockW = meldW + (isHuman ? 8 : 6);
+    const meldRightEdge = isHuman ? 330 : 180;
+    const totalMeldsW = melds.length * meldBlockW;
+    const meldStartX = meldRightEdge - totalMeldsW;
 
     melds.forEach((meld, idx) => {
-      // Place melds towards the flower rack side
-      const meldX = isHuman
-        ? 150 + idx * (meldW + 6)
-        : 110 + idx * (meldW + 6);
+      const meldX = meldStartX + idx * meldBlockW + meldW / 2;
       const container = this.scene.add.container(meldX, 0);
+
+      const tileStep = isHuman ? SeatLayoutContainer.TILE_W : 20;
 
       if (meld.type === 'CONCEALED_KONG') {
         for (let i = 0; i < 3; i++) {
-          const x = (i - 1) * SeatLayoutContainer.TILE_W;
+          const x = (i - 1) * tileStep;
           // Human sees their own outer 2 face tiles; AI concealed kong is 100% face-down
           const tex = (isHuman && (i === 0 || i === 2))
             ? `mahjong:tile_${meld.tiles[0].shortCode}`
             : 'mahjong:tile_back';
           const sprite = this.scene.add.sprite(x, 0, tex);
+          if (!isHuman) sprite.setDisplaySize(18, 24);
           container.add(sprite);
         }
         const topSprite = this.scene.add.sprite(0, -12, 'mahjong:tile_back');
+        if (!isHuman) topSprite.setDisplaySize(18, 24);
         container.add(topSprite);
       } else if (meld.type === 'MELDED_KONG' || meld.type === 'ADDED_KONG') {
         for (let i = 0; i < 3; i++) {
-          const x = (i - 1) * SeatLayoutContainer.TILE_W;
+          const x = (i - 1) * tileStep;
           const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
+          if (!isHuman) sprite.setDisplaySize(18, 24);
           container.add(sprite);
         }
         const topSprite = this.scene.add.sprite(0, -12, `mahjong:tile_${meld.tiles[3].shortCode}`);
+        if (!isHuman) topSprite.setDisplaySize(18, 24);
         container.add(topSprite);
       } else {
         for (let i = 0; i < 3; i++) {
-          const x = (i - 1) * SeatLayoutContainer.TILE_W;
+          const x = (i - 1) * tileStep;
           const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
+          if (!isHuman) sprite.setDisplaySize(18, 24);
           container.add(sprite);
         }
       }
@@ -239,27 +247,30 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Hand tiles positioned in center before melds.
+   * Hand tiles with automatic leftward shift as melds expand on the right.
    */
   private renderHand(profile: PlayerProfile, isHuman: boolean): void {
     this.handGroup.removeAll(true);
 
     const meldCount = profile.melds.length;
-    const meldW = SeatLayoutContainer.TILE_W * 3 + 6;
+    const meldW = isHuman ? SeatLayoutContainer.TILE_W * 3 : 20 * 3;
+    const meldBlockW = meldW + (isHuman ? 8 : 6);
+    const meldRightEdge = isHuman ? 330 : 180;
+    const meldStartX = meldRightEdge - meldCount * meldBlockW;
 
     const hand = profile.hand;
-    const stepX = isHuman ? SeatLayoutContainer.TILE_W : 20;
+    const stepX = isHuman ? SeatLayoutContainer.TILE_W : 18;
     const totalHandW = hand.length * stepX;
-    // Hand shifts slightly to the left as melds expand on the right
-    const startX = isHuman
-      ? -totalHandW / 2 - (meldCount > 0 ? meldCount * 25 : 0)
-      : -totalHandW / 2;
+    // Hand right edge stays comfortably to the left of the melds
+    const handRightEdge = meldCount > 0 ? (meldStartX - 20) : (isHuman ? 260 : 150);
+    const startX = handRightEdge - totalHandW;
 
     hand.forEach((tile, idx) => {
-      const x = startX + idx * stepX;
+      const x = startX + idx * stepX + stepX / 2;
       const textureKey = isHuman ? `mahjong:tile_${tile.shortCode}` : 'mahjong:tile_back';
 
       const sprite = this.scene.add.sprite(x, 0, textureKey);
+      if (!isHuman) sprite.setDisplaySize(18, 24);
       sprite.setData('tileId', tile.id);
       sprite.setData('shortCode', tile.shortCode);
 
@@ -290,14 +301,15 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       this.handGroup.add(sprite);
     });
 
-    // 17th Drawn tile (placed on the far right with 12px gap per PRD 6.1)
+    // 17th Drawn tile (placed on the right of the hand with 12px gap per PRD 6.1)
     if (profile.drawnTile) {
-      const drawnX = startX + hand.length * stepX + 12;
+      const drawnX = startX + hand.length * stepX + 12 + (stepX / 2);
       const textureKey = isHuman
         ? `mahjong:tile_${profile.drawnTile.shortCode}`
         : 'mahjong:tile_back';
 
       const drawnSprite = this.scene.add.sprite(drawnX, 0, textureKey);
+      if (!isHuman) drawnSprite.setDisplaySize(18, 24);
       drawnSprite.setData('tileId', profile.drawnTile.id);
       drawnSprite.setData('shortCode', profile.drawnTile.shortCode);
 

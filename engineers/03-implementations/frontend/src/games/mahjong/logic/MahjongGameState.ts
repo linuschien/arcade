@@ -127,15 +127,15 @@ export class MahjongGameState {
    * 5. 抽到東風者為第一圈第一盤之起莊（dealerSeat）。
    */
   public startSeatingDraw(): void {
-    this.phase = 'SEATING_DRAW';
-    this.notifyPhase();
-
-    // 1. 擲 3 顆骰子決定抓位起抽順序
+    // 1. 擲 3 顆骰子決定抓位起抽順序 (隨機生成並優先寫入 state)
     const d1 = Math.floor(Math.random() * 6) + 1;
     const d2 = Math.floor(Math.random() * 6) + 1;
     const d3 = Math.floor(Math.random() * 6) + 1;
     this.diceResult = [d1, d2, d3];
     this.diceSum = d1 + d2 + d3;
+
+    this.phase = 'SEATING_DRAW';
+    this.notifyPhase();
 
     // 2. 蓋著洗勻四張風牌 (東、南、西、北)
     const windPool: SeatWind[] = ['EAST', 'SOUTH', 'WEST', 'NORTH'];
@@ -205,9 +205,6 @@ export class MahjongGameState {
    * Phase 2: 莊家擲骰開門與配牌 (Dice Roll & Dealing).
    */
   public startDealing(): void {
-    this.phase = 'DEALING';
-    this.notifyPhase();
-
     // Reset player round hands
     this.players.forEach((p) => {
       p.hand = [];
@@ -221,12 +218,15 @@ export class MahjongGameState {
       p.passPongCodesInTurn = new Set();
     });
 
-    // Dealer rolls 3 dice for wall breaking
+    // Dealer rolls 3 dice for wall breaking (隨機生成並優先寫入 state)
     const d1 = Math.floor(Math.random() * 6) + 1;
     const d2 = Math.floor(Math.random() * 6) + 1;
     const d3 = Math.floor(Math.random() * 6) + 1;
     this.diceResult = [d1, d2, d3];
     this.diceSum = d1 + d2 + d3;
+
+    this.phase = 'DEALING';
+    this.notifyPhase();
 
     this.deck.reset();
     this.deck.setupWallBreak(this.diceSum, this.dealerSeat);

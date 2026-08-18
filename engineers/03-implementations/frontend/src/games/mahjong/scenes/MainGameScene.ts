@@ -407,38 +407,36 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private handlePhaseChange(phase: GamePhase): void {
-    if (phase === 'SEATING_DRAW' || phase === 'DICE_ROLL') {
-      this.playDiceRollAnimation();
+    if (phase === 'SEATING_DRAW') {
+      this.playSeatingDiceAnimation();
+    } else if (phase === 'DEALING') {
+      this.playDealerWallBreakDiceAnimation();
     }
   }
 
-  private playDiceRollAnimation(): void {
+  /**
+   * 1. 抓風位擲骰動畫 (Seating Draw Dice Animation).
+   */
+  private playSeatingDiceAnimation(): void {
     MahjongAudioService.playDiceRoll();
     this.diceContainer.removeAll(true);
     this.diceContainer.setVisible(true);
 
-    const winds = ['東', '南', '西', '北'];
     const d = this.gameState.diceResult;
     const diceSum = d[0] + d[1] + d[2];
-    const breakSeat = (this.gameState.dealerSeat + (diceSum - 1)) % 4;
-    const breakWind = winds[breakSeat];
 
-    // Background badge for dice roll
     const bg = this.add.graphics();
-    bg.fillStyle(0x020617, 0.9);
-    bg.fillRoundedRect(-140, -45, 280, 90, 12);
+    bg.fillStyle(0x020617, 0.92);
+    bg.fillRoundedRect(-150, -45, 300, 90, 12);
     bg.lineStyle(1.5, 0xd4af37, 0.9);
-    bg.strokeRoundedRect(-140, -45, 280, 90, 12);
+    bg.strokeRoundedRect(-150, -45, 300, 90, 12);
     this.diceContainer.add(bg);
 
-    const diceSprites: Phaser.GameObjects.Sprite[] = [];
     for (let i = 0; i < 3; i++) {
       const sprite = this.add.sprite((i - 1) * 44, -10, `mahjong:dice_${d[i]}`);
       sprite.setDisplaySize(32, 32);
-      diceSprites.push(sprite);
       this.diceContainer.add(sprite);
 
-      // Rolling tumble tween
       if (this.tweens) {
         this.tweens.add({
           targets: sprite,
@@ -453,7 +451,7 @@ export class MainGameScene extends Phaser.Scene {
     const infoText = this.add.text(
       0,
       25,
-      `🎲 擲骰 ${d[0]}+${d[1]}+${d[2]}=${diceSum} 點 (${breakWind}風第${diceSum}墩開門)`,
+      `🎲 抓風位擲骰 ${d[0]}+${d[1]}+${d[2]}=${diceSum} 點 (決定風位起抽順序)`,
       {
         fontSize: '12px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
@@ -466,10 +464,68 @@ export class MainGameScene extends Phaser.Scene {
 
     this.time.delayedCall(1400, () => {
       this.diceContainer.setVisible(false);
-      if (this.gameState.phase === 'SEATING_DRAW') {
-        this.gameState.startDealing();
-        this.animateTileSort();
+      this.refreshAllSeats();
+      this.updateCompass();
+      this.gameState.startDealing();
+    });
+  }
+
+  /**
+   * 2. 莊家開門擲骰動畫 (Dealer Wall Break & Dealing Animation).
+   */
+  private playDealerWallBreakDiceAnimation(): void {
+    MahjongAudioService.playDiceRoll();
+    this.diceContainer.removeAll(true);
+    this.diceContainer.setVisible(true);
+
+    const winds = ['東', '南', '西', '北'];
+    const d = this.gameState.diceResult;
+    const diceSum = d[0] + d[1] + d[2];
+    const breakSeat = (this.gameState.dealerSeat + (diceSum - 1)) % 4;
+    const breakWind = winds[breakSeat];
+    const dealerName = this.gameState.players[this.gameState.dealerSeat].name;
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x020617, 0.92);
+    bg.fillRoundedRect(-155, -45, 310, 90, 12);
+    bg.lineStyle(1.5, 0xd4af37, 0.9);
+    bg.strokeRoundedRect(-155, -45, 310, 90, 12);
+    this.diceContainer.add(bg);
+
+    for (let i = 0; i < 3; i++) {
+      const sprite = this.add.sprite((i - 1) * 44, -10, `mahjong:dice_${d[i]}`);
+      sprite.setDisplaySize(32, 32);
+      this.diceContainer.add(sprite);
+
+      if (this.tweens) {
+        this.tweens.add({
+          targets: sprite,
+          angle: { from: -180, to: 180 },
+          scale: { from: 0.7, to: 1.0 },
+          duration: 600,
+          ease: 'Cubic.easeOut',
+        });
       }
+    }
+
+    const infoText = this.add.text(
+      0,
+      25,
+      `🎲 莊家${dealerName}開門 ${d[0]}+${d[1]}+${d[2]}=${diceSum} 點 (${breakWind}風第${diceSum}墩開門)`,
+      {
+        fontSize: '12px',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
+        color: '#facc15',
+        fontStyle: 'bold',
+      }
+    );
+    infoText.setOrigin(0.5);
+    this.diceContainer.add(infoText);
+
+    this.time.delayedCall(1400, () => {
+      this.diceContainer.setVisible(false);
+      this.updateTileWalls();
+      this.animateTileSort();
     });
   }
 

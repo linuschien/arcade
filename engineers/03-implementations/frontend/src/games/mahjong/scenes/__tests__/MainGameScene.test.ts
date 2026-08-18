@@ -179,7 +179,7 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     expect(() => scene.setPauseState(false)).not.toThrow();
   });
 
-  it('should play dice roll animation and trigger tile sorting audio after dealing', () => {
+  it('should play seating dice roll animation and dealer wall break animation', () => {
     let timerCallback: Function | null = null;
     (scene as any).time = {
       delayedCall: vi.fn((_delay, cb) => {
@@ -192,12 +192,16 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     audioService.playDiceRoll.mockClear();
     audioService.playTileSort.mockClear();
 
-    (scene as any).gameState.phase = 'SEATING_DRAW';
-    (scene as any).playDiceRollAnimation();
-
+    // 1. Test Seating Dice Roll
+    (scene as any).playSeatingDiceAnimation();
     expect(audioService.playDiceRoll).toHaveBeenCalledTimes(1);
 
-    // Simulate dice roll completion timer
+    // 2. Test Dealer Wall Break Dice Roll
+    audioService.playDiceRoll.mockClear();
+    (scene as any).playDealerWallBreakDiceAnimation();
+    expect(audioService.playDiceRoll).toHaveBeenCalledTimes(1);
+
+    // Simulate dealer dice roll completion timer -> triggers animateTileSort
     if (timerCallback) (timerCallback as Function)();
     expect(audioService.playTileSort).toHaveBeenCalledTimes(1);
   });
