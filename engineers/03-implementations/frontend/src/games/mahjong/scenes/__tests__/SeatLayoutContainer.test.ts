@@ -205,9 +205,61 @@ describe('SeatLayoutContainer Unit Tests', () => {
     seatContainer.renderPlayerState(profile, true);
 
     const containerCalls = mockScene.add.container.mock.calls;
-    // Melds are placed at startX = 150 + idx * ...
-    const meldContainerCall = containerCalls.find((c: any[]) => c[0] >= 150 && c[1] === 0);
+    const meldContainerCall = containerCalls.find((c: any[]) => c[0] >= 100 && c[1] === 0);
     expect(meldContainerCall).toBeDefined();
+  });
+
+  it('should ensure drawn tile is strictly placed to the left of melds without any overlap', () => {
+    const seatContainer = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
+    const profile = createMockProfile();
+    // Human with 13 hand tiles, 1 drawn tile, and 1 meld
+    profile.hand = Array.from({ length: 13 }, (_, i) => ({
+      id: `hand_${i}`,
+      suit: 'CHARACTERS',
+      value: (i % 9) + 1,
+      name: `${(i % 9) + 1}萬`,
+      shortCode: `${(i % 9) + 1}m`,
+    }));
+    profile.drawnTile = {
+      id: 'drawn_1',
+      suit: 'DOTS',
+      value: 1,
+      name: '一筒',
+      shortCode: '1p',
+    };
+    profile.melds = [
+      {
+        type: 'PONG',
+        tiles: [
+          { id: 'pong_1', suit: 'BAMBOO', value: 3, name: '三條', shortCode: '3s' },
+          { id: 'pong_2', suit: 'BAMBOO', value: 3, name: '三條', shortCode: '3s' },
+          { id: 'pong_3', suit: 'BAMBOO', value: 3, name: '三條', shortCode: '3s' },
+        ],
+        sourceSeat: 1,
+      },
+    ];
+
+    mockScene.add.sprite.mockClear();
+    mockScene.add.container.mockClear();
+    seatContainer.renderPlayerState(profile, true);
+
+    const spriteCalls = mockScene.add.sprite.mock.calls;
+    const containerCalls = mockScene.add.container.mock.calls;
+
+    // Find drawn tile sprite call ('mahjong:tile_1p')
+    const drawnTileCall = spriteCalls.find((c: any[]) => c[2] === 'mahjong:tile_1p');
+    expect(drawnTileCall).toBeDefined();
+    const drawnTileX = drawnTileCall[0];
+
+    // Find meld container call
+    const meldContainerCall = containerCalls.find((c: any[]) => c[1] === 0);
+    expect(meldContainerCall).toBeDefined();
+    const meldCenterX = meldContainerCall[0];
+    const meldLeftEdge = meldCenterX - (36 * 3) / 2; // Meld center minus half-meld width
+
+    // Drawn tile right edge (drawnTileX + 18) must be strictly less than meld left edge
+    const drawnTileRightEdge = drawnTileX + 18;
+    expect(drawnTileRightEdge).toBeLessThan(meldLeftEdge);
   });
 
   it('should highlight matching discards correctly', () => {

@@ -260,10 +260,16 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
     const hand = profile.hand;
     const stepX = isHuman ? SeatLayoutContainer.TILE_W : 18;
-    const totalHandW = hand.length * stepX;
-    // Hand right edge stays comfortably to the left of the melds
-    const handRightEdge = meldCount > 0 ? (meldStartX - 20) : (isHuman ? 260 : 150);
-    const startX = handRightEdge - totalHandW;
+    const gapDrawn = isHuman ? 12 : 8;
+    const hasDrawn = !!profile.drawnTile;
+    const handTilesW = hand.length * stepX;
+    const drawnTileW = hasDrawn ? (gapDrawn + stepX) : 0;
+    const totalHandAreaW = handTilesW + drawnTileW;
+
+    // Right edge of the entire hand area (including drawn tile) stays cleanly to the left of the melds
+    const marginBeforeMelds = isHuman ? 24 : 16;
+    const handAreaRightEdge = meldCount > 0 ? (meldStartX - marginBeforeMelds) : (isHuman ? 260 : 150);
+    const startX = handAreaRightEdge - totalHandAreaW;
 
     hand.forEach((tile, idx) => {
       const x = startX + idx * stepX + stepX / 2;
@@ -303,7 +309,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
     // 17th Drawn tile (placed on the right of the hand with 12px gap per PRD 6.1)
     if (profile.drawnTile) {
-      const drawnX = startX + hand.length * stepX + 12 + (stepX / 2);
+      const drawnX = startX + handTilesW + gapDrawn + stepX / 2;
       const textureKey = isHuman
         ? `mahjong:tile_${profile.drawnTile.shortCode}`
         : 'mahjong:tile_back';
