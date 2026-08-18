@@ -132,48 +132,378 @@ export class PreloadScene extends Phaser.Scene {
       });
     }
 
-    // 4. Dots (1p ~ 9p) - 湛藍 & 硃砂紅
-    for (let i = 1; i <= 9; i++) {
-      createTileCanvas(`mahjong:tile_${i}p`, (ctx) => {
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+    const cx = W / 2 - 1; // 17
+    const cy = H / 2 - 1; // 23
 
-        ctx.font = 'bold 13px "Microsoft JhengHei", "Songti TC", serif';
-        ctx.fillStyle = '#0284c7'; // Azure Blue
-        ctx.fillText(numChars[i], W / 2 - 1, H / 2 - 8);
+    // Reusable Helper: Standard Mahjong Dot (Concentric ring with core)
+    const drawDot = (
+      ctx: CanvasRenderingContext2D,
+      x: number,
+      y: number,
+      r: number,
+      color: string,
+      centerColor?: string
+    ) => {
+      // 1. Outer colored ring
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
 
-        ctx.font = 'bold 12px "Microsoft JhengHei", "Songti TC", serif';
-        ctx.fillStyle = '#0284c7';
-        ctx.fillText('筒', W / 2 - 1, H / 2 + 8);
-      });
-    }
+      // 2. White concentric groove
+      ctx.beginPath();
+      ctx.arc(x, y, r * 0.62, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = Math.max(0.6, r * 0.2);
+      ctx.stroke();
 
-    // 5. Bamboo (1s ~ 9s) - 翠竹綠
-    for (let i = 1; i <= 9; i++) {
-      createTileCanvas(`mahjong:tile_${i}s`, (ctx) => {
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+      // 3. Center colored core
+      ctx.beginPath();
+      ctx.arc(x, y, r * 0.35, 0, Math.PI * 2);
+      ctx.fillStyle = centerColor || '#ffffff';
+      ctx.fill();
+    };
 
-        if (i === 1) {
-          // 1 Bird / 一索
-          ctx.font = 'bold 14px "Microsoft JhengHei", "Songti TC", serif';
-          ctx.fillStyle = '#15803d'; // Bamboo Green
-          ctx.fillText('一', W / 2 - 1, H / 2 - 8);
+    // Reusable Helper: 1p Giant Multi-Petal Sunburst Rosette (大餅)
+    const drawBigDot = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
+      // Outer 8 rosette petals (Jade Green)
+      const petals = 8;
+      for (let i = 0; i < petals; i++) {
+        const angle = (i * Math.PI * 2) / petals;
+        const px = x + Math.cos(angle) * (r * 0.76);
+        const py = y + Math.sin(angle) * (r * 0.76);
+        ctx.beginPath();
+        ctx.arc(px, py, r * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = '#15803d';
+        ctx.fill();
+      }
 
-          ctx.font = 'bold 13px "Microsoft JhengHei", "Songti TC", serif';
-          ctx.fillStyle = '#dc2626'; // Red bird beak
-          ctx.fillText('鳥', W / 2 - 1, H / 2 + 8);
+      // Red main circle
+      ctx.beginPath();
+      ctx.arc(x, y, r * 0.76, 0, Math.PI * 2);
+      ctx.fillStyle = '#dc2626';
+      ctx.fill();
+
+      // White ring
+      ctx.beginPath();
+      ctx.arc(x, y, r * 0.52, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // Sapphire Blue core
+      ctx.beginPath();
+      ctx.arc(x, y, r * 0.38, 0, Math.PI * 2);
+      ctx.fillStyle = '#0284c7';
+      ctx.fill();
+
+      // Golden sunburst center dot
+      ctx.beginPath();
+      ctx.arc(x, y, r * 0.16, 0, Math.PI * 2);
+      ctx.fillStyle = '#facc15';
+      ctx.fill();
+    };
+
+    // Reusable Helper: Bamboo Stick Joint (竹節)
+    const drawBambooStick = (
+      ctx: CanvasRenderingContext2D,
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+      color: string,
+      nodeColor: string = '#ffffff'
+    ) => {
+      const halfW = w / 2;
+      const halfH = h / 2;
+
+      // 1. Bamboo stick main shaft
+      ctx.fillStyle = color;
+      ctx.fillRect(x - halfW + 0.5, y - halfH + 1, w - 1, h - 2);
+
+      // 2. Top & Bottom flared nodes (rounded knobs)
+      ctx.beginPath();
+      ctx.arc(x, y - halfH + 1.2, halfW * 0.9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x, y + halfH - 1.2, halfW * 0.9, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 3. Center joint band (white with accent dot)
+      ctx.fillStyle = nodeColor;
+      ctx.fillRect(x - halfW, y - 0.75, w, 1.5);
+
+      // 4. Center accent dot
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, 0.75, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    // Reusable Helper: 1s Perched Sparrow / Bird (麻雀鳥)
+    const drawBirdOneBamboo = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
+      const curve = (cpx: number, cpy: number, endX: number, endY: number) => {
+        if (typeof ctx.quadraticCurveTo === 'function') {
+          ctx.quadraticCurveTo(cpx, cpy, endX, endY);
         } else {
-          ctx.font = 'bold 13px "Microsoft JhengHei", "Songti TC", serif';
-          ctx.fillStyle = '#15803d';
-          ctx.fillText(numChars[i], W / 2 - 1, H / 2 - 8);
-
-          ctx.font = 'bold 12px "Microsoft JhengHei", "Songti TC", serif';
-          ctx.fillStyle = '#15803d';
-          ctx.fillText('條', W / 2 - 1, H / 2 + 8);
+          ctx.lineTo(endX, endY);
         }
-      });
-    }
+      };
+
+      // 1. Bamboo perch branch at the bottom
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(x - 9, y + 11, 18, 3);
+
+      // 2. Flowing Tail feathers (3 curved plumes in Green, Red, Blue)
+      ctx.fillStyle = '#15803d';
+      ctx.beginPath();
+      ctx.moveTo(x - 2, y + 5);
+      curve(x - 7, y + 9, x - 10, y + 16);
+      curve(x - 5, y + 11, x - 1, y + 7);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.moveTo(x - 1, y + 6);
+      curve(x - 4, y + 12, x - 6, y + 19);
+      curve(x - 2, y + 13, x, y + 8);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#0284c7';
+      ctx.beginPath();
+      ctx.moveTo(x, y + 7);
+      curve(x - 2, y + 13, x - 3, y + 20);
+      curve(x - 1, y + 14, x + 1, y + 8);
+      ctx.closePath();
+      ctx.fill();
+
+      // 3. Bird Body & Wings
+      // Body (Ruby Red)
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.arc(x, y + 3, 5.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Wing (Emerald Green with gold rim)
+      ctx.fillStyle = '#15803d';
+      ctx.beginPath();
+      ctx.arc(x - 1.5, y + 3, 4.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.arc(x - 1.5, y + 2, 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 4. Bird Chest (Gold/Orange breast)
+      ctx.fillStyle = '#f97316';
+      ctx.beginPath();
+      ctx.arc(x + 2.5, y + 3, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 5. Bird Head (Emerald Green)
+      ctx.fillStyle = '#15803d';
+      ctx.beginPath();
+      ctx.arc(x + 3, y - 6, 4.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 6. Beak (Cinnabar Red triangle pointing right)
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.moveTo(x + 6, y - 7.5);
+      ctx.lineTo(x + 11, y - 6);
+      ctx.lineTo(x + 6, y - 4.5);
+      ctx.closePath();
+      ctx.fill();
+
+      // 7. Eye (White circle + Black pupil)
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(x + 3.8, y - 6.8, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(x + 4.2, y - 6.8, 0.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 8. Head Crest / Crown feathers (Red & Gold)
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.moveTo(x + 1, y - 10);
+      ctx.lineTo(x - 2, y - 14);
+      ctx.lineTo(x + 2, y - 10);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.arc(x - 2, y - 14, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    // 4. Dots (1p ~ 9p) - Authentic Traditional Concentric Circles & Rosettes
+    // 1p (Big Dot / 大餅)
+    createTileCanvas('mahjong:tile_1p', (ctx) => {
+      drawBigDot(ctx, cx, cy, 14);
+    });
+
+    // 2p (Top Green, Bottom Blue)
+    createTileCanvas('mahjong:tile_2p', (ctx) => {
+      drawDot(ctx, cx, cy - 9, 5.0, '#15803d');
+      drawDot(ctx, cx, cy + 9, 5.0, '#0284c7');
+    });
+
+    // 3p (Diagonal: Top-Left Blue, Center Red, Bottom-Right Green)
+    createTileCanvas('mahjong:tile_3p', (ctx) => {
+      drawDot(ctx, cx - 7, cy - 10, 4.4, '#0284c7');
+      drawDot(ctx, cx, cy, 4.4, '#dc2626');
+      drawDot(ctx, cx + 7, cy + 10, 4.4, '#15803d');
+    });
+
+    // 4p (4 Dots: Top-Left Blue, Top-Right Green, Bottom-Left Green, Bottom-Right Blue)
+    createTileCanvas('mahjong:tile_4p', (ctx) => {
+      drawDot(ctx, cx - 7, cy - 9, 4.4, '#0284c7');
+      drawDot(ctx, cx + 7, cy - 9, 4.4, '#15803d');
+      drawDot(ctx, cx - 7, cy + 9, 4.4, '#15803d');
+      drawDot(ctx, cx + 7, cy + 9, 4.4, '#0284c7');
+    });
+
+    // 5p (4 outer corners Blue/Green + 1 center Red dot)
+    createTileCanvas('mahjong:tile_5p', (ctx) => {
+      drawDot(ctx, cx - 7.5, cy - 10, 4.0, '#0284c7');
+      drawDot(ctx, cx + 7.5, cy - 10, 4.0, '#15803d');
+      drawDot(ctx, cx, cy, 4.6, '#dc2626', '#facc15');
+      drawDot(ctx, cx - 7.5, cy + 10, 4.0, '#15803d');
+      drawDot(ctx, cx + 7.5, cy + 10, 4.0, '#0284c7');
+    });
+
+    // 6p (Top 2 Green, Bottom 4 Red)
+    createTileCanvas('mahjong:tile_6p', (ctx) => {
+      drawDot(ctx, cx - 6.5, cy - 10, 4.0, '#15803d');
+      drawDot(ctx, cx + 6.5, cy - 10, 4.0, '#15803d');
+      drawDot(ctx, cx - 6.5, cy, 4.0, '#dc2626');
+      drawDot(ctx, cx + 6.5, cy, 4.0, '#dc2626');
+      drawDot(ctx, cx - 6.5, cy + 10, 4.0, '#dc2626');
+      drawDot(ctx, cx + 6.5, cy + 10, 4.0, '#dc2626');
+    });
+
+    // 7p (Top 3 slanted + Bottom 4 square)
+    createTileCanvas('mahjong:tile_7p', (ctx) => {
+      // Top 3 slanted
+      drawDot(ctx, cx - 8, cy - 12, 3.6, '#15803d');
+      drawDot(ctx, cx, cy - 9, 3.6, '#dc2626');
+      drawDot(ctx, cx + 8, cy - 6, 3.6, '#15803d');
+      // Bottom 4
+      drawDot(ctx, cx - 6.5, cy + 5, 3.8, '#dc2626');
+      drawDot(ctx, cx + 6.5, cy + 5, 3.8, '#dc2626');
+      drawDot(ctx, cx - 6.5, cy + 13.5, 3.8, '#dc2626');
+      drawDot(ctx, cx + 6.5, cy + 13.5, 3.8, '#dc2626');
+    });
+
+    // 8p (2 columns of 4 Blue dots)
+    createTileCanvas('mahjong:tile_8p', (ctx) => {
+      const yOffsets = [-13.5, -4.5, 4.5, 13.5];
+      for (const dy of yOffsets) {
+        drawDot(ctx, cx - 6.5, cy + dy, 3.5, '#0284c7');
+        drawDot(ctx, cx + 6.5, cy + dy, 3.5, '#0284c7');
+      }
+    });
+
+    // 9p (3x3 grid: Left Blue, Middle Red, Right Green)
+    createTileCanvas('mahjong:tile_9p', (ctx) => {
+      const yOffsets = [-11, 0, 11];
+      for (const dy of yOffsets) {
+        drawDot(ctx, cx - 7.5, cy + dy, 3.7, '#0284c7');
+        drawDot(ctx, cx, cy + dy, 3.7, '#dc2626');
+        drawDot(ctx, cx + 7.5, cy + dy, 3.7, '#15803d');
+      }
+    });
+
+    // 5. Bamboo (1s ~ 9s) - Authentic Traditional Perched Bird & Bamboo Joints
+    // 1s (Traditional Perched Sparrow / Bird)
+    createTileCanvas('mahjong:tile_1s', (ctx) => {
+      drawBirdOneBamboo(ctx, cx, cy);
+    });
+
+    // 2s (Top Green, Bottom Blue)
+    createTileCanvas('mahjong:tile_2s', (ctx) => {
+      drawBambooStick(ctx, cx, cy - 9, 5.0, 13, '#15803d', '#dc2626');
+      drawBambooStick(ctx, cx, cy + 9, 5.0, 13, '#0284c7', '#dc2626');
+    });
+
+    // 3s (Top Blue, Bottom 2 Green)
+    createTileCanvas('mahjong:tile_3s', (ctx) => {
+      drawBambooStick(ctx, cx, cy - 9, 4.8, 12, '#0284c7', '#dc2626');
+      drawBambooStick(ctx, cx - 6.5, cy + 9, 4.8, 12, '#15803d', '#dc2626');
+      drawBambooStick(ctx, cx + 6.5, cy + 9, 4.8, 12, '#15803d', '#dc2626');
+    });
+
+    // 4s (Top-Left Green, Top-Right Blue, Bottom-Left Blue, Bottom-Right Green)
+    createTileCanvas('mahjong:tile_4s', (ctx) => {
+      drawBambooStick(ctx, cx - 6.5, cy - 9, 4.5, 12.5, '#15803d');
+      drawBambooStick(ctx, cx + 6.5, cy - 9, 4.5, 12.5, '#0284c7');
+      drawBambooStick(ctx, cx - 6.5, cy + 9, 4.5, 12.5, '#0284c7');
+      drawBambooStick(ctx, cx + 6.5, cy + 9, 4.5, 12.5, '#15803d');
+    });
+
+    // 5s (4 Corners Green/Blue + Center Red with Gold Node)
+    createTileCanvas('mahjong:tile_5s', (ctx) => {
+      drawBambooStick(ctx, cx - 7.5, cy - 10, 4.2, 11.5, '#15803d');
+      drawBambooStick(ctx, cx + 7.5, cy - 10, 4.2, 11.5, '#0284c7');
+      drawBambooStick(ctx, cx, cy, 4.6, 12, '#dc2626', '#facc15');
+      drawBambooStick(ctx, cx - 7.5, cy + 10, 4.2, 11.5, '#0284c7');
+      drawBambooStick(ctx, cx + 7.5, cy + 10, 4.2, 11.5, '#15803d');
+    });
+
+    // 6s (Top 3 Green, Bottom 3 Red)
+    createTileCanvas('mahjong:tile_6s', (ctx) => {
+      drawBambooStick(ctx, cx - 7.5, cy - 9, 4.0, 12, '#15803d');
+      drawBambooStick(ctx, cx, cy - 9, 4.0, 12, '#15803d');
+      drawBambooStick(ctx, cx + 7.5, cy - 9, 4.0, 12, '#15803d');
+
+      drawBambooStick(ctx, cx - 7.5, cy + 9, 4.0, 12, '#dc2626');
+      drawBambooStick(ctx, cx, cy + 9, 4.0, 12, '#dc2626');
+      drawBambooStick(ctx, cx + 7.5, cy + 9, 4.0, 12, '#dc2626');
+    });
+
+    // 7s (Top 1 Red, Middle 2 Green, Bottom 4 Green)
+    createTileCanvas('mahjong:tile_7s', (ctx) => {
+      drawBambooStick(ctx, cx, cy - 12, 4.2, 10, '#dc2626');
+      drawBambooStick(ctx, cx - 6.5, cy - 1, 4.0, 9.5, '#15803d');
+      drawBambooStick(ctx, cx + 6.5, cy - 1, 4.0, 9.5, '#15803d');
+
+      drawBambooStick(ctx, cx - 8.5, cy + 11, 3.4, 9.5, '#15803d');
+      drawBambooStick(ctx, cx - 2.8, cy + 11, 3.4, 9.5, '#15803d');
+      drawBambooStick(ctx, cx + 2.8, cy + 11, 3.4, 9.5, '#15803d');
+      drawBambooStick(ctx, cx + 8.5, cy + 11, 3.4, 9.5, '#15803d');
+    });
+
+    // 8s (8 sticks arranged in M & W inverted-V patterns)
+    createTileCanvas('mahjong:tile_8s', (ctx) => {
+      // Top 4 Green inverted V
+      drawBambooStick(ctx, cx - 8.5, cy - 11, 3.8, 9, '#15803d');
+      drawBambooStick(ctx, cx - 3.0, cy - 8, 3.8, 9, '#15803d');
+      drawBambooStick(ctx, cx + 3.0, cy - 8, 3.8, 9, '#15803d');
+      drawBambooStick(ctx, cx + 8.5, cy - 11, 3.8, 9, '#15803d');
+
+      // Bottom 4 Blue V
+      drawBambooStick(ctx, cx - 8.5, cy + 11, 3.8, 9, '#0284c7');
+      drawBambooStick(ctx, cx - 3.0, cy + 8, 3.8, 9, '#0284c7');
+      drawBambooStick(ctx, cx + 3.0, cy + 8, 3.8, 9, '#0284c7');
+      drawBambooStick(ctx, cx + 8.5, cy + 11, 3.8, 9, '#0284c7');
+    });
+
+    // 9s (3x3 grid: Left Green, Middle Red, Right Blue)
+    createTileCanvas('mahjong:tile_9s', (ctx) => {
+      const yOffsets = [-11, 0, 11];
+      for (const dy of yOffsets) {
+        drawBambooStick(ctx, cx - 7.5, cy + dy, 4.0, 9.5, '#15803d');
+        drawBambooStick(ctx, cx, cy + dy, 4.0, 9.5, '#dc2626');
+        drawBambooStick(ctx, cx + 7.5, cy + dy, 4.0, 9.5, '#0284c7');
+      }
+    });
 
     // 6. Winds (East, South, West, North) - 蒼黑
     const winds = [
