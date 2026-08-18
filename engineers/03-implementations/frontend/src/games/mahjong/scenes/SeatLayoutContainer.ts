@@ -470,44 +470,35 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 6x3 Standard Discard River (6 cols x 3 rows = 18 tiles) positioned tight against the 176x176 central compass.
+   * 4 / 6 / 8 Trapezoidal Discard River (Row 0: 4, Row 1: 6, Row 2: 8 = 18 tiles total).
+   * Row 0 width (152px) aligns with the 156x156 central compass with zero corner collisions.
    * Progression is 由內而外 (Inside-out): Row 0 is closest to the central compass, Row 2 is furthest (towards the wall).
-   * Top/Bottom seats: baseY = -168 (Row 0: -168, Row 1: -118, Row 2: -68).
-   * Left/Right side seats: baseY = -423 (Row 0: -423, Row 1: -373, Row 2: -323).
+   * Top/Bottom seats: baseY = -178 (Row 0: -178, Row 1: -128, Row 2: -78).
+   * Left/Right side seats: baseY = -433 (Row 0: -433, Row 1: -383, Row 2: -333).
    */
   private renderDiscards(discards: Tile[], _isLastDiscardSeat: boolean = false): void {
     this.riverGroup.removeAll(true);
 
-    const cols = 6;
-    const rows = 3;
     const dw = SeatLayoutContainer.TILE_W;
     const dh = SeatLayoutContainer.TILE_H;
     const stepX = 38;
     const stepY = 50;
-    const riverStartX = -((cols * stepX) / 2);
 
     const isSideSeat = this.seat === 1 || this.seat === 3;
-    const baseY = isSideSeat ? -423 : -168;
+    const baseY = isSideSeat ? -433 : -178;
 
-    // 1. Draw 18 placeholder grid cells (6x3) - 由內而外 (Row 0 closest to compass)
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const x = riverStartX + c * stepX + dw / 2;
-        const y = baseY + r * stepY;
-        const cell = this.scene.add.sprite(x, y, 'mahjong:flower_cell');
-        cell.setDisplaySize(dw, dh);
-        this.riverGroup.add(cell);
-      }
+    // 1. Draw 18 placeholder grid cells (4 / 6 / 8 trapezoid) - 由內而外
+    for (let idx = 0; idx < 18; idx++) {
+      const { x, y } = this.getDiscardCoord(idx, baseY, stepX, stepY, dw);
+      const cell = this.scene.add.sprite(x, y, 'mahjong:flower_cell');
+      cell.setDisplaySize(dw, dh);
+      this.riverGroup.add(cell);
     }
 
     // 2. Render actual discarded tiles on top of cells (indices 0..17, 由內而外)
     discards.forEach((tile, idx) => {
       if (idx >= 18) return;
-      const col = idx % cols;
-      const row = Math.floor(idx / cols);
-
-      const x = riverStartX + col * stepX + dw / 2;
-      const y = baseY + row * stepY;
+      const { x, y } = this.getDiscardCoord(idx, baseY, stepX, stepY, dw);
 
       const sprite = this.scene.add.sprite(x, y, `mahjong:tile_${tile.shortCode}`);
       sprite.setDisplaySize(dw, dh);
@@ -516,6 +507,30 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
       this.riverGroup.add(sprite);
     });
+  }
+
+  /**
+   * Computes the (x, y) coordinate for the 4 / 6 / 8 trapezoidal discard grid.
+   */
+  private getDiscardCoord(idx: number, baseY: number, stepX: number, stepY: number, dw: number): { x: number; y: number } {
+    let row = 0;
+    let col = idx;
+    let colsInRow = 4;
+
+    if (idx >= 10) {
+      row = 2;
+      col = idx - 10;
+      colsInRow = 8;
+    } else if (idx >= 4) {
+      row = 1;
+      col = idx - 4;
+      colsInRow = 6;
+    }
+
+    const rowStartX = -((colsInRow * stepX) / 2);
+    const x = rowStartX + col * stepX + dw / 2;
+    const y = baseY + row * stepY;
+    return { x, y };
   }
 
   /**

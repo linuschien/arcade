@@ -118,11 +118,11 @@ export class MainGameScene extends Phaser.Scene {
     const stacksPerSide = 18;
     const step = 20;
 
-    // Clockwise Wall Progression enclosing the 6x3 central discard rivers & compass:
+    // Clockwise Wall Progression enclosing the 4/6/8 trapezoid discard rivers & compass:
     // 1. South Wall (Bottom): Right to Left (0 to 17)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 800 - i * step;
-      const y = 604;
+      const x = 810 - i * step;
+      const y = 596;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       this.wallSprites.push(sprite);
       this.wallContainer.add(sprite);
@@ -130,8 +130,8 @@ export class MainGameScene extends Phaser.Scene {
 
     // 2. West Wall (Left): Bottom to Top (18 to 35)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 394;
-      const y = 570 - i * 25;
+      const x = 404;
+      const y = 560 - i * 24;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       sprite.setAngle(90);
       this.wallSprites.push(sprite);
@@ -140,8 +140,8 @@ export class MainGameScene extends Phaser.Scene {
 
     // 3. North Wall (Top): Left to Right (36 to 53)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 480 + i * step;
-      const y = 116;
+      const x = 470 + i * step;
+      const y = 124;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       this.wallSprites.push(sprite);
       this.wallContainer.add(sprite);
@@ -149,8 +149,8 @@ export class MainGameScene extends Phaser.Scene {
 
     // 4. East Wall (Right): Top to Bottom (54 to 71)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 886;
-      const y = 150 + i * 25;
+      const x = 876;
+      const y = 160 + i * 24;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       sprite.setAngle(90);
       this.wallSprites.push(sprite);
@@ -186,14 +186,14 @@ export class MainGameScene extends Phaser.Scene {
     const cy = 360;
 
     const dial = this.add.sprite(cx, cy, 'mahjong:compass_dial');
-    dial.setDisplaySize(176, 176);
+    dial.setDisplaySize(156, 156);
 
     // Turn pointer (Breathing gold needle)
     this.turnPointer = this.add.graphics();
 
     // Center Round Wind / Tile Info Core
-    this.roundWindText = this.add.text(cx, cy - 16, '東風東', {
-      fontSize: '13px',
+    this.roundWindText = this.add.text(cx, cy - 14, '東風東', {
+      fontSize: '12px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#facc15',
       fontStyle: 'bold',
@@ -208,7 +208,7 @@ export class MainGameScene extends Phaser.Scene {
       resolution: 2,
     }).setOrigin(0.5);
 
-    this.remainingTilesText = this.add.text(cx, cy + 16, '餘 70 張', {
+    this.remainingTilesText = this.add.text(cx, cy + 14, '餘 70 張', {
       fontSize: '11px',
       fontFamily: '"Microsoft JhengHei", "Roboto Mono", Consolas, monospace',
       color: '#38bdf8',
@@ -219,10 +219,10 @@ export class MainGameScene extends Phaser.Scene {
     // 4 Integrated Player HUD Strips around the 4 borders of the square compass:
     // Seat 0: Bottom (Human), Seat 1: Right (AI), Seat 2: Top (AI), Seat 3: Left (AI)
     const hudConfigs = [
-      { x: cx, y: cy + 60, angle: 0 },    // Seat 0 (Bottom)
-      { x: cx + 60, y: cy, angle: 270 },  // Seat 1 (Right)
-      { x: cx, y: cy - 60, angle: 180 },  // Seat 2 (Top)
-      { x: cx - 60, y: cy, angle: 90 },   // Seat 3 (Left)
+      { x: cx, y: cy + 53, angle: 0 },    // Seat 0 (Bottom)
+      { x: cx + 53, y: cy, angle: 270 },  // Seat 1 (Right)
+      { x: cx, y: cy - 53, angle: 180 },  // Seat 2 (Top)
+      { x: cx - 53, y: cy, angle: 90 },   // Seat 3 (Left)
     ];
 
     this.compassPlayerContainers = [];
@@ -239,7 +239,7 @@ export class MainGameScene extends Phaser.Scene {
       this.compassPlayerBgs.push(bg);
 
       // Line 1: [風位] 玩家名
-      const pText = this.add.text(0, -7, '[東] 玩家', {
+      const pText = this.add.text(0, -6, '[東] 玩家', {
         fontSize: '11px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#f8fafc',
@@ -250,7 +250,7 @@ export class MainGameScene extends Phaser.Scene {
       this.compassPlayerTexts.push(pText);
 
       // Line 2: 籌碼點數 (11px bold high-res crisp font)
-      const chipsText = this.add.text(0, 7, '10,000 點', {
+      const chipsText = this.add.text(0, 6, '10,000 點', {
         fontSize: '11px',
         fontFamily: '"Microsoft JhengHei", "Roboto Mono", Consolas, sans-serif',
         color: '#facc15',
@@ -769,9 +769,9 @@ export class MainGameScene extends Phaser.Scene {
       if (bg) {
         bg.clear();
         bg.fillStyle(isCurrentTurn ? 0x854d0e : 0x020617, 0.95);
-        bg.fillRoundedRect(-38, -14, 76, 28, 5);
+        bg.fillRoundedRect(-36, -13, 72, 26, 4);
         bg.lineStyle(1.5, isCurrentTurn ? 0xfacc15 : 0x334155, 1);
-        bg.strokeRoundedRect(-38, -14, 76, 28, 5);
+        bg.strokeRoundedRect(-36, -13, 72, 26, 4);
       }
 
       const pText = this.compassPlayerTexts[i];
@@ -801,14 +801,14 @@ export class MainGameScene extends Phaser.Scene {
 
     const cx = 640;
     const cy = 360;
-    const rInner = 74;
-    const rOuter = 84;
+    const rInner = 64;
+    const rOuter = 74;
 
     // Glowing gold outer accent arc on active player's rim (35 deg arc)
     if (typeof this.turnPointer.arc === 'function') {
       this.turnPointer.lineStyle(3, 0xfacc15, 0.95);
       this.turnPointer.beginPath();
-      this.turnPointer.arc(cx, cy, 78, rad - 0.32, rad + 0.32, false);
+      this.turnPointer.arc(cx, cy, 68, rad - 0.32, rad + 0.32, false);
       this.turnPointer.strokePath();
     }
 
