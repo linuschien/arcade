@@ -38,11 +38,9 @@ export class MahjongHandEvaluator {
     // Filter out flowers if any (flowers do not form melds)
     const activeTiles = allTiles.filter((t) => !t.isFlower);
 
-    const kongCount = melds.filter(
-      (m) => m.type === 'MELDED_KONG' || m.type === 'ADDED_KONG' || m.type === 'CONCEALED_KONG'
-    ).length;
-
-    const expectedTilesInHand = 17 + kongCount - melds.length * 3;
+    // Total expected concealed active tiles in hand (including the additional/drawn/winning tile)
+    // is always (17 - melds.length * 3), because each meld (Chow/Pong/Kong) accounts for 3 concealed tiles.
+    const expectedTilesInHand = 17 - melds.length * 3;
     if (activeTiles.length !== expectedTilesInHand) {
       return false;
     }

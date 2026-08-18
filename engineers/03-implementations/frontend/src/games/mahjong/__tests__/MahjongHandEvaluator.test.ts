@@ -220,4 +220,40 @@ describe('MahjongHandEvaluator Unit Tests', () => {
     const winWithLarge = MahjongHandEvaluator.isWinningHand(hand, [], createTile('4m', '99'));
     expect(winWithLarge).toBe(true);
   });
+
+  it('should correctly calculate Smart Ting and Winning Hand with Added Kong (加槓) and Concealed Kong (暗槓)', () => {
+    // 1 Added Kong meld (1m x 4)
+    const addedKongMeld: Meld = {
+      type: 'ADDED_KONG',
+      tiles: [createTile('1m', '1'), createTile('1m', '2'), createTile('1m', '3'), createTile('1m', '4')],
+      sourceSeat: 0,
+    };
+
+    // 13 concealed tiles in hand: 456s, 789s, 234p, 999p, 7m (waiting on 7m pair)
+    const handCodes = ['4s', '5s', '6s', '7s', '8s', '9s', '2p', '3p', '4p', '9p', '9p', '9p', '7m'];
+    const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+    // Evaluate Smart Ting with Added Kong meld
+    const ting = MahjongHandEvaluator.evaluateTing(hand, [addedKongMeld]);
+    expect(ting.winningTiles.length).toBeGreaterThan(0);
+    expect(ting.winningTiles.some((t) => t.tileCode === '7m')).toBe(true);
+
+    // Winning check on drawn 7m (槓上自摸 7m)
+    const winWith7m = MahjongHandEvaluator.isWinningHand(hand, [addedKongMeld], createTile('7m', 'win'));
+    expect(winWith7m).toBe(true);
+
+    // Concealed Kong meld (8s x 4)
+    const concealedKongMeld: Meld = {
+      type: 'CONCEALED_KONG',
+      tiles: [createTile('8s', '1'), createTile('8s', '2'), createTile('8s', '3'), createTile('8s', '4')],
+      sourceSeat: 0,
+    };
+
+    const tingConcealed = MahjongHandEvaluator.evaluateTing(hand, [concealedKongMeld]);
+    expect(tingConcealed.winningTiles.length).toBeGreaterThan(0);
+    expect(tingConcealed.winningTiles.some((t) => t.tileCode === '7m')).toBe(true);
+
+    const winConcealed = MahjongHandEvaluator.isWinningHand(hand, [concealedKongMeld], createTile('7m', 'win'));
+    expect(winConcealed).toBe(true);
+  });
 });
