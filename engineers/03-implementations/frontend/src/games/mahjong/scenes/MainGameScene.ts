@@ -274,8 +274,8 @@ export class MainGameScene extends Phaser.Scene {
 
   private createDiscardMarker(): void {
     this.discardMarker = this.add.graphics();
-    this.discardMarker.lineStyle(2.5, 0xfacc15, 1);
-    this.discardMarker.strokeRoundedRect(-19, -25, 38, 50, 5);
+    this.discardMarker.lineStyle(2, 0xfacc15, 1);
+    this.discardMarker.strokeRoundedRect(-18, -24, 36, 48, 3);
     this.discardMarker.setDepth(50);
     this.discardMarker.setVisible(false);
   }
