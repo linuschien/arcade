@@ -95,8 +95,10 @@ export class MahjongHandEvaluator {
    * Standard 5 Melds + 1 Pair decomposition.
    */
   public static canFormMeldsAndPair(tiles: Tile[], requiredMelds: number): boolean {
+    // Sort tiles to ensure ascending numerical/suit order in codeCounts Map iteration
+    const sortedTiles = this.sortTiles(tiles);
     const codeCounts = new Map<string, number>();
-    for (const tile of tiles) {
+    for (const tile of sortedTiles) {
       codeCounts.set(tile.shortCode, (codeCounts.get(tile.shortCode) || 0) + 1);
     }
 
@@ -192,6 +194,7 @@ export class MahjongHandEvaluator {
   /**
    * Smart Ting (智慧聽牌) Calculator.
    * Tests all 34 regular tile kinds to see which ones would complete a winning hand.
+   * Strictly counts only visible information (own hand + open table info, excluding other players' concealed hands).
    */
   public static evaluateTing(
     hand: Tile[],
@@ -204,17 +207,20 @@ export class MahjongHandEvaluator {
     const sampleTiles = this.getAll34UniqueTiles();
 
     // Count how many copies of each tile are already visible to the player
+    const seenTileIds = new Set<string>();
     const visibleCounts = new Map<string, number>();
-    for (const t of allKnownVisibleTiles) {
-      visibleCounts.set(t.shortCode, (visibleCounts.get(t.shortCode) || 0) + 1);
-    }
-    for (const t of hand) {
-      visibleCounts.set(t.shortCode, (visibleCounts.get(t.shortCode) || 0) + 1);
-    }
-    for (const m of melds) {
-      for (const t of m.tiles) {
+
+    const recordVisible = (t: Tile) => {
+      if (!seenTileIds.has(t.id)) {
+        seenTileIds.add(t.id);
         visibleCounts.set(t.shortCode, (visibleCounts.get(t.shortCode) || 0) + 1);
       }
+    };
+
+    for (const t of allKnownVisibleTiles) recordVisible(t);
+    for (const t of hand) recordVisible(t);
+    for (const m of melds) {
+      for (const t of m.tiles) recordVisible(t);
     }
 
     for (const candidate of sampleTiles) {

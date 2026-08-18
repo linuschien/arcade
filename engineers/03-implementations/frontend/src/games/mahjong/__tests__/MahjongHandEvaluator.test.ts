@@ -173,4 +173,47 @@ describe('MahjongHandEvaluator Unit Tests', () => {
     // From Upper (seat 3 to seat 0) -> Forbidden (禁止大明槓上家)
     expect(MahjongHandEvaluator.canMeldedKong(hand, calledTile, 3, 0)).toBe(false);
   });
+
+  it('should correctly evaluate two-sided wait (雙頭聽) and allow winning on BOTH smaller and larger numbers', () => {
+    // 16-tile hand with 2m, 3m (two-sided wait on 1m and 4m)
+    const hand: Tile[] = [
+      createTile('2m', '1'),
+      createTile('3m', '1'),
+      // sequence 1s, 2s, 3s
+      createTile('1s', '1'),
+      createTile('2s', '1'),
+      createTile('3s', '1'),
+      // sequence 4p, 5p, 6p
+      createTile('4p', '1'),
+      createTile('5p', '1'),
+      createTile('6p', '1'),
+      // triplet 7s, 7s, 7s
+      createTile('7s', '1'),
+      createTile('7s', '2'),
+      createTile('7s', '3'),
+      // triplet 1p, 1p, 1p
+      createTile('1p', '1'),
+      createTile('1p', '2'),
+      createTile('1p', '3'),
+      // pair 9m, 9m (eye)
+      createTile('9m', '1'),
+      createTile('9m', '2'),
+    ];
+
+    // Evaluate Smart Ting
+    const ting = MahjongHandEvaluator.evaluateTing(hand, []);
+    const winningCodes = ting.winningTiles.map((w) => w.tileCode);
+
+    // BOTH 1m (smaller) and 4m (larger) must be recognized as winning tiles!
+    expect(winningCodes).toContain('1m');
+    expect(winningCodes).toContain('4m');
+
+    // Winning check for 1m (smaller number)
+    const winWithSmall = MahjongHandEvaluator.isWinningHand(hand, [], createTile('1m', '99'));
+    expect(winWithSmall).toBe(true);
+
+    // Winning check for 4m (larger number)
+    const winWithLarge = MahjongHandEvaluator.isWinningHand(hand, [], createTile('4m', '99'));
+    expect(winWithLarge).toBe(true);
+  });
 });

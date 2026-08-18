@@ -868,14 +868,19 @@ export class MahjongGameState {
   }
 
   /**
-   * Collects all visible tiles across the table (melds, flowers, discards).
+   * Collects all publicly visible tiles across the table (open melds, flowers, discards).
+   * Other players' concealed hands and opponent concealed kongs are NEVER included.
    */
-  public getAllVisibleTiles(): Tile[] {
+  public getAllVisibleTiles(forSeat: PlayerSeat = 0): Tile[] {
     const tiles: Tile[] = [];
-    this.players.forEach((p) => {
+    this.players.forEach((p, seat) => {
       tiles.push(...p.flowers);
       tiles.push(...p.discards);
-      p.melds.forEach((m) => tiles.push(...m.tiles));
+      p.melds.forEach((m) => {
+        if (m.type !== 'CONCEALED_KONG' || seat === forSeat) {
+          tiles.push(...m.tiles);
+        }
+      });
     });
     return tiles;
   }

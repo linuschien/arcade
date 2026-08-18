@@ -179,22 +179,22 @@ describe('SeatLayoutContainer Unit Tests', () => {
     expect(humanTileBackCalls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('should initialize HUD and Flower Rack positions correctly across all 4 seats', () => {
-    // Seat 0: Bottom Human (Angle 0)
+  it('should initialize HUD and Flower Rack positions correctly across all 4 table corners', () => {
+    // Seat 0: Bottom-Left Corner (35, 652) -> relative (-605, 7)
     const seat0 = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
-    expect((seat0 as any).hudGroup.setPosition).toHaveBeenCalledWith(-540, 0);
+    expect((seat0 as any).hudGroup.setPosition).toHaveBeenCalledWith(-605, 7);
 
-    // Seat 1: Right AI (Angle 270)
+    // Seat 1: Bottom-Right Corner (1105, 652) -> relative (-292, -75)
     const seat1 = new SeatLayoutContainer(mockScene, 1180, 360, 270, 1);
-    expect((seat1 as any).hudGroup.setPosition).toHaveBeenCalledWith(-200, -40);
+    expect((seat1 as any).hudGroup.setPosition).toHaveBeenCalledWith(-292, -75);
 
-    // Seat 2: Top AI (Angle 180)
+    // Seat 2: Top-Right Corner (1105, 25) -> relative (-465, 50)
     const seat2 = new SeatLayoutContainer(mockScene, 640, 75, 180, 2);
-    expect((seat2 as any).hudGroup.setPosition).toHaveBeenCalledWith(-340, 0);
+    expect((seat2 as any).hudGroup.setPosition).toHaveBeenCalledWith(-465, 50);
 
-    // Seat 3: Left AI (Angle 90)
+    // Seat 3: Top-Left Corner (35, 25) -> relative (-335, 65)
     const seat3 = new SeatLayoutContainer(mockScene, 100, 360, 90, 3);
-    expect((seat3 as any).hudGroup.setPosition).toHaveBeenCalledWith(-200, -10);
+    expect((seat3 as any).hudGroup.setPosition).toHaveBeenCalledWith(-335, 65);
   });
 
   it('should place melds strictly between hand and flower rack (positive X offset)', () => {
