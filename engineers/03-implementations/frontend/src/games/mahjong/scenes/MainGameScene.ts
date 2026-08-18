@@ -186,28 +186,28 @@ export class MainGameScene extends Phaser.Scene {
     const cy = 360;
 
     const dial = this.add.sprite(cx, cy, 'mahjong:compass_dial');
-    dial.setDisplaySize(160, 160);
+    dial.setDisplaySize(220, 220);
 
     // Turn pointer (Breathing gold needle)
     this.turnPointer = this.add.graphics();
 
     // Center Round Wind / Tile Info Core
-    this.roundWindText = this.add.text(cx, cy - 14, '東風東', {
-      fontSize: '13px',
+    this.roundWindText = this.add.text(cx, cy - 20, '東風東', {
+      fontSize: '15px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#facc15',
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
     this.dealerStreakText = this.add.text(cx, cy, '連 0 拉 0', {
-      fontSize: '10px',
+      fontSize: '12px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#94a3b8',
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    this.remainingTilesText = this.add.text(cx, cy + 14, '餘 70 張', {
-      fontSize: '10px',
+    this.remainingTilesText = this.add.text(cx, cy + 20, '餘 70 張', {
+      fontSize: '12px',
       fontFamily: 'monospace',
       color: '#38bdf8',
       fontStyle: 'bold',
@@ -216,10 +216,10 @@ export class MainGameScene extends Phaser.Scene {
     // 4 Integrated Player HUD Strips around the 4 borders of the square compass:
     // Seat 0: Bottom (Human), Seat 1: Right (AI), Seat 2: Top (AI), Seat 3: Left (AI)
     const hudConfigs = [
-      { x: cx, y: cy + 62, angle: 0 },    // Seat 0 (Bottom)
-      { x: cx + 62, y: cy, angle: 270 },  // Seat 1 (Right)
-      { x: cx, y: cy - 62, angle: 180 },  // Seat 2 (Top)
-      { x: cx - 62, y: cy, angle: 90 },   // Seat 3 (Left)
+      { x: cx, y: cy + 86, angle: 0 },    // Seat 0 (Bottom)
+      { x: cx + 86, y: cy, angle: 270 },  // Seat 1 (Right)
+      { x: cx, y: cy - 86, angle: 180 },  // Seat 2 (Top)
+      { x: cx - 86, y: cy, angle: 90 },   // Seat 3 (Left)
     ];
 
     this.compassPlayerContainers = [];
@@ -235,8 +235,8 @@ export class MainGameScene extends Phaser.Scene {
       container.add(bg);
       this.compassPlayerBgs.push(bg);
 
-      const pText = this.add.text(-62, -7, '東 玩家', {
-        fontSize: '10px',
+      const pText = this.add.text(-86, -8, '東 玩家', {
+        fontSize: '12px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#f8fafc',
         fontStyle: 'bold',
@@ -244,8 +244,8 @@ export class MainGameScene extends Phaser.Scene {
       container.add(pText);
       this.compassPlayerTexts.push(pText);
 
-      const chipsText = this.add.text(62, -7, '10,000', {
-        fontSize: '10px',
+      const chipsText = this.add.text(86, -8, '10,000 點', {
+        fontSize: '12px',
         fontFamily: 'monospace',
         color: '#facc15',
         fontStyle: 'bold',
@@ -753,9 +753,9 @@ export class MainGameScene extends Phaser.Scene {
       if (bg) {
         bg.clear();
         bg.fillStyle(isCurrentTurn ? 0x854d0e : 0x020617, 0.95);
-        bg.fillRoundedRect(-70, -10, 140, 20, 4);
+        bg.fillRoundedRect(-94, -14, 188, 28, 6);
         bg.lineStyle(1.5, isCurrentTurn ? 0xfacc15 : 0x334155, 1);
-        bg.strokeRoundedRect(-70, -10, 140, 20, 4);
+        bg.strokeRoundedRect(-94, -14, 188, 28, 6);
       }
 
       const pText = this.compassPlayerTexts[i];
@@ -766,7 +766,7 @@ export class MainGameScene extends Phaser.Scene {
 
       const chipsText = this.compassPlayerChipsTexts[i];
       if (chipsText) {
-        chipsText.setText(`${p.chips.toLocaleString()}`);
+        chipsText.setText(`${p.chips.toLocaleString()} 點`);
         chipsText.setColor?.(isCurrentTurn ? '#ffffff' : '#facc15');
       }
     }
@@ -785,24 +785,24 @@ export class MainGameScene extends Phaser.Scene {
 
     const cx = 640;
     const cy = 360;
-    const rInner = 56;
-    const rOuter = 66;
+    const rInner = 92;
+    const rOuter = 104;
 
     // Glowing gold outer accent arc on active player's rim (35 deg arc)
     if (typeof this.turnPointer.arc === 'function') {
       this.turnPointer.lineStyle(3, 0xfacc15, 0.95);
       this.turnPointer.beginPath();
-      this.turnPointer.arc(cx, cy, 63, rad - 0.32, rad + 0.32, false);
+      this.turnPointer.arc(cx, cy, 100, rad - 0.32, rad + 0.32, false);
       this.turnPointer.strokePath();
     }
 
     // Sleek chevron arrow head pointing outward toward active seat
-    const tipX = cx + Math.cos(rad) * (rOuter + 3);
-    const tipY = cy + Math.sin(rad) * (rOuter + 3);
-    const leftX = cx + Math.cos(rad - 0.18) * rInner;
-    const leftY = cy + Math.sin(rad - 0.18) * rInner;
-    const rightX = cx + Math.cos(rad + 0.18) * rInner;
-    const rightY = cy + Math.sin(rad + 0.18) * rInner;
+    const tipX = cx + Math.cos(rad) * (rOuter + 4);
+    const tipY = cy + Math.sin(rad) * (rOuter + 4);
+    const leftX = cx + Math.cos(rad - 0.16) * rInner;
+    const leftY = cy + Math.sin(rad - 0.16) * rInner;
+    const rightX = cx + Math.cos(rad + 0.16) * rInner;
+    const rightY = cy + Math.sin(rad + 0.16) * rInner;
 
     this.turnPointer.fillStyle(0xfacc15, 1);
     this.turnPointer.beginPath();

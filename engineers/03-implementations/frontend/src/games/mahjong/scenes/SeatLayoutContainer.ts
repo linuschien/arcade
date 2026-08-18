@@ -486,7 +486,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     const riverStartX = -((cols * stepX) / 2);
 
     const isSideSeat = this.seat === 1 || this.seat === 3;
-    const baseY = isSideSeat ? -320 : -120;
+    const baseY = isSideSeat ? -305 : -110;
 
     // 1. Draw 18 placeholder grid cells (9x2)
     for (let r = 0; r < 2; r++) {

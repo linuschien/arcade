@@ -646,32 +646,32 @@ export class PreloadScene extends Phaser.Scene {
       }
     }
 
-    // 10. Central Square HUD Wind Compass (160 x 160)
+    // 10. Central Square HUD Wind Compass (220 x 220)
     if (!this.textures.exists('mahjong:compass_dial')) {
       const canvas = document.createElement('canvas');
-      canvas.width = 160;
-      canvas.height = 160;
+      canvas.width = 220;
+      canvas.height = 220;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         // Outer dark slate bezel
         ctx.fillStyle = '#0f172a';
-        this.drawRoundedRect(ctx, 0, 0, 160, 160, 12);
+        this.drawRoundedRect(ctx, 0, 0, 220, 220, 16);
         ctx.fill();
 
         // Golden outer rim
         ctx.strokeStyle = '#d4af37';
-        ctx.lineWidth = 2;
-        this.drawRoundedRect(ctx, 3, 3, 154, 154, 10);
+        ctx.lineWidth = 2.5;
+        this.drawRoundedRect(ctx, 4, 4, 212, 212, 12);
         ctx.stroke();
 
-        // Inner center core plate for round wind / tile count
+        // Inner center core plate for round wind / tile count (Emerald core)
         ctx.fillStyle = '#064e3b';
         ctx.beginPath();
-        ctx.arc(80, 80, 36, 0, Math.PI * 2);
+        ctx.arc(110, 110, 46, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.strokeStyle = '#10b981';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
         ctx.stroke();
 
         if (typeof this.textures.addCanvas === 'function') {
