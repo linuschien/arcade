@@ -525,20 +525,20 @@ export class PreloadScene extends Phaser.Scene {
       drawBambooStick(ctx, cx + 7.5, cy + 12, 3.8, 8.5, '#15803d');
     });
 
-    // 8s (M on top, Inverted-M / W on bottom, All Green)
+    // 8s (Horizontal Mirror Symmetric M / W: Outer sticks vertical, Inner sticks slanted, All Green)
     createTileCanvas('mahjong:tile_8s', (ctx) => {
-      const rot = 0.35; // ~20 degrees
-      // Top 4 Green (M / v v)
-      drawBambooStick(ctx, cx - 9.0, cy - 8, 3.8, 9.5, '#15803d', '#ffffff', -rot);
-      drawBambooStick(ctx, cx - 3.5, cy - 8, 3.8, 9.5, '#15803d', '#ffffff', rot);
-      drawBambooStick(ctx, cx + 3.5, cy - 8, 3.8, 9.5, '#15803d', '#ffffff', -rot);
-      drawBambooStick(ctx, cx + 9.0, cy - 8, 3.8, 9.5, '#15803d', '#ffffff', rot);
+      const rot = 0.42; // ~24 degrees for inner diagonal sticks
+      // Top 4 Green (M shape: | \ / |)
+      drawBambooStick(ctx, cx - 8.5, cy - 9, 3.8, 11, '#15803d', '#ffffff', 0); // Left outer straight
+      drawBambooStick(ctx, cx - 2.8, cy - 9, 3.8, 11, '#15803d', '#ffffff', rot); // Left inner slanted down-right \
+      drawBambooStick(ctx, cx + 2.8, cy - 9, 3.8, 11, '#15803d', '#ffffff', -rot); // Right inner slanted down-left /
+      drawBambooStick(ctx, cx + 8.5, cy - 9, 3.8, 11, '#15803d', '#ffffff', 0); // Right outer straight
 
-      // Bottom 4 Green (Inverted-M / W / ^ ^)
-      drawBambooStick(ctx, cx - 9.0, cy + 8, 3.8, 9.5, '#15803d', '#ffffff', rot);
-      drawBambooStick(ctx, cx - 3.5, cy + 8, 3.8, 9.5, '#15803d', '#ffffff', -rot);
-      drawBambooStick(ctx, cx + 3.5, cy + 8, 3.8, 9.5, '#15803d', '#ffffff', rot);
-      drawBambooStick(ctx, cx + 9.0, cy + 8, 3.8, 9.5, '#15803d', '#ffffff', -rot);
+      // Bottom 4 Green (W shape / Horizontal Mirror of M: | / \ |)
+      drawBambooStick(ctx, cx - 8.5, cy + 9, 3.8, 11, '#15803d', '#ffffff', 0); // Left outer straight
+      drawBambooStick(ctx, cx - 2.8, cy + 9, 3.8, 11, '#15803d', '#ffffff', -rot); // Left inner slanted up-right /
+      drawBambooStick(ctx, cx + 2.8, cy + 9, 3.8, 11, '#15803d', '#ffffff', rot); // Right inner slanted up-left \
+      drawBambooStick(ctx, cx + 8.5, cy + 9, 3.8, 11, '#15803d', '#ffffff', 0); // Right outer straight
     });
 
     // 9s (3x3 grid: Left Green, Middle Red, Right Blue)
