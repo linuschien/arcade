@@ -219,10 +219,10 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
           sprite.setDisplaySize(cellW, cellH);
           this.flowerGroup.add(sprite);
 
-          // Highlight positive flowers with crisp border frame box flush with acrylic tile face (0 gap on all sides)
+          // Highlight positive flowers with vibrant high-contrast coral orange border (0 gap, 2.5px)
           if (isPositive) {
             const frame = this.scene.add.graphics();
-            frame.lineStyle(2, 0xfacc15, 1);
+            frame.lineStyle(2.5, 0xf97316, 1);
             frame.strokeRoundedRect(x - cellW / 2, y - cellH / 2, cellW - 2, cellH - 2, 3);
             this.flowerGroup.add(frame);
           }
