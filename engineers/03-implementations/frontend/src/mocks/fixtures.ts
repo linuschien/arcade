@@ -41,6 +41,14 @@ export const mockGameCards: any[] = [
     description: 'Classic path-building puzzle game. Connect pipes before the Flooz flows!',
     totalPlayCount: 520,
   },
+  {
+    id: '43218765-10fe-dcba-9876-543210fedcba',
+    gameId: 'mahjong',
+    title: '台灣16張麻將 (Taiwanese Mahjong)',
+    coverArtUrl: '/assets/covers/mahjong.png',
+    description: '正宗台灣16張麻將。開門擲骰、搬風抓位、智慧聽牌、莊家連拉2N+1！',
+    totalPlayCount: 2350,
+  },
 ];
 
 export const mockLeaderboardEntries: any[] = [
