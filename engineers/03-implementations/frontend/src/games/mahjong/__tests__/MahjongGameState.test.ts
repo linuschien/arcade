@@ -231,6 +231,11 @@ describe('MahjongGameState Unit Tests', () => {
     const initialTileCount = dealer.hand.length + (dealer.drawnTile ? 1 : 0);
     expect(initialTileCount).toBe(17);
 
+    // Verify all 4 players have strictly 16 concealed hand tiles (dealer has 16 in hand + 1 jump tile)
+    for (let s = 0; s < 4; s++) {
+      expect(state.players[s].hand.length).toBe(16);
+    }
+
     // AI or Human dealer can step turn
     if (state.dealerSeat !== 0) {
       state.stepAITurn(state.dealerSeat);

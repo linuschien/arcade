@@ -159,7 +159,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 4x2 Flower Rack situated to the RIGHT of Discard River with 100% full 36x48 tiles.
+   * 4x2 Flower Rack situated to the RIGHT of Discard River, sharing identical Y baseline.
    */
   private renderFlowerRack(flowers: Tile[], wind?: string): void {
     this.flowerGroup.removeAll(true);
@@ -181,14 +181,15 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     };
     const playerPositives = wind ? (positiveIndices[wind] || []) : [];
 
-    const startX = 180;
-    const startY = -140;
+    // Combined River (342px) + Gap (16px) + FlowerRack (152px) = 510px, centered from -255 to +255
+    const flowerStartX = 103;
+    const baseY = -140;
 
     for (let r = 0; r < 2; r++) {
       for (let c = 0; c < 4; c++) {
         const idx = r * 4 + c;
-        const x = startX + c * (cellW + 2) + cellW / 2;
-        const y = startY + r * (cellH + 2) + cellH / 2;
+        const x = flowerStartX + c * (cellW + 2) + cellW / 2;
+        const y = baseY + r * (cellH + 2) + cellH / 2;
 
         const slotCode = slotKeys[idx];
         const hasFlower = flowers.some((f) => f.shortCode === slotCode);
@@ -371,6 +372,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
   /**
    * 9x2 Compact Discard River with pre-rendered placeholder cells and full 36x48 tiles.
+   * Aligned with Flower Rack on baseY = -140 and horizontally centered together ([-255, +255]).
    */
   private renderDiscards(discards: Tile[], _isLastDiscardSeat: boolean = false): void {
     this.riverGroup.removeAll(true);
@@ -378,14 +380,14 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     const cols = 9;
     const dw = SeatLayoutContainer.TILE_W;
     const dh = SeatLayoutContainer.TILE_H;
-    const riverStartX = -(cols * (dw + 2)) / 2 + dw / 2;
-    const riverStartY = -140;
+    const riverStartX = -255;
+    const baseY = -140;
 
     // 1. Draw 18 placeholder grid cells (like Flower Rack)
     for (let r = 0; r < 2; r++) {
       for (let c = 0; c < cols; c++) {
-        const x = riverStartX + c * (dw + 2);
-        const y = riverStartY + r * (dh + 2);
+        const x = riverStartX + c * (dw + 2) + dw / 2;
+        const y = baseY + r * (dh + 2) + dh / 2;
         const cell = this.scene.add.sprite(x, y, 'mahjong:flower_cell');
         cell.setDisplaySize(dw, dh);
         this.riverGroup.add(cell);
@@ -398,8 +400,8 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       const col = idx % cols;
       const row = Math.floor(idx / cols);
 
-      const x = riverStartX + col * (dw + 2);
-      const y = riverStartY + row * (dh + 2);
+      const x = riverStartX + col * (dw + 2) + dw / 2;
+      const y = baseY + row * (dh + 2) + dh / 2;
 
       const sprite = this.scene.add.sprite(x, y, `mahjong:tile_${tile.shortCode}`);
       sprite.setDisplaySize(dw, dh);
