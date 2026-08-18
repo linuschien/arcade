@@ -769,9 +769,9 @@ export class MainGameScene extends Phaser.Scene {
       if (bg) {
         bg.clear();
         bg.fillStyle(isCurrentTurn ? 0x854d0e : 0x020617, 0.95);
-        bg.fillRoundedRect(-48, -14, 96, 28, 4);
+        bg.fillRoundedRect(-38, -14, 76, 28, 5);
         bg.lineStyle(1.5, isCurrentTurn ? 0xfacc15 : 0x334155, 1);
-        bg.strokeRoundedRect(-48, -14, 96, 28, 4);
+        bg.strokeRoundedRect(-38, -14, 76, 28, 5);
       }
 
       const pText = this.compassPlayerTexts[i];
