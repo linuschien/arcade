@@ -1317,18 +1317,27 @@ export class MainGameScene extends Phaser.Scene {
     curY += 22;
 
     const arrows = ['▼', '▶', '▲', '◀'];
-    const winds = ['東風', '南風', '西風', '北風'];
+    const windNames: Record<string, string> = {
+      EAST: '東風',
+      SOUTH: '南風',
+      WEST: '西風',
+      NORTH: '北風',
+    };
 
     for (let i = 0; i < 4; i++) {
       const p = this.gameState.players[i];
       const isWinner = !isDraw && breakdown.winnerSeat === i;
       const isLoser = !isDraw && breakdown.loserSeat === i;
+      const isVictim = !isDraw && ((breakdown.isSelfDrawn && !isWinner) || isLoser);
+
       const roleText = isDraw
         ? '流局'
         : isWinner
         ? breakdown.isSelfDrawn
           ? '自摸'
           : '胡牌'
+        : breakdown.isSelfDrawn
+        ? '被自摸'
         : isLoser
         ? '放槍'
         : '陪打';
@@ -1337,7 +1346,7 @@ export class MainGameScene extends Phaser.Scene {
       const deltaStr = delta > 0 ? `+${delta.toLocaleString()} 點` : delta < 0 ? `${delta.toLocaleString()} 點` : '0 點';
       const remainingStr = `${breakdown.remainingChips[i].toLocaleString()} 點`;
 
-      const rowColor = isWinner ? '#4ade80' : isLoser ? '#f87171' : '#e2e8f0';
+      const rowColor = isWinner ? '#4ade80' : isVictim ? '#f87171' : '#94a3b8';
       const fontStyle = isWinner || p.isDealer ? 'bold' : 'normal';
 
       if (i % 2 === 1) {
@@ -1348,9 +1357,9 @@ export class MainGameScene extends Phaser.Scene {
       }
 
       const tSeat = this.add.text(colX.seat, curY, `${arrows[i]} ${p.name}`, { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: rowColor, fontStyle });
-      const tWind = this.add.text(colX.wind, curY, winds[i], { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: rowColor, fontStyle });
+      const tWind = this.add.text(colX.wind, curY, windNames[p.wind] || '東風', { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: rowColor, fontStyle });
       const tId = this.add.text(colX.id, curY, p.isDealer ? '莊家' : '閒家', { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: p.isDealer ? '#fbbf24' : rowColor, fontStyle });
-      const tRole = this.add.text(colX.role, curY, roleText, { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: isWinner ? '#4ade80' : isLoser ? '#f87171' : rowColor, fontStyle });
+      const tRole = this.add.text(colX.role, curY, roleText, { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: isWinner ? '#4ade80' : isVictim ? '#f87171' : '#94a3b8', fontStyle });
       const tDelta = this.add.text(colX.delta, curY, deltaStr, { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: delta > 0 ? '#4ade80' : delta < 0 ? '#f87171' : '#94a3b8', fontStyle }).setOrigin(1, 0);
       const tChips = this.add.text(colX.chips, curY, remainingStr, { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: '#e2e8f0', fontStyle }).setOrigin(1, 0);
 
