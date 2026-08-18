@@ -470,10 +470,10 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 6x3 Standard Discard River (6 cols x 3 rows = 18 tiles) positioned tight against the central compass.
+   * 6x3 Standard Discard River (6 cols x 3 rows = 18 tiles) positioned tight against the 176x176 central compass.
    * Progression is 由內而外 (Inside-out): Row 0 is closest to the central compass, Row 2 is furthest (towards the wall).
-   * Top/Bottom seats: baseY = -146 (Row 0: -146, Row 1: -96, Row 2: -46).
-   * Left/Right side seats: baseY = -401 (Row 0: -401, Row 1: -351, Row 2: -301).
+   * Top/Bottom seats: baseY = -168 (Row 0: -168, Row 1: -118, Row 2: -68).
+   * Left/Right side seats: baseY = -423 (Row 0: -423, Row 1: -373, Row 2: -323).
    */
   private renderDiscards(discards: Tile[], _isLastDiscardSeat: boolean = false): void {
     this.riverGroup.removeAll(true);
@@ -487,7 +487,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     const riverStartX = -((cols * stepX) / 2);
 
     const isSideSeat = this.seat === 1 || this.seat === 3;
-    const baseY = isSideSeat ? -401 : -146;
+    const baseY = isSideSeat ? -423 : -168;
 
     // 1. Draw 18 placeholder grid cells (6x3) - 由內而外 (Row 0 closest to compass)
     for (let r = 0; r < rows; r++) {
