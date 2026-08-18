@@ -109,7 +109,7 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   /**
-   * Creates the 4 physical 3D Tile Walls (72 stacks = 144 tiles).
+   * Creates the 4 physical 3D Tile Walls enclosing the central discard rivers & compass.
    */
   private createTileWalls(): void {
     this.wallContainer = this.add.container(0, 0);
@@ -118,11 +118,11 @@ export class MainGameScene extends Phaser.Scene {
     const stacksPerSide = 18;
     const step = 20;
 
-    // Clockwise Wall Progression around the table:
+    // Clockwise Wall Progression enclosing the central discard rivers & compass:
     // 1. South Wall (Bottom): Right to Left (0 to 17)
     for (let i = 0; i < stacksPerSide; i++) {
       const x = 810 - i * step;
-      const y = 482;
+      const y = 524;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       this.wallSprites.push(sprite);
       this.wallContainer.add(sprite);
@@ -130,8 +130,8 @@ export class MainGameScene extends Phaser.Scene {
 
     // 2. West Wall (Left): Bottom to Top (18 to 35)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 425;
-      const y = 470 - i * 13;
+      const x = 375;
+      const y = 520 - i * 19;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       sprite.setAngle(90);
       this.wallSprites.push(sprite);
@@ -141,7 +141,7 @@ export class MainGameScene extends Phaser.Scene {
     // 3. North Wall (Top): Left to Right (36 to 53)
     for (let i = 0; i < stacksPerSide; i++) {
       const x = 470 + i * step;
-      const y = 238;
+      const y = 196;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       this.wallSprites.push(sprite);
       this.wallContainer.add(sprite);
@@ -149,8 +149,8 @@ export class MainGameScene extends Phaser.Scene {
 
     // 4. East Wall (Right): Top to Bottom (54 to 71)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 855;
-      const y = 250 + i * 13;
+      const x = 905;
+      const y = 200 + i * 19;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       sprite.setAngle(90);
       this.wallSprites.push(sprite);
@@ -587,53 +587,11 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   /**
-   * Places 3 Banker Dice outside the central compass facing current Banker's seat.
+   * Banker dice are now rendered inside each seat container to the right of the flower rack.
    */
   private updateBankerDicePosition(): void {
     this.bankerDiceOutsideCompassContainer.removeAll(true);
-
-    // Only show outer Banker dice after central rolling dice have finished and disappeared!
-    if (
-      this.diceContainer.visible ||
-      this.gameState.phase === 'SEATING_DRAW' ||
-      this.gameState.phase === 'DEALING'
-    ) {
-      this.bankerDiceOutsideCompassContainer.setVisible(false);
-      return;
-    }
-
-    const d = this.gameState.diceResult;
-    if (!d || d.length < 3) return;
-
-    this.bankerDiceOutsideCompassContainer.setVisible(true);
-
-    const dealerSeat = this.gameState.dealerSeat;
-    // Coordinates placed right outside compass (radius 70px) facing the current dealer seat
-    const positions = [
-      { x: 640, y: 442 }, // Seat 0 (Bottom Human)
-      { x: 722, y: 360 }, // Seat 1 (Right AI)
-      { x: 640, y: 278 }, // Seat 2 (Top AI)
-      { x: 558, y: 360 }, // Seat 3 (Left AI)
-    ];
-    const angles = [0, 270, 180, 90];
-    const pos = positions[dealerSeat];
-
-    const sub = this.add.container(pos.x, pos.y);
-    sub.setAngle(angles[dealerSeat]);
-
-    const bg = this.add.graphics();
-    bg.fillStyle(0x020617, 0.92);
-    bg.fillRoundedRect(-42, -14, 84, 28, 6);
-    bg.lineStyle(1.5, 0xd4af37, 0.9);
-    bg.strokeRoundedRect(-42, -14, 84, 28, 6);
-    sub.add(bg);
-
-    for (let i = 0; i < 3; i++) {
-      const sprite = this.add.sprite(-24 + i * 24, 0, `mahjong:dice_${d[i]}`);
-      sprite.setDisplaySize(18, 18);
-      sub.add(sprite);
-    }
-    this.bankerDiceOutsideCompassContainer.add(sub);
+    this.bankerDiceOutsideCompassContainer.setVisible(false);
   }
 
   /**
@@ -814,7 +772,14 @@ export class MainGameScene extends Phaser.Scene {
     const lastSeat = this.gameState.lastDiscard?.fromSeat;
     for (let i = 0; i < 4; i++) {
       const p = this.gameState.players[i];
-      this.seatContainers[i].renderPlayerState(p, p.isHuman, lastSeat === i, revealAllHands, this.gameState.roundWind);
+      this.seatContainers[i].renderPlayerState(
+        p,
+        p.isHuman,
+        lastSeat === i,
+        revealAllHands,
+        this.gameState.roundWind,
+        this.gameState.diceResult
+      );
     }
     this.updateBankerDicePosition();
     this.updateCompass();

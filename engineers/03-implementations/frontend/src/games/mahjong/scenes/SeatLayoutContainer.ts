@@ -139,10 +139,27 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Clears banker dice group (banker dice are now centrally positioned outside compass facing banker).
+   * Renders Banker Dice directly to the RIGHT of the single-row Flower Rack (X = +160, Y = -56).
    */
-  public showBankerDice(_d: number[] | null): void {
+  public showBankerDice(diceResult: number[] | null, isDealer: boolean = false): void {
     this.bankerDiceGroup.removeAll(true);
+    if (!isDealer || !diceResult || diceResult.length < 3) return;
+
+    const diceX = 160;
+    const diceY = -56;
+
+    const bg = this.scene.add.graphics();
+    bg.fillStyle(0x020617, 0.9);
+    bg.fillRoundedRect(diceX - 38, diceY - 14, 76, 28, 5);
+    bg.lineStyle(1.5, 0xd4af37, 0.9);
+    bg.strokeRoundedRect(diceX - 38, diceY - 14, 76, 28, 5);
+    this.bankerDiceGroup.add(bg);
+
+    for (let i = 0; i < 3; i++) {
+      const sprite = this.scene.add.sprite(diceX - 22 + i * 22, diceY, `mahjong:dice_${diceResult[i]}`);
+      sprite.setDisplaySize(16, 16);
+      this.bankerDiceGroup.add(sprite);
+    }
   }
 
   public renderPlayerState(
@@ -150,10 +167,12 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     isHuman: boolean,
     isLastDiscardSeat: boolean = false,
     revealHand: boolean = false,
-    roundWind: string = 'EAST'
+    roundWind: string = 'EAST',
+    diceResult: number[] | null = null
   ): void {
     this.updatePlayerInfo(profile, roundWind);
     this.renderFlowerRack(profile.flowers, profile.wind);
+    this.showBankerDice(diceResult, profile.isDealer);
 
     // Calculate symmetrical centering for Hand + Reserved Drawn Slot + Melds
     const meldCount = profile.melds.length;
@@ -178,13 +197,15 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 4x2 Flower Rack situated to the RIGHT of Discard River, sharing identical Y baseline.
+   * 4x1, 4x1 Single-Row Centered Flower Rack situated between Hand and Tile Wall (Y = -56).
    */
   private renderFlowerRack(flowers: Tile[], wind?: string): void {
     this.flowerGroup.removeAll(true);
 
-    const cellW = SeatLayoutContainer.TILE_W;
-    const cellH = SeatLayoutContainer.TILE_H;
+    const cellW = 24;
+    const cellH = 32;
+    const cellStep = 26;
+    const baseY = -56;
 
     const slotKeys = [
       'spring', 'summer', 'autumn', 'winter',
@@ -200,37 +221,34 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     };
     const playerPositives = wind ? (positiveIndices[wind] || []) : [];
 
-    // Combined River (342px) + Gap (16px) + FlowerRack (152px) = 510px, centered from -255 to +255
-    const flowerStartX = 103;
-    const baseY = -128;
+    // Left 4 Seasons: x in [-112, -34], Right 4 Plants: x in [+10, +88]
+    for (let i = 0; i < 8; i++) {
+      const isPlant = i >= 4;
+      const groupCol = i % 4;
+      const groupStartX = isPlant ? 8 : -112;
+      const x = groupStartX + groupCol * cellStep + cellW / 2;
+      const y = baseY;
 
-    for (let r = 0; r < 2; r++) {
-      for (let c = 0; c < 4; c++) {
-        const idx = r * 4 + c;
-        const x = flowerStartX + c * (cellW + 2) + cellW / 2;
-        const y = baseY + r * (cellH + 2) + cellH / 2;
+      const slotCode = slotKeys[i];
+      const hasFlower = flowers.some((f) => f.shortCode === slotCode);
+      const isPositive = playerPositives.includes(i);
 
-        const slotCode = slotKeys[idx];
-        const hasFlower = flowers.some((f) => f.shortCode === slotCode);
-        const isPositive = playerPositives.includes(idx);
+      if (hasFlower) {
+        const sprite = this.scene.add.sprite(x, y, `mahjong:tile_${slotCode}`);
+        sprite.setDisplaySize(cellW, cellH);
+        this.flowerGroup.add(sprite);
 
-        if (hasFlower) {
-          const sprite = this.scene.add.sprite(x, y, `mahjong:tile_${slotCode}`);
-          sprite.setDisplaySize(cellW, cellH);
-          this.flowerGroup.add(sprite);
-
-          // Highlight positive flowers with vibrant high-contrast coral orange border (0 gap, 2.5px)
-          if (isPositive) {
-            const frame = this.scene.add.graphics();
-            frame.lineStyle(2.5, 0xf97316, 1);
-            frame.strokeRoundedRect(x - cellW / 2, y - cellH / 2, cellW - 2, cellH - 2, 3);
-            this.flowerGroup.add(frame);
-          }
-        } else {
-          const cell = this.scene.add.sprite(x, y, 'mahjong:flower_cell');
-          cell.setDisplaySize(cellW, cellH);
-          this.flowerGroup.add(cell);
+        // Highlight positive flowers with coral orange border
+        if (isPositive) {
+          const frame = this.scene.add.graphics();
+          frame.lineStyle(2, 0xf97316, 1);
+          frame.strokeRoundedRect(x - cellW / 2, y - cellH / 2, cellW, cellH, 3);
+          this.flowerGroup.add(frame);
         }
+      } else {
+        const cell = this.scene.add.sprite(x, y, 'mahjong:flower_cell');
+        cell.setDisplaySize(cellW, cellH);
+        this.flowerGroup.add(cell);
       }
     }
   }
@@ -464,23 +482,25 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 9x2 Compact Discard River with pre-rendered placeholder cells and full 36x48 tiles.
-   * Aligned with Flower Rack on baseY = -128 and horizontally centered together ([-255, +255]).
+   * 6x3 Standard Discard River positioned INSIDE the Tile Wall facing towards the Central Compass.
+   * Local Y: Row 0 at -140, Row 1 at -177, Row 2 at -214.
    */
   private renderDiscards(discards: Tile[], _isLastDiscardSeat: boolean = false): void {
     this.riverGroup.removeAll(true);
 
-    const cols = 9;
-    const dw = SeatLayoutContainer.TILE_W;
-    const dh = SeatLayoutContainer.TILE_H;
-    const riverStartX = -255;
-    const baseY = -128;
+    const cols = 6;
+    const dw = 28;
+    const dh = 36;
+    const stepX = 29;
+    const stepY = 37;
+    const riverStartX = -((cols * stepX) / 2);
+    const baseY = -140;
 
-    // 1. Draw 18 placeholder grid cells (like Flower Rack)
-    for (let r = 0; r < 2; r++) {
+    // 1. Draw 18 placeholder grid cells (6x3)
+    for (let r = 0; r < 3; r++) {
       for (let c = 0; c < cols; c++) {
-        const x = riverStartX + c * (dw + 2) + dw / 2;
-        const y = baseY + r * (dh + 2) + dh / 2;
+        const x = riverStartX + c * stepX + dw / 2;
+        const y = baseY - r * stepY;
         const cell = this.scene.add.sprite(x, y, 'mahjong:flower_cell');
         cell.setDisplaySize(dw, dh);
         this.riverGroup.add(cell);
@@ -489,12 +509,12 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
     // 2. Render actual discarded tiles on top of cells
     discards.forEach((tile, idx) => {
-      if (idx >= 18) return;
+      if (idx >= 24) return;
       const col = idx % cols;
       const row = Math.floor(idx / cols);
 
-      const x = riverStartX + col * (dw + 2) + dw / 2;
-      const y = baseY + row * (dh + 2) + dh / 2;
+      const x = riverStartX + col * stepX + dw / 2;
+      const y = baseY - row * stepY;
 
       const sprite = this.scene.add.sprite(x, y, `mahjong:tile_${tile.shortCode}`);
       sprite.setDisplaySize(dw, dh);
