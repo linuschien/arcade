@@ -518,10 +518,21 @@ export class MainGameScene extends Phaser.Scene {
       }
     }
 
+    const windChars: Record<string, string> = {
+      EAST: '東風',
+      SOUTH: '南風',
+      WEST: '西風',
+      NORTH: '北風',
+    };
+    const humanWind = windChars[this.gameState.players[0].wind] || '東風';
+    const dealerName = this.gameState.players[this.gameState.dealerSeat].name;
+    const isHumanDealer = this.gameState.dealerSeat === 0;
+    const dealerLabel = isHumanDealer ? '您起莊' : `${dealerName}起莊`;
+
     const infoText = this.add.text(
       0,
       25,
-      `🎲 抓風位擲骰 ${d[0]}+${d[1]}+${d[2]}=${diceSum} 點 (決定風位起抽順序)`,
+      `🎲 抓位擲骰 ${d[0]}+${d[1]}+${d[2]}=${diceSum} 點 ｜ 您抽得【${humanWind}】(${dealerLabel})`,
       {
         fontSize: '12px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
@@ -532,7 +543,7 @@ export class MainGameScene extends Phaser.Scene {
     infoText.setOrigin(0.5);
     this.diceContainer.add(infoText);
 
-    this.time.delayedCall(1400, () => {
+    this.time.delayedCall(1600, () => {
       this.diceContainer.setVisible(false);
       this.refreshAllSeats();
       this.updateCompass();
