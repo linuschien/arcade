@@ -341,13 +341,15 @@ export class MahjongGameState {
     this.startPlayerTurn(this.dealerSeat, false);
   }
 
-  /**
-   * Starts a player's turn.
-   */
   public startPlayerTurn(seat: PlayerSeat, needDraw: boolean = true): void {
     this.phase = 'PLAYER_TURN';
     this.currentTurnSeat = seat;
     this.notifyPhase();
+
+    this.currentTurnCount++;
+    if (this.currentTurnCount > 4) {
+      this.isFirstTurnCycle = false;
+    }
 
     const player = this.players[seat];
 
@@ -820,6 +822,14 @@ export class MahjongGameState {
       ? winner.drawnTile || winner.hand[winner.hand.length - 1]
       : this.lastDiscard?.tile || winner.hand[winner.hand.length - 1];
 
+    const isKongBloom = isSelfDrawn && this.deck.wasLastDrawFromTail();
+    const isEarthlyWin =
+      extraFlags.isEarthlyWin ??
+      (isSelfDrawn && this.isFirstTurnCycle && winnerSeat !== this.dealerSeat);
+    const isHumanWin =
+      extraFlags.isHumanWin ??
+      (!isSelfDrawn && this.isFirstTurnCycle && this.players.every((p) => p.melds.length === 0));
+
     const breakdown = MahjongScoreCalculator.evaluateSettlement({
       winnerSeat,
       winnerHand: winner.hand,
@@ -829,11 +839,11 @@ export class MahjongGameState {
       isSelfDrawn,
       loserSeat,
       isRobbingKong: extraFlags.isRobbingKong,
-      isKongBloom: isSelfDrawn && this.deck.getDeadWallCount() < 16,
+      isKongBloom,
       isLastTileDraw: this.deck.getRegularRemainingCount() === 0,
       isHeavenlyWin: extraFlags.isHeavenlyWin,
-      isEarthlyWin: extraFlags.isEarthlyWin,
-      isHumanWin: extraFlags.isHumanWin,
+      isEarthlyWin,
+      isHumanWin,
       roundWind: this.roundWind,
       playerWind: winner.wind,
       dealerSeat: this.dealerSeat,

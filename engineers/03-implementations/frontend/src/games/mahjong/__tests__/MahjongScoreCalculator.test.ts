@@ -225,4 +225,38 @@ describe('MahjongScoreCalculator Unit Tests', () => {
     expect(result.fans.some((f) => f.name === '大三元' && f.fan === 8)).toBe(true);
     expect(result.fans.some((f) => f.name === '紅中刻子')).toBe(false);
   });
+
+  it('should evaluate 地胡 (8 fans) + 槓上開花 (1 fan) + 門清自摸 (3 fans) on first turn flower replenishment self-draw', () => {
+    const handCodes = [
+      '1m', '2m', '3m',
+      '4m', '5m', '6m',
+      '7m', '8m', '9m',
+      '1p', '2p', '3p',
+      '4s', '5s', '6s',
+      '9s',
+    ];
+    const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+    const winningTile = createTile('9s', 'win');
+
+    const result = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 1, // Non-dealer
+      winnerHand: hand,
+      winnerMelds: [],
+      winnerFlowers: [],
+      winningTile,
+      isSelfDrawn: true,
+      isEarthlyWin: true,
+      isKongBloom: true, // Drew flower on first turn, replenished from tail and won!
+      roundWind: 'EAST',
+      playerWind: 'SOUTH',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+
+    expect(result.fans.some((f) => f.name === '地胡' && f.fan === 8)).toBe(true);
+    expect(result.fans.some((f) => f.name === '槓上開花' && f.fan === 1)).toBe(true);
+    expect(result.fans.some((f) => f.name === '門清自摸' && f.fan === 3)).toBe(true);
+    expect(result.totalFans).toBe(12);
+  });
 });

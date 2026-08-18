@@ -14,6 +14,7 @@ export class MahjongDeck {
   private tailDrawnCount: number = 0;
   private initialTotalTiles: number = 144;
   private deadWallReserve: number = 16; // 16 iron tiles reserved at tail
+  private isLastDrawFromTail: boolean = false;
 
   constructor() {
     this.reset();
@@ -134,6 +135,7 @@ export class MahjongDeck {
     this.totalDrawnCount = 0;
     this.tailDrawnCount = 0;
     this.deadWallReserve = 16;
+    this.isLastDrawFromTail = false;
   }
 
   /**
@@ -193,6 +195,7 @@ export class MahjongDeck {
     if (!this.hasRegularTilesLeft()) {
       return null;
     }
+    this.isLastDrawFromTail = false;
     const tile = this.tiles[this.headIndex];
     this.headIndex = (this.headIndex + 1) % this.tiles.length;
     this.totalDrawnCount++;
@@ -207,11 +210,16 @@ export class MahjongDeck {
     if (!this.hasRegularTilesLeft()) {
       return null;
     }
+    this.isLastDrawFromTail = true;
     const tile = this.tiles[this.tailIndex];
     this.tailIndex = (this.tailIndex - 1 + this.tiles.length) % this.tiles.length;
     this.totalDrawnCount++;
     this.tailDrawnCount++;
     return tile;
+  }
+
+  public wasLastDrawFromTail(): boolean {
+    return this.isLastDrawFromTail;
   }
 
   /**
