@@ -160,7 +160,7 @@ class MahjongAudioServiceImpl {
   }
 
   /**
-   * SFX_FLOWER_REPLACE (Crisp bell chime for flower replacement).
+   * SFX_FLOWER_REPLACE (Chinese voice "補花" + crisp bell chime for flower replacement).
    */
   public playFlowerReplace(): void {
     const chime = [
@@ -168,6 +168,7 @@ class MahjongAudioServiceImpl {
       { freq: 1318.51, delayMs: 80, durationSeconds: 0.25, type: 'sine' as OscillatorType, vol: 0.16 }, // E6
     ];
     SoundEngine.playSequence(chime);
+    this.speakOrTone('補花', [880, 1318.51]);
   }
 
   /**

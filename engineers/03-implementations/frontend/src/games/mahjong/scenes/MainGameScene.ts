@@ -274,8 +274,8 @@ export class MainGameScene extends Phaser.Scene {
 
   private createDiscardMarker(): void {
     this.discardMarker = this.add.graphics();
-    this.discardMarker.lineStyle(2, 0xfacc15, 1);
-    this.discardMarker.strokeRoundedRect(-14, -18, 28, 36, 4);
+    this.discardMarker.lineStyle(2.5, 0xfacc15, 1);
+    this.discardMarker.strokeRoundedRect(-19, -25, 38, 50, 5);
     this.discardMarker.setDepth(50);
     this.discardMarker.setVisible(false);
   }
@@ -286,7 +286,9 @@ export class MainGameScene extends Phaser.Scene {
       this.discardMarker.setVisible(false);
       return;
     }
+    const seatAngles = [0, 270, 180, 90];
     this.discardMarker.setPosition(pos.x, pos.y);
+    this.discardMarker.setAngle(seatAngles[seat]);
     this.discardMarker.setVisible(true);
   }
 
@@ -572,20 +574,25 @@ export class MainGameScene extends Phaser.Scene {
       { x: 640, y: 270 }, // Seat 2 (Top AI)
       { x: 550, y: 360 }, // Seat 3 (Left AI)
     ];
+    const angles = [0, 270, 180, 90];
     const pos = positions[dealerSeat];
+
+    const sub = this.add.container(pos.x, pos.y);
+    sub.setAngle(angles[dealerSeat]);
 
     const bg = this.add.graphics();
     bg.fillStyle(0x020617, 0.92);
-    bg.fillRoundedRect(pos.x - 42, pos.y - 14, 84, 28, 6);
+    bg.fillRoundedRect(-42, -14, 84, 28, 6);
     bg.lineStyle(1.5, 0xd4af37, 0.9);
-    bg.strokeRoundedRect(pos.x - 42, pos.y - 14, 84, 28, 6);
-    this.bankerDiceOutsideCompassContainer.add(bg);
+    bg.strokeRoundedRect(-42, -14, 84, 28, 6);
+    sub.add(bg);
 
     for (let i = 0; i < 3; i++) {
-      const sprite = this.add.sprite(pos.x - 24 + i * 24, pos.y, `mahjong:dice_${d[i]}`);
+      const sprite = this.add.sprite(-24 + i * 24, 0, `mahjong:dice_${d[i]}`);
       sprite.setDisplaySize(18, 18);
-      this.bankerDiceOutsideCompassContainer.add(sprite);
+      sub.add(sprite);
     }
+    this.bankerDiceOutsideCompassContainer.add(sub);
   }
 
   /**
