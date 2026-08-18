@@ -677,6 +677,11 @@ export class MainGameScene extends Phaser.Scene {
       this.updateCompass();
       this.updateTileWalls();
 
+      // If game settled (e.g. Draw / Flower Win) or rep is null (dead wall reached), stop sequence
+      if (this.gameState.phase === 'ROUND_SETTLEMENT' || this.gameState.phase === 'MATCH_OVER' || !rep) {
+        return;
+      }
+
       // Step 3: Wait for "補花" voice to completely finish, then reveal replacement tile!
       MahjongAudioService.waitForVoiceComplete().then(() => {
         this.refreshAllSeats();
@@ -832,11 +837,8 @@ export class MainGameScene extends Phaser.Scene {
       MahjongHandEvaluator.isWinningHand(p1.hand, p1.melds, p1.drawnTile);
 
     const kongOptions = MahjongHandEvaluator.getSelfKongOptions(fullHand, p1.melds);
-    const allVisible = this.gameState.getAllVisibleTiles();
-    const tingInfo = MahjongHandEvaluator.evaluateTing(p1.hand, p1.melds, allVisible);
-    const canTing = tingInfo.winningTiles.length > 0 && !p1.isTing && !p1.isAutoPlay;
 
-    if (canHu || kongOptions.length > 0 || canTing) {
+    if (canHu || kongOptions.length > 0) {
       this.showActionBar({
         canHu,
         canKong: kongOptions.length > 0,
@@ -848,7 +850,7 @@ export class MainGameScene extends Phaser.Scene {
         canPong: false,
         canChow: false,
         chowOptions: [],
-        canTing,
+        canTing: false,
         canPass: true,
       });
     } else {
@@ -964,20 +966,6 @@ export class MainGameScene extends Phaser.Scene {
           } else {
             this.showChowSubMenu(actions.chowOptions);
           }
-        },
-      });
-    }
-
-    if (actions.canTing && !this.gameState.players[0].isTing && !this.gameState.players[0].isAutoPlay) {
-      buttons.push({
-        key: 'action_btn_ting',
-        label: '聽',
-        action: () => {
-          this.actionBarContainer.setVisible(false);
-          this.subMenuContainer.setVisible(false);
-          MahjongAudioService.playVoiceTing();
-          this.gameState.players[0].isTing = true;
-          this.updateSmartTing();
         },
       });
     }

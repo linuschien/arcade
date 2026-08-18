@@ -339,4 +339,56 @@ describe('MahjongGameState Unit Tests', () => {
     expect(p0.melds[0].type).toBe('CONCEALED_KONG');
     expect(p0.drawnTile).not.toBeNull();
   });
+
+  it('should trigger settleDraw and preserve 16 dead wall reserve tiles when drawing a flower on dead wall exhaustion', () => {
+    state.startNewMatch();
+    state.startDealing();
+
+    // Force deck regular tiles remaining to 0 (reached 16 dead wall reserve)
+    while (state.deck.hasRegularTilesLeft()) {
+      state.deck.drawHead();
+    }
+    expect(state.deck.hasRegularTilesLeft()).toBe(false);
+    expect(state.deck.getDeadWallCount()).toBe(16);
+
+    const p0 = state.players[0];
+    const flowerTile: Tile = { id: 'f_bamboo_1', suit: 'FLOWERS', value: 1, name: '春', shortCode: '1f', isFlower: true };
+    p0.drawnTile = flowerTile;
+
+    const rep = state.replaceDrawnFlower(0);
+    expect(rep).toBeNull();
+    expect(p0.flowers).toContain(flowerTile);
+    expect(p0.drawnTile).toBeNull();
+    // Must have transitioned to ROUND_SETTLEMENT due to draw game (流局)
+    expect(state.phase).toBe('ROUND_SETTLEMENT');
+  });
+
+  it('should trigger settleDraw and preserve 16 dead wall reserve tiles when performing self kong on dead wall exhaustion', () => {
+    state.startNewMatch();
+    state.startDealing();
+
+    // Force deck regular tiles remaining to 0
+    while (state.deck.hasRegularTilesLeft()) {
+      state.deck.drawHead();
+    }
+    expect(state.deck.hasRegularTilesLeft()).toBe(false);
+
+    const p0 = state.players[0];
+    p0.hand = [
+      { id: '5s_1', suit: 'BAMBOO', value: 5, name: '五條', shortCode: '5s' },
+      { id: '5s_2', suit: 'BAMBOO', value: 5, name: '五條', shortCode: '5s' },
+      { id: '5s_3', suit: 'BAMBOO', value: 5, name: '五條', shortCode: '5s' },
+      { id: '5s_4', suit: 'BAMBOO', value: 5, name: '五條', shortCode: '5s' },
+    ];
+    p0.drawnTile = null;
+
+    state.performSelfKong(0, {
+      type: 'CONCEALED_KONG',
+      tileCode: '5s',
+      handTileIds: ['5s_1', '5s_2', '5s_3', '5s_4'],
+    });
+
+    expect(p0.melds.length).toBe(1);
+    expect(state.phase).toBe('ROUND_SETTLEMENT');
+  });
 });

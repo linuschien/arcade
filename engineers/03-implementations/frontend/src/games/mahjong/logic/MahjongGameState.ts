@@ -433,9 +433,21 @@ export class MahjongGameState {
       return null;
     }
 
+    // Ensure 16 dead wall reserve tiles are preserved: if regular tiles exhausted, cannot draw from dead wall -> Draw Game
+    if (!this.deck.hasRegularTilesLeft()) {
+      this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, flower, null as any));
+      this.settleDraw();
+      return null;
+    }
+
     const rep = this.deck.drawTail();
+    if (!rep) {
+      this.settleDraw();
+      return null;
+    }
+
     player.drawnTile = rep;
-    this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, flower, rep!));
+    this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, flower, rep));
     return rep;
   }
 
@@ -653,7 +665,15 @@ export class MahjongGameState {
         this.notifyPhase();
 
         // Replenishment draw from tail
+        if (!this.deck.hasRegularTilesLeft()) {
+          this.settleDraw();
+          return;
+        }
         const rep = this.deck.drawTail();
+        if (!rep) {
+          this.settleDraw();
+          return;
+        }
         claimant.drawnTile = rep;
 
         // Auto flower replacement on tail draw
@@ -664,9 +684,17 @@ export class MahjongGameState {
             this.settleFlowerWin(pongOrKong.seat);
             return;
           }
+          if (!this.deck.hasRegularTilesLeft()) {
+            this.settleDraw();
+            return;
+          }
           const flowerRep = this.deck.drawTail();
+          if (!flowerRep) {
+            this.settleDraw();
+            return;
+          }
           claimant.drawnTile = flowerRep;
-          this.listeners.forEach((l) => l.onFlowerReplaced?.(pongOrKong.seat, flower, flowerRep!));
+          this.listeners.forEach((l) => l.onFlowerReplaced?.(pongOrKong.seat, flower, flowerRep));
         }
 
         this.listeners.forEach((l) => l.onTurnStart?.(pongOrKong.seat, claimant.drawnTile));
@@ -834,7 +862,15 @@ export class MahjongGameState {
     }
 
     // Replenishment draw from tail
+    if (!this.deck.hasRegularTilesLeft()) {
+      this.settleDraw();
+      return;
+    }
     const rep = this.deck.drawTail();
+    if (!rep) {
+      this.settleDraw();
+      return;
+    }
     p.drawnTile = rep;
 
     // In headless unit tests (autoStepAI = true), replace flowers synchronously
@@ -846,9 +882,17 @@ export class MahjongGameState {
           this.settleFlowerWin(seat);
           return;
         }
+        if (!this.deck.hasRegularTilesLeft()) {
+          this.settleDraw();
+          return;
+        }
         const flowerRep = this.deck.drawTail();
+        if (!flowerRep) {
+          this.settleDraw();
+          return;
+        }
         p.drawnTile = flowerRep;
-        this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, flower, flowerRep!));
+        this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, flower, flowerRep));
       }
     }
 
