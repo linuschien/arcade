@@ -127,21 +127,21 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     this.bankerDiceGroup.removeAll(true);
     if (!isDealer || !diceResult || diceResult.length < 3) return;
 
-    const cellStep = 29;
+    const cellStep = 38;
     const rackWidth = 4 * cellStep;
     const diceX = handStartX - 24 - rackWidth / 2;
-    const diceY = -48;
+    const diceY = -58;
 
     const bg = this.scene.add.graphics();
     bg.fillStyle(0x020617, 0.9);
-    bg.fillRoundedRect(diceX - 38, diceY - 12, 76, 24, 5);
+    bg.fillRoundedRect(diceX - 42, diceY - 14, 84, 28, 6);
     bg.lineStyle(1.5, 0xd4af37, 0.9);
-    bg.strokeRoundedRect(diceX - 38, diceY - 12, 76, 24, 5);
+    bg.strokeRoundedRect(diceX - 42, diceY - 14, 84, 28, 6);
     this.bankerDiceGroup.add(bg);
 
     for (let i = 0; i < 3; i++) {
-      const sprite = this.scene.add.sprite(diceX - 22 + i * 22, diceY, `mahjong:dice_${diceResult[i]}`);
-      sprite.setDisplaySize(14, 14);
+      const sprite = this.scene.add.sprite(diceX - 24 + i * 24, diceY, `mahjong:dice_${diceResult[i]}`);
+      sprite.setDisplaySize(18, 18);
       this.bankerDiceGroup.add(sprite);
     }
   }
@@ -184,14 +184,14 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 4x2 Flower Rack situated on the LEFT flank of the Hand.
+   * 4x2 Flower Rack situated on the LEFT flank of the Hand with full 36x48 standard tiles.
    */
   private renderFlowerRack(flowers: Tile[], wind?: string, handStartX: number = -288): void {
     this.flowerGroup.removeAll(true);
 
-    const cellW = 26;
-    const cellH = 34;
-    const stepX = 29;
+    const cellW = SeatLayoutContainer.TILE_W;
+    const cellH = SeatLayoutContainer.TILE_H;
+    const stepX = 38;
 
     const slotKeys = [
       'spring', 'summer', 'autumn', 'winter',
@@ -213,7 +213,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       for (let c = 0; c < 4; c++) {
         const idx = r * 4 + c;
         const x = flowerStartX + c * stepX + cellW / 2;
-        const y = (r === 0 ? -19 : 18);
+        const y = (r === 0 ? -25 : 25);
 
         const slotCode = slotKeys[idx];
         const hasFlower = flowers.some((f) => f.shortCode === slotCode);
@@ -227,7 +227,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
           // Highlight positive flowers with coral orange border
           if (isPositive) {
             const frame = this.scene.add.graphics();
-            frame.lineStyle(2, 0xf97316, 1);
+            frame.lineStyle(2.5, 0xf97316, 1);
             frame.strokeRoundedRect(x - cellW / 2, y - cellH / 2, cellW, cellH, 3);
             this.flowerGroup.add(frame);
           }
