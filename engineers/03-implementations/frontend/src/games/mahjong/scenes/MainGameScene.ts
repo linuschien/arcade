@@ -197,6 +197,7 @@ export class MainGameScene extends Phaser.Scene {
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#facc15',
       fontStyle: 'bold',
+      resolution: 2,
     }).setOrigin(0.5);
 
     this.dealerStreakText = this.add.text(cx, cy, '連 0 拉 0', {
@@ -204,13 +205,15 @@ export class MainGameScene extends Phaser.Scene {
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#94a3b8',
       fontStyle: 'bold',
+      resolution: 2,
     }).setOrigin(0.5);
 
     this.remainingTilesText = this.add.text(cx, cy + 16, '餘 70 張', {
       fontSize: '11px',
-      fontFamily: 'monospace',
+      fontFamily: '"Microsoft JhengHei", "Roboto Mono", Consolas, monospace',
       color: '#38bdf8',
       fontStyle: 'bold',
+      resolution: 2,
     }).setOrigin(0.5);
 
     // 4 Integrated Player HUD Strips around the 4 borders of the square compass:
@@ -241,16 +244,18 @@ export class MainGameScene extends Phaser.Scene {
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#f8fafc',
         fontStyle: 'bold',
+        resolution: 2,
       }).setOrigin(0.5);
       container.add(pText);
       this.compassPlayerTexts.push(pText);
 
-      // Line 2: 籌碼點數
-      const chipsText = this.add.text(0, 6, '10,000 點', {
-        fontSize: '10px',
-        fontFamily: 'monospace',
+      // Line 2: 籌碼點數 (11px bold high-res crisp font)
+      const chipsText = this.add.text(0, 7, '10,000 點', {
+        fontSize: '11px',
+        fontFamily: '"Microsoft JhengHei", "Roboto Mono", Consolas, sans-serif',
         color: '#facc15',
         fontStyle: 'bold',
+        resolution: 2,
       }).setOrigin(0.5);
       container.add(chipsText);
       this.compassPlayerChipsTexts.push(chipsText);
