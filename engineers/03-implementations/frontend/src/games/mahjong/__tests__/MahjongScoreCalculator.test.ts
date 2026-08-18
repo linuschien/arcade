@@ -226,7 +226,7 @@ describe('MahjongScoreCalculator Unit Tests', () => {
     expect(result.fans.some((f) => f.name === '紅中刻子')).toBe(false);
   });
 
-  it('should evaluate 地胡 (8 fans) + 槓上開花 (1 fan) + 門清自摸 (3 fans) on first turn flower replenishment self-draw', () => {
+  it('should evaluate 地胡 (8 fans) + 槓上開花 (1 fan) = 9 fans (implicitly includes concealed self-draw)', () => {
     const handCodes = [
       '1m', '2m', '3m',
       '4m', '5m', '6m',
@@ -256,7 +256,87 @@ describe('MahjongScoreCalculator Unit Tests', () => {
 
     expect(result.fans.some((f) => f.name === '地胡' && f.fan === 8)).toBe(true);
     expect(result.fans.some((f) => f.name === '槓上開花' && f.fan === 1)).toBe(true);
-    expect(result.fans.some((f) => f.name === '門清自摸' && f.fan === 3)).toBe(true);
-    expect(result.totalFans).toBe(12);
+    expect(result.fans.some((f) => f.name === '門清自摸')).toBe(false); // Excluded (implicitly included)
+    expect(result.totalFans).toBe(9);
+  });
+
+  it('should evaluate 天胡 (16 fans) + 槓上開花 (1 fan) + 莊家 (1 fan) = 18 fans for dealer flower replenishment win', () => {
+    const handCodes = [
+      '1m', '2m', '3m',
+      '4m', '5m', '6m',
+      '7m', '8m', '9m',
+      '1p', '2p', '3p',
+      '4s', '5s', '6s',
+      '9s',
+    ];
+    const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+    const winningTile = createTile('9s', 'win');
+
+    const result = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 0, // Dealer
+      winnerHand: hand,
+      winnerMelds: [],
+      winnerFlowers: [],
+      winningTile,
+      isSelfDrawn: true,
+      isHeavenlyWin: true,
+      isKongBloom: true, // Drew flower on initial deal/jump, replenished from tail and won!
+      roundWind: 'EAST',
+      playerWind: 'EAST',
+      dealerSeat: 0,
+      dealerStreak: 0, // N = 0 -> 2N+1 = 1 fan
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+
+    expect(result.fans.some((f) => f.name === '天胡' && f.fan === 16)).toBe(true);
+    expect(result.fans.some((f) => f.name === '槓上開花' && f.fan === 1)).toBe(true);
+    expect(result.dealerMultiplierFan).toBe(1);
+    expect(result.fans.some((f) => f.name === '門清自摸')).toBe(false); // Excluded (implicitly included)
+    expect(result.totalFans).toBe(17);
+    // Non-dealers each pay: 500 + 200 * (17 + 1) = 4100
+    expect(result.chipDeltas[1]).toBe(-4100);
+    expect(result.chipDeltas[2]).toBe(-4100);
+    expect(result.chipDeltas[3]).toBe(-4100);
+    expect(result.chipDeltas[0]).toBe(12300);
+  });
+
+  it('should evaluate 人胡 (8 fans) + 平胡 (2 fans) = 10 fans when ron on first turn without melds', () => {
+    // Hand: 123m, 456m, 789m, 123p, 45s (waiting on 3s/6s) + 9m pair
+    const handCodes = [
+      '1m', '2m', '3m',
+      '4m', '5m', '6m',
+      '7m', '8m', '9m',
+      '1p', '2p', '3p',
+      '4s', '5s',
+      '9m', '9m',
+    ];
+    const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+    const winningTile = createTile('6s', 'win'); // 2-sided wait
+
+    const result = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 1, // Non-dealer
+      winnerHand: hand,
+      winnerMelds: [],
+      winnerFlowers: [],
+      winningTile,
+      isSelfDrawn: false,
+      loserSeat: 0,
+      isHumanWin: true,
+      roundWind: 'EAST',
+      playerWind: 'SOUTH',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+
+    expect(result.fans.some((f) => f.name === '人胡' && f.fan === 8)).toBe(true);
+    expect(result.fans.some((f) => f.name === '平胡' && f.fan === 2)).toBe(true);
+    expect(result.fans.some((f) => f.name === '門清')).toBe(false); // Excluded (implicitly included)
+    // Extra 1 fan because loser is dealer (2N+1 = 1)
+    // Total fans for winner = 8 (人胡) + 2 (平胡) = 10 fans
+    expect(result.totalFans).toBe(10);
+    // Dealer pays: 500 + 200 * (10 + 1) = 2700
+    expect(result.chipDeltas[0]).toBe(-2700);
+    expect(result.chipDeltas[1]).toBe(2700);
   });
 });

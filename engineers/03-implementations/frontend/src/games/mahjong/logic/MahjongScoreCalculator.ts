@@ -283,14 +283,20 @@ export class MahjongScoreCalculator {
     );
 
     if (!hasOpenMelds && ctx.isSelfDrawn) {
-      // 門清自摸 (3) - fixed 3 fans, no double counting
-      fans.push({ name: '門清自摸', fan: 3, description: '全門清且自摸胡牌 (門清一摸三)' });
+      // 門清自摸 (3) - 天胡與地胡已內含門清自摸，不重複累加
+      if (!ctx.isHeavenlyWin && !ctx.isEarthlyWin) {
+        fans.push({ name: '門清自摸', fan: 3, description: '全門清且自摸胡牌 (門清一摸三)' });
+      }
     } else if (!hasOpenMelds && !ctx.isSelfDrawn) {
-      // 門清 (1)
-      fans.push({ name: '門清', fan: 1, description: '全門清放銃胡牌' });
+      // 門清 (1) - 人胡已內含門清，不重複累加
+      if (!ctx.isHumanWin) {
+        fans.push({ name: '門清', fan: 1, description: '全門清放銃胡牌' });
+      }
     } else if (hasOpenMelds && ctx.isSelfDrawn) {
       // 自摸 (1)
-      fans.push({ name: '自摸', fan: 1, description: '自摸胡牌' });
+      if (!ctx.isHeavenlyWin && !ctx.isEarthlyWin) {
+        fans.push({ name: '自摸', fan: 1, description: '自摸胡牌' });
+      }
     } else if (melds.length === 5 && !ctx.isSelfDrawn) {
       // 全求人 (2) - 5 open melds, 1 single wait tile won on ron
       fans.push({ name: '全求人', fan: 2, description: '五組面子全副露單騎聽放銃' });
@@ -522,7 +528,7 @@ export class MahjongScoreCalculator {
       fans.push({ name: '人胡', fan: 8, description: '第一巡抓第一張放銃牌榮和' });
     }
 
-    if (ctx.isKongBloom && !ctx.isHeavenlyWin) {
+    if (ctx.isKongBloom) {
       fans.push({ name: '槓上開花', fan: 1, description: '槓牌或補花後牌尾自摸' });
     }
 
