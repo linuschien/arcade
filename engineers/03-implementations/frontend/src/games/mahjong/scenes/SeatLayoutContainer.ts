@@ -49,73 +49,55 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   private initHUD(): void {
-    this.hudGroup.setAngle(-this.seatAngle);
+    // Ring 1: Position HUD in a compact ring around the central compass
+    const isSideSeat = this.seat === 1 || this.seat === 3;
+    const hudY = isSideSeat ? -425 : -225;
+    this.hudGroup.setPosition(0, hudY);
+    this.hudGroup.setAngle(0);
 
-    // Position HUD at the exact 4 corners with identical 20px border margin (PRD 5.3)
-    let hudX = 0;
-    let hudY = 0;
-
-    if (this.seat === 0) {
-      // Bottom Human (0 deg, container at (640, 645)): Bottom-Left Corner (20, 652)
-      hudX = -620;
-      hudY = 7;
-    } else if (this.seat === 1) {
-      // Right AI (270 deg, container at (1180, 360)): Bottom-Right Corner (1118, 652)
-      hudX = -292;
-      hudY = -62;
-    } else if (this.seat === 2) {
-      // Top AI (180 deg, container at (640, 75)): Top-Right Corner (1118, 20)
-      hudX = -478;
-      hudY = 55;
-    } else if (this.seat === 3) {
-      // Left AI (90 deg, container at (100, 360)): Top-Left Corner (20, 20)
-      hudX = -340;
-      hudY = 80;
-    }
-
-    this.hudGroup.setPosition(hudX, hudY);
-
-    // HUD Background Capsule
+    // Sleek HUD capsule (130x28)
     const bg = this.scene.add.graphics();
-    bg.fillStyle(0x0f172a, 0.92);
-    bg.fillRoundedRect(0, 0, 142, 48, 8);
-    bg.lineStyle(1, 0xd4af37, 0.9);
-    bg.strokeRoundedRect(0, 0, 142, 48, 8);
+    bg.fillStyle(0x0f172a, 0.94);
+    bg.fillRoundedRect(-65, -14, 130, 28, 6);
+    bg.lineStyle(1.5, 0xd4af37, 0.9);
+    bg.strokeRoundedRect(-65, -14, 130, 28, 6);
     this.hudGroup.add(bg);
 
-    this.hudText = this.scene.add.text(10, 6, '玩家', {
-      fontSize: '12px',
+    this.hudText = this.scene.add.text(-58, -7, '玩家', {
+      fontSize: '11px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#f8fafc',
       fontStyle: 'bold',
     });
 
-    this.hudChipsText = this.scene.add.text(10, 26, '10000 點', {
-      fontSize: '12px',
+    this.hudChipsText = this.scene.add.text(58, -7, '10000 點', {
+      fontSize: '11px',
       fontFamily: 'monospace',
       color: '#facc15',
       fontStyle: 'bold',
     });
+    this.hudChipsText.setOrigin?.(1, 0);
 
     this.hudGroup.add([this.hudText, this.hudChipsText]);
   }
 
   /**
-   * Updates player HUD status with directional arrows & seat wind bonus (PRD 5.3).
+   * Updates player HUD status around the central compass (Ring 1).
    */
   public updatePlayerInfo(profile: PlayerProfile, roundWind: string = 'EAST'): void {
-    const arrows = ['▼', '▶', '▲', '◀'];
-    const arrow = arrows[this.seat] || '▼';
     const windNames: Record<string, string> = {
-      EAST: '東風',
-      SOUTH: '南風',
-      WEST: '西風',
-      NORTH: '北風',
+      EAST: '東',
+      SOUTH: '南',
+      WEST: '西',
+      NORTH: '北',
     };
-    const windName = windNames[profile.wind] || '東風';
-    const isDoubleWind = profile.wind === roundWind;
-    const taiText = isDoubleWind ? `${windName}2台` : `${windName}1台`;
-    this.hudText.setText(`${arrow} [${taiText}] ${profile.name}`);
+    const windName = windNames[profile.wind] || '東';
+    const isRoundWind = profile.wind === roundWind;
+    const windColor = isRoundWind ? '#facc15' : '#e2e8f0';
+
+    const dealerBadge = profile.isDealer ? ' [莊]' : '';
+    this.hudText.setText(`${windName}${dealerBadge} ${profile.name}`);
+    this.hudText.setColor?.(windColor);
     this.hudChipsText.setText(`${profile.chips.toLocaleString()} 點`);
   }
 
@@ -139,25 +121,27 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Renders Banker Dice directly to the RIGHT of the full-sized single-row Flower Rack (X = +195, Y = -62).
+   * Renders Banker Dice above the left-side Flower Rack.
    */
-  public showBankerDice(diceResult: number[] | null, isDealer: boolean = false): void {
+  public showBankerDice(diceResult: number[] | null, isDealer: boolean = false, handStartX: number = -288): void {
     this.bankerDiceGroup.removeAll(true);
     if (!isDealer || !diceResult || diceResult.length < 3) return;
 
-    const diceX = 195;
-    const diceY = -62;
+    const cellStep = 29;
+    const rackWidth = 4 * cellStep;
+    const diceX = handStartX - 24 - rackWidth / 2;
+    const diceY = -48;
 
     const bg = this.scene.add.graphics();
     bg.fillStyle(0x020617, 0.9);
-    bg.fillRoundedRect(diceX - 42, diceY - 16, 84, 32, 6);
+    bg.fillRoundedRect(diceX - 38, diceY - 12, 76, 24, 5);
     bg.lineStyle(1.5, 0xd4af37, 0.9);
-    bg.strokeRoundedRect(diceX - 42, diceY - 16, 84, 32, 6);
+    bg.strokeRoundedRect(diceX - 38, diceY - 12, 76, 24, 5);
     this.bankerDiceGroup.add(bg);
 
     for (let i = 0; i < 3; i++) {
-      const sprite = this.scene.add.sprite(diceX - 24 + i * 24, diceY, `mahjong:dice_${diceResult[i]}`);
-      sprite.setDisplaySize(18, 18);
+      const sprite = this.scene.add.sprite(diceX - 22 + i * 22, diceY, `mahjong:dice_${diceResult[i]}`);
+      sprite.setDisplaySize(14, 14);
       this.bankerDiceGroup.add(sprite);
     }
   }
@@ -171,8 +155,6 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     diceResult: number[] | null = null
   ): void {
     this.updatePlayerInfo(profile, roundWind);
-    this.renderFlowerRack(profile.flowers, profile.wind);
-    this.showBankerDice(diceResult, profile.isDealer);
 
     // Calculate symmetrical centering for Hand + Reserved Drawn Slot + Melds
     const meldCount = profile.melds.length;
@@ -193,19 +175,23 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
     this.renderMelds(profile.melds, isHuman, revealHand, meldStartX);
     this.renderHand(profile, isHuman, revealHand, handStartX, maxHandTilesW, stepX, gapDrawn);
+
+    // Flower Rack placed on the LEFT of the hand (Item 4)
+    this.renderFlowerRack(profile.flowers, profile.wind, handStartX);
+    this.showBankerDice(diceResult, profile.isDealer, handStartX);
+
     this.renderDiscards(profile.discards, isLastDiscardSeat);
   }
 
   /**
-   * 4x1, 4x1 Single-Row Centered Flower Rack with full 36x48 standard tiles (Y = -62).
+   * 4x2 Flower Rack situated on the LEFT flank of the Hand.
    */
-  private renderFlowerRack(flowers: Tile[], wind?: string): void {
+  private renderFlowerRack(flowers: Tile[], wind?: string, handStartX: number = -288): void {
     this.flowerGroup.removeAll(true);
 
-    const cellW = SeatLayoutContainer.TILE_W;
-    const cellH = SeatLayoutContainer.TILE_H;
-    const cellStep = 38;
-    const baseY = -62;
+    const cellW = 26;
+    const cellH = 34;
+    const stepX = 29;
 
     const slotKeys = [
       'spring', 'summer', 'autumn', 'winter',
@@ -221,34 +207,35 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     };
     const playerPositives = wind ? (positiveIndices[wind] || []) : [];
 
-    // Left 4 Seasons: x in [-160, -8], Right 4 Plants: x in [+8, +160]
-    for (let i = 0; i < 8; i++) {
-      const isPlant = i >= 4;
-      const groupCol = i % 4;
-      const groupStartX = isPlant ? 8 : -160;
-      const x = groupStartX + groupCol * cellStep + cellW / 2;
-      const y = baseY;
+    const flowerStartX = handStartX - 24 - 4 * stepX;
 
-      const slotCode = slotKeys[i];
-      const hasFlower = flowers.some((f) => f.shortCode === slotCode);
-      const isPositive = playerPositives.includes(i);
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < 4; c++) {
+        const idx = r * 4 + c;
+        const x = flowerStartX + c * stepX + cellW / 2;
+        const y = (r === 0 ? -19 : 18);
 
-      if (hasFlower) {
-        const sprite = this.scene.add.sprite(x, y, `mahjong:tile_${slotCode}`);
-        sprite.setDisplaySize(cellW, cellH);
-        this.flowerGroup.add(sprite);
+        const slotCode = slotKeys[idx];
+        const hasFlower = flowers.some((f) => f.shortCode === slotCode);
+        const isPositive = playerPositives.includes(idx);
 
-        // Highlight positive flowers with coral orange border
-        if (isPositive) {
-          const frame = this.scene.add.graphics();
-          frame.lineStyle(2.5, 0xf97316, 1);
-          frame.strokeRoundedRect(x - cellW / 2, y - cellH / 2, cellW, cellH, 3);
-          this.flowerGroup.add(frame);
+        if (hasFlower) {
+          const sprite = this.scene.add.sprite(x, y, `mahjong:tile_${slotCode}`);
+          sprite.setDisplaySize(cellW, cellH);
+          this.flowerGroup.add(sprite);
+
+          // Highlight positive flowers with coral orange border
+          if (isPositive) {
+            const frame = this.scene.add.graphics();
+            frame.lineStyle(2, 0xf97316, 1);
+            frame.strokeRoundedRect(x - cellW / 2, y - cellH / 2, cellW, cellH, 3);
+            this.flowerGroup.add(frame);
+          }
+        } else {
+          const cell = this.scene.add.sprite(x, y, 'mahjong:flower_cell');
+          cell.setDisplaySize(cellW, cellH);
+          this.flowerGroup.add(cell);
         }
-      } else {
-        const cell = this.scene.add.sprite(x, y, 'mahjong:flower_cell');
-        cell.setDisplaySize(cellW, cellH);
-        this.flowerGroup.add(cell);
       }
     }
   }
@@ -497,7 +484,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     const riverStartX = -((cols * stepX) / 2);
 
     const isSideSeat = this.seat === 1 || this.seat === 3;
-    const baseY = isSideSeat ? -228 : -124;
+    const baseY = isSideSeat ? -320 : -120;
 
     // 1. Draw 18 placeholder grid cells (9x2)
     for (let r = 0; r < 2; r++) {

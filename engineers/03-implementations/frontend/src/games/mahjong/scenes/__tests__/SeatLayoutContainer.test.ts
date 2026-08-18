@@ -181,22 +181,22 @@ describe('SeatLayoutContainer Unit Tests', () => {
     expect(humanTileBackCalls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('should initialize HUD and Flower Rack positions correctly across all 4 table corners with 20px margin', () => {
-    // Seat 0: Bottom-Left Corner (20, 652) -> relative (-620, 7)
+  it('should initialize HUD positions correctly around the central compass (Ring 1)', () => {
+    // Seat 0: Top/Bottom seat -> relative (0, -225)
     const seat0 = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
-    expect((seat0 as any).hudGroup.setPosition).toHaveBeenCalledWith(-620, 7);
+    expect((seat0 as any).hudGroup.setPosition).toHaveBeenCalledWith(0, -225);
 
-    // Seat 1: Bottom-Right Corner (1118, 652) -> relative (-292, -62)
+    // Seat 1: Side seat -> relative (0, -425)
     const seat1 = new SeatLayoutContainer(mockScene, 1180, 360, 270, 1);
-    expect((seat1 as any).hudGroup.setPosition).toHaveBeenCalledWith(-292, -62);
+    expect((seat1 as any).hudGroup.setPosition).toHaveBeenCalledWith(0, -425);
 
-    // Seat 2: Top-Right Corner (1118, 20) -> relative (-478, 55)
+    // Seat 2: Top/Bottom seat -> relative (0, -225)
     const seat2 = new SeatLayoutContainer(mockScene, 640, 75, 180, 2);
-    expect((seat2 as any).hudGroup.setPosition).toHaveBeenCalledWith(-478, 55);
+    expect((seat2 as any).hudGroup.setPosition).toHaveBeenCalledWith(0, -225);
 
-    // Seat 3: Top-Left Corner (20, 20) -> relative (-340, 80)
+    // Seat 3: Side seat -> relative (0, -425)
     const seat3 = new SeatLayoutContainer(mockScene, 100, 360, 90, 3);
-    expect((seat3 as any).hudGroup.setPosition).toHaveBeenCalledWith(-340, 80);
+    expect((seat3 as any).hudGroup.setPosition).toHaveBeenCalledWith(0, -425);
   });
 
   it('should place melds strictly between hand and flower rack (positive X offset)', () => {
@@ -264,34 +264,38 @@ describe('SeatLayoutContainer Unit Tests', () => {
     expect(drawnTileRightEdge).toBeLessThan(meldLeftEdge);
   });
 
-  it('should render directional arrows and wind bonus in HUD matching seat orientation', () => {
+  it('should render player wind and name in HUD correctly', () => {
     const seat0 = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
     const profile0 = createMockProfile();
     profile0.wind = 'EAST';
+    profile0.isDealer = true;
     profile0.name = '賭神';
     seat0.updatePlayerInfo(profile0, 'EAST');
-    expect((seat0 as any).hudText.setText).toHaveBeenCalledWith('▼ [東風2台] 賭神');
+    expect((seat0 as any).hudText.setText).toHaveBeenCalledWith('東 [莊] 賭神');
 
     const seat1 = new SeatLayoutContainer(mockScene, 1180, 360, 270, 1);
     const profile1 = createMockProfile();
     profile1.wind = 'SOUTH';
+    profile1.isDealer = false;
     profile1.name = '賭俠小刀';
     seat1.updatePlayerInfo(profile1, 'EAST');
-    expect((seat1 as any).hudText.setText).toHaveBeenCalledWith('▶ [南風1台] 賭俠小刀');
+    expect((seat1 as any).hudText.setText).toHaveBeenCalledWith('南 賭俠小刀');
 
     const seat2 = new SeatLayoutContainer(mockScene, 640, 75, 180, 2);
     const profile2 = createMockProfile();
     profile2.wind = 'WEST';
+    profile2.isDealer = false;
     profile2.name = '賭聖阿星';
     seat2.updatePlayerInfo(profile2, 'EAST');
-    expect((seat2 as any).hudText.setText).toHaveBeenCalledWith('▲ [西風1台] 賭聖阿星');
+    expect((seat2 as any).hudText.setText).toHaveBeenCalledWith('西 賭聖阿星');
 
     const seat3 = new SeatLayoutContainer(mockScene, 100, 360, 90, 3);
     const profile3 = createMockProfile();
     profile3.wind = 'NORTH';
-    profile3.name = '賭霸有喜';
+    profile3.isDealer = false;
+    profile3.name = '陳金城';
     seat3.updatePlayerInfo(profile3, 'EAST');
-    expect((seat3 as any).hudText.setText).toHaveBeenCalledWith('◀ [北風1台] 賭霸有喜');
+    expect((seat3 as any).hudText.setText).toHaveBeenCalledWith('北 陳金城');
   });
 
   it('should rotate the correct tile sideways in PONG based on discard source relative seat', () => {

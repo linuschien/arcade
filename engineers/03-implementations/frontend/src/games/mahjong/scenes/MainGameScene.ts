@@ -122,7 +122,7 @@ export class MainGameScene extends Phaser.Scene {
     // 1. South Wall (Bottom): Right to Left (0 to 17)
     for (let i = 0; i < stacksPerSide; i++) {
       const x = 810 - i * step;
-      const y = 550;
+      const y = 545;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       this.wallSprites.push(sprite);
       this.wallContainer.add(sprite);
@@ -130,7 +130,7 @@ export class MainGameScene extends Phaser.Scene {
 
     // 2. West Wall (Left): Bottom to Top (18 to 35)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 300;
+      const x = 400;
       const y = 530 - i * 19;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       sprite.setAngle(90);
@@ -141,7 +141,7 @@ export class MainGameScene extends Phaser.Scene {
     // 3. North Wall (Top): Left to Right (36 to 53)
     for (let i = 0; i < stacksPerSide; i++) {
       const x = 470 + i * step;
-      const y = 170;
+      const y = 175;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       this.wallSprites.push(sprite);
       this.wallContainer.add(sprite);
@@ -149,7 +149,7 @@ export class MainGameScene extends Phaser.Scene {
 
     // 4. East Wall (Right): Top to Bottom (54 to 71)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 980;
+      const x = 880;
       const y = 190 + i * 19;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       sprite.setAngle(90);
@@ -180,13 +180,13 @@ export class MainGameScene extends Phaser.Scene {
     const cy = 360;
 
     const dial = this.add.sprite(cx, cy, 'mahjong:compass_dial');
-    dial.setDisplaySize(140, 140);
+    dial.setDisplaySize(110, 110);
 
     // Turn pointer (Breathing gold needle)
     this.turnPointer = this.add.graphics();
 
-    this.roundWindText = this.add.text(cx, cy - 20, '東風東', {
-      fontSize: '14px',
+    this.roundWindText = this.add.text(cx, cy - 16, '東風東', {
+      fontSize: '13px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#facc15',
       fontStyle: 'bold',
@@ -194,15 +194,15 @@ export class MainGameScene extends Phaser.Scene {
     this.roundWindText.setOrigin(0.5);
 
     this.dealerStreakText = this.add.text(cx, cy, '連 0 拉 0', {
-      fontSize: '11px',
+      fontSize: '10px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#94a3b8',
       fontStyle: 'bold',
     });
     this.dealerStreakText.setOrigin(0.5);
 
-    this.remainingTilesText = this.add.text(cx, cy + 20, '餘 70 張', {
-      fontSize: '11px',
+    this.remainingTilesText = this.add.text(cx, cy + 16, '餘 70 張', {
+      fontSize: '10px',
       fontFamily: 'monospace',
       color: '#38bdf8',
       fontStyle: 'bold',
@@ -211,26 +211,26 @@ export class MainGameScene extends Phaser.Scene {
 
     // Fixed Seat Winds on Compass Dial (Bottom Seat 0, Right Seat 1, Top Seat 2, Left Seat 3)
     this.compassSeatWindTexts = [
-      this.add.text(cx, cy + 46, '東', {
-        fontSize: '13px',
+      this.add.text(cx, cy + 38, '東', {
+        fontSize: '11px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#fef08a',
         fontStyle: 'bold',
       }).setOrigin(0.5),
-      this.add.text(cx + 46, cy, '南', {
-        fontSize: '13px',
+      this.add.text(cx + 38, cy, '南', {
+        fontSize: '11px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#fef08a',
         fontStyle: 'bold',
       }).setOrigin(0.5),
-      this.add.text(cx, cy - 46, '西', {
-        fontSize: '13px',
+      this.add.text(cx, cy - 38, '西', {
+        fontSize: '11px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#fef08a',
         fontStyle: 'bold',
       }).setOrigin(0.5),
-      this.add.text(cx - 46, cy, '北', {
-        fontSize: '13px',
+      this.add.text(cx - 38, cy, '北', {
+        fontSize: '11px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#fef08a',
         fontStyle: 'bold',
