@@ -393,13 +393,18 @@ export class MainGameScene extends Phaser.Scene {
         MahjongAudioService.waitForVoiceComplete().then(() => {
           if (seat === 0) {
             this.checkHumanSelfActions();
-            const hasSelfAction = this.actionBarContainer.visible;
-            if (this.gameState.players[0].isAutoPlay && !hasSelfAction) {
-              this.time.delayedCall(400, () => {
-                if (this.gameState.currentTurnSeat === 0 && this.gameState.phase === 'PLAYER_TURN') {
-                  this.gameState.stepAITurn(0);
-                }
-              });
+            const p0 = this.gameState.players[0];
+            if (p0.isAutoPlay && !this.actionBarContainer.visible) {
+              const canHu =
+                p0.drawnTile !== null &&
+                MahjongHandEvaluator.isWinningHand(p0.hand, p0.melds, p0.drawnTile);
+              if (!canHu) {
+                this.time.delayedCall(400, () => {
+                  if (this.gameState.currentTurnSeat === 0 && this.gameState.phase === 'PLAYER_TURN') {
+                    this.gameState.stepAITurn(0);
+                  }
+                });
+              }
             }
           } else {
             // AI turn: schedule async turn step with 600ms thinking delay AFTER voice is done
@@ -702,13 +707,18 @@ export class MainGameScene extends Phaser.Scene {
           // Normal turn continuation with the valid replacement tile
           if (seat === 0) {
             this.checkHumanSelfActions();
-            const hasSelfAction = this.actionBarContainer.visible;
-            if (this.gameState.players[0].isAutoPlay && !hasSelfAction) {
-              this.time.delayedCall(400, () => {
-                if (this.gameState.currentTurnSeat === 0 && this.gameState.phase === 'PLAYER_TURN') {
-                  this.gameState.stepAITurn(0);
-                }
-              });
+            const p0 = this.gameState.players[0];
+            if (p0.isAutoPlay && !this.actionBarContainer.visible) {
+              const canHu =
+                p0.drawnTile !== null &&
+                MahjongHandEvaluator.isWinningHand(p0.hand, p0.melds, p0.drawnTile);
+              if (!canHu) {
+                this.time.delayedCall(400, () => {
+                  if (this.gameState.currentTurnSeat === 0 && this.gameState.phase === 'PLAYER_TURN') {
+                    this.gameState.stepAITurn(0);
+                  }
+                });
+              }
             }
           } else {
             this.time.delayedCall(600, () => {
@@ -842,6 +852,21 @@ export class MainGameScene extends Phaser.Scene {
 
     const kongOptions = MahjongHandEvaluator.getSelfKongOptions(fullHand, p1.melds);
 
+    // If player is in auto-play mode (託管模式):
+    if (p1.isAutoPlay) {
+      this.actionBarContainer.setVisible(false);
+      this.subMenuContainer.setVisible(false);
+      if (canHu) {
+        // Auto-Hu on Self-Draw (自摸自動胡牌)
+        this.time.delayedCall(400, () => {
+          if (this.gameState.currentTurnSeat === 0 && this.gameState.phase === 'PLAYER_TURN') {
+            this.gameState.settleWin(0, true);
+          }
+        });
+      }
+      return;
+    }
+
     if (canHu || kongOptions.length > 0) {
       this.showActionBar({
         canHu,
@@ -863,10 +888,16 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private checkHumanClaimActions(): void {
+    const p1 = this.gameState.players[0];
+    if (p1.isAutoPlay) {
+      this.actionBarContainer.setVisible(false);
+      this.subMenuContainer.setVisible(false);
+      return;
+    }
+
     const last = this.gameState.lastDiscard;
     if (!last || last.fromSeat === 0) return;
 
-    const p1 = this.gameState.players[0];
     const fullHand = [...p1.hand];
     const fromSeat = last.fromSeat;
 
@@ -903,6 +934,12 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private showActionBar(actions: AvailableActions): void {
+    if (this.gameState.players[0].isAutoPlay) {
+      this.actionBarContainer.setVisible(false);
+      this.subMenuContainer.setVisible(false);
+      return;
+    }
+
     this.actionBarContainer.removeAll(true);
     this.actionBarContainer.setVisible(true);
 
