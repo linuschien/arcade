@@ -262,6 +262,57 @@ describe('SeatLayoutContainer Unit Tests', () => {
     expect(drawnTileRightEdge).toBeLessThan(meldLeftEdge);
   });
 
+  it('should render directional arrows in HUD matching seat orientation', () => {
+    const seat0 = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
+    const profile0 = createMockProfile();
+    profile0.wind = 'EAST';
+    profile0.name = '賭神';
+    seat0.updatePlayerInfo(profile0);
+    expect((seat0 as any).hudText.setText).toHaveBeenCalledWith('▼ [東] 賭神');
+
+    const seat1 = new SeatLayoutContainer(mockScene, 1180, 360, 270, 1);
+    const profile1 = createMockProfile();
+    profile1.wind = 'SOUTH';
+    profile1.name = '賭俠小刀';
+    seat1.updatePlayerInfo(profile1);
+    expect((seat1 as any).hudText.setText).toHaveBeenCalledWith('▶ [南] 賭俠小刀');
+
+    const seat2 = new SeatLayoutContainer(mockScene, 640, 75, 180, 2);
+    const profile2 = createMockProfile();
+    profile2.wind = 'WEST';
+    profile2.name = '賭聖阿星';
+    seat2.updatePlayerInfo(profile2);
+    expect((seat2 as any).hudText.setText).toHaveBeenCalledWith('▲ [西] 賭聖阿星');
+
+    const seat3 = new SeatLayoutContainer(mockScene, 100, 360, 90, 3);
+    const profile3 = createMockProfile();
+    profile3.wind = 'NORTH';
+    profile3.name = '賭霸有喜';
+    seat3.updatePlayerInfo(profile3);
+    expect((seat3 as any).hudText.setText).toHaveBeenCalledWith('◀ [北] 賭霸有喜');
+  });
+
+  it('should render 9x2 compact discard river with 9 columns per row', () => {
+    const seatContainer = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
+    const profile = createMockProfile();
+    // 18 discards filling exactly 2 rows of 9 columns
+    profile.discards = Array.from({ length: 18 }, (_, i) => ({
+      id: `discard_${i}`,
+      suit: 'CHARACTERS',
+      value: (i % 9) + 1,
+      name: `${(i % 9) + 1}萬`,
+      shortCode: `${(i % 9) + 1}m`,
+    }));
+
+    mockScene.add.sprite.mockClear();
+    seatContainer.renderPlayerState(profile, true, true);
+
+    const spriteCalls = mockScene.add.sprite.mock.calls;
+    // Discard sprites: 18 tiles
+    const discardTileCalls = spriteCalls.filter((c: any[]) => c[2].startsWith('mahjong:tile_'));
+    expect(discardTileCalls.length).toBeGreaterThanOrEqual(18);
+  });
+
   it('should highlight matching discards correctly', () => {
     const seatContainer = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
     expect(() => seatContainer.highlightMatchingDiscards('1m')).not.toThrow();

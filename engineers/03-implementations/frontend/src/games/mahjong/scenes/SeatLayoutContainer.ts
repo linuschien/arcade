@@ -77,13 +77,13 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     // HUD Background Capsule
     const bg = this.scene.add.graphics();
     bg.fillStyle(0x0f172a, 0.92);
-    bg.fillRoundedRect(0, 0, 130, 48, 8);
+    bg.fillRoundedRect(0, 0, 142, 48, 8);
     bg.lineStyle(1, 0xd4af37, 0.9);
-    bg.strokeRoundedRect(0, 0, 130, 48, 8);
+    bg.strokeRoundedRect(0, 0, 142, 48, 8);
     this.hudGroup.add(bg);
 
     this.hudText = this.scene.add.text(10, 6, '玩家', {
-      fontSize: '13px',
+      fontSize: '12px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#f8fafc',
       fontStyle: 'bold',
@@ -96,7 +96,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       fontStyle: 'bold',
     });
 
-    this.dealerBadge = this.scene.add.text(100, 6, '莊', {
+    this.dealerBadge = this.scene.add.text(118, 6, '莊', {
       fontSize: '14px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#ef4444',
@@ -108,9 +108,11 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Updates player HUD status.
+   * Updates player HUD status with directional arrows (PRD 5.3).
    */
   public updatePlayerInfo(profile: PlayerProfile): void {
+    const arrows = ['▼', '▶', '▲', '◀'];
+    const arrow = arrows[this.seat] || '▼';
     const windChars: Record<string, string> = {
       EAST: '東',
       SOUTH: '南',
@@ -118,7 +120,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       NORTH: '北',
     };
     const windChar = windChars[profile.wind] || '東';
-    this.hudText.setText(`[${windChar}] ${profile.name}`);
+    this.hudText.setText(`${arrow} [${windChar}] ${profile.name}`);
     this.hudChipsText.setText(`${profile.chips.toLocaleString()} 點`);
     this.dealerBadge.setVisible(profile.isDealer);
   }
@@ -381,19 +383,20 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 6x3 Discard River in local coordinate frame.
+   * 9x2 Compact Discard River in local coordinate frame (PRD 5.2 / AC4).
    */
   private renderDiscards(discards: Tile[], isLastDiscardSeat: boolean = false): void {
     this.riverGroup.removeAll(true);
 
-    const riverStartX = -90;
-    const riverStartY = -135;
-    const dw = SeatLayoutContainer.TILE_W * 0.75;
-    const dh = SeatLayoutContainer.TILE_H * 0.75;
+    const cols = 9;
+    const dw = SeatLayoutContainer.TILE_W * 0.7;
+    const dh = SeatLayoutContainer.TILE_H * 0.7;
+    const riverStartX = -(cols * (dw + 2)) / 2 + (dw / 2);
+    const riverStartY = -120;
 
     discards.forEach((tile, idx) => {
-      const col = idx % 6;
-      const row = Math.floor(idx / 6);
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
 
       const x = riverStartX + col * (dw + 2);
       const y = riverStartY + row * (dh + 2);
