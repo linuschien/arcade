@@ -135,7 +135,6 @@ export class MahjongGameState {
     this.diceSum = d1 + d2 + d3;
 
     this.phase = 'SEATING_DRAW';
-    this.notifyPhase();
 
     // 2. 蓋著洗勻四張風牌 (東、南、西、北)
     const windPool: SeatWind[] = ['EAST', 'SOUTH', 'WEST', 'NORTH'];
@@ -199,6 +198,9 @@ export class MahjongGameState {
         this.players[s].isDealer = false;
       }
     }
+
+    // 5. 所有風位與起莊計算完畢後，再發出狀態變更通知
+    this.notifyPhase();
   }
 
   /**
