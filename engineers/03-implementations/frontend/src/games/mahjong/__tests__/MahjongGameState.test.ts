@@ -208,4 +208,35 @@ describe('MahjongGameState Unit Tests', () => {
     const visible = state.getAllVisibleTiles();
     expect(Array.isArray(visible)).toBe(true);
   });
+
+  it('should dispatch onTurnStart for dealer Turn 1 and allow AI dealer to discard', () => {
+    let turnStartCount = 0;
+    let turnSeat: number = -1;
+
+    state.addListener({
+      onTurnStart: (seat) => {
+        turnStartCount++;
+        turnSeat = seat;
+      },
+    });
+
+    state.startNewMatch();
+    state.startDealing();
+
+    // After dealing & flower replacement, onTurnStart must have been dispatched for dealerSeat
+    expect(turnStartCount).toBeGreaterThanOrEqual(1);
+    expect(turnSeat).toBe(state.dealerSeat);
+
+    const dealer = state.players[state.dealerSeat];
+    const initialTileCount = dealer.hand.length + (dealer.drawnTile ? 1 : 0);
+    expect(initialTileCount).toBe(17);
+
+    // AI or Human dealer can step turn
+    if (state.dealerSeat !== 0) {
+      state.stepAITurn(state.dealerSeat);
+      const postDiscardTileCount = dealer.hand.length + (dealer.drawnTile ? 1 : 0);
+      expect(postDiscardTileCount).toBe(16);
+      expect(dealer.discards.length).toBe(1);
+    }
+  });
 });

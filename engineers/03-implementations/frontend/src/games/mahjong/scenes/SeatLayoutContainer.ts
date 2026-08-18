@@ -50,33 +50,33 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   private initHUD(): void {
     this.hudGroup.setAngle(-this.seatAngle);
 
-    // Position HUD relative to seat so it never overlaps hand tiles
+    // Position HUD at clean, symmetric screen-space table quadrants
     let hudX = -320;
     let hudY = 0;
 
     if (this.seat === 0) {
-      // Bottom Human
-      hudX = -460;
-      hudY = -10;
+      // Bottom-Left (Human / 賭神)
+      hudX = -530;
+      hudY = 5;
     } else if (this.seat === 1) {
-      // Right AI
-      hudX = 0;
-      hudY = -220;
+      // Top-Right (Right AI / 賭俠)
+      hudX = -285;
+      hudY = -10;
     } else if (this.seat === 2) {
-      // Top AI
-      hudX = -360;
+      // Top-Left (Top AI / 賭霸)
+      hudX = 530;
       hudY = 0;
     } else if (this.seat === 3) {
-      // Left AI
-      hudX = 0;
-      hudY = -220;
+      // Left-Upper (Left AI / 賭聖)
+      hudX = 180;
+      hudY = 10;
     }
 
     this.hudGroup.setPosition(hudX, hudY);
 
     // HUD Background Capsule
     const bg = this.scene.add.graphics();
-    bg.fillStyle(0x0f172a, 0.9);
+    bg.fillStyle(0x0f172a, 0.92);
     bg.fillRoundedRect(0, 0, 130, 48, 8);
     bg.lineStyle(1, 0xd4af37, 0.9);
     bg.strokeRoundedRect(0, 0, 130, 48, 8);
@@ -135,12 +135,11 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 4x2 Flower Rack at far right.
+   * 4x2 Flower Rack dedicated zone (never overlapping hand).
    */
   private renderFlowerRack(flowers: Tile[]): void {
     this.flowerGroup.removeAll(true);
 
-    const startX = 220;
     const cellW = SeatLayoutContainer.TILE_W * 0.65;
     const cellH = SeatLayoutContainer.TILE_H * 0.65;
 
@@ -149,11 +148,28 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       'plum', 'orchid', 'bamboo_f', 'chrysanthemum',
     ];
 
+    let startX = 330;
+    let startY = 0;
+
+    if (this.seat === 0) {
+      // Bottom Human: Placed to the right of hand
+      startX = 330;
+      startY = 0;
+    } else if (this.seat === 1 || this.seat === 3) {
+      // Side AI: Placed behind the hand on the outer wall
+      startX = -48;
+      startY = -46;
+    } else if (this.seat === 2) {
+      // Top AI: Placed to the right of hand
+      startX = -330;
+      startY = 0;
+    }
+
     for (let r = 0; r < 2; r++) {
       for (let c = 0; c < 4; c++) {
         const idx = r * 4 + c;
         const x = startX + c * (cellW + 2);
-        const y = (r - 0.5) * (cellH + 2);
+        const y = startY + (r - 0.5) * (cellH + 2);
 
         const slotCode = slotKeys[idx];
         const hasFlower = flowers.some((f) => f.shortCode === slotCode);
@@ -174,14 +190,13 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   /**
    * Modular 3-tile width melds.
    */
-  private renderMelds(melds: Meld[], _isHuman: boolean): void {
+  private renderMelds(melds: Meld[], isHuman: boolean): void {
     this.meldGroup.removeAll(true);
 
     const meldW = SeatLayoutContainer.TILE_W * 3;
-    const startX = 200; // Left of flower rack
 
     melds.forEach((meld, idx) => {
-      const meldX = startX - (idx + 1) * (meldW + 6);
+      const meldX = isHuman ? -360 - idx * (meldW + 6) : -180 - idx * (meldW + 6);
       const container = this.scene.add.container(meldX, 0);
 
       if (meld.type === 'CONCEALED_KONG') {
@@ -220,12 +235,9 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   private renderHand(profile: PlayerProfile, isHuman: boolean): void {
     this.handGroup.removeAll(true);
 
-    const meldCount = profile.melds.length;
-    const meldW = SeatLayoutContainer.TILE_W * 3 + 6;
-    const rightEdge = 200 - meldCount * meldW - 10;
-
     const hand = profile.hand;
     const stepX = isHuman ? SeatLayoutContainer.TILE_W : 20;
+    const rightEdge = isHuman ? 240 : 160;
     const totalHandW = hand.length * stepX;
     const startX = rightEdge - totalHandW;
 
@@ -266,7 +278,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
     // Drawn tile
     if (profile.drawnTile) {
-      const drawnX = rightEdge + 14;
+      const drawnX = rightEdge + 16;
       const textureKey = isHuman
         ? `mahjong:tile_${profile.drawnTile.shortCode}`
         : 'mahjong:tile_back';

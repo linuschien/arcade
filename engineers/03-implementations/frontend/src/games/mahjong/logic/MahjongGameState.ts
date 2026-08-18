@@ -286,8 +286,8 @@ export class MahjongGameState {
       for (const seat of dealingOrder) {
         const p = this.players[seat];
 
-        // Check drawn tile if flower
-        if (p.drawnTile && p.drawnTile.isFlower) {
+        // 1. Replace flower in drawnTile (if dealer jump tile is a flower)
+        while (p.drawnTile && p.drawnTile.isFlower) {
           const flower = p.drawnTile;
           p.flowers.push(flower);
           const replacement = this.deck.drawTail();
@@ -296,22 +296,29 @@ export class MahjongGameState {
           this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, flower, replacement!));
         }
 
-        // Check hand tiles for flowers
-        const nonFlowers: Tile[] = [];
-        for (const t of p.hand) {
-          if (t.isFlower) {
-            p.flowers.push(t);
-            const replacement = this.deck.drawTail();
-            if (replacement) {
-              nonFlowers.push(replacement);
-              this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, t, replacement));
+        // 2. Replace flowers in hand tiles
+        let handHasFlower = true;
+        while (handHasFlower) {
+          handHasFlower = false;
+          const nextHand: Tile[] = [];
+          for (const t of p.hand) {
+            if (t.isFlower) {
+              p.flowers.push(t);
+              const replacement = this.deck.drawTail();
+              if (replacement) {
+                nextHand.push(replacement);
+                this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, t, replacement));
+                if (replacement.isFlower) {
+                  handHasFlower = true;
+                }
+              }
+              hasAnyFlower = true;
+            } else {
+              nextHand.push(t);
             }
-            hasAnyFlower = true;
-          } else {
-            nonFlowers.push(t);
           }
+          p.hand = MahjongHandEvaluator.sortTiles(nextHand);
         }
-        p.hand = MahjongHandEvaluator.sortTiles(nonFlowers);
       }
     }
 
@@ -365,22 +372,24 @@ export class MahjongGameState {
         return;
       }
 
-      if (drawn.isFlower) {
-        // Flower replenishment
-        player.flowers.push(drawn);
+      player.drawnTile = drawn;
+
+      // Auto flower replacement on draw (handle multiple consecutive flower draws)
+      while (player.drawnTile && player.drawnTile.isFlower) {
+        const flower = player.drawnTile;
+        player.flowers.push(flower);
         if (player.flowers.length === 8) {
           this.settleFlowerWin(seat);
           return;
         }
         const rep = this.deck.drawTail();
         player.drawnTile = rep;
-        this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, drawn, rep!));
-      } else {
-        player.drawnTile = drawn;
+        this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, flower, rep!));
       }
-
-      this.listeners.forEach((l) => l.onTurnStart?.(seat, player.drawnTile));
     }
+
+    // Always emit onTurnStart for both drawn turns and non-drawn turns (e.g. dealer Turn 1 or after Chow)
+    this.listeners.forEach((l) => l.onTurnStart?.(seat, player.drawnTile));
 
     // If human is in Auto-Draw Ting mode
     if (player.isHuman && player.isAutoPlay) {
@@ -388,7 +397,7 @@ export class MahjongGameState {
       return;
     }
 
-    // If AI turn, execute AI turn
+    // If AI turn and autoStepAI enabled
     if (!player.isHuman && this.autoStepAI) {
       this.executeAITurn(seat);
     }
