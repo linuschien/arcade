@@ -941,7 +941,7 @@ export class MainGameScene extends Phaser.Scene {
       }
     }
 
-    const title = this.add.text(0, -210, titleText, {
+    const title = this.add.text(0, -215, titleText, {
       fontSize: '20px',
       fontFamily: '"Microsoft JhengHei", serif',
       color: '#facc15',
@@ -950,88 +950,140 @@ export class MainGameScene extends Phaser.Scene {
     title.setOrigin(0.5);
     this.settlementContainer.add(title);
 
-    let curY = -180;
-
-    // 2.2 Winning Hand Pattern Display (胡牌牌型)
+    // 1. Visual Winning Hand (圖形牌型展示)
+    let curY = -185;
     if (!isDraw) {
-      const meldStr = winner.melds
-        .map((m) => `[${m.tiles.map((t) => t.name).join('')}]`)
-        .join(' ');
-      const handStr = winner.hand.map((t) => t.name).join(' ');
-      const drawnStr = winner.drawnTile ? ` [胡:${winner.drawnTile.name}]` : '';
-      const patternText = (meldStr ? `${meldStr} ` : '') + handStr + drawnStr;
-
-      const patternLine = this.add.text(-280, curY, `牌型: ${patternText}`, {
+      const patternLabel = this.add.text(-280, curY, '胡牌牌型:', {
         fontSize: '12px',
-        fontFamily: '"Microsoft JhengHei", monospace',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#93c5fd',
         fontStyle: 'bold',
       });
-      this.settlementContainer.add(patternLine);
-      curY += 24;
+      this.settlementContainer.add(patternLabel);
+
+      let tileX = -200;
+      const tileW = 24;
+      const tileH = 32;
+
+      // 1.1 Render Melds
+      winner.melds.forEach((meld) => {
+        meld.tiles.forEach((t) => {
+          const sp = this.add.sprite(tileX + tileW / 2, curY + 16, `mahjong:tile_${t.shortCode}`);
+          sp.setDisplaySize(tileW, tileH);
+          this.settlementContainer.add(sp);
+          tileX += tileW + 1;
+        });
+        tileX += 6; // gap between melds
+      });
+
+      // 1.2 Render Concealed Hand
+      winner.hand.forEach((t) => {
+        const sp = this.add.sprite(tileX + tileW / 2, curY + 16, `mahjong:tile_${t.shortCode}`);
+        sp.setDisplaySize(tileW, tileH);
+        this.settlementContainer.add(sp);
+        tileX += tileW + 1;
+      });
+
+      // 1.3 Render Winning Drawn Tile (with gap & gold focus box + '胡' badge)
+      if (winner.drawnTile) {
+        tileX += 8;
+        const winBox = this.add.graphics();
+        winBox.lineStyle(1.5, 0xfacc15, 1);
+        winBox.strokeRoundedRect(tileX - 1, curY, tileW + 2, tileH + 2, 3);
+        this.settlementContainer.add(winBox);
+
+        const sp = this.add.sprite(tileX + tileW / 2, curY + 16, `mahjong:tile_${winner.drawnTile.shortCode}`);
+        sp.setDisplaySize(tileW, tileH);
+        this.settlementContainer.add(sp);
+
+        const winBadge = this.add.text(tileX + tileW / 2, curY - 6, '胡', {
+          fontSize: '10px',
+          fontFamily: '"Microsoft JhengHei", sans-serif',
+          color: '#ef4444',
+          fontStyle: 'bold',
+        });
+        winBadge.setOrigin(0.5);
+        this.settlementContainer.add(winBadge);
+      }
+
+      curY += 42;
+    } else {
+      curY += 10;
     }
 
-    // 2.4 Fan Breakdown (台數明細 + 莊連拉台數)
+    // 2. Fan Breakdown Box (條列式明細 + 總計台數)
+    const fanBoxHeight = isDraw ? 50 : 125;
     const fanBoxBg = this.add.graphics();
-    fanBoxBg.fillStyle(0x0f172a, 0.8);
-    fanBoxBg.fillRoundedRect(-285, curY, 570, 95, 8);
+    fanBoxBg.fillStyle(0x0f172a, 0.85);
+    fanBoxBg.fillRoundedRect(-285, curY, 570, fanBoxHeight, 8);
     fanBoxBg.lineStyle(1, 0x334155, 0.8);
-    fanBoxBg.strokeRoundedRect(-285, curY, 570, 95, 8);
+    fanBoxBg.strokeRoundedRect(-285, curY, 570, fanBoxHeight, 8);
     this.settlementContainer.add(fanBoxBg);
 
     let fanY = curY + 8;
     if (isDraw) {
-      const drawLine = this.add.text(-270, fanY, '海底牌盡無人胡牌，莊家連莊保留莊位', {
+      const drawLine = this.add.text(-270, fanY + 8, '海底牌盡無人胡牌，莊家連莊保留莊位', {
         fontSize: '13px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#94a3b8',
       });
       this.settlementContainer.add(drawLine);
     } else {
-      const fanSummary = breakdown.fans.map((f) => `${f.name} (${f.fan}台)`).join('  ');
-      const fanText = this.add.text(-270, fanY, `台數明細: ${fanSummary}`, {
-        fontSize: '12px',
-        fontFamily: '"Microsoft JhengHei", sans-serif',
-        color: '#f8fafc',
-        wordWrap: { width: 540 },
-      });
-      this.settlementContainer.add(fanText);
+      // 3. Bulleted Fan List (條列式台數清單, 2-column grid)
+      const fans = breakdown.fans;
+      fans.forEach((f, idx) => {
+        const col = idx % 2;
+        const row = Math.floor(idx / 2);
+        const fx = col === 0 ? -270 : 10;
+        const fy = fanY + row * 18;
 
-      fanY += 28;
+        const fanLine = this.add.text(fx, fy, `• ${f.name} (+${f.fan}台)`, {
+          fontSize: '12px',
+          fontFamily: '"Microsoft JhengHei", sans-serif',
+          color: '#f8fafc',
+        });
+        this.settlementContainer.add(fanLine);
+      });
+
+      const maxFanRows = Math.ceil(fans.length / 2);
+      let dealerY = fanY + Math.max(maxFanRows * 18, 20);
+
+      // Dealer Streak liability line
       let dealerNote = '';
       if (breakdown.winnerSeat === this.gameState.dealerSeat) {
-        dealerNote = `莊家獲勝加計: 莊家 1台 + 連${breakdown.dealerStreak}拉${breakdown.dealerStreak} ${2 * breakdown.dealerStreak}台 (計加收 ${breakdown.dealerMultiplierFan}台)`;
+        dealerNote = `• 莊家獲勝加計: 莊家 1台 + 連${breakdown.dealerStreak}拉${breakdown.dealerStreak} ${2 * breakdown.dealerStreak}台 (計加收 ${breakdown.dealerMultiplierFan}台)`;
       } else if (breakdown.loserSeat === this.gameState.dealerSeat) {
-        dealerNote = `莊家放槍額外負擔: 莊家 1台 + 連${breakdown.dealerStreak}拉${breakdown.dealerStreak} ${2 * breakdown.dealerStreak}台 (計加收 ${breakdown.dealerMultiplierFan}台)`;
+        dealerNote = `• 莊家放槍額外負擔: 莊家 1台 + 連${breakdown.dealerStreak}拉${breakdown.dealerStreak} ${2 * breakdown.dealerStreak}台 (計加收 ${breakdown.dealerMultiplierFan}台)`;
       } else if (breakdown.isSelfDrawn) {
-        dealerNote = `莊家自摸額外負擔: 莊家 1台 + 連${breakdown.dealerStreak}拉${breakdown.dealerStreak} ${2 * breakdown.dealerStreak}台 (莊家計加收 ${breakdown.dealerMultiplierFan}台)`;
-      } else {
-        dealerNote = '閒家互相放槍，不計莊家連拉加台';
+        dealerNote = `• 莊家自摸額外負擔: 莊家 1台 + 連${breakdown.dealerStreak}拉${breakdown.dealerStreak} ${2 * breakdown.dealerStreak}台 (莊家計加收 ${breakdown.dealerMultiplierFan}台)`;
       }
 
-      const dealerText = this.add.text(-270, fanY, dealerNote, {
-        fontSize: '12px',
-        fontFamily: '"Microsoft JhengHei", sans-serif',
-        color: '#fbbf24',
-      });
-      this.settlementContainer.add(dealerText);
-
-      fanY += 26;
-      const totalText = this.add.text(
-        -270,
-        fanY,
-        `結算基礎: 500 底 / 200 台 | 牌型計 ${breakdown.totalFans} 台`,
-        {
+      if (dealerNote) {
+        const dealerText = this.add.text(-270, dealerY, dealerNote, {
           fontSize: '12px',
+          fontFamily: '"Microsoft JhengHei", sans-serif',
+          color: '#fbbf24',
+        });
+        this.settlementContainer.add(dealerText);
+        dealerY += 18;
+      }
+
+      // 4. Prominent Total Fans Banner (總計台數)
+      const totalFansLine = this.add.text(
+        -270,
+        curY + fanBoxHeight - 22,
+        `【 總計台數: ${breakdown.totalFans} 台 】 (底 500 點 / 台 200 點)`,
+        {
+          fontSize: '13px',
           fontFamily: '"Microsoft JhengHei", sans-serif',
           color: '#38bdf8',
           fontStyle: 'bold',
         }
       );
-      this.settlementContainer.add(totalText);
+      this.settlementContainer.add(totalFansLine);
     }
 
-    curY += 105;
+    curY += fanBoxHeight + 12;
 
     // 2.3 Four-player Ledger Table (四家點數計算清單)
     const tableHeader = this.add.text(-280, curY, '座位 / 玩家        門風   身份    角色       點數變動       剩餘籌碼', {
@@ -1042,7 +1094,7 @@ export class MainGameScene extends Phaser.Scene {
     });
     this.settlementContainer.add(tableHeader);
 
-    curY += 20;
+    curY += 18;
 
     const arrows = ['▼', '▶', '▲', '◀'];
     const winds = ['東風', '南風', '西風', '北風'];
@@ -1074,18 +1126,18 @@ export class MainGameScene extends Phaser.Scene {
         fontStyle: isWinner || p.isDealer ? 'bold' : 'normal',
       });
       this.settlementContainer.add(rowText);
-      curY += 20;
+      curY += 18;
     }
 
     // Continue Button (繼續下一局)
     const nextBtn = this.add.graphics();
     nextBtn.fillStyle(0x2563eb, 1);
-    nextBtn.fillRoundedRect(-80, 190, 160, 36, 6);
+    nextBtn.fillRoundedRect(-80, 195, 160, 34, 6);
     nextBtn.lineStyle(1, 0x93c5fd, 0.8);
-    nextBtn.strokeRoundedRect(-80, 190, 160, 36, 6);
+    nextBtn.strokeRoundedRect(-80, 195, 160, 34, 6);
     this.settlementContainer.add(nextBtn);
 
-    const nextTxt = this.add.text(0, 208, '繼續下一局', {
+    const nextTxt = this.add.text(0, 212, '繼續下一局', {
       fontSize: '14px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#ffffff',
@@ -1094,7 +1146,7 @@ export class MainGameScene extends Phaser.Scene {
     nextTxt.setOrigin(0.5);
     this.settlementContainer.add(nextTxt);
 
-    nextBtn.setInteractive(new Phaser.Geom.Rectangle(-80, 190, 160, 36), Phaser.Geom.Rectangle.Contains);
+    nextBtn.setInteractive(new Phaser.Geom.Rectangle(-80, 195, 160, 34), Phaser.Geom.Rectangle.Contains);
     nextBtn.on('pointerdown', () => {
       this.settlementContainer.setVisible(false);
       this.refreshAllSeats(false);

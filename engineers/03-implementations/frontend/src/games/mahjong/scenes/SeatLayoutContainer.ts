@@ -101,9 +101,9 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Updates player HUD status with directional arrows & seat wind (PRD 5.3).
+   * Updates player HUD status with directional arrows & seat wind + fan bonus tip (PRD 5.3).
    */
-  public updatePlayerInfo(profile: PlayerProfile): void {
+  public updatePlayerInfo(profile: PlayerProfile, roundWind: string = 'EAST'): void {
     const arrows = ['▼', '▶', '▲', '◀'];
     const arrow = arrows[this.seat] || '▼';
     const windNames: Record<string, string> = {
@@ -113,19 +113,21 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       NORTH: '北風',
     };
     const windName = windNames[profile.wind] || '東風';
-    this.hudText.setText(`${arrow} [${windName}] ${profile.name}`);
+    const isDoubleWind = profile.wind === roundWind;
+    const windBonusTip = isDoubleWind ? '圈/門2台' : '門風1台';
+    this.hudText.setText(`${arrow} [${windName}・${windBonusTip}] ${profile.name}`);
     this.hudChipsText.setText(`${profile.chips.toLocaleString()} 點`);
   }
 
   /**
-   * Displays the 3 dice above Banker's Flower Rack.
+   * Displays the 3 dice above Banker's Flower Rack without overlapping (moved to Y = -72).
    */
   public showBankerDice(d: number[] | null): void {
     this.bankerDiceGroup.removeAll(true);
     if (!d || d.length < 3) return;
 
     const diceStartX = 340;
-    const diceStartY = -45;
+    const diceStartY = -72;
 
     const bg = this.scene.add.graphics();
     bg.fillStyle(0x020617, 0.92);
@@ -145,9 +147,10 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     profile: PlayerProfile,
     isHuman: boolean,
     isLastDiscardSeat: boolean = false,
-    revealHand: boolean = false
+    revealHand: boolean = false,
+    roundWind: string = 'EAST'
   ): void {
-    this.updatePlayerInfo(profile);
+    this.updatePlayerInfo(profile, roundWind);
     this.renderFlowerRack(profile.flowers, profile.wind);
     this.renderMelds(profile.melds, isHuman, revealHand);
     this.renderHand(profile, isHuman, revealHand);
@@ -224,6 +227,13 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
       const tileStep = SeatLayoutContainer.TILE_W;
 
+      // Determine sideways tile position based on sourceSeat relative to current seat (PRD 6.2)
+      // Left (上家): relative 3 -> index 0
+      // Opposite (對家): relative 2 -> index 1
+      // Right (下家): relative 1 -> index 2
+      const relSeat = meld.sourceSeat !== undefined ? (meld.sourceSeat - this.seat + 4) % 4 : 2;
+      const rotatedIdx = relSeat === 3 ? 0 : relSeat === 1 ? 2 : 1;
+
       if (meld.type === 'CONCEALED_KONG') {
         for (let i = 0; i < 4; i++) {
           const x = (i - 1.5) * tileStep;
@@ -240,7 +250,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
         for (let i = 0; i < 4; i++) {
           const x = (i - 1.5) * tileStep;
           const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
-          if (i === 1) {
+          if (i === rotatedIdx) {
             sprite.setAngle(90);
           }
           container.add(sprite);
@@ -249,13 +259,13 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
         for (let i = 0; i < 3; i++) {
           const x = (i - 1) * tileStep;
           const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
-          if (i === 1) {
+          if (i === rotatedIdx) {
             sprite.setAngle(90);
           }
           container.add(sprite);
         }
       } else {
-        // CHOW: 3 tiles
+        // CHOW: 3 tiles (Chow piece placed strictly in the middle, index 1)
         for (let i = 0; i < 3; i++) {
           const x = (i - 1) * tileStep;
           const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
