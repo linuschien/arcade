@@ -257,12 +257,19 @@ export class MahjongGameState {
     }
 
     // Sort all player hands into standard order
-    this.players.forEach((p) => {
-      p.hand = MahjongHandEvaluator.sortTiles(p.hand);
-    });
+    this.sortHandTiles();
 
     // Proceed to multi-round flower replacement
     this.startFlowerReplacement();
+  }
+
+  /**
+   * Sorts all player hands into standard order after dealing animation.
+   */
+  public sortHandTiles(): void {
+    this.players.forEach((p) => {
+      p.hand = MahjongHandEvaluator.sortTiles(p.hand);
+    });
   }
 
   /**

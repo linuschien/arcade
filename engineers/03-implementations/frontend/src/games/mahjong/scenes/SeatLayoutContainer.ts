@@ -12,17 +12,17 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   public seat: PlayerSeat;
   public seatAngle: number;
 
+  private riverGroup: Phaser.GameObjects.Container;
   private handGroup: Phaser.GameObjects.Container;
   private meldGroup: Phaser.GameObjects.Container;
   private flowerGroup: Phaser.GameObjects.Container;
-  private riverGroup: Phaser.GameObjects.Container;
   private hudGroup: Phaser.GameObjects.Container;
+  private bankerDiceGroup: Phaser.GameObjects.Container;
 
   private hudText!: Phaser.GameObjects.Text;
   private hudChipsText!: Phaser.GameObjects.Text;
-  private dealerBadge!: Phaser.GameObjects.Text;
-
   private hoveredTileSprite: Phaser.GameObjects.Sprite | null = null;
+
   public onTileClick?: (tileId: string) => void;
   public onTileHover?: (shortCode: string | null) => void;
 
@@ -40,8 +40,9 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     this.meldGroup = scene.add.container(0, 0);
     this.flowerGroup = scene.add.container(0, 0);
     this.hudGroup = scene.add.container(0, 0);
+    this.bankerDiceGroup = scene.add.container(0, 0);
 
-    this.add([this.riverGroup, this.handGroup, this.meldGroup, this.flowerGroup, this.hudGroup]);
+    this.add([this.riverGroup, this.handGroup, this.meldGroup, this.flowerGroup, this.bankerDiceGroup, this.hudGroup]);
 
     this.initHUD();
     scene.add.existing(this);
@@ -96,33 +97,48 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       fontStyle: 'bold',
     });
 
-    this.dealerBadge = this.scene.add.text(118, 6, '莊', {
-      fontSize: '14px',
-      fontFamily: '"Microsoft JhengHei", sans-serif',
-      color: '#ef4444',
-      fontStyle: 'bold',
-    });
-    this.dealerBadge.setVisible(false);
-
-    this.hudGroup.add([this.hudText, this.hudChipsText, this.dealerBadge]);
+    this.hudGroup.add([this.hudText, this.hudChipsText]);
   }
 
   /**
-   * Updates player HUD status with directional arrows (PRD 5.3).
+   * Updates player HUD status with directional arrows & seat wind (PRD 5.3).
    */
   public updatePlayerInfo(profile: PlayerProfile): void {
     const arrows = ['▼', '▶', '▲', '◀'];
     const arrow = arrows[this.seat] || '▼';
-    const windChars: Record<string, string> = {
-      EAST: '東',
-      SOUTH: '南',
-      WEST: '西',
-      NORTH: '北',
+    const windNames: Record<string, string> = {
+      EAST: '東風',
+      SOUTH: '南風',
+      WEST: '西風',
+      NORTH: '北風',
     };
-    const windChar = windChars[profile.wind] || '東';
-    this.hudText.setText(`${arrow} [${windChar}] ${profile.name}`);
+    const windName = windNames[profile.wind] || '東風';
+    this.hudText.setText(`${arrow} [${windName}] ${profile.name}`);
     this.hudChipsText.setText(`${profile.chips.toLocaleString()} 點`);
-    this.dealerBadge.setVisible(profile.isDealer);
+  }
+
+  /**
+   * Displays the 3 dice above Banker's Flower Rack.
+   */
+  public showBankerDice(d: number[] | null): void {
+    this.bankerDiceGroup.removeAll(true);
+    if (!d || d.length < 3) return;
+
+    const diceStartX = 340;
+    const diceStartY = -45;
+
+    const bg = this.scene.add.graphics();
+    bg.fillStyle(0x020617, 0.92);
+    bg.fillRoundedRect(diceStartX - 5, diceStartY - 5, 96, 28, 6);
+    bg.lineStyle(1, 0xd4af37, 0.9);
+    bg.strokeRoundedRect(diceStartX - 5, diceStartY - 5, 96, 28, 6);
+    this.bankerDiceGroup.add(bg);
+
+    for (let i = 0; i < 3; i++) {
+      const sprite = this.scene.add.sprite(diceStartX + 12 + i * 26, diceStartY + 9, `mahjong:dice_${d[i]}`);
+      sprite.setDisplaySize(20, 20);
+      this.bankerDiceGroup.add(sprite);
+    }
   }
 
   public renderPlayerState(
@@ -144,8 +160,8 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   private renderFlowerRack(flowers: Tile[], wind?: string): void {
     this.flowerGroup.removeAll(true);
 
-    const cellW = SeatLayoutContainer.TILE_W * 0.65;
-    const cellH = SeatLayoutContainer.TILE_H * 0.65;
+    const cellW = 28;
+    const cellH = 38;
 
     const slotKeys = [
       'spring', 'summer', 'autumn', 'winter',
@@ -161,22 +177,8 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     };
     const playerPositives = wind ? (positiveIndices[wind] || []) : [];
 
-    let startX = 340;
-    let startY = 0;
-
-    if (this.seat === 0) {
-      startX = 340;
-      startY = 0;
-    } else if (this.seat === 1) {
-      startX = 200;
-      startY = 0;
-    } else if (this.seat === 2) {
-      startX = 340;
-      startY = 0;
-    } else if (this.seat === 3) {
-      startX = 200;
-      startY = 0;
-    }
+    const startX = 340;
+    const startY = 0;
 
     for (let r = 0; r < 2; r++) {
       for (let c = 0; c < 4; c++) {
@@ -211,16 +213,16 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   private renderMelds(melds: Meld[], isHuman: boolean, revealHand: boolean = false): void {
     this.meldGroup.removeAll(true);
 
-    const meldW = isHuman ? SeatLayoutContainer.TILE_W * 3 : 20 * 3;
-    const meldBlockW = meldW + (isHuman ? 8 : 6);
-    const meldRightEdge = isHuman ? 330 : 180;
+    const meldW = SeatLayoutContainer.TILE_W * 3;
+    const meldBlockW = meldW + 8;
+    const meldRightEdge = 330;
     const meldStartX = meldRightEdge - melds.length * meldBlockW;
 
     melds.forEach((meld, idx) => {
       const meldX = meldStartX + idx * meldBlockW + meldW / 2;
       const container = this.scene.add.container(meldX, 0);
 
-      const tileStep = isHuman ? SeatLayoutContainer.TILE_W : 20;
+      const tileStep = SeatLayoutContainer.TILE_W;
 
       if (meld.type === 'CONCEALED_KONG') {
         for (let i = 0; i < 4; i++) {
@@ -232,14 +234,12 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
             texture = `mahjong:tile_${meld.tiles[i].shortCode}`;
           }
           const sprite = this.scene.add.sprite(x, 0, texture);
-          if (!isHuman) sprite.setDisplaySize(18, 24);
           container.add(sprite);
         }
       } else if (meld.type === 'MELDED_KONG' || meld.type === 'ADDED_KONG') {
         for (let i = 0; i < 4; i++) {
           const x = (i - 1.5) * tileStep;
           const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
-          if (!isHuman) sprite.setDisplaySize(18, 24);
           if (i === 1) {
             sprite.setAngle(90);
           }
@@ -249,7 +249,6 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
         for (let i = 0; i < 3; i++) {
           const x = (i - 1) * tileStep;
           const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
-          if (!isHuman) sprite.setDisplaySize(18, 24);
           if (i === 1) {
             sprite.setAngle(90);
           }
@@ -260,7 +259,6 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
         for (let i = 0; i < 3; i++) {
           const x = (i - 1) * tileStep;
           const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
-          if (!isHuman) sprite.setDisplaySize(18, 24);
           container.add(sprite);
         }
       }
@@ -276,14 +274,14 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     this.handGroup.removeAll(true);
 
     const meldCount = profile.melds.length;
-    const meldW = isHuman ? SeatLayoutContainer.TILE_W * 3 : 20 * 3;
-    const meldBlockW = meldW + (isHuman ? 8 : 6);
-    const meldRightEdge = isHuman ? 330 : 180;
+    const meldW = SeatLayoutContainer.TILE_W * 3;
+    const meldBlockW = meldW + 8;
+    const meldRightEdge = 330;
     const meldStartX = meldRightEdge - meldCount * meldBlockW;
 
     const hand = profile.hand;
-    const stepX = isHuman ? SeatLayoutContainer.TILE_W : 18;
-    const gapDrawn = isHuman ? 12 : 8;
+    const stepX = SeatLayoutContainer.TILE_W;
+    const gapDrawn = 12;
     
     // Fixed max concealed capacity for current meld count (16 - 3*M) + reserved 17th drawn slot
     const maxConcealedTiles = 16 - meldCount * 3;
@@ -292,8 +290,8 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     const totalHandAreaW = maxHandTilesW + fixedDrawnSlotW;
 
     // Right edge of the entire hand area (including reserved drawn tile slot) stays cleanly left of melds
-    const marginBeforeMelds = isHuman ? 24 : 16;
-    const handAreaRightEdge = meldCount > 0 ? (meldStartX - marginBeforeMelds) : (isHuman ? 260 : 150);
+    const marginBeforeMelds = 20;
+    const handAreaRightEdge = meldCount > 0 ? (meldStartX - marginBeforeMelds) : 260;
     const startX = handAreaRightEdge - totalHandAreaW;
 
     const showFace = isHuman || revealHand;
@@ -303,7 +301,6 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       const textureKey = showFace ? `mahjong:tile_${tile.shortCode}` : 'mahjong:tile_back';
 
       const sprite = this.scene.add.sprite(x, 0, textureKey);
-      if (!isHuman) sprite.setDisplaySize(18, 24);
       sprite.setData('tileId', tile.id);
       sprite.setData('shortCode', tile.shortCode);
 
@@ -342,7 +339,6 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
         : 'mahjong:tile_back';
 
       const drawnSprite = this.scene.add.sprite(drawnX, 0, textureKey);
-      if (!isHuman) drawnSprite.setDisplaySize(18, 24);
       drawnSprite.setData('tileId', profile.drawnTile.id);
       drawnSprite.setData('shortCode', profile.drawnTile.shortCode);
 
@@ -377,8 +373,8 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     this.riverGroup.removeAll(true);
 
     const cols = 9;
-    const dw = SeatLayoutContainer.TILE_W * 0.7;
-    const dh = SeatLayoutContainer.TILE_H * 0.7;
+    const dw = 30;
+    const dh = 40;
     const riverStartX = -(cols * (dw + 2)) / 2 + (dw / 2);
     const riverStartY = -120;
 
@@ -392,7 +388,6 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       const sprite = this.scene.add.sprite(x, y, `mahjong:tile_${tile.shortCode}`);
       sprite.setDisplaySize(dw, dh);
       sprite.setData('shortCode', tile.shortCode);
-      // Clean tile presentation: outer marker box in MainGameScene highlights without color tinting
 
       this.riverGroup.add(sprite);
     });

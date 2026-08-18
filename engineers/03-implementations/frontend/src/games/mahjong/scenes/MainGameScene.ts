@@ -513,18 +513,24 @@ export class MainGameScene extends Phaser.Scene {
     infoText.setOrigin(0.5);
     this.diceContainer.add(infoText);
 
+    // 1. Center dice roll completes after 1400ms -> Relocate dice to Banker's Flower Rack and animate tile sort
     this.time.delayedCall(1400, () => {
       this.diceContainer.setVisible(false);
+      // Place dice above Banker's flower rack
+      for (let s = 0; s < 4; s++) {
+        this.seatContainers[s].showBankerDice(s === this.gameState.dealerSeat ? d : null);
+      }
       this.updateTileWalls();
       this.animateTileSort();
     });
   }
 
   /**
-   * Animates card sorting cascade after dealing.
+   * Animates card sorting cascade after dealing, then triggers flower replacement.
    */
   private animateTileSort(): void {
     MahjongAudioService.playTileSort();
+    this.gameState.sortHandTiles();
     this.refreshAllSeats();
 
     // Human player hand ripple lift
@@ -537,6 +543,11 @@ export class MainGameScene extends Phaser.Scene {
         ease: 'Back.easeOut',
       });
     }
+
+    // Proceed to multi-round flower replacement after sorting
+    this.time.delayedCall(600, () => {
+      this.gameState.startFlowerReplacement();
+    });
   }
 
   private handleHumanTileClick(tileId: string): void {

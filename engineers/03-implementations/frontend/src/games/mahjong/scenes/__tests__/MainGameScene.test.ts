@@ -180,6 +180,7 @@ describe('Mahjong MainGameScene Unit Tests', () => {
   });
 
   it('should play seating dice roll animation and dealer wall break animation', () => {
+    scene.create();
     let timerCallback: Function | null = null;
     (scene as any).time = {
       delayedCall: vi.fn((_delay, cb) => {
@@ -187,7 +188,6 @@ describe('Mahjong MainGameScene Unit Tests', () => {
       }),
     };
 
-    scene.create();
     const audioService = vi.mocked(MahjongAudioService);
     audioService.playDiceRoll.mockClear();
     audioService.playTileSort.mockClear();
