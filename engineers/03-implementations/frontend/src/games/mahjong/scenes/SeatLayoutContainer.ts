@@ -50,26 +50,26 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   private initHUD(): void {
     this.hudGroup.setAngle(-this.seatAngle);
 
-    // Position HUD at the exact 4 corners of the 1280x720 table per PRD 5.3
+    // Position HUD at the exact 4 corners with identical 20px border margin (PRD 5.3)
     let hudX = 0;
     let hudY = 0;
 
     if (this.seat === 0) {
-      // Bottom Human (0 deg, container at (640, 645)): Bottom-Left Corner (35, 652)
-      hudX = -605;
+      // Bottom Human (0 deg, container at (640, 645)): Bottom-Left Corner (20, 652)
+      hudX = -620;
       hudY = 7;
     } else if (this.seat === 1) {
-      // Right AI (270 deg, container at (1180, 360)): Bottom-Right Corner (1105, 652)
+      // Right AI (270 deg, container at (1180, 360)): Bottom-Right Corner (1118, 652)
       hudX = -292;
-      hudY = -75;
+      hudY = -62;
     } else if (this.seat === 2) {
-      // Top AI (180 deg, container at (640, 75)): Top-Right Corner (1105, 25)
-      hudX = -465;
-      hudY = 50;
+      // Top AI (180 deg, container at (640, 75)): Top-Right Corner (1118, 20)
+      hudX = -478;
+      hudY = 55;
     } else if (this.seat === 3) {
-      // Left AI (90 deg, container at (100, 360)): Top-Left Corner (35, 25)
-      hudX = -335;
-      hudY = 65;
+      // Left AI (90 deg, container at (100, 360)): Top-Left Corner (20, 20)
+      hudX = -340;
+      hudY = 80;
     }
 
     this.hudGroup.setPosition(hudX, hudY);

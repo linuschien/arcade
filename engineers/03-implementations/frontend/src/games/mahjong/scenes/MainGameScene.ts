@@ -183,8 +183,8 @@ export class MainGameScene extends Phaser.Scene {
     // Turn pointer (Breathing gold needle)
     this.turnPointer = this.add.graphics();
 
-    this.roundWindText = this.add.text(cx, cy - 20, '東風圈', {
-      fontSize: '13px',
+    this.roundWindText = this.add.text(cx, cy - 20, '東風東', {
+      fontSize: '14px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#facc15',
       fontStyle: 'bold',
@@ -199,7 +199,7 @@ export class MainGameScene extends Phaser.Scene {
     });
     this.dealerStreakText.setOrigin(0.5);
 
-    this.remainingTilesText = this.add.text(cx, cy + 20, '餘 70 張 | 鐵 16', {
+    this.remainingTilesText = this.add.text(cx, cy + 20, '餘 70 張', {
       fontSize: '11px',
       fontFamily: 'monospace',
       color: '#38bdf8',
@@ -554,28 +554,55 @@ export class MainGameScene extends Phaser.Scene {
 
   private updateCompass(): void {
     const winds = ['東', '南', '西', '北'];
-    const currentWind = winds[this.gameState.roundWindIndex] || '東';
-    this.roundWindText.setText(`${currentWind}風圈`);
+    const roundWind = winds[this.gameState.roundWindIndex] || '東';
+    const windChars: Record<string, string> = {
+      EAST: '東',
+      SOUTH: '南',
+      WEST: '西',
+      NORTH: '北',
+    };
+    const dealer = this.gameState.players[this.gameState.dealerSeat];
+    const dealerWind = windChars[dealer.wind] || '東';
+    this.roundWindText.setText(`${roundWind}風${dealerWind}`);
 
     const streak = this.gameState.dealerStreak;
-    const dealerName = this.gameState.players[this.gameState.dealerSeat].name;
-    this.dealerStreakText.setText(`莊家: ${dealerName} (連 ${streak})`);
+    this.dealerStreakText.setText(`連 ${streak} 拉 ${streak}`);
 
     const remaining = this.gameState.deck.getRegularRemainingCount();
-    const dead = this.gameState.deck.getDeadWallCount();
-    this.remainingTilesText.setText(`餘 ${remaining} 張 | 鐵 ${dead}`);
+    this.remainingTilesText.setText(`餘 ${remaining} 張`);
 
-    // Update turn pointer needle
+    // Render outer rim chevron pointer (does not obscure center text)
     this.turnPointer.clear();
     const seatAngles = [90, 0, 270, 180]; // Screen direction towards seat 0,1,2,3
     const targetAngle = seatAngles[this.gameState.currentTurnSeat];
     const rad = Phaser.Math.DegToRad(targetAngle);
 
-    this.turnPointer.lineStyle(4, 0xfacc15, 0.9);
+    const cx = 640;
+    const cy = 360;
+    const rInner = 56;
+    const rOuter = 66;
+
+    // Glowing gold outer accent arc on active player's rim (35 deg arc)
+    this.turnPointer.lineStyle(3, 0xfacc15, 0.95);
     this.turnPointer.beginPath();
-    this.turnPointer.moveTo(640, 360);
-    this.turnPointer.lineTo(640 + Math.cos(rad) * 55, 360 + Math.sin(rad) * 55);
+    this.turnPointer.arc(cx, cy, 63, rad - 0.32, rad + 0.32, false);
     this.turnPointer.strokePath();
+
+    // Sleek chevron arrow head pointing outward toward active seat
+    const tipX = cx + Math.cos(rad) * (rOuter + 3);
+    const tipY = cy + Math.sin(rad) * (rOuter + 3);
+    const leftX = cx + Math.cos(rad - 0.18) * rInner;
+    const leftY = cy + Math.sin(rad - 0.18) * rInner;
+    const rightX = cx + Math.cos(rad + 0.18) * rInner;
+    const rightY = cy + Math.sin(rad + 0.18) * rInner;
+
+    this.turnPointer.fillStyle(0xfacc15, 1);
+    this.turnPointer.beginPath();
+    this.turnPointer.moveTo(tipX, tipY);
+    this.turnPointer.lineTo(leftX, leftY);
+    this.turnPointer.lineTo(rightX, rightY);
+    this.turnPointer.closePath();
+    this.turnPointer.fill();
   }
 
   private refreshAllSeats(): void {

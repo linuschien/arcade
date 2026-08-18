@@ -179,22 +179,22 @@ describe('SeatLayoutContainer Unit Tests', () => {
     expect(humanTileBackCalls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('should initialize HUD and Flower Rack positions correctly across all 4 table corners', () => {
-    // Seat 0: Bottom-Left Corner (35, 652) -> relative (-605, 7)
+  it('should initialize HUD and Flower Rack positions correctly across all 4 table corners with 20px margin', () => {
+    // Seat 0: Bottom-Left Corner (20, 652) -> relative (-620, 7)
     const seat0 = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
-    expect((seat0 as any).hudGroup.setPosition).toHaveBeenCalledWith(-605, 7);
+    expect((seat0 as any).hudGroup.setPosition).toHaveBeenCalledWith(-620, 7);
 
-    // Seat 1: Bottom-Right Corner (1105, 652) -> relative (-292, -75)
+    // Seat 1: Bottom-Right Corner (1118, 652) -> relative (-292, -62)
     const seat1 = new SeatLayoutContainer(mockScene, 1180, 360, 270, 1);
-    expect((seat1 as any).hudGroup.setPosition).toHaveBeenCalledWith(-292, -75);
+    expect((seat1 as any).hudGroup.setPosition).toHaveBeenCalledWith(-292, -62);
 
-    // Seat 2: Top-Right Corner (1105, 25) -> relative (-465, 50)
+    // Seat 2: Top-Right Corner (1118, 20) -> relative (-478, 55)
     const seat2 = new SeatLayoutContainer(mockScene, 640, 75, 180, 2);
-    expect((seat2 as any).hudGroup.setPosition).toHaveBeenCalledWith(-465, 50);
+    expect((seat2 as any).hudGroup.setPosition).toHaveBeenCalledWith(-478, 55);
 
-    // Seat 3: Top-Left Corner (35, 25) -> relative (-335, 65)
+    // Seat 3: Top-Left Corner (20, 20) -> relative (-340, 80)
     const seat3 = new SeatLayoutContainer(mockScene, 100, 360, 90, 3);
-    expect((seat3 as any).hudGroup.setPosition).toHaveBeenCalledWith(-335, 65);
+    expect((seat3 as any).hudGroup.setPosition).toHaveBeenCalledWith(-340, 80);
   });
 
   it('should place melds strictly between hand and flower rack (positive X offset)', () => {
