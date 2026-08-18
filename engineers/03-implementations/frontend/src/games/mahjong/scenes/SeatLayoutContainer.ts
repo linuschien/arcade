@@ -259,26 +259,37 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       const rotatedIdx = relSeat === 3 ? 0 : relSeat === 1 ? 2 : 1;
 
       if (meld.type === 'CONCEALED_KONG') {
-        for (let i = 0; i < 4; i++) {
-          const x = (i - 1.5) * tileStep;
+        // 3 base tiles at y = 0
+        for (let i = 0; i < 3; i++) {
+          const x = (i - 1) * tileStep;
           let texture = 'mahjong:tile_back';
           if (revealHand) {
             texture = `mahjong:tile_${meld.tiles[i].shortCode}`;
-          } else if (isHuman && (i === 0 || i === 3)) {
+          } else if (isHuman && (i === 0 || i === 2)) {
             texture = `mahjong:tile_${meld.tiles[i].shortCode}`;
           }
           const sprite = this.scene.add.sprite(x, 0, texture);
           container.add(sprite);
         }
+        // 4th tile stacked on top of center tile at y = -14
+        const topTexture = revealHand ? `mahjong:tile_${meld.tiles[3].shortCode}` : 'mahjong:tile_back';
+        const topSprite = this.scene.add.sprite(0, -14, topTexture);
+        container.add(topSprite);
       } else if (meld.type === 'MELDED_KONG' || meld.type === 'ADDED_KONG') {
-        for (let i = 0; i < 4; i++) {
-          const x = (i - 1.5) * tileStep;
+        // 3 base tiles at y = 0
+        for (let i = 0; i < 3; i++) {
+          const x = (i - 1) * tileStep;
           const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
           if (i === rotatedIdx) {
             sprite.setAngle(90);
           }
           container.add(sprite);
         }
+        // 4th tile stacked on top of the rotated sideways tile at y = -14
+        const topX = (rotatedIdx - 1) * tileStep;
+        const topSprite = this.scene.add.sprite(topX, -14, `mahjong:tile_${meld.tiles[3].shortCode}`);
+        topSprite.setAngle(90);
+        container.add(topSprite);
       } else if (meld.type === 'PONG') {
         for (let i = 0; i < 3; i++) {
           const x = (i - 1) * tileStep;
