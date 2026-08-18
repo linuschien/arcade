@@ -1,7 +1,7 @@
 /**
  * PreloadScene.ts
  * Procedurally generates high-definition 2.5D ivory acrylic Mahjong tile textures,
- * octagonal wind compass, emerald green felt, dice, and action buttons.
+ * octagonal wind compass, emerald green felt, dice, wall blocks, and action buttons.
  * Prefix all textures with 'mahjong:' to ensure complete namespace isolation.
  */
 
@@ -24,174 +24,172 @@ export class PreloadScene extends Phaser.Scene {
     const W = 36;
     const H = 48;
 
-    // 1. Base Tile Blank Face (Ivory 2.5D acrylic with bevel & shadow)
-    if (!this.textures.exists('mahjong:tile_face_base')) {
-      const gfx = this.make.graphics({ x: 0, y: 0 });
-      // Drop shadow
-      gfx.fillStyle(0x020f08, 0.6);
-      gfx.fillRoundedRect(2, 2, W - 2, H - 2, 4);
+    const createTileCanvas = (
+      key: string,
+      drawContent: (ctx: CanvasRenderingContext2D, w: number, h: number) => void
+    ) => {
+      if (this.textures.exists(key)) return;
 
-      // Ivory acrylic base
-      gfx.fillStyle(0xf8fafc, 1);
-      gfx.fillRoundedRect(0, 0, W - 2, H - 2, 4);
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-      // 3D Bevel highlight
-      gfx.lineStyle(1, 0xffffff, 0.9);
-      gfx.strokeRoundedRect(1, 1, W - 4, H - 4, 3);
+      // 1. Drop shadow & dark bevel
+      ctx.fillStyle = '#06130b';
+      this.drawRoundedRect(ctx, 2, 2, W - 2, H - 2, 4);
+      ctx.fill();
 
-      // Inner card recess
-      gfx.lineStyle(1, 0xcfd8dc, 0.8);
-      gfx.strokeRoundedRect(3, 3, W - 8, H - 8, 2);
+      // 2. Ivory acrylic face gradient
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.7, '#fdfbf7');
+      grad.addColorStop(1, '#e8e2d5');
+      ctx.fillStyle = grad;
+      this.drawRoundedRect(ctx, 0, 0, W - 2, H - 2, 4);
+      ctx.fill();
 
-      gfx.generateTexture('mahjong:tile_face_base', W, H);
-      gfx.destroy();
-    }
+      // 3. Champagne gold outer border
+      ctx.strokeStyle = '#c5a059';
+      ctx.lineWidth = 1;
+      ctx.stroke();
 
-    // 2. Tile Back (Jade green with golden bamboo pattern)
+      // 4. Subtle inner card recess
+      ctx.strokeStyle = '#d5dbdb';
+      ctx.lineWidth = 0.8;
+      this.drawRoundedRect(ctx, 2.5, 2.5, W - 7, H - 7, 2);
+      ctx.stroke();
+
+      // 5. Draw specific tile content
+      drawContent(ctx, W, H);
+
+      if (typeof this.textures.addCanvas === 'function') {
+        this.textures.addCanvas(key, canvas);
+      }
+    };
+
+    // 1. Base Blank Face
+    createTileCanvas('mahjong:tile_face_base', () => {});
+
+    // 2. Tile Back (Jade Green with Golden Diamond Emblem)
     if (!this.textures.exists('mahjong:tile_back')) {
-      const gfx = this.make.graphics({ x: 0, y: 0 });
-      // Drop shadow
-      gfx.fillStyle(0x020f08, 0.6);
-      gfx.fillRoundedRect(2, 2, W - 2, H - 2, 4);
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Shadow
+        ctx.fillStyle = '#06130b';
+        this.drawRoundedRect(ctx, 2, 2, W - 2, H - 2, 4);
+        ctx.fill();
 
-      // Jade green base
-      gfx.fillStyle(0x0f5132, 1);
-      gfx.fillRoundedRect(0, 0, W - 2, H - 2, 4);
+        // Emerald Jade Gradient
+        const grad = ctx.createLinearGradient(0, 0, W, H);
+        grad.addColorStop(0, '#15803d');
+        grad.addColorStop(0.5, '#0f5132');
+        grad.addColorStop(1, '#064e3b');
+        ctx.fillStyle = grad;
+        this.drawRoundedRect(ctx, 0, 0, W - 2, H - 2, 4);
+        ctx.fill();
 
-      // Emerald inner trim
-      gfx.lineStyle(1, 0x22c55e, 0.8);
-      gfx.strokeRoundedRect(2, 2, W - 6, H - 6, 3);
+        // Emerald inner trim
+        ctx.strokeStyle = '#4ade80';
+        ctx.lineWidth = 1;
+        this.drawRoundedRect(ctx, 2.5, 2.5, W - 7, H - 7, 2);
+        ctx.stroke();
 
-      // Golden diamond emblem in center
-      gfx.fillStyle(0xd4af37, 0.9);
-      gfx.beginPath();
-      gfx.moveTo(W / 2 - 1, H / 2 - 8);
-      gfx.lineTo(W / 2 + 7, H / 2 - 1);
-      gfx.lineTo(W / 2 - 1, H / 2 + 6);
-      gfx.lineTo(W / 2 - 9, H / 2 - 1);
-      gfx.closePath();
-      gfx.fillPath();
+        // Golden diamond in center
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.moveTo(W / 2 - 1, H / 2 - 8);
+        ctx.lineTo(W / 2 + 7, H / 2 - 1);
+        ctx.lineTo(W / 2 - 1, H / 2 + 6);
+        ctx.lineTo(W / 2 - 9, H / 2 - 1);
+        ctx.closePath();
+        ctx.fill();
 
-      gfx.generateTexture('mahjong:tile_back', W, H);
-      gfx.destroy();
+        if (typeof this.textures.addCanvas === 'function') {
+          this.textures.addCanvas('mahjong:tile_back', canvas);
+        }
+      }
     }
 
     // 3. Characters (1m ~ 9m) - 硃砂紅
     const numChars = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
     for (let i = 1; i <= 9; i++) {
-      const key = `mahjong:tile_${i}m`;
-      if (!this.textures.exists(key)) {
-        const rt = this.make.renderTexture({ width: W, height: H });
-        rt.draw('mahjong:tile_face_base', 0, 0);
+      createTileCanvas(`mahjong:tile_${i}m`, (ctx) => {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
 
-        const txt = this.make.text({
-          x: W / 2 - 1,
-          y: H / 2 - 1,
-          text: `${numChars[i]}\n萬`,
-          style: {
-            fontSize: '13px',
-            fontFamily: 'serif, STKaiti, "Songti TC", "Microsoft JhengHei"',
-            color: '#b91c1c', // Cinnabar Red
-            align: 'center',
-            fontStyle: 'bold',
-          },
-          add: false,
-        });
-        txt.setOrigin(0.5);
-        rt.draw(txt);
-        rt.saveTexture(key);
-        txt.destroy();
-        rt.destroy();
-      }
+        ctx.font = 'bold 13px "Microsoft JhengHei", "Songti TC", serif';
+        ctx.fillStyle = '#b91c1c'; // Cinnabar Red
+        ctx.fillText(numChars[i], W / 2 - 1, H / 2 - 8);
+
+        ctx.font = 'bold 12px "Microsoft JhengHei", "Songti TC", serif';
+        ctx.fillStyle = '#b91c1c';
+        ctx.fillText('萬', W / 2 - 1, H / 2 + 8);
+      });
     }
 
-    // 4. Dots (1p ~ 9p) - 深青藍 & 硃砂紅
+    // 4. Dots (1p ~ 9p) - 湛藍 & 硃砂紅
     for (let i = 1; i <= 9; i++) {
-      const key = `mahjong:tile_${i}p`;
-      if (!this.textures.exists(key)) {
-        const rt = this.make.renderTexture({ width: W, height: H });
-        rt.draw('mahjong:tile_face_base', 0, 0);
+      createTileCanvas(`mahjong:tile_${i}p`, (ctx) => {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
 
-        const txt = this.make.text({
-          x: W / 2 - 1,
-          y: H / 2 - 1,
-          text: `${numChars[i]}\n筒`,
-          style: {
-            fontSize: '13px',
-            fontFamily: 'serif, STKaiti, "Songti TC", "Microsoft JhengHei"',
-            color: '#0369a1', // Azure Blue
-            align: 'center',
-            fontStyle: 'bold',
-          },
-          add: false,
-        });
-        txt.setOrigin(0.5);
-        rt.draw(txt);
-        rt.saveTexture(key);
-        txt.destroy();
-        rt.destroy();
-      }
+        ctx.font = 'bold 13px "Microsoft JhengHei", "Songti TC", serif';
+        ctx.fillStyle = '#0284c7'; // Azure Blue
+        ctx.fillText(numChars[i], W / 2 - 1, H / 2 - 8);
+
+        ctx.font = 'bold 12px "Microsoft JhengHei", "Songti TC", serif';
+        ctx.fillStyle = '#0284c7';
+        ctx.fillText('筒', W / 2 - 1, H / 2 + 8);
+      });
     }
 
-    // 5. Bamboo (1s ~ 9s) - 竹綠
+    // 5. Bamboo (1s ~ 9s) - 翠竹綠
     for (let i = 1; i <= 9; i++) {
-      const key = `mahjong:tile_${i}s`;
-      if (!this.textures.exists(key)) {
-        const rt = this.make.renderTexture({ width: W, height: H });
-        rt.draw('mahjong:tile_face_base', 0, 0);
+      createTileCanvas(`mahjong:tile_${i}s`, (ctx) => {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
 
-        const txt = this.make.text({
-          x: W / 2 - 1,
-          y: H / 2 - 1,
-          text: i === 1 ? '一\n索' : `${numChars[i]}\n條`,
-          style: {
-            fontSize: '13px',
-            fontFamily: 'serif, STKaiti, "Songti TC", "Microsoft JhengHei"',
-            color: '#15803d', // Bamboo Green
-            align: 'center',
-            fontStyle: 'bold',
-          },
-          add: false,
-        });
-        txt.setOrigin(0.5);
-        rt.draw(txt);
-        rt.saveTexture(key);
-        txt.destroy();
-        rt.destroy();
-      }
+        if (i === 1) {
+          // 1 Bird / 一索
+          ctx.font = 'bold 14px "Microsoft JhengHei", "Songti TC", serif';
+          ctx.fillStyle = '#15803d'; // Bamboo Green
+          ctx.fillText('一', W / 2 - 1, H / 2 - 8);
+
+          ctx.font = 'bold 13px "Microsoft JhengHei", "Songti TC", serif';
+          ctx.fillStyle = '#dc2626'; // Red bird beak
+          ctx.fillText('鳥', W / 2 - 1, H / 2 + 8);
+        } else {
+          ctx.font = 'bold 13px "Microsoft JhengHei", "Songti TC", serif';
+          ctx.fillStyle = '#15803d';
+          ctx.fillText(numChars[i], W / 2 - 1, H / 2 - 8);
+
+          ctx.font = 'bold 12px "Microsoft JhengHei", "Songti TC", serif';
+          ctx.fillStyle = '#15803d';
+          ctx.fillText('條', W / 2 - 1, H / 2 + 8);
+        }
+      });
     }
 
-    // 6. Winds (East, South, West, North)
+    // 6. Winds (East, South, West, North) - 蒼黑
     const winds = [
-      { key: 'east', char: '東', color: '#0f172a' },
-      { key: 'south', char: '南', color: '#0f172a' },
-      { key: 'west', char: '西', color: '#0f172a' },
-      { key: 'north', char: '北', color: '#0f172a' },
+      { key: 'east', char: '東' },
+      { key: 'south', char: '南' },
+      { key: 'west', char: '西' },
+      { key: 'north', char: '北' },
     ];
-    winds.forEach(({ key, char, color }) => {
-      const textureKey = `mahjong:tile_${key}`;
-      if (!this.textures.exists(textureKey)) {
-        const rt = this.make.renderTexture({ width: W, height: H });
-        rt.draw('mahjong:tile_face_base', 0, 0);
-
-        const txt = this.make.text({
-          x: W / 2 - 1,
-          y: H / 2 - 1,
-          text: char,
-          style: {
-            fontSize: '18px',
-            fontFamily: 'serif, STKaiti, "Songti TC", "Microsoft JhengHei"',
-            color,
-            fontStyle: 'bold',
-          },
-          add: false,
-        });
-        txt.setOrigin(0.5);
-        rt.draw(txt);
-        rt.saveTexture(textureKey);
-        txt.destroy();
-        rt.destroy();
-      }
+    winds.forEach(({ key, char }) => {
+      createTileCanvas(`mahjong:tile_${key}`, (ctx) => {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = 'bold 18px "Microsoft JhengHei", "Songti TC", serif';
+        ctx.fillStyle = '#0f172a'; // Deep Black
+        ctx.fillText(char, W / 2 - 1, H / 2 - 1);
+      });
     });
 
     // 7. Dragons (Red, Green, White)
@@ -201,199 +199,254 @@ export class PreloadScene extends Phaser.Scene {
       { key: 'white', char: '白', color: '#0284c7' },
     ];
     dragons.forEach(({ key, char, color }) => {
-      const textureKey = `mahjong:tile_${key}`;
-      if (!this.textures.exists(textureKey)) {
-        const rt = this.make.renderTexture({ width: W, height: H });
-        rt.draw('mahjong:tile_face_base', 0, 0);
-
-        const txt = this.make.text({
-          x: W / 2 - 1,
-          y: H / 2 - 1,
-          text: char,
-          style: {
-            fontSize: '18px',
-            fontFamily: 'serif, STKaiti, "Songti TC", "Microsoft JhengHei"',
-            color,
-            fontStyle: 'bold',
-          },
-          add: false,
-        });
-        txt.setOrigin(0.5);
-        rt.draw(txt);
-        rt.saveTexture(textureKey);
-        txt.destroy();
-        rt.destroy();
-      }
+      createTileCanvas(`mahjong:tile_${key}`, (ctx) => {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        if (key === 'white') {
+          // White Dragon Box
+          ctx.strokeStyle = '#0284c7';
+          ctx.lineWidth = 2.5;
+          if (typeof ctx.strokeRect === 'function') {
+            ctx.strokeRect(W / 2 - 9, H / 2 - 13, 16, 24);
+          } else if (typeof ctx.rect === 'function') {
+            ctx.beginPath();
+            ctx.rect(W / 2 - 9, H / 2 - 13, 16, 24);
+            ctx.stroke?.();
+          }
+        } else {
+          ctx.font = 'bold 19px "Microsoft JhengHei", "Songti TC", serif';
+          ctx.fillStyle = color;
+          ctx.fillText?.(char, W / 2 - 1, H / 2 - 1);
+        }
+      });
     });
 
-    // 8. Flowers (Seasons 1..4, Plants 1..4)
+    // 8. Flowers (Spring1~Winter4, Plum1~Chrysanthemum4)
     const flowers = [
-      { key: 'spring', char: '春1', color: '#ea580c' },
-      { key: 'summer', char: '夏2', color: '#ea580c' },
-      { key: 'autumn', char: '秋3', color: '#ea580c' },
-      { key: 'winter', char: '冬4', color: '#ea580c' },
-      { key: 'plum', char: '梅1', color: '#ca8a04' },
-      { key: 'orchid', char: '蘭2', color: '#ca8a04' },
-      { key: 'bamboo_f', char: '竹3', color: '#ca8a04' },
-      { key: 'chrysanthemum', char: '菊4', color: '#ca8a04' },
+      { key: 'spring', char: '春', num: '1', color: '#ea580c' },
+      { key: 'summer', char: '夏', num: '2', color: '#ea580c' },
+      { key: 'autumn', char: '秋', num: '3', color: '#ea580c' },
+      { key: 'winter', char: '冬', num: '4', color: '#ea580c' },
+      { key: 'plum', char: '梅', num: '1', color: '#ca8a04' },
+      { key: 'orchid', char: '蘭', num: '2', color: '#ca8a04' },
+      { key: 'bamboo_f', char: '竹', num: '3', color: '#ca8a04' },
+      { key: 'chrysanthemum', char: '菊', num: '4', color: '#ca8a04' },
     ];
-    flowers.forEach(({ key, char, color }) => {
-      const textureKey = `mahjong:tile_${key}`;
-      if (!this.textures.exists(textureKey)) {
-        const rt = this.make.renderTexture({ width: W, height: H });
-        rt.draw('mahjong:tile_face_base', 0, 0);
+    flowers.forEach(({ key, char, num, color }) => {
+      createTileCanvas(`mahjong:tile_${key}`, (ctx) => {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
 
-        const txt = this.make.text({
-          x: W / 2 - 1,
-          y: H / 2 - 1,
-          text: char,
-          style: {
-            fontSize: '13px',
-            fontFamily: 'serif, STKaiti, "Songti TC", "Microsoft JhengHei"',
-            color,
-            fontStyle: 'bold',
-          },
-          add: false,
-        });
-        txt.setOrigin(0.5);
-        rt.draw(txt);
-        rt.saveTexture(textureKey);
-        txt.destroy();
-        rt.destroy();
-      }
+        ctx.font = 'bold 15px "Microsoft JhengHei", "Songti TC", serif';
+        ctx.fillStyle = color;
+        ctx.fillText(char, W / 2 - 1, H / 2 - 7);
+
+        ctx.font = 'bold 12px monospace';
+        ctx.fillStyle = '#7c2d12';
+        ctx.fillText(num, W / 2 - 1, H / 2 + 10);
+      });
     });
 
-    // 9. Central Octagonal Wind Compass (140 x 140)
-    if (!this.textures.exists('mahjong:compass_dial')) {
-      const gfx = this.make.graphics({ x: 0, y: 0 });
-      const CW = 140;
-      const CH = 140;
+    // 9. Flower Rack Slot Cell Frame
+    if (!this.textures.exists('mahjong:flower_cell')) {
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+        this.drawRoundedRect(ctx, 1, 1, W - 2, H - 2, 3);
+        ctx.fill();
 
-      // Dark Wood / Brass bevel base
-      gfx.fillStyle(0x1e293b, 1);
-      gfx.fillRoundedRect(0, 0, CW, CH, 16);
+        ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash?.([2, 2]);
+        ctx.stroke?.();
+        ctx.setLineDash?.([]);
 
-      // Gold Octagonal Border
-      gfx.lineStyle(2, 0xd4af37, 1);
-      gfx.strokeRoundedRect(4, 4, CW - 8, CH - 8, 12);
-
-      // Inner Emerald Center Plate
-      gfx.fillStyle(0x064e3b, 1);
-      gfx.fillCircle(CW / 2, CH / 2, 45);
-      gfx.lineStyle(1, 0x10b981, 0.8);
-      gfx.strokeCircle(CW / 2, CH / 2, 45);
-
-      gfx.generateTexture('mahjong:compass_dial', CW, CH);
-      gfx.destroy();
+        if (typeof this.textures.addCanvas === 'function') {
+          this.textures.addCanvas('mahjong:flower_cell', canvas);
+        }
+      }
     }
 
-    // 10. Action Buttons (Chow, Pong, Kong, Ting, Hu, Pass)
+    // 10. Central Octagonal Wind Compass (140 x 140)
+    if (!this.textures.exists('mahjong:compass_dial')) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 140;
+      canvas.height = 140;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Outer dark wood bezel
+        ctx.fillStyle = '#0f172a';
+        this.drawRoundedRect(ctx, 0, 0, 140, 140, 16);
+        ctx.fill();
+
+        // Golden rim
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 2;
+        this.drawRoundedRect(ctx, 4, 4, 132, 132, 12);
+        ctx.stroke();
+
+        // Inner center plate
+        ctx.fillStyle = '#064e3b';
+        ctx.beginPath();
+        ctx.arc(70, 70, 48, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        if (typeof this.textures.addCanvas === 'function') {
+          this.textures.addCanvas('mahjong:compass_dial', canvas);
+        }
+      }
+    }
+
+    // 11. Dice Textures (1 ~ 6)
+    for (let i = 1; i <= 6; i++) {
+      const key = `mahjong:dice_${i}`;
+      if (!this.textures.exists(key)) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 30;
+        canvas.height = 30;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          // Dice Body
+          ctx.fillStyle = '#ffffff';
+          this.drawRoundedRect(ctx, 1, 1, 28, 28, 4);
+          ctx.fill();
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Dots
+          ctx.fillStyle = i === 1 || i === 4 ? '#dc2626' : '#0f172a';
+          const p = [
+            [],
+            [[15, 15]],
+            [[8, 8], [22, 22]],
+            [[8, 8], [15, 15], [22, 22]],
+            [[8, 8], [22, 8], [8, 22], [22, 22]],
+            [[8, 8], [22, 8], [15, 15], [8, 22], [22, 22]],
+            [[8, 7], [22, 7], [8, 15], [22, 15], [8, 23], [22, 23]],
+          ][i];
+
+          p.forEach(([dx, dy]) => {
+            ctx.beginPath();
+            ctx.arc(dx, dy, i === 1 ? 4 : 2.5, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          if (typeof this.textures.addCanvas === 'function') {
+            this.textures.addCanvas(key, canvas);
+          }
+        }
+      }
+    }
+
+    // 12. Action Buttons (Chow, Pong, Kong, Ting, Hu, Pass)
     const actionBtns = [
-      { key: 'action_btn_chow', label: '吃', bg: 0x2563eb },
-      { key: 'action_btn_pong', label: '碰', bg: 0x059669 },
-      { key: 'action_btn_kong', label: '槓', bg: 0xd97706 },
-      { key: 'action_btn_ting', label: '聽', bg: 0x7c3aed },
-      { key: 'action_btn_hu', label: '胡', bg: 0xdc2626 },
-      { key: 'action_btn_pass', label: '過', bg: 0x475569 },
+      { key: 'action_btn_chow', label: '吃', bg: '#2563eb' },
+      { key: 'action_btn_pong', label: '碰', bg: '#059669' },
+      { key: 'action_btn_kong', label: '槓', bg: '#d97706' },
+      { key: 'action_btn_ting', label: '聽', bg: '#7c3aed' },
+      { key: 'action_btn_hu', label: '胡', bg: '#dc2626' },
+      { key: 'action_btn_pass', label: '過', bg: '#475569' },
     ];
     actionBtns.forEach(({ key, label, bg }) => {
       const textureKey = `mahjong:${key}`;
       if (!this.textures.exists(textureKey)) {
-        const BW = 56;
-        const BH = 56;
-        const gfx = this.make.graphics({ x: 0, y: 0 });
-        gfx.fillStyle(bg, 1);
-        gfx.fillCircle(BW / 2, BH / 2, 25);
-        gfx.lineStyle(2, 0xffffff, 0.9);
-        gfx.strokeCircle(BW / 2, BH / 2, 25);
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 36;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = bg;
+          this.drawRoundedRect(ctx, 0, 0, 64, 36, 6);
+          ctx.fill();
 
-        const rt = this.make.renderTexture({ width: BW, height: BH });
-        rt.draw(gfx);
-        gfx.destroy();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          this.drawRoundedRect(ctx, 1.5, 1.5, 61, 33, 5);
+          ctx.stroke();
 
-        const txt = this.make.text({
-          x: BW / 2,
-          y: BH / 2,
-          text: label,
-          style: {
-            fontSize: '20px',
-            fontFamily: 'sans-serif, "Microsoft JhengHei"',
-            color: '#ffffff',
-            fontStyle: 'bold',
-          },
-          add: false,
-        });
-        txt.setOrigin(0.5);
-        rt.draw(txt);
-        rt.saveTexture(textureKey);
-        txt.destroy();
-        rt.destroy();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 16px "Microsoft JhengHei", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, 32, 18);
+
+          if (typeof this.textures.addCanvas === 'function') {
+            this.textures.addCanvas(textureKey, canvas);
+          }
+        }
       }
     });
 
-    // 11. Dice Faces 1..6
-    for (let d = 1; d <= 6; d++) {
-      const key = `mahjong:dice_${d}`;
-      if (!this.textures.exists(key)) {
-        const DS = 28;
-        const gfx = this.make.graphics({ x: 0, y: 0 });
-        // White rounded cube
-        gfx.fillStyle(0xf8fafc, 1);
-        gfx.fillRoundedRect(0, 0, DS, DS, 4);
-        gfx.lineStyle(1, 0x94a3b8, 0.8);
-        gfx.strokeRoundedRect(0, 0, DS, DS, 4);
+    // 13. 3D Wall Tile Blocks
+    if (!this.textures.exists('mahjong:wall_tile_stack')) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 22;
+      canvas.height = 30;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Lower tile
+        ctx.fillStyle = '#0f5132';
+        this.drawRoundedRect(ctx, 1, 12, 20, 16, 2);
+        ctx.fill();
+        ctx.strokeStyle = '#15803d';
+        ctx.stroke();
 
-        // Draw red/black pips
-        const pipColor = d === 1 || d === 4 ? 0xdc2626 : 0x0f172a;
-        gfx.fillStyle(pipColor, 1);
+        // Upper tile
+        ctx.fillStyle = '#15803d';
+        this.drawRoundedRect(ctx, 1, 1, 20, 16, 2);
+        ctx.fill();
+        ctx.strokeStyle = '#4ade80';
+        ctx.stroke();
 
-        const cx = DS / 2;
-        const cy = DS / 2;
-        const offset = 6;
+        // Top ivory face rim
+        ctx.fillStyle = '#f8fafc';
+        this.drawRoundedRect(ctx, 3, 3, 16, 3, 1);
+        ctx.fill();
 
-        if (d === 1) {
-          gfx.fillCircle(cx, cy, 4);
-        } else if (d === 2) {
-          gfx.fillCircle(cx - offset, cy - offset, 2.5);
-          gfx.fillCircle(cx + offset, cy + offset, 2.5);
-        } else if (d === 3) {
-          gfx.fillCircle(cx - offset, cy - offset, 2.5);
-          gfx.fillCircle(cx, cy, 2.5);
-          gfx.fillCircle(cx + offset, cy + offset, 2.5);
-        } else if (d === 4) {
-          gfx.fillCircle(cx - offset, cy - offset, 2.5);
-          gfx.fillCircle(cx + offset, cy - offset, 2.5);
-          gfx.fillCircle(cx - offset, cy + offset, 2.5);
-          gfx.fillCircle(cx + offset, cy + offset, 2.5);
-        } else if (d === 5) {
-          gfx.fillCircle(cx - offset, cy - offset, 2.5);
-          gfx.fillCircle(cx + offset, cy - offset, 2.5);
-          gfx.fillCircle(cx, cy, 2.5);
-          gfx.fillCircle(cx - offset, cy + offset, 2.5);
-          gfx.fillCircle(cx + offset, cy + offset, 2.5);
-        } else if (d === 6) {
-          gfx.fillCircle(cx - offset, cy - offset, 2.5);
-          gfx.fillCircle(cx + offset, cy - offset, 2.5);
-          gfx.fillCircle(cx - offset, cy, 2.5);
-          gfx.fillCircle(cx + offset, cy, 2.5);
-          gfx.fillCircle(cx - offset, cy + offset, 2.5);
-          gfx.fillCircle(cx + offset, cy + offset, 2.5);
+        if (typeof this.textures.addCanvas === 'function') {
+          this.textures.addCanvas('mahjong:wall_tile_stack', canvas);
         }
-
-        gfx.generateTexture(key, DS, DS);
-        gfx.destroy();
       }
     }
+  }
 
-    // 12. Flower Rack Cell (Slot indicator)
-    if (!this.textures.exists('mahjong:flower_cell')) {
-      const gfx = this.make.graphics({ x: 0, y: 0 });
-      gfx.fillStyle(0x062817, 0.5);
-      gfx.fillRoundedRect(0, 0, W, H, 3);
-      gfx.lineStyle(1, 0x15803d, 0.4);
-      gfx.strokeRoundedRect(0, 0, W, H, 3);
-      gfx.generateTexture('mahjong:flower_cell', W, H);
-      gfx.destroy();
+  private drawRoundedRect(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    r: number
+  ): void {
+    if (typeof ctx.roundRect === 'function') {
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, r);
+      return;
     }
+    if (typeof ctx.quadraticCurveTo === 'function') {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+      return;
+    }
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.closePath();
   }
 }

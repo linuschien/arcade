@@ -1,8 +1,9 @@
 /**
  * MainGameScene.ts
  * Main Render & Gameplay Scene for Taiwanese 16-Tile Mahjong.
- * Coordinates 4-seat spatial matrix, Octagonal Wind Compass, Smart Ting UI,
- * Floating Action Bar, Auto-Draw Mode, Sequential Settlement, and ArcadeBridge events.
+ * Coordinates 4-seat spatial matrix, 3D Tile Walls (東南西北 72 墩牌牆),
+ * Central Wind Compass & Discard Rivers, Smart Ting UI, Floating Action Bar,
+ * Sequential Settlement, and ArcadeBridge events.
  */
 
 import Phaser from 'phaser';
@@ -17,7 +18,7 @@ import {
   GamePhase,
   AvailableActions,
   ChowOption,
-  KongOption,
+  Tile,
 } from '../logic/MahjongTypes';
 
 export class MainGameScene extends Phaser.Scene {
@@ -31,6 +32,13 @@ export class MainGameScene extends Phaser.Scene {
   private remainingTilesText!: Phaser.GameObjects.Text;
   private turnPointer!: Phaser.GameObjects.Graphics;
   private diceContainer!: Phaser.GameObjects.Container;
+
+  // 3D Physical Tile Walls (東南西北 72 墩)
+  private wallContainer!: Phaser.GameObjects.Container;
+  private wallSprites: Phaser.GameObjects.Sprite[] = [];
+
+  // Latest Discard Indicator
+  private discardMarker!: Phaser.GameObjects.Graphics;
 
   // Smart Ting UI
   private tingContainer!: Phaser.GameObjects.Container;
@@ -52,10 +60,14 @@ export class MainGameScene extends Phaser.Scene {
 
   public create(): void {
     this.gameState = new MahjongGameState();
+    // Disable synchronous auto-stepping in gameState so Phaser controls visual turn timing
+    this.gameState.autoStepAI = false;
 
     this.createTableBackground();
+    this.createTileWalls();
     this.createCentralCompass();
     this.createSeats();
+    this.createDiscardMarker();
     this.createSmartTingUI();
     this.createActionBar();
     this.createSettlementModal();
@@ -68,6 +80,7 @@ export class MainGameScene extends Phaser.Scene {
     // Start first match
     this.gameState.startNewMatch();
     this.refreshAllSeats();
+    this.updateTileWalls();
 
     // Scene teardown listeners
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
@@ -90,6 +103,65 @@ export class MainGameScene extends Phaser.Scene {
     // Champagne gold inner trim
     bg.lineStyle(2, 0xd4af37, 0.9);
     bg.strokeRect(14, 14, W - 28, H - 28);
+  }
+
+  /**
+   * Creates the 4 physical 3D Tile Walls (72 stacks = 144 tiles).
+   */
+  private createTileWalls(): void {
+    this.wallContainer = this.add.container(0, 0);
+    this.wallSprites = [];
+
+    const stacksPerSide = 18;
+    const step = 20;
+
+    // South Wall (Bottom, near Seat 0)
+    for (let i = 0; i < stacksPerSide; i++) {
+      const x = 470 + i * step;
+      const y = 495;
+      const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
+      this.wallSprites.push(sprite);
+      this.wallContainer.add(sprite);
+    }
+
+    // East Wall (Right, near Seat 1)
+    for (let i = 0; i < stacksPerSide; i++) {
+      const x = 855;
+      const y = 480 - i * 14;
+      const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
+      sprite.setAngle(90);
+      this.wallSprites.push(sprite);
+      this.wallContainer.add(sprite);
+    }
+
+    // North Wall (Top, near Seat 2)
+    for (let i = 0; i < stacksPerSide; i++) {
+      const x = 810 - i * step;
+      const y = 225;
+      const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
+      this.wallSprites.push(sprite);
+      this.wallContainer.add(sprite);
+    }
+
+    // West Wall (Left, near Seat 3)
+    for (let i = 0; i < stacksPerSide; i++) {
+      const x = 425;
+      const y = 240 + i * 14;
+      const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
+      sprite.setAngle(90);
+      this.wallSprites.push(sprite);
+      this.wallContainer.add(sprite);
+    }
+  }
+
+  private updateTileWalls(): void {
+    const remaining = this.gameState.deck.getRegularRemainingCount();
+    const totalStacks = 72;
+    const visibleStacks = Math.ceil((remaining / 144) * totalStacks);
+
+    this.wallSprites.forEach((sprite, idx) => {
+      sprite.setVisible(idx < visibleStacks);
+    });
   }
 
   private createCentralCompass(): void {
@@ -130,16 +202,11 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private createSeats(): void {
-    // 4 Seat Layout Containers in world coordinates:
-    // P1 (Human / Bottom): 0°
-    // P2 (AI / Right): 270°
-    // P3 (AI / Top): 180°
-    // P4 (AI / Left): 90°
     const seatConfigs = [
       { x: 640, y: 645, angle: 0, seat: 0 as PlayerSeat },
-      { x: 1185, y: 360, angle: 270, seat: 1 as PlayerSeat },
-      { x: 640, y: 75, angle: 180, seat: 2 as PlayerSeat },
-      { x: 95, y: 360, angle: 90, seat: 3 as PlayerSeat },
+      { x: 1180, y: 360, angle: 270, seat: 1 as PlayerSeat },
+      { x: 640, y: 80, angle: 180, seat: 2 as PlayerSeat },
+      { x: 100, y: 360, angle: 90, seat: 3 as PlayerSeat },
     ];
 
     this.seatContainers = seatConfigs.map((cfg) => {
@@ -158,6 +225,54 @@ export class MainGameScene extends Phaser.Scene {
 
       return container;
     });
+  }
+
+  private createDiscardMarker(): void {
+    this.discardMarker = this.add.graphics();
+    this.discardMarker.setVisible(false);
+
+    // Subtle pulsing animation
+    if (this.tweens && typeof this.tweens.add === 'function') {
+      this.tweens.add({
+        targets: this.discardMarker,
+        alpha: { from: 0.6, to: 1.0 },
+        yoyo: true,
+        repeat: -1,
+        duration: 500,
+      });
+    }
+  }
+
+  private highlightLatestDiscard(seat: PlayerSeat, _tile: Tile): void {
+    const p = this.gameState.players[seat];
+    if (p.discards.length === 0) {
+      this.discardMarker.setVisible(false);
+      return;
+    }
+
+    const idx = p.discards.length - 1;
+    const col = idx % 6;
+    const row = Math.floor(idx / 6);
+    const dw = SeatLayoutContainer.TILE_W * 0.75 + 2;
+    const dh = SeatLayoutContainer.TILE_H * 0.75 + 2;
+
+    const seatPositions = [
+      { x: 640 - 90 + col * dw + dw / 2, y: 645 - 135 + row * dh },
+      { x: 1180 - (row * dh + dh / 2), y: 360 - 90 + col * dw },
+      { x: 640 + 90 - col * dw - dw / 2, y: 80 + 135 - row * dh },
+      { x: 100 + (row * dh + dh / 2), y: 360 + 90 - col * dw },
+    ];
+
+    const pos = seatPositions[seat] || seatPositions[0];
+    this.discardMarker.clear();
+    this.discardMarker.fillStyle(0xfacc15, 1);
+    this.discardMarker.beginPath();
+    this.discardMarker.moveTo(pos.x, pos.y - 12);
+    this.discardMarker.lineTo(pos.x - 6, pos.y - 20);
+    this.discardMarker.lineTo(pos.x + 6, pos.y - 20);
+    this.discardMarker.closePath();
+    this.discardMarker.fill();
+    this.discardMarker.setVisible(true);
   }
 
   private createSmartTingUI(): void {
@@ -202,7 +317,7 @@ export class MainGameScene extends Phaser.Scene {
       this.tingAutoBtn.setVisible(false);
       this.tingText.setText(this.tingText.text + ' [極速託管中]');
       if (this.gameState.currentTurnSeat === 0) {
-        this.gameState.startPlayerTurn(0, false);
+        this.gameState.stepAITurn(0);
       }
     });
 
@@ -230,18 +345,36 @@ export class MainGameScene extends Phaser.Scene {
       onDealingStep: () => {
         this.refreshAllSeats();
         this.updateCompass();
+        this.updateTileWalls();
       },
       onFlowerReplaced: () => {
         MahjongAudioService.playFlowerReplace();
         this.refreshAllSeats();
         this.updateCompass();
+        this.updateTileWalls();
       },
       onTurnStart: (seat: PlayerSeat) => {
         this.refreshAllSeats();
         this.updateCompass();
         this.updateSmartTing();
+        this.updateTileWalls();
+
         if (seat === 0) {
           this.checkHumanSelfActions();
+          if (this.gameState.players[0].isAutoPlay) {
+            this.time.delayedCall(400, () => {
+              if (this.gameState.currentTurnSeat === 0 && this.gameState.phase === 'PLAYER_TURN') {
+                this.gameState.stepAITurn(0);
+              }
+            });
+          }
+        } else {
+          // AI turn: schedule async turn step with 600ms thinking delay
+          this.time.delayedCall(600, () => {
+            if (this.gameState.currentTurnSeat === seat && this.gameState.phase === 'PLAYER_TURN') {
+              this.gameState.stepAITurn(seat);
+            }
+          });
         }
       },
       onTileDiscarded: (seat: PlayerSeat, tile) => {
@@ -249,11 +382,14 @@ export class MainGameScene extends Phaser.Scene {
         this.refreshAllSeats();
         this.updateCompass();
         this.updateSmartTing();
+        this.updateTileWalls();
+        this.highlightLatestDiscard(seat, tile);
+
         if (seat !== 0) {
           this.checkHumanClaimActions();
         }
       },
-      onMeldClaimed: (seat: PlayerSeat, meld) => {
+      onMeldClaimed: (_seat: PlayerSeat, meld) => {
         if (meld.type === 'CHOW') MahjongAudioService.playVoiceChow();
         else if (meld.type === 'PONG') MahjongAudioService.playVoicePong();
         else MahjongAudioService.playVoiceKong();
@@ -262,6 +398,7 @@ export class MainGameScene extends Phaser.Scene {
         this.subMenuContainer.setVisible(false);
         this.refreshAllSeats();
         this.updateCompass();
+        this.updateTileWalls();
       },
       onSettlement: (breakdown: SettlementBreakdown) => {
         this.showSettlementWindow(breakdown);
@@ -302,6 +439,8 @@ export class MainGameScene extends Phaser.Scene {
       return;
     }
     MahjongAudioService.playTileSelect();
+    this.actionBarContainer.setVisible(false);
+    this.subMenuContainer.setVisible(false);
     this.gameState.discardTile(0, tileId);
   }
 
@@ -749,3 +888,4 @@ export class MainGameScene extends Phaser.Scene {
     this.events.off(Phaser.Scenes.Events.DESTROY, this.handleShutdown, this);
   }
 }
+

@@ -49,6 +49,7 @@ describe('Mahjong PreloadScene Unit Tests', () => {
 
     mockTextures = {
       exists: vi.fn().mockReturnValue(false),
+      addCanvas: vi.fn(),
     };
 
     mockScenePlugin = {
@@ -67,17 +68,17 @@ describe('Mahjong PreloadScene Unit Tests', () => {
   it('should generate all procedural mahjong:* textures during preload', () => {
     scene.preload();
 
-    expect((scene as any).make.graphics).toHaveBeenCalled();
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('mahjong:tile_face_base', 36, 48);
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('mahjong:tile_back', 36, 48);
-    expect(mockGfx.generateTexture).toHaveBeenCalledWith('mahjong:compass_dial', 140, 140);
-    expect(mockRenderTexture.saveTexture).toHaveBeenCalledWith('mahjong:tile_1m');
-    expect(mockRenderTexture.saveTexture).toHaveBeenCalledWith('mahjong:tile_9p');
-    expect(mockRenderTexture.saveTexture).toHaveBeenCalledWith('mahjong:tile_5s');
-    expect(mockRenderTexture.saveTexture).toHaveBeenCalledWith('mahjong:tile_east');
-    expect(mockRenderTexture.saveTexture).toHaveBeenCalledWith('mahjong:tile_red');
-    expect(mockRenderTexture.saveTexture).toHaveBeenCalledWith('mahjong:tile_spring');
-    expect(mockRenderTexture.saveTexture).toHaveBeenCalledWith('mahjong:action_btn_hu');
+    expect(mockTextures.addCanvas).toHaveBeenCalledWith('mahjong:tile_face_base', expect.anything());
+    expect(mockTextures.addCanvas).toHaveBeenCalledWith('mahjong:tile_back', expect.anything());
+    expect(mockTextures.addCanvas).toHaveBeenCalledWith('mahjong:compass_dial', expect.anything());
+    expect(mockTextures.addCanvas).toHaveBeenCalledWith('mahjong:tile_1m', expect.anything());
+    expect(mockTextures.addCanvas).toHaveBeenCalledWith('mahjong:tile_9p', expect.anything());
+    expect(mockTextures.addCanvas).toHaveBeenCalledWith('mahjong:tile_1s', expect.anything());
+    expect(mockTextures.addCanvas).toHaveBeenCalledWith('mahjong:tile_east', expect.anything());
+    expect(mockTextures.addCanvas).toHaveBeenCalledWith('mahjong:tile_red', expect.anything());
+    expect(mockTextures.addCanvas).toHaveBeenCalledWith('mahjong:tile_spring', expect.anything());
+    expect(mockTextures.addCanvas).toHaveBeenCalledWith('mahjong:action_btn_hu', expect.anything());
+    expect(mockTextures.addCanvas).toHaveBeenCalledWith('mahjong:wall_tile_stack', expect.anything());
   });
 
   it('should transition to MainGameScene on create', () => {
@@ -88,7 +89,6 @@ describe('Mahjong PreloadScene Unit Tests', () => {
   it('should skip texture generation if texture already exists', () => {
     mockTextures.exists.mockReturnValue(true);
     scene.preload();
-    expect(mockGfx.generateTexture).not.toHaveBeenCalled();
-    expect(mockRenderTexture.saveTexture).not.toHaveBeenCalled();
+    expect(mockTextures.addCanvas).not.toHaveBeenCalled();
   });
 });

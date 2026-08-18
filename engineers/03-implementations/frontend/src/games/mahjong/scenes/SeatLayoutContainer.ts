@@ -35,10 +35,10 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     this.seatAngle = angle;
     this.setAngle(angle);
 
+    this.riverGroup = scene.add.container(0, 0);
     this.handGroup = scene.add.container(0, 0);
     this.meldGroup = scene.add.container(0, 0);
     this.flowerGroup = scene.add.container(0, 0);
-    this.riverGroup = scene.add.container(0, 0);
     this.hudGroup = scene.add.container(0, 0);
 
     this.add([this.riverGroup, this.handGroup, this.meldGroup, this.flowerGroup, this.hudGroup]);
@@ -48,34 +48,37 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   private initHUD(): void {
-    // HUD anti-rotation: counter-rotate by -seatAngle so text is always 0° upright
     this.hudGroup.setAngle(-this.seatAngle);
 
-    // Position HUD relative to seat
+    // Position HUD relative to seat so it never overlaps hand tiles
     let hudX = -320;
     let hudY = 0;
 
     if (this.seat === 0) {
-      hudX = -450;
-      hudY = -15;
+      // Bottom Human
+      hudX = -460;
+      hudY = -10;
     } else if (this.seat === 1) {
-      hudX = -180;
-      hudY = -80;
+      // Right AI
+      hudX = 0;
+      hudY = -220;
     } else if (this.seat === 2) {
-      hudX = 220;
-      hudY = -40;
+      // Top AI
+      hudX = -360;
+      hudY = 0;
     } else if (this.seat === 3) {
-      hudX = -180;
-      hudY = 80;
+      // Left AI
+      hudX = 0;
+      hudY = -220;
     }
 
     this.hudGroup.setPosition(hudX, hudY);
 
     // HUD Background Capsule
     const bg = this.scene.add.graphics();
-    bg.fillStyle(0x0f172a, 0.85);
+    bg.fillStyle(0x0f172a, 0.9);
     bg.fillRoundedRect(0, 0, 130, 48, 8);
-    bg.lineStyle(1, 0xd4af37, 0.8);
+    bg.lineStyle(1, 0xd4af37, 0.9);
     bg.strokeRoundedRect(0, 0, 130, 48, 8);
     this.hudGroup.add(bg);
 
@@ -126,7 +129,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   public renderPlayerState(profile: PlayerProfile, isHuman: boolean): void {
     this.updatePlayerInfo(profile);
     this.renderFlowerRack(profile.flowers);
-    this.renderMelds(profile.melds);
+    this.renderMelds(profile.melds, isHuman);
     this.renderHand(profile, isHuman);
     this.renderDiscards(profile.discards);
   }
@@ -138,11 +141,9 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     this.flowerGroup.removeAll(true);
 
     const startX = 220;
-    const cellW = SeatLayoutContainer.TILE_W * 0.7;
-    const cellH = SeatLayoutContainer.TILE_H * 0.7;
+    const cellW = SeatLayoutContainer.TILE_W * 0.65;
+    const cellH = SeatLayoutContainer.TILE_H * 0.65;
 
-    // Slot 0..3: Seasons (Spring1..Winter4)
-    // Slot 4..7: Plants (Plum1..Chrysanthemum4)
     const slotKeys = [
       'spring', 'summer', 'autumn', 'winter',
       'plum', 'orchid', 'bamboo_f', 'chrysanthemum',
@@ -173,40 +174,34 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   /**
    * Modular 3-tile width melds.
    */
-  private renderMelds(melds: Meld[]): void {
+  private renderMelds(melds: Meld[], _isHuman: boolean): void {
     this.meldGroup.removeAll(true);
 
     const meldW = SeatLayoutContainer.TILE_W * 3;
     const startX = 200; // Left of flower rack
 
     melds.forEach((meld, idx) => {
-      // Melds arranged from right to left
-      const meldX = startX - (idx + 1) * (meldW + 8);
+      const meldX = startX - (idx + 1) * (meldW + 6);
       const container = this.scene.add.container(meldX, 0);
 
       if (meld.type === 'CONCEALED_KONG') {
-        // Concealed Kong: 2 face down, 2 face up or all covered
         for (let i = 0; i < 3; i++) {
           const x = (i - 1) * SeatLayoutContainer.TILE_W;
           const tex = i === 1 ? 'mahjong:tile_back' : `mahjong:tile_${meld.tiles[0].shortCode}`;
           const sprite = this.scene.add.sprite(x, 0, tex);
           container.add(sprite);
         }
-        // 4th tile stacked vertically on top
         const topSprite = this.scene.add.sprite(0, -12, 'mahjong:tile_back');
         container.add(topSprite);
       } else if (meld.type === 'MELDED_KONG' || meld.type === 'ADDED_KONG') {
-        // 3 tiles in row
         for (let i = 0; i < 3; i++) {
           const x = (i - 1) * SeatLayoutContainer.TILE_W;
           const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
           container.add(sprite);
         }
-        // 4th tile stacked vertically on center tile
         const topSprite = this.scene.add.sprite(0, -12, `mahjong:tile_${meld.tiles[3].shortCode}`);
         container.add(topSprite);
       } else {
-        // Chow or Pong: 3 tiles
         for (let i = 0; i < 3; i++) {
           const x = (i - 1) * SeatLayoutContainer.TILE_W;
           const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
@@ -220,20 +215,22 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
   /**
    * Hand tiles with leftward shrink as melds increase.
+   * For AI: uses compact step so it never exceeds screen borders.
    */
   private renderHand(profile: PlayerProfile, isHuman: boolean): void {
     this.handGroup.removeAll(true);
 
     const meldCount = profile.melds.length;
-    const meldW = SeatLayoutContainer.TILE_W * 3 + 8;
-    const rightEdge = 200 - meldCount * meldW - 12;
+    const meldW = SeatLayoutContainer.TILE_W * 3 + 6;
+    const rightEdge = 200 - meldCount * meldW - 10;
 
     const hand = profile.hand;
-    const totalHandW = hand.length * SeatLayoutContainer.TILE_W;
+    const stepX = isHuman ? SeatLayoutContainer.TILE_W : 20;
+    const totalHandW = hand.length * stepX;
     const startX = rightEdge - totalHandW;
 
     hand.forEach((tile, idx) => {
-      const x = startX + idx * SeatLayoutContainer.TILE_W;
+      const x = startX + idx * stepX;
       const textureKey = isHuman ? `mahjong:tile_${tile.shortCode}` : 'mahjong:tile_back';
 
       const sprite = this.scene.add.sprite(x, 0, textureKey);
@@ -244,7 +241,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
         sprite.setInteractive({ useHandCursor: true });
 
         sprite.on('pointerover', () => {
-          sprite.setY(-8);
+          sprite.setY(-10);
           sprite.setTint(0xffe082);
           this.hoveredTileSprite = sprite;
           this.onTileHover?.(tile.shortCode);
@@ -267,9 +264,9 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       this.handGroup.add(sprite);
     });
 
-    // 17th drawn tile separated by 12px gap
+    // Drawn tile
     if (profile.drawnTile) {
-      const drawnX = rightEdge + 12;
+      const drawnX = rightEdge + 14;
       const textureKey = isHuman
         ? `mahjong:tile_${profile.drawnTile.shortCode}`
         : 'mahjong:tile_back';
@@ -282,7 +279,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
         drawnSprite.setInteractive({ useHandCursor: true });
 
         drawnSprite.on('pointerover', () => {
-          drawnSprite.setY(-8);
+          drawnSprite.setY(-10);
           drawnSprite.setTint(0xffe082);
           this.onTileHover?.(profile.drawnTile!.shortCode);
         });
@@ -308,10 +305,10 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   private renderDiscards(discards: Tile[]): void {
     this.riverGroup.removeAll(true);
 
-    const riverStartX = -110;
-    const riverStartY = -140; // In front of hand
-    const dw = SeatLayoutContainer.TILE_W * 0.8;
-    const dh = SeatLayoutContainer.TILE_H * 0.8;
+    const riverStartX = -90;
+    const riverStartY = -135;
+    const dw = SeatLayoutContainer.TILE_W * 0.75;
+    const dh = SeatLayoutContainer.TILE_H * 0.75;
 
     discards.forEach((tile, idx) => {
       const col = idx % 6;
@@ -342,3 +339,4 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     });
   }
 }
+

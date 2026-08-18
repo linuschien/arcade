@@ -501,6 +501,7 @@ export class MahjongGameState {
             claims.push({ seat: p.seat, action: 'PASS' });
           } else {
             // Wait for human input
+            this.phase = 'ACTION_WAIT';
             this.notifyPhase();
             return;
           }
