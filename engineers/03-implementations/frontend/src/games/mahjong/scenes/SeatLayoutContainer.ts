@@ -368,9 +368,22 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       this.handGroup.add(sprite);
     });
 
+    // Reserved Drawn Slot Outline (進牌區虛線定位格)
+    const drawnSlotW = stepX;
+    const drawnSlotH = SeatLayoutContainer.TILE_H;
+    const drawnX = startX + maxHandTilesW + gapDrawn + stepX / 2;
+
+    const slotGraphics = this.scene.add.graphics();
+    // Faint translucent slot base
+    slotGraphics.fillStyle(0x020617, 0.35);
+    slotGraphics.fillRoundedRect(drawnX - drawnSlotW / 2, -drawnSlotH / 2, drawnSlotW, drawnSlotH, 4);
+    // Delicate dashed champagne gold border
+    slotGraphics.lineStyle(1.5, 0xd4af37, 0.65);
+    this.drawDashedRect(slotGraphics, drawnX - drawnSlotW / 2, -drawnSlotH / 2, drawnSlotW, drawnSlotH, 4, 3);
+    this.handGroup.add(slotGraphics);
+
     // 17th Drawn tile (rendered into the reserved slot on the right with gap)
     if (profile.drawnTile) {
-      const drawnX = startX + maxHandTilesW + gapDrawn + stepX / 2;
       const textureKey = showFace
         ? `mahjong:tile_${profile.drawnTile.shortCode}`
         : 'mahjong:tile_back';
@@ -400,6 +413,48 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       }
 
       this.handGroup.add(drawnSprite);
+    }
+  }
+
+  /**
+   * Draws a crisp dashed rectangle outline on a Graphics object.
+   */
+  private drawDashedRect(
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    dash: number = 4,
+    gap: number = 3
+  ): void {
+    // Top border (Left to Right)
+    let cx = x;
+    while (cx < x + w) {
+      const len = Math.min(dash, x + w - cx);
+      g.lineBetween(cx, y, cx + len, y);
+      cx += dash + gap;
+    }
+    // Right border (Top to Bottom)
+    let cy = y;
+    while (cy < y + h) {
+      const len = Math.min(dash, y + h - cy);
+      g.lineBetween(x + w, cy, x + w, cy + len);
+      cy += dash + gap;
+    }
+    // Bottom border (Right to Left)
+    cx = x + w;
+    while (cx > x) {
+      const len = Math.min(dash, cx - x);
+      g.lineBetween(cx, y + h, cx - len, y + h);
+      cx -= dash + gap;
+    }
+    // Left border (Bottom to Top)
+    cy = y + h;
+    while (cy > y) {
+      const len = Math.min(dash, cy - y);
+      g.lineBetween(x, cy, x, cy - len);
+      cy -= dash + gap;
     }
   }
 

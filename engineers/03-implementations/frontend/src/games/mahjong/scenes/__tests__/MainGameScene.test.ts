@@ -38,6 +38,7 @@ vi.mock('phaser', () => {
     lineStyle = vi.fn().mockReturnThis();
     strokeRect = vi.fn().mockReturnThis();
     strokeRoundedRect = vi.fn().mockReturnThis();
+    lineBetween = vi.fn().mockReturnThis();
     beginPath = vi.fn().mockReturnThis();
     arc = vi.fn().mockReturnThis();
     moveTo = vi.fn().mockReturnThis();
@@ -133,6 +134,7 @@ describe('Mahjong MainGameScene Unit Tests', () => {
         strokeRect: vi.fn().mockReturnThis(),
         strokeRoundedRect: vi.fn().mockReturnThis(),
         strokeCircle: vi.fn().mockReturnThis(),
+        lineBetween: vi.fn().mockReturnThis(),
         beginPath: vi.fn().mockReturnThis(),
         arc: vi.fn().mockReturnThis(),
         moveTo: vi.fn().mockReturnThis(),

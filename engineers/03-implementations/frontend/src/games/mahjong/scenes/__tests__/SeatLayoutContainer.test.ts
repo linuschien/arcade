@@ -31,6 +31,7 @@ vi.mock('phaser', () => {
     fillRoundedRect = vi.fn().mockReturnThis();
     lineStyle = vi.fn().mockReturnThis();
     strokeRoundedRect = vi.fn().mockReturnThis();
+    lineBetween = vi.fn().mockReturnThis();
     each = vi.fn().mockReturnThis();
     once = vi.fn().mockReturnThis();
     on = vi.fn().mockReturnThis();
@@ -74,6 +75,7 @@ describe('SeatLayoutContainer Unit Tests', () => {
       fillRoundedRect: vi.fn().mockReturnThis(),
       lineStyle: vi.fn().mockReturnThis(),
       strokeRoundedRect: vi.fn().mockReturnThis(),
+      lineBetween: vi.fn().mockReturnThis(),
       each: vi.fn(),
       once: vi.fn().mockReturnThis(),
       on: vi.fn().mockReturnThis(),
