@@ -118,11 +118,11 @@ export class MainGameScene extends Phaser.Scene {
     const stacksPerSide = 18;
     const step = 20;
 
-    // Clockwise Wall Progression enclosing the central discard rivers & compass:
+    // Clockwise Wall Progression enclosing the 6x3 central discard rivers & compass:
     // 1. South Wall (Bottom): Right to Left (0 to 17)
     for (let i = 0; i < stacksPerSide; i++) {
       const x = 810 - i * step;
-      const y = 545;
+      const y = 626;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       this.wallSprites.push(sprite);
       this.wallContainer.add(sprite);
@@ -130,8 +130,8 @@ export class MainGameScene extends Phaser.Scene {
 
     // 2. West Wall (Left): Bottom to Top (18 to 35)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 400;
-      const y = 530 - i * 19;
+      const x = 372;
+      const y = 590 - i * 27;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       sprite.setAngle(90);
       this.wallSprites.push(sprite);
@@ -141,7 +141,7 @@ export class MainGameScene extends Phaser.Scene {
     // 3. North Wall (Top): Left to Right (36 to 53)
     for (let i = 0; i < stacksPerSide; i++) {
       const x = 470 + i * step;
-      const y = 175;
+      const y = 94;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       this.wallSprites.push(sprite);
       this.wallContainer.add(sprite);
@@ -149,8 +149,8 @@ export class MainGameScene extends Phaser.Scene {
 
     // 4. East Wall (Right): Top to Bottom (54 to 71)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 880;
-      const y = 190 + i * 19;
+      const x = 908;
+      const y = 130 + i * 27;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       sprite.setAngle(90);
       this.wallSprites.push(sprite);

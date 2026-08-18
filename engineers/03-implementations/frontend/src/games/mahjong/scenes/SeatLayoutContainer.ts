@@ -470,14 +470,16 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 9x2 Standard Discard River with full 36x48 tiles positioned INSIDE the Tile Wall.
-   * Top/Bottom seats: baseY = -124 (Row 0: -124, Row 1: -174).
-   * Left/Right side seats: baseY = -228 (Row 0: -228, Row 1: -278).
+   * 6x3 Standard Discard River (6 cols x 3 rows = 18 tiles) positioned tight against the central compass.
+   * Progression is 由內而外 (Inside-out): Row 0 is closest to the central compass, Row 2 is furthest (towards the wall).
+   * Top/Bottom seats: baseY = -146 (Row 0: -146, Row 1: -96, Row 2: -46).
+   * Left/Right side seats: baseY = -401 (Row 0: -401, Row 1: -351, Row 2: -301).
    */
   private renderDiscards(discards: Tile[], _isLastDiscardSeat: boolean = false): void {
     this.riverGroup.removeAll(true);
 
-    const cols = 9;
+    const cols = 6;
+    const rows = 3;
     const dw = SeatLayoutContainer.TILE_W;
     const dh = SeatLayoutContainer.TILE_H;
     const stepX = 38;
@@ -485,27 +487,27 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     const riverStartX = -((cols * stepX) / 2);
 
     const isSideSeat = this.seat === 1 || this.seat === 3;
-    const baseY = isSideSeat ? -305 : -110;
+    const baseY = isSideSeat ? -401 : -146;
 
-    // 1. Draw 18 placeholder grid cells (9x2)
-    for (let r = 0; r < 2; r++) {
+    // 1. Draw 18 placeholder grid cells (6x3) - 由內而外 (Row 0 closest to compass)
+    for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const x = riverStartX + c * stepX + dw / 2;
-        const y = baseY - r * stepY;
+        const y = baseY + r * stepY;
         const cell = this.scene.add.sprite(x, y, 'mahjong:flower_cell');
         cell.setDisplaySize(dw, dh);
         this.riverGroup.add(cell);
       }
     }
 
-    // 2. Render actual discarded tiles on top of cells
+    // 2. Render actual discarded tiles on top of cells (indices 0..17, 由內而外)
     discards.forEach((tile, idx) => {
-      if (idx >= 27) return;
+      if (idx >= 18) return;
       const col = idx % cols;
       const row = Math.floor(idx / cols);
 
       const x = riverStartX + col * stepX + dw / 2;
-      const y = baseY - row * stepY;
+      const y = baseY + row * stepY;
 
       const sprite = this.scene.add.sprite(x, y, `mahjong:tile_${tile.shortCode}`);
       sprite.setDisplaySize(dw, dh);
