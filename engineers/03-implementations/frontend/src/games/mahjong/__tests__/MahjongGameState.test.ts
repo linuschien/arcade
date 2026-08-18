@@ -47,10 +47,11 @@ describe('MahjongGameState Unit Tests', () => {
     state.startDealing();
 
     const p0 = state.players[0];
-    p0.isPassLockout = true; // Was locked out
-
-    // Human discards a tile
-    const tileToDiscard = p0.drawnTile || p0.hand[0];
+    // Human draws and discards a tile
+    if (!p0.drawnTile) {
+      p0.drawnTile = { id: 'test_drawn_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' };
+    }
+    const tileToDiscard = p0.drawnTile;
     state.currentTurnSeat = 0;
     state.phase = 'PLAYER_TURN';
     state.discardTile(0, tileToDiscard.id);

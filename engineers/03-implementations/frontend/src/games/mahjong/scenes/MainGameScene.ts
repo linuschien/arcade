@@ -462,7 +462,7 @@ export class MainGameScene extends Phaser.Scene {
       this.diceContainer.setVisible(false);
       this.refreshAllSeats();
       this.updateCompass();
-      this.gameState.startDealing();
+      this.gameState.startDealing(false);
     });
   }
 
@@ -1190,7 +1190,7 @@ export class MainGameScene extends Phaser.Scene {
       this.settlementContainer.setVisible(false);
       this.refreshAllSeats(false);
       MahjongAudioService.playBGM();
-      this.gameState.startDealing();
+      this.gameState.startDealing(false);
     });
   }
 

@@ -204,7 +204,7 @@ export class MahjongGameState {
   /**
    * Phase 2: 莊家擲骰開門與配牌 (Dice Roll & Dealing).
    */
-  public startDealing(): void {
+  public startDealing(autoStartFlowers: boolean = true): void {
     // Reset player round hands
     this.players.forEach((p) => {
       p.hand = [];
@@ -259,8 +259,9 @@ export class MahjongGameState {
     // Sort all player hands into standard order
     this.sortHandTiles();
 
-    // Proceed to multi-round flower replacement
-    this.startFlowerReplacement();
+    if (autoStartFlowers) {
+      this.startFlowerReplacement();
+    }
   }
 
   /**
@@ -276,6 +277,9 @@ export class MahjongGameState {
    * Phase 3: 多輪輪替補花 (Multi-Round Flower Replacement).
    */
   public startFlowerReplacement(): void {
+    if (this.phase === 'PLAYER_TURN' || this.phase === 'ROUND_SETTLEMENT' || this.phase === 'MATCH_OVER') {
+      return;
+    }
     this.phase = 'FLOWER_REPLACEMENT';
     this.notifyPhase();
 
@@ -425,6 +429,12 @@ export class MahjongGameState {
    */
   public discardTile(seat: PlayerSeat, tileId: string): void {
     const player = this.players[seat];
+
+    const totalTiles = player.hand.length + (player.drawnTile ? 1 : 0) + player.melds.length * 3;
+    if (totalTiles < 17) {
+      console.warn(`[MahjongGameState] Player ${seat} cannot discard: tile count is ${totalTiles} (less than 17)`);
+      return;
+    }
 
     let discarded: Tile | null = null;
 
