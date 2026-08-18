@@ -50,26 +50,26 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   private initHUD(): void {
     this.hudGroup.setAngle(-this.seatAngle);
 
-    // Position HUD at clean, symmetric screen-space table quadrants
-    let hudX = -320;
+    // Position HUD at player's subjective LEFT across all 4 seats
+    let hudX = 0;
     let hudY = 0;
 
     if (this.seat === 0) {
-      // Bottom-Left (Human / 賭神)
-      hudX = -530;
-      hudY = 5;
+      // Bottom Human: Subjective LEFT = Screen Bottom-Left
+      hudX = -540;
+      hudY = 0;
     } else if (this.seat === 1) {
-      // Top-Right (Right AI / 賭俠)
-      hudX = -285;
-      hudY = -10;
+      // Right AI: Subjective LEFT = Screen Top-Right (safely inside table felt)
+      hudX = 285;
+      hudY = -30;
     } else if (this.seat === 2) {
-      // Top-Left (Top AI / 賭霸)
-      hudX = 530;
+      // Top AI: Subjective LEFT = Screen Top-Right
+      hudX = -380;
       hudY = 0;
     } else if (this.seat === 3) {
-      // Left-Upper (Left AI / 賭聖)
+      // Left AI: Subjective LEFT = Screen Bottom-Left
       hudX = 180;
-      hudY = 10;
+      hudY = 0;
     }
 
     this.hudGroup.setPosition(hudX, hudY);
@@ -135,7 +135,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 4x2 Flower Rack dedicated zone (never overlapping hand).
+   * 4x2 Flower Rack at player's subjective RIGHT (never overlapping hand).
    */
   private renderFlowerRack(flowers: Tile[]): void {
     this.flowerGroup.removeAll(true);
@@ -152,16 +152,20 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     let startY = 0;
 
     if (this.seat === 0) {
-      // Bottom Human: Placed to the right of hand
+      // Bottom Human: Subjective RIGHT = Screen Bottom-Right
       startX = 330;
       startY = 0;
-    } else if (this.seat === 1 || this.seat === 3) {
-      // Side AI: Placed behind the hand on the outer wall
-      startX = -48;
-      startY = -46;
+    } else if (this.seat === 1) {
+      // Right AI: Subjective RIGHT = Screen Bottom-Right (beyond hand edge)
+      startX = -260;
+      startY = 0;
     } else if (this.seat === 2) {
-      // Top AI: Placed to the right of hand
-      startX = -330;
+      // Top AI: Subjective RIGHT = Screen Top-Left
+      startX = 330;
+      startY = 0;
+    } else if (this.seat === 3) {
+      // Left AI: Subjective RIGHT = Screen Top-Left (beyond hand edge)
+      startX = -260;
       startY = 0;
     }
 
@@ -349,6 +353,18 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
         sprite.clearTint();
       }
     });
+  }
+
+  /**
+   * Returns world position of the latest discarded tile.
+   */
+  public getLatestDiscardWorldPosition(): { x: number; y: number } | null {
+    if (this.riverGroup.length === 0) return null;
+    const lastSprite = this.riverGroup.getAt(this.riverGroup.length - 1) as Phaser.GameObjects.Sprite;
+    if (!lastSprite) return null;
+    const matrix = this.getWorldTransformMatrix();
+    const worldPoint = matrix.transformPoint(lastSprite.x, lastSprite.y);
+    return { x: worldPoint.x, y: worldPoint.y };
   }
 }
 

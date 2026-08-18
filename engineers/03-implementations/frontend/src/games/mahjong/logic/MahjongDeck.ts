@@ -148,6 +148,8 @@ export class MahjongDeck {
     }
   }
 
+  private breakStackIndex: number = 0;
+
   /**
    * Sets up the circular wall break using 3 dice sum S in [3, 18].
    * Retains S stacks at the break point.
@@ -166,6 +168,7 @@ export class MahjongDeck {
     // Total 72 stacks (18 stacks per player seat).
     // Break position in stacks = (breakSeat * 18 + breakStack) % 72
     const breakStackIndex = (breakSeat * 18 + breakStack) % 72;
+    this.breakStackIndex = breakStackIndex;
     const breakTileIndex = breakStackIndex * 2; // 2 tiles per stack
 
     // Rotate tiles so headIndex = 0 corresponds to breakTileIndex
@@ -185,6 +188,29 @@ export class MahjongDeck {
       headIndex: this.headIndex,
       tailIndex: this.tailIndex,
     };
+  }
+
+  /**
+   * Calculates the number of tiles (0, 1, or 2) remaining on a physical wall stack (0 to 71).
+   */
+  public getStackRemainingTileCount(stackIndex: number): number {
+    const relStack = (stackIndex - this.breakStackIndex + 72) % 72;
+    const tileA = relStack * 2;
+    const tileB = relStack * 2 + 1;
+
+    let count = 0;
+    if (this.headIndex <= this.tailIndex) {
+      if (tileA >= this.headIndex && tileA <= this.tailIndex) count++;
+      if (tileB >= this.headIndex && tileB <= this.tailIndex) count++;
+    } else {
+      if (tileA >= this.headIndex || tileA <= this.tailIndex) count++;
+      if (tileB >= this.headIndex || tileB <= this.tailIndex) count++;
+    }
+    return count;
+  }
+
+  public getBreakStackIndex(): number {
+    return this.breakStackIndex;
   }
 
   /**

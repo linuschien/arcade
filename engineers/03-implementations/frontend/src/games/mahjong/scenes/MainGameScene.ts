@@ -155,12 +155,19 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private updateTileWalls(): void {
-    const remaining = this.gameState.deck.getRegularRemainingCount();
-    const totalStacks = 72;
-    const visibleStacks = Math.ceil((remaining / 144) * totalStacks);
-
     this.wallSprites.forEach((sprite, idx) => {
-      sprite.setVisible(idx < visibleStacks);
+      const count = this.gameState.deck.getStackRemainingTileCount(idx);
+      if (count === 0) {
+        sprite.setVisible(false);
+      } else if (count === 1) {
+        sprite.setVisible(true);
+        sprite.setAlpha?.(0.65);
+        sprite.setScale?.(0.85);
+      } else {
+        sprite.setVisible(true);
+        sprite.setAlpha?.(1.0);
+        sprite.setScale?.(1.0);
+      }
     });
   }
 
@@ -168,14 +175,15 @@ export class MainGameScene extends Phaser.Scene {
     const cx = 640;
     const cy = 360;
 
-    this.compassDial = this.add.sprite(cx, cy, 'mahjong:compass_dial');
+    const dial = this.add.sprite(cx, cy, 'mahjong:compass_dial');
+    dial.setDisplaySize(140, 140);
 
     // Turn pointer (Breathing gold needle)
     this.turnPointer = this.add.graphics();
 
-    this.roundWindText = this.add.text(cx, cy - 22, '東風圈', {
-      fontSize: '15px',
-      fontFamily: '"Microsoft JhengHei", serif',
+    this.roundWindText = this.add.text(cx, cy - 20, '東風圈', {
+      fontSize: '13px',
+      fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#facc15',
       fontStyle: 'bold',
     });
@@ -205,7 +213,7 @@ export class MainGameScene extends Phaser.Scene {
     const seatConfigs = [
       { x: 640, y: 645, angle: 0, seat: 0 as PlayerSeat },
       { x: 1180, y: 360, angle: 270, seat: 1 as PlayerSeat },
-      { x: 640, y: 80, angle: 180, seat: 2 as PlayerSeat },
+      { x: 640, y: 75, angle: 180, seat: 2 as PlayerSeat },
       { x: 100, y: 360, angle: 90, seat: 3 as PlayerSeat },
     ];
 
@@ -229,13 +237,14 @@ export class MainGameScene extends Phaser.Scene {
 
   private createDiscardMarker(): void {
     this.discardMarker = this.add.graphics();
+    this.discardMarker.fillStyle(0xfacc15, 1);
     this.discardMarker.setVisible(false);
 
     // Subtle pulsing animation
-    if (this.tweens && typeof this.tweens.add === 'function') {
+    if (this.tweens) {
       this.tweens.add({
         targets: this.discardMarker,
-        alpha: { from: 0.6, to: 1.0 },
+        alpha: { from: 0.4, to: 1 },
         yoyo: true,
         repeat: -1,
         duration: 500,
@@ -244,26 +253,12 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private highlightLatestDiscard(seat: PlayerSeat, _tile: Tile): void {
-    const p = this.gameState.players[seat];
-    if (p.discards.length === 0) {
+    const pos = this.seatContainers[seat].getLatestDiscardWorldPosition();
+    if (!pos) {
       this.discardMarker.setVisible(false);
       return;
     }
 
-    const idx = p.discards.length - 1;
-    const col = idx % 6;
-    const row = Math.floor(idx / 6);
-    const dw = SeatLayoutContainer.TILE_W * 0.75 + 2;
-    const dh = SeatLayoutContainer.TILE_H * 0.75 + 2;
-
-    const seatPositions = [
-      { x: 640 - 90 + col * dw + dw / 2, y: 645 - 135 + row * dh },
-      { x: 1180 - (row * dh + dh / 2), y: 360 - 90 + col * dw },
-      { x: 640 + 90 - col * dw - dw / 2, y: 80 + 135 - row * dh },
-      { x: 100 + (row * dh + dh / 2), y: 360 + 90 - col * dw },
-    ];
-
-    const pos = seatPositions[seat] || seatPositions[0];
     this.discardMarker.clear();
     this.discardMarker.fillStyle(0xfacc15, 1);
     this.discardMarker.beginPath();
@@ -276,18 +271,18 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private createSmartTingUI(): void {
-    this.tingContainer = this.add.container(360, 565);
+    this.tingContainer = this.add.container(180, 580);
     this.tingContainer.setVisible(false);
 
     const bg = this.add.graphics();
     bg.fillStyle(0x0f172a, 0.9);
-    bg.fillRoundedRect(0, 0, 420, 36, 6);
+    bg.fillRoundedRect(0, 0, 320, 32, 6);
     bg.lineStyle(1, 0x8b5cf6, 0.8);
-    bg.strokeRoundedRect(0, 0, 420, 36, 6);
+    bg.strokeRoundedRect(0, 0, 320, 32, 6);
     this.tingContainer.add(bg);
 
-    this.tingText = this.add.text(12, 9, '聽牌: ', {
-      fontSize: '13px',
+    this.tingText = this.add.text(10, 8, '聽牌: ', {
+      fontSize: '12px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#c4b5fd',
       fontStyle: 'bold',
@@ -295,7 +290,7 @@ export class MainGameScene extends Phaser.Scene {
     this.tingContainer.add(this.tingText);
 
     // Auto Play Button (聽牌託管)
-    this.tingAutoBtn = this.add.container(340, 6);
+    this.tingAutoBtn = this.add.container(240, 4);
     const btnBg = this.add.graphics();
     btnBg.fillStyle(0x7c3aed, 1);
     btnBg.fillRoundedRect(0, 0, 70, 24, 4);
@@ -325,10 +320,12 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private createActionBar(): void {
-    this.actionBarContainer = this.add.container(640, 520);
+    // Action bar positioned above hand and below discard river
+    this.actionBarContainer = this.add.container(640, 580);
     this.actionBarContainer.setVisible(false);
 
-    this.subMenuContainer = this.add.container(640, 450);
+    // Submenu placed directly above action bar
+    this.subMenuContainer = this.add.container(640, 528);
     this.subMenuContainer.setVisible(false);
   }
 
