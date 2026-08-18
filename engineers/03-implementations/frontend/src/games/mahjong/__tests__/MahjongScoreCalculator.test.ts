@@ -339,4 +339,117 @@ describe('MahjongScoreCalculator Unit Tests', () => {
     expect(result.chipDeltas[0]).toBe(-2700);
     expect(result.chipDeltas[1]).toBe(2700);
   });
+
+  it('should evaluate 嚦咕嚦咕 (8 fans) + 自摸 (1 fan) = 9 fans, excluding 門清自摸/碰碰胡/暗刻', () => {
+    // 7 pairs + 1 triplet in multiple suits (not full flush): 11m, 22m, 33m, 44p, 55p, 66s, 77s, 888s (17 tiles)
+    const handCodes = [
+      '1m', '1m',
+      '2m', '2m',
+      '3m', '3m',
+      '4p', '4p',
+      '5p', '5p',
+      '6s', '6s',
+      '7s', '7s',
+      '8s', '8s',
+    ];
+    const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+    const winningTile = createTile('8s', 'win'); // Forms triplet 888s
+
+    const result = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 1, // Non-dealer
+      winnerHand: hand,
+      winnerMelds: [],
+      winnerFlowers: [],
+      winningTile,
+      isSelfDrawn: true,
+      roundWind: 'EAST',
+      playerWind: 'SOUTH',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+
+    expect(result.fans.some((f) => f.name === '嚦咕嚦咕' && f.fan === 8)).toBe(true);
+    expect(result.fans.some((f) => f.name === '自摸' && f.fan === 1)).toBe(true);
+    expect(result.fans.some((f) => f.name === '門清自摸')).toBe(false); // Excluded
+    expect(result.fans.some((f) => f.name === '碰碰胡')).toBe(false); // Excluded
+    expect(result.totalFans).toBe(9);
+  });
+
+  it('should evaluate 花槓 (2 fans) excluding internal 正花, but including separate 正花 (2+1=3 fans)', () => {
+    // Player is East wind (needs flower 1: 春, 梅)
+    // Has full Seasons (春夏秋冬 = 花槓 2台) + 1 separate Plant (梅 = 正花 1台)
+    const seasonFlowers: Tile[] = [
+      { id: 'f_spring', suit: 'FLOWERS', value: 1, name: '春', shortCode: 'spring', isFlower: true },
+      { id: 'f_summer', suit: 'FLOWERS', value: 2, name: '夏', shortCode: 'summer', isFlower: true },
+      { id: 'f_autumn', suit: 'FLOWERS', value: 3, name: '秋', shortCode: 'autumn', isFlower: true },
+      { id: 'f_winter', suit: 'FLOWERS', value: 4, name: '冬', shortCode: 'winter', isFlower: true },
+      { id: 'f_plum', suit: 'FLOWERS', value: 1, name: '梅', shortCode: 'plum', isFlower: true },
+    ];
+
+    const handCodes = [
+      '1m', '2m', '3m',
+      '4m', '5m', '6m',
+      '7m', '8m', '9m',
+      '1p', '2p', '3p',
+      '4s', '5s', '6s',
+      '9s',
+    ];
+    const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+    const winningTile = createTile('9s', 'win');
+
+    const result = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 1,
+      winnerHand: hand,
+      winnerMelds: [],
+      winnerFlowers: seasonFlowers,
+      winningTile,
+      isSelfDrawn: false,
+      loserSeat: 2,
+      roundWind: 'EAST',
+      playerWind: 'EAST', // Matches 春 (value 1) and 梅 (value 1)
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+
+    expect(result.fans.some((f) => f.name === '四季花槓' && f.fan === 2)).toBe(true);
+    expect(result.fans.some((f) => f.name === '正花 (春)')).toBe(false); // Excluded (internal to season gang)
+    expect(result.fans.some((f) => f.name === '正花 (梅)' && f.fan === 1)).toBe(true); // Included (from plant gang)
+    expect(result.fans.some((f) => f.name === '門清' && f.fan === 1)).toBe(true);
+    expect(result.totalFans).toBe(4);
+  });
+
+  it('should evaluate 五暗刻 (8 fans) + 碰碰胡 (4 fans) + 門清自摸 (3 fans) = 15 fans without mutual exclusion', () => {
+    // 5 concealed triplets + 1 pair: 111m, 222m, 333m, 444p, 555s + 9s9s (Self drawn)
+    const handCodes = [
+      '1m', '1m', '1m',
+      '2m', '2m', '2m',
+      '3m', '3m', '3m',
+      '4p', '4p', '4p',
+      '5s', '5s', '5s',
+      '9s',
+    ];
+    const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+    const winningTile = createTile('9s', 'win'); // Pair tile zimo
+
+    const result = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 1,
+      winnerHand: hand,
+      winnerMelds: [],
+      winnerFlowers: [],
+      winningTile,
+      isSelfDrawn: true,
+      roundWind: 'EAST',
+      playerWind: 'SOUTH',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+
+    expect(result.fans.some((f) => f.name === '五暗刻' && f.fan === 8)).toBe(true);
+    expect(result.fans.some((f) => f.name === '碰碰胡' && f.fan === 4)).toBe(true);
+    expect(result.fans.some((f) => f.name === '門清自摸' && f.fan === 3)).toBe(true);
+    expect(result.totalFans).toBe(15);
+  });
 });
