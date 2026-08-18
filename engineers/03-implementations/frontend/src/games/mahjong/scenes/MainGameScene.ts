@@ -33,6 +33,7 @@ export class MainGameScene extends Phaser.Scene {
   private remainingTilesText!: Phaser.GameObjects.Text;
   private turnPointer!: Phaser.GameObjects.Graphics;
   private diceContainer!: Phaser.GameObjects.Container;
+  private bankerDiceOutsideCompassContainer!: Phaser.GameObjects.Container;
 
   // 3D Physical Tile Walls (東南西北 72 墩)
   private wallContainer!: Phaser.GameObjects.Container;
@@ -210,6 +211,10 @@ export class MainGameScene extends Phaser.Scene {
     // Dice Container for roll animation
     this.diceContainer = this.add.container(cx, cy);
     this.diceContainer.setVisible(false);
+
+    // Persistent Banker Dice outside compass facing Banker's seat
+    this.bankerDiceOutsideCompassContainer = this.add.container(0, 0);
+    this.bankerDiceOutsideCompassContainer.setDepth(15);
   }
 
   private createSeats(): void {
@@ -513,16 +518,45 @@ export class MainGameScene extends Phaser.Scene {
     infoText.setOrigin(0.5);
     this.diceContainer.add(infoText);
 
-    // 1. Center dice roll completes after 1400ms -> Relocate dice to Banker's Flower Rack and animate tile sort
+    // 1. Center dice roll completes after 1400ms -> Relocate dice outside compass facing Banker and animate tile sort
     this.time.delayedCall(1400, () => {
       this.diceContainer.setVisible(false);
-      // Place dice above Banker's flower rack
-      for (let s = 0; s < 4; s++) {
-        this.seatContainers[s].showBankerDice(s === this.gameState.dealerSeat ? d : null);
-      }
+      this.updateBankerDicePosition();
       this.updateTileWalls();
       this.animateTileSort();
     });
+  }
+
+  /**
+   * Places 3 Banker Dice outside the central compass facing current Banker's seat.
+   */
+  private updateBankerDicePosition(): void {
+    this.bankerDiceOutsideCompassContainer.removeAll(true);
+    const d = this.gameState.diceResult;
+    if (!d || d.length < 3) return;
+
+    const dealerSeat = this.gameState.dealerSeat;
+    // Coordinates placed right outside compass (radius 70px) facing the current dealer seat
+    const positions = [
+      { x: 640, y: 450 }, // Seat 0 (Bottom Human)
+      { x: 730, y: 360 }, // Seat 1 (Right AI)
+      { x: 640, y: 270 }, // Seat 2 (Top AI)
+      { x: 550, y: 360 }, // Seat 3 (Left AI)
+    ];
+    const pos = positions[dealerSeat];
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x020617, 0.92);
+    bg.fillRoundedRect(pos.x - 42, pos.y - 14, 84, 28, 6);
+    bg.lineStyle(1.5, 0xd4af37, 0.9);
+    bg.strokeRoundedRect(pos.x - 42, pos.y - 14, 84, 28, 6);
+    this.bankerDiceOutsideCompassContainer.add(bg);
+
+    for (let i = 0; i < 3; i++) {
+      const sprite = this.add.sprite(pos.x - 24 + i * 24, pos.y, `mahjong:dice_${d[i]}`);
+      sprite.setDisplaySize(18, 18);
+      this.bankerDiceOutsideCompassContainer.add(sprite);
+    }
   }
 
   /**
@@ -595,10 +629,12 @@ export class MainGameScene extends Phaser.Scene {
     const rOuter = 66;
 
     // Glowing gold outer accent arc on active player's rim (35 deg arc)
-    this.turnPointer.lineStyle(3, 0xfacc15, 0.95);
-    this.turnPointer.beginPath();
-    this.turnPointer.arc(cx, cy, 63, rad - 0.32, rad + 0.32, false);
-    this.turnPointer.strokePath();
+    if (typeof this.turnPointer.arc === 'function') {
+      this.turnPointer.lineStyle(3, 0xfacc15, 0.95);
+      this.turnPointer.beginPath();
+      this.turnPointer.arc(cx, cy, 63, rad - 0.32, rad + 0.32, false);
+      this.turnPointer.strokePath();
+    }
 
     // Sleek chevron arrow head pointing outward toward active seat
     const tipX = cx + Math.cos(rad) * (rOuter + 3);
@@ -621,8 +657,10 @@ export class MainGameScene extends Phaser.Scene {
     const lastSeat = this.gameState.lastDiscard?.fromSeat;
     for (let i = 0; i < 4; i++) {
       const p = this.gameState.players[i];
-      this.seatContainers[i].renderPlayerState(p, p.isHuman, lastSeat === i, revealAllHands);
+      this.seatContainers[i].renderPlayerState(p, p.isHuman, lastSeat === i, revealAllHands, this.gameState.roundWind);
     }
+    this.updateBankerDicePosition();
+    this.updateCompass();
   }
 
   private updateSmartTing(): void {
@@ -984,15 +1022,16 @@ export class MainGameScene extends Phaser.Scene {
         tileX += tileW + 1;
       });
 
-      // 1.3 Render Winning Drawn Tile (with gap & gold focus box + '胡' badge)
-      if (winner.drawnTile) {
+      // 1.3 Render Winning Tile (with gap & gold focus box + '胡' badge for BOTH 自摸 and 放槍)
+      const winTile = breakdown.winningTile || winner.drawnTile || this.gameState.lastDiscard?.tile;
+      if (winTile) {
         tileX += 8;
         const winBox = this.add.graphics();
         winBox.lineStyle(1.5, 0xfacc15, 1);
         winBox.strokeRoundedRect(tileX - 1, curY, tileW + 2, tileH + 2, 3);
         this.settlementContainer.add(winBox);
 
-        const sp = this.add.sprite(tileX + tileW / 2, curY + 16, `mahjong:tile_${winner.drawnTile.shortCode}`);
+        const sp = this.add.sprite(tileX + tileW / 2, curY + 16, `mahjong:tile_${winTile.shortCode}`);
         sp.setDisplaySize(tileW, tileH);
         this.settlementContainer.add(sp);
 

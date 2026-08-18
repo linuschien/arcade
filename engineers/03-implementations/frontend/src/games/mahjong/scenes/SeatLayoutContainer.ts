@@ -120,27 +120,10 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Displays the 3 dice to the RIGHT of the Banker's Flower Rack (PRD 5.2).
+   * Clears banker dice group (banker dice are now centrally positioned outside compass facing banker).
    */
-  public showBankerDice(d: number[] | null): void {
+  public showBankerDice(_d: number[] | null): void {
     this.bankerDiceGroup.removeAll(true);
-    if (!d || d.length < 3) return;
-
-    const diceStartX = 345;
-    const diceStartY = -115;
-
-    const bg = this.scene.add.graphics();
-    bg.fillStyle(0x020617, 0.92);
-    bg.fillRoundedRect(diceStartX - 5, diceStartY - 14, 88, 28, 6);
-    bg.lineStyle(1, 0xd4af37, 0.9);
-    bg.strokeRoundedRect(diceStartX - 5, diceStartY - 14, 88, 28, 6);
-    this.bankerDiceGroup.add(bg);
-
-    for (let i = 0; i < 3; i++) {
-      const sprite = this.scene.add.sprite(diceStartX + 11 + i * 24, diceStartY, `mahjong:dice_${d[i]}`);
-      sprite.setDisplaySize(20, 20);
-      this.bankerDiceGroup.add(sprite);
-    }
   }
 
   public renderPlayerState(

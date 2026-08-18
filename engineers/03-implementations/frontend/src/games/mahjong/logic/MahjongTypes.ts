@@ -85,6 +85,7 @@ export interface SettlementBreakdown {
   winnerSeat: PlayerSeat;
   isSelfDrawn: boolean;
   loserSeat?: PlayerSeat; // Discarder seat if Ron; undefined if Self-Drawn
+  winningTile?: Tile; // Winning drawn or discarded tile
   isRobbingKong?: boolean;
   isFlowerWin?: boolean; // 八仙過海 or 七搶一
   isDraw?: boolean; // 流局

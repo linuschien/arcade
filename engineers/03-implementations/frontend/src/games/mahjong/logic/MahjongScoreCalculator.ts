@@ -105,6 +105,7 @@ export class MahjongScoreCalculator {
       winnerSeat: ctx.winnerSeat,
       isSelfDrawn: ctx.isSelfDrawn,
       loserSeat: ctx.loserSeat,
+      winningTile: ctx.winningTile,
       isRobbingKong: ctx.isRobbingKong,
       isFlowerWin: ctx.isFlowerWin,
       isDraw: false,
