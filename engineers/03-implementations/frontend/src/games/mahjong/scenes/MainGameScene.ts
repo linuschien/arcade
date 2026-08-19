@@ -736,8 +736,8 @@ export class MainGameScene extends Phaser.Scene {
   private updateCompass(): void {
     const winds = ['東', '南', '西', '北'];
     const roundWind = winds[this.gameState.roundWindIndex] || '東';
-    const dealerHandWind = winds[this.gameState.dealerSeat] || '東';
-    this.roundWindText.setText(`${roundWind}風${dealerHandWind}`);
+    const currentHandWind = winds[this.gameState.dealerRoundsPlayed % 4] || '東';
+    this.roundWindText.setText(`${roundWind}風${currentHandWind}`);
 
     const windChars: Record<string, string> = {
       EAST: '東',
