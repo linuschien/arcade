@@ -1441,12 +1441,12 @@ export class MainGameScene extends Phaser.Scene {
           this.settlementContainer.add(sp);
 
           // Check if this flower is positive flower for winner
-          const winnerWind = winner.wind;
+          const winnerWind = this.gameState.getEffectiveWind(winner.seat);
           const posIndices: Record<string, string[]> = {
-            EAST: ['1f', '5f'],
-            SOUTH: ['2f', '6f'],
-            WEST: ['3f', '7f'],
-            NORTH: ['4f', '8f'],
+            EAST: ['spring', 'plum', '1f', '5f'],
+            SOUTH: ['summer', 'orchid', '2f', '6f'],
+            WEST: ['autumn', 'bamboo_f', '3f', '7f'],
+            NORTH: ['winter', 'chrysanthemum', '4f', '8f'],
           };
           const isPos = (posIndices[winnerWind] || []).includes(flower.shortCode);
           if (isPos) {
