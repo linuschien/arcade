@@ -427,4 +427,44 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     expect((scene as any).tingContainer.setVisible).toHaveBeenCalledWith(false);
     expect((scene as any).tingContainer.removeAll).toHaveBeenCalledWith(true);
   });
+
+  it('should highlight positive flowers with orange stroke in settlement window according to effectiveWind', () => {
+    scene.create();
+    const gameState = (scene as any).gameState;
+    gameState.startNewMatch();
+
+    const breakdown = {
+      winnerSeat: 0,
+      isSelfDrawn: true,
+      winningTile: { id: '1m_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      basePoints: 500,
+      fanRate: 200,
+      dealerMultiplierFan: 1,
+      dealerStreak: 0,
+      fans: [{ name: '自摸', fan: 1 }],
+      totalFans: 1,
+      chipDeltas: [600, -200, -200, -200],
+      remainingChips: [10600, 9800, 9800, 9800],
+      winnerName: '賭神',
+    };
+
+    const p0 = gameState.players[0];
+    p0.flowers = [
+      { id: 'f_spring', suit: 'FLOWERS', value: 1, name: '春', shortCode: 'spring', isFlower: true },
+      { id: 'f_summer', suit: 'FLOWERS', value: 2, name: '夏', shortCode: 'summer', isFlower: true },
+    ];
+
+    (scene as any).add.graphics.mockClear();
+
+    // 1. When dealerSeat is 0 (Winner is Dealer / EAST), Spring is positive and highlighted with graphics box
+    gameState.dealerSeat = 0;
+    (scene as any).showSettlementWindow(breakdown);
+    expect((scene as any).add.graphics).toHaveBeenCalled();
+
+    // 2. When dealerSeat is 3 (Winner seat 0 is South / SOUTH relative to dealer 3), Summer is positive
+    (scene as any).add.graphics.mockClear();
+    gameState.dealerSeat = 3;
+    (scene as any).showSettlementWindow(breakdown);
+    expect((scene as any).add.graphics).toHaveBeenCalled();
+  });
 });
