@@ -322,53 +322,9 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private createSmartTingUI(): void {
-    // Smart Ting positioned directly centered beneath player's hand
-    this.tingContainer = this.add.container(640, 690);
+    // Smart Ting Radar Card positioned in Bottom-Right corner
+    this.tingContainer = this.add.container(1115, 655);
     this.tingContainer.setVisible(false);
-
-    const bg = this.add.graphics();
-    bg.fillStyle(0x0f172a, 0.92);
-    bg.fillRoundedRect(-190, -13, 380, 26, 6);
-    bg.lineStyle(1, 0x8b5cf6, 0.85);
-    bg.strokeRoundedRect(-190, -13, 380, 26, 6);
-    this.tingContainer.add(bg);
-
-    this.tingText = this.add.text(-180, -7, '聽牌: ', {
-      fontSize: '12px',
-      fontFamily: '"Microsoft JhengHei", sans-serif',
-      color: '#c4b5fd',
-      fontStyle: 'bold',
-    });
-    this.tingContainer.add(this.tingText);
-
-    // Auto Play Button (聽牌託管)
-    this.tingAutoBtn = this.add.container(115, -11);
-    const btnBg = this.add.graphics();
-    btnBg.fillStyle(0x7c3aed, 1);
-    btnBg.fillRoundedRect(0, 0, 70, 22, 4);
-    this.tingAutoBtn.add(btnBg);
-
-    const btnTxt = this.add.text(35, 11, '聽牌託管', {
-      fontSize: '11px',
-      fontFamily: '"Microsoft JhengHei", sans-serif',
-      color: '#ffffff',
-      fontStyle: 'bold',
-    });
-    btnTxt.setOrigin(0.5);
-    this.tingAutoBtn.add(btnTxt);
-
-    btnBg.setInteractive(new Phaser.Geom.Rectangle(0, 0, 70, 22), Phaser.Geom.Rectangle.Contains);
-    btnBg.on('pointerdown', () => {
-      this.gameState.players[0].isAutoPlay = true;
-      MahjongAudioService.playVoiceTing();
-      this.tingAutoBtn.setVisible(false);
-      this.tingText.setText(this.tingText.text + ' [極速託管中]');
-      if (this.gameState.currentTurnSeat === 0) {
-        this.gameState.stepAITurn(0);
-      }
-    });
-
-    this.tingContainer.add(this.tingAutoBtn);
     this.tingContainer.setDepth(90);
   }
 
@@ -845,21 +801,117 @@ export class MainGameScene extends Phaser.Scene {
 
   private updateSmartTing(): void {
     const p1 = this.gameState.players[0];
+    if (!p1) {
+      this.tingContainer.setVisible(false);
+      return;
+    }
+
     const tingInfo = MahjongHandEvaluator.evaluateTing(
       p1.hand,
       p1.melds,
       this.gameState.getAllVisibleTiles()
     );
 
+    this.tingContainer.removeAll(true);
+
     if (tingInfo.winningTiles.length > 0) {
       this.tingContainer.setVisible(true);
 
-      const tileSummary = tingInfo.winningTiles
-        .map((t) => `${t.tileName} (${t.remainingCount}張)`)
-        .join(' ');
-      const statusLabel = p1.isAutoPlay ? ' [極速託管中]' : p1.isTing ? ' [已聽牌]' : '';
-      this.tingText.setText(`聽牌: ${tileSummary}${statusLabel}`);
-      this.tingAutoBtn.setVisible(!p1.isAutoPlay);
+      const count = tingInfo.winningTiles.length;
+      const tileW = 24;
+      const tileH = 32;
+      const gap = 8;
+      const contentW = count * tileW + (count - 1) * gap;
+      const totalRemaining = tingInfo.winningTiles.reduce((sum, t) => sum + t.remainingCount, 0);
+
+      const cardW = Math.max(230, contentW + 36);
+      const cardH = 76;
+
+      // 1. Sleek Glassmorphic Background Panel
+      const bg = this.add.graphics();
+      bg.fillStyle(0x090d16, 0.94);
+      bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 8);
+      bg.lineStyle(1.5, 0x8b5cf6, 0.9);
+      bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 8);
+      this.tingContainer.add(bg);
+
+      // 2. Header Line
+      const title = this.add.text(-cardW / 2 + 12, -cardH / 2 + 8, `🎧 聽牌雷達 (共${totalRemaining}張)`, {
+        fontSize: '11px',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
+        color: '#c4b5fd',
+        fontStyle: 'bold',
+      });
+      this.tingContainer.add(title);
+
+      // 3. Auto Play Button / Status Badge
+      if (!p1.isAutoPlay) {
+        const autoBtn = this.add.container(cardW / 2 - 42, -cardH / 2 + 15);
+        const btnBg = this.add.graphics();
+        btnBg.fillStyle(0x7c3aed, 1);
+        btnBg.fillRoundedRect(-32, -9, 64, 18, 4);
+        autoBtn.add(btnBg);
+
+        const btnTxt = this.add.text(0, 0, '聽牌託管', {
+          fontSize: '10px',
+          fontFamily: '"Microsoft JhengHei", sans-serif',
+          color: '#ffffff',
+          fontStyle: 'bold',
+        }).setOrigin(0.5);
+        autoBtn.add(btnTxt);
+
+        autoBtn.setSize(64, 18);
+        autoBtn.setInteractive({ useHandCursor: true });
+        autoBtn.on('pointerover', () => {
+          btnBg.clear();
+          btnBg.fillStyle(0x9333ea, 1);
+          btnBg.fillRoundedRect(-32, -9, 64, 18, 4);
+        });
+        autoBtn.on('pointerout', () => {
+          btnBg.clear();
+          btnBg.fillStyle(0x7c3aed, 1);
+          btnBg.fillRoundedRect(-32, -9, 64, 18, 4);
+        });
+        autoBtn.on('pointerdown', () => {
+          this.gameState.players[0].isAutoPlay = true;
+          MahjongAudioService.playVoiceTing();
+          this.updateSmartTing();
+          if (this.gameState.currentTurnSeat === 0) {
+            this.gameState.stepAITurn(0);
+          }
+        });
+        this.tingContainer.add(autoBtn);
+      } else {
+        const statusBadge = this.add.text(cardW / 2 - 12, -cardH / 2 + 8, '⚡ 極速託管中', {
+          fontSize: '10px',
+          fontFamily: '"Microsoft JhengHei", sans-serif',
+          color: '#a7f3d0',
+          fontStyle: 'bold',
+        }).setOrigin(1, 0);
+        this.tingContainer.add(statusBadge);
+      }
+
+      // 4. Graphical Mini Tiles Row with remaining counts
+      const startX = -((count - 1) * (tileW + gap)) / 2;
+      const tileCenterY = 10;
+
+      tingInfo.winningTiles.forEach((t, idx) => {
+        const tx = startX + idx * (tileW + gap);
+
+        // Tile sprite
+        const sprite = this.add.sprite(tx, tileCenterY - 5, `mahjong:tile_${t.tileCode}`);
+        sprite.setDisplaySize(tileW, tileH);
+        this.tingContainer.add(sprite);
+
+        // Remaining count badge
+        const countTxt = this.add.text(tx, tileCenterY + 18, `${t.remainingCount}張`, {
+          fontSize: '10px',
+          fontFamily: '"Microsoft JhengHei", sans-serif',
+          color: t.remainingCount > 0 ? '#facc15' : '#64748b',
+          fontStyle: 'bold',
+        }).setOrigin(0.5);
+        this.tingContainer.add(countTxt);
+      });
     } else {
       this.tingContainer.setVisible(false);
     }

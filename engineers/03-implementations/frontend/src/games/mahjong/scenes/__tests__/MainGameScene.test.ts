@@ -351,4 +351,40 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     );
     expect(containerTween).toBeUndefined();
   });
+
+  it('should render graphical Smart Ting card with mini tile sprites in bottom-right corner when in Ting state', () => {
+    scene.create();
+    const gameState = (scene as any).gameState;
+    const p0 = gameState.players[0];
+
+    // Setup player with Ting hand (waiting on 3m, 6m)
+    p0.hand = [
+      { id: '1', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      { id: '2', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      { id: '3', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      { id: '4', suit: 'CHARACTERS', value: 2, name: '二萬', shortCode: '2m' },
+      { id: '5', suit: 'CHARACTERS', value: 2, name: '二萬', shortCode: '2m' },
+      { id: '6', suit: 'CHARACTERS', value: 2, name: '二萬', shortCode: '2m' },
+      { id: '7', suit: 'CHARACTERS', value: 4, name: '四萬', shortCode: '4m' },
+      { id: '8', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' },
+      ...Array.from({ length: 8 }, (_, i) => ({
+        id: `dummy_${i}`,
+        suit: 'BAMBOO' as const,
+        value: ((Math.floor(i / 3) + 1) as any),
+        name: `${Math.floor(i / 3) + 1}條`,
+        shortCode: `${Math.floor(i / 3) + 1}s`,
+      })),
+    ];
+    p0.drawnTile = null;
+
+    (scene as any).add.sprite.mockClear();
+    (scene as any).updateSmartTing();
+
+    // Verify tingContainer is shown
+    expect((scene as any).tingContainer.setVisible).toHaveBeenCalledWith(true);
+    // Verify mini tile sprites are created inside tingContainer
+    const spriteCalls = (scene as any).add.sprite.mock.calls;
+    const tileSprites = spriteCalls.filter((c: any[]) => c[2].startsWith('mahjong:tile_'));
+    expect(tileSprites.length).toBeGreaterThanOrEqual(1);
+  });
 });
