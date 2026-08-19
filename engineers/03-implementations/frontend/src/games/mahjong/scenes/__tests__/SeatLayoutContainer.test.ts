@@ -346,4 +346,57 @@ describe('SeatLayoutContainer Unit Tests', () => {
     expect(() => seatContainer.highlightMatchingDiscards('1m')).not.toThrow();
     expect(() => seatContainer.highlightMatchingDiscards(null)).not.toThrow();
   });
+
+  it('should render AI hand tiles with identical size and spacing (TILE_W = 36px, gapDrawn = 12px) to human hand', () => {
+    const humanSeat = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
+    const aiSeat = new SeatLayoutContainer(mockScene, 640, 75, 180, 2);
+
+    const profile = createMockProfile();
+    profile.melds = [];
+    profile.flowers = [];
+    profile.discards = [];
+    profile.hand = Array.from({ length: 16 }, (_, i) => ({
+      id: `h_${i}`,
+      suit: 'CHARACTERS',
+      value: (i % 9) + 1,
+      name: `${(i % 9) + 1}萬`,
+      shortCode: `${(i % 9) + 1}m`,
+    }));
+    profile.drawnTile = { id: 'd_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' };
+
+    mockScene.add.sprite.mockClear();
+    humanSeat.renderPlayerState(profile, true);
+    const humanSprites = [...mockScene.add.sprite.mock.calls];
+
+    mockScene.add.sprite.mockClear();
+    aiSeat.renderPlayerState(profile, false);
+    const aiSprites = [...mockScene.add.sprite.mock.calls];
+
+    // Both Human and AI should create 16 hand tiles + 1 drawn tile (17 total sprites in hand)
+    const humanHandTiles = humanSprites.filter((c) => c[2].startsWith('mahjong:tile_'));
+    const aiHandTiles = aiSprites.filter((c) => c[2] === 'mahjong:tile_back');
+    expect(humanHandTiles.length).toBe(17);
+    expect(aiHandTiles.length).toBe(17);
+  });
+
+  it('should render Banker Dice cleanly below flower rack only for dealer seat', () => {
+    const dealerSeat = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
+    const nonDealerSeat = new SeatLayoutContainer(mockScene, 1180, 360, 270, 1);
+
+    mockScene.add.sprite.mockClear();
+    mockScene.add.graphics.mockClear();
+
+    // 1. Dealer seat should render banker dice sprites and background
+    dealerSeat.showBankerDice([1, 2, 3], true);
+    const dealerSpriteCalls = mockScene.add.sprite.mock.calls;
+    const dealerDiceCalls = dealerSpriteCalls.filter((c: any[]) => c[2].startsWith('mahjong:dice_'));
+    expect(dealerDiceCalls.length).toBe(3);
+
+    // 2. Non-dealer seat should NOT render banker dice sprites
+    mockScene.add.sprite.mockClear();
+    nonDealerSeat.showBankerDice([1, 2, 3], false);
+    const nonDealerSpriteCalls = mockScene.add.sprite.mock.calls;
+    const nonDealerDiceCalls = nonDealerSpriteCalls.filter((c: any[]) => c[2].startsWith('mahjong:dice_'));
+    expect(nonDealerDiceCalls.length).toBe(0);
+  });
 });

@@ -134,6 +134,31 @@ describe('MahjongGameState Unit Tests', () => {
     expect(getAnnouncement()).toBe('南風東');
   });
 
+  it('should strictly preserve permanent seating winds across all 16 rounds of dealer rotations', () => {
+    state.startNewMatch();
+
+    // Record initial winds for all 4 players from 抓位
+    const initialWinds = state.players.map((p) => p.wind);
+    expect(initialWinds.length).toBe(4);
+
+    // Settle 16 rounds won by non-dealer to cycle all 4 winds and 16 dealer rotations
+    for (let i = 0; i < 16; i++) {
+      state.startDealing();
+      const currentDealer = state.dealerSeat;
+      const nonDealer = ((currentDealer + 1) % 4) as any;
+
+      state.players[nonDealer].hand = [
+        { id: '1m_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      ];
+      state.settleWin(nonDealer, false, currentDealer);
+
+      // Verify that after every single dealer rotation, all 4 players strictly retain their initial seating wind!
+      state.players.forEach((p, idx) => {
+        expect(p.wind).toBe(initialWinds[idx]);
+      });
+    }
+  });
+
   it('should deal 16 tiles to non-dealers and 17 tiles to dealer, with all flowers replaced', () => {
     state.startNewMatch();
     state.startDealing();

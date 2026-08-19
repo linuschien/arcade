@@ -25,6 +25,8 @@ vi.mock('phaser', () => {
     setData = vi.fn().mockReturnThis();
     getData = vi.fn();
     setInteractive = vi.fn().mockReturnThis();
+    setSize = vi.fn().mockReturnThis();
+    setColor = vi.fn().mockReturnThis();
     setTint = vi.fn().mockReturnThis();
     clearTint = vi.fn().mockReturnThis();
     setY = vi.fn().mockReturnThis();
@@ -120,6 +122,8 @@ describe('Mahjong MainGameScene Unit Tests', () => {
         setData: vi.fn().mockReturnThis(),
         getData: vi.fn(),
         setInteractive: vi.fn().mockReturnThis(),
+        setSize: vi.fn().mockReturnThis(),
+        setColor: vi.fn().mockReturnThis(),
         setTint: vi.fn().mockReturnThis(),
         clearTint: vi.fn().mockReturnThis(),
         setY: vi.fn().mockReturnThis(),
@@ -263,5 +267,88 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     const spriteCalls = (scene as any).add.sprite.mock.calls;
     const kongBtnCall = spriteCalls.find((c: any[]) => c[2] === 'mahjong:action_btn_kong');
     expect(kongBtnCall).toBeDefined();
+  });
+
+  it('should render graphical 3-tile cards in showChowSubMenu with tile sprites', () => {
+    scene.create();
+    (scene as any).add.sprite.mockClear();
+
+    const chowOptions = [
+      {
+        tiles: [
+          { id: '1m', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+          { id: '2m', suit: 'CHARACTERS', value: 2, name: '二萬', shortCode: '2m' },
+          { id: '3m', suit: 'CHARACTERS', value: 3, name: '三萬', shortCode: '3m' },
+        ],
+        discardTileIds: ['1m', '2m'],
+      },
+      {
+        tiles: [
+          { id: '2m', suit: 'CHARACTERS', value: 2, name: '二萬', shortCode: '2m' },
+          { id: '3m', suit: 'CHARACTERS', value: 3, name: '三萬', shortCode: '3m' },
+          { id: '4m', suit: 'CHARACTERS', value: 4, name: '四萬', shortCode: '4m' },
+        ],
+        discardTileIds: ['3m', '4m'],
+      },
+    ];
+
+    (scene as any).showChowSubMenu(chowOptions as any);
+
+    expect((scene as any).subMenuContainer.setVisible).toHaveBeenCalledWith(true);
+    const spriteCalls = (scene as any).add.sprite.mock.calls;
+    // 2 chow options * 3 tiles = 6 tile sprites
+    const tileSprites = spriteCalls.filter((c: any[]) => c[2].startsWith('mahjong:tile_'));
+    expect(tileSprites.length).toBe(6);
+  });
+
+  it('should update compass player HUD with dynamic gold dealer highlighting and clean [風] format', () => {
+    scene.create();
+    const gameState = (scene as any).gameState;
+    gameState.startNewMatch();
+
+    // 1. When non-dealer is taking turn, dealerSeat receives dealer gold '#facc15'
+    const initialDealer = gameState.dealerSeat;
+    const activeTurnSeat = ((initialDealer + 1) % 4) as any;
+    gameState.currentTurnSeat = activeTurnSeat;
+    (scene as any).updateCompass();
+
+    const pTexts = (scene as any).compassPlayerTexts;
+    expect(pTexts.length).toBe(4);
+
+    // Assert all 4 texts have clean '[風] 玩家名' format without '莊' character
+    for (let s = 0; s < 4; s++) {
+      expect(pTexts[s].setText).toHaveBeenCalledWith(expect.stringMatching(/^\[(東|南|西|北)\] /));
+      expect(pTexts[s].setText).not.toHaveBeenCalledWith(expect.stringContaining('莊'));
+    }
+
+    // Dealer receives dealer gold color '#facc15'
+    expect(pTexts[initialDealer].setColor).toHaveBeenCalledWith('#facc15');
+    // Active turn seat receives bright active turn color '#fef08a'
+    expect(pTexts[activeTurnSeat].setColor).toHaveBeenCalledWith('#fef08a');
+
+    // 2. Rotate dealer to a new seat and verify gold color shifts to the new dealer
+    const nextDealer = ((initialDealer + 2) % 4) as any;
+    gameState.dealerSeat = nextDealer;
+    gameState.currentTurnSeat = initialDealer; // Turn on someone else
+    (scene as any).updateCompass();
+
+    // Now nextDealer must receive dealer gold color '#facc15'
+    expect(pTexts[nextDealer].setColor).toHaveBeenCalledWith('#facc15');
+  });
+
+  it('should keep seat containers stationary during animateTileSort without container position tweens', () => {
+    scene.create();
+    (scene as any).tweens = {
+      add: vi.fn(),
+    };
+
+    (scene as any).animateTileSort();
+
+    // Ensure no tween targets the human seat container or modifies its Y position
+    const tweenCalls = (scene as any).tweens.add.mock.calls;
+    const containerTween = tweenCalls.find(
+      (c: any[]) => c[0]?.targets === (scene as any).seatContainers[0]
+    );
+    expect(containerTween).toBeUndefined();
   });
 });
