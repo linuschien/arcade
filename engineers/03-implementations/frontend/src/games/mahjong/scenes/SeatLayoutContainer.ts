@@ -94,8 +94,8 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
       NORTH: '北',
     };
     const windName = windNames[profile.wind] || '東';
-    const isRoundWind = profile.wind === roundWind;
-    const windColor = isRoundWind ? '#facc15' : '#e2e8f0';
+    const isDealer = profile.isDealer;
+    const windColor = isDealer ? '#facc15' : '#e2e8f0';
 
     this.hudText.setText(`[${windName}] ${profile.name}`);
     this.hudText.setColor?.(windColor);

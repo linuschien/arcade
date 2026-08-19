@@ -751,28 +751,36 @@ export class MainGameScene extends Phaser.Scene {
       const p = this.gameState.players[i];
       if (!p) continue;
       const char = windChars[p.wind] || '東';
+      const isDealer = this.gameState.dealerSeat === i;
       const isCurrentTurn = this.gameState.currentTurnSeat === i;
-      const isRoundWind = p.wind === this.gameState.roundWind;
 
       const bg = this.compassPlayerBgs[i];
       if (bg) {
         bg.clear();
-        bg.fillStyle(isCurrentTurn ? 0x854d0e : 0x020617, 0.95);
+        if (isCurrentTurn) {
+          bg.fillStyle(0x854d0e, 0.95);
+          bg.lineStyle(1.5, 0xfacc15, 1);
+        } else if (isDealer) {
+          bg.fillStyle(0x362005, 0.95);
+          bg.lineStyle(1.5, 0xd4af37, 0.9);
+        } else {
+          bg.fillStyle(0x020617, 0.95);
+          bg.lineStyle(1.5, 0x334155, 1);
+        }
         bg.fillRoundedRect(-36, -13, 72, 26, 4);
-        bg.lineStyle(1.5, isCurrentTurn ? 0xfacc15 : 0x334155, 1);
         bg.strokeRoundedRect(-36, -13, 72, 26, 4);
       }
 
       const pText = this.compassPlayerTexts[i];
       if (pText) {
         pText.setText(`[${char}] ${p.name}`);
-        pText.setColor?.(isCurrentTurn ? '#fef08a' : (isRoundWind ? '#facc15' : '#e2e8f0'));
+        pText.setColor?.(isCurrentTurn ? '#fef08a' : (isDealer ? '#facc15' : '#cbd5e1'));
       }
 
       const chipsText = this.compassPlayerChipsTexts[i];
       if (chipsText) {
         chipsText.setText(`${p.chips.toLocaleString()} 點`);
-        chipsText.setColor?.(isCurrentTurn ? '#ffffff' : '#facc15');
+        chipsText.setColor?.(isCurrentTurn ? '#ffffff' : (isDealer ? '#fef08a' : '#94a3b8'));
       }
     }
 
