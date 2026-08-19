@@ -118,11 +118,11 @@ export class MainGameScene extends Phaser.Scene {
     const stacksPerSide = 18;
     const step = 20;
 
-    // Clockwise Wall Progression enclosing the 4/6/8 trapezoid discard rivers & compass:
+    // Clockwise Wall Progression enclosing the 4/6/8 trapezoid discard rivers & compass (273px radius):
     // 1. South Wall (Bottom): Right to Left (0 to 17)
     for (let i = 0; i < stacksPerSide; i++) {
       const x = 810 - i * step;
-      const y = 606;
+      const y = 633;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       this.wallSprites.push(sprite);
       this.wallContainer.add(sprite);
@@ -130,7 +130,7 @@ export class MainGameScene extends Phaser.Scene {
 
     // 2. West Wall (Left): Bottom to Top (18 to 35)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 394;
+      const x = 367;
       const y = 530 - i * step;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       sprite.setAngle(90);
@@ -141,7 +141,7 @@ export class MainGameScene extends Phaser.Scene {
     // 3. North Wall (Top): Left to Right (36 to 53)
     for (let i = 0; i < stacksPerSide; i++) {
       const x = 470 + i * step;
-      const y = 114;
+      const y = 87;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       this.wallSprites.push(sprite);
       this.wallContainer.add(sprite);
@@ -149,7 +149,7 @@ export class MainGameScene extends Phaser.Scene {
 
     // 4. East Wall (Right): Top to Bottom (54 to 71)
     for (let i = 0; i < stacksPerSide; i++) {
-      const x = 886;
+      const x = 913;
       const y = 190 + i * step;
       const sprite = this.add.sprite(x, y, 'mahjong:wall_tile_stack');
       sprite.setAngle(90);
@@ -277,9 +277,9 @@ export class MainGameScene extends Phaser.Scene {
 
   private createSeats(): void {
     const seatConfigs = [
-      { x: 640, y: 645, angle: 0, seat: 0 as PlayerSeat },
+      { x: 640, y: 690, angle: 0, seat: 0 as PlayerSeat },
       { x: 1180, y: 360, angle: 270, seat: 1 as PlayerSeat },
-      { x: 640, y: 75, angle: 180, seat: 2 as PlayerSeat },
+      { x: 640, y: 30, angle: 180, seat: 2 as PlayerSeat },
       { x: 100, y: 360, angle: 90, seat: 3 as PlayerSeat },
     ];
 
