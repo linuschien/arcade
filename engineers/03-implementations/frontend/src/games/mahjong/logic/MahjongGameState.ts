@@ -647,6 +647,7 @@ export class MahjongGameState {
           sourceSeat: fromSeat,
           relativeSourceIndex: (fromSeat - pongOrKong.seat + 4) % 4 === 3 ? 0 : (fromSeat - pongOrKong.seat + 4) % 4 === 2 ? 1 : 2,
         };
+        this.isFirstTurnCycle = false;
         claimant.melds.push(meld);
         this.listeners.forEach((l) => l.onMeldClaimed?.(pongOrKong.seat, meld));
 
@@ -665,6 +666,7 @@ export class MahjongGameState {
           calledTile: tile,
           sourceSeat: fromSeat,
         };
+        this.isFirstTurnCycle = false;
         claimant.melds.push(meld);
         this.listeners.forEach((l) => l.onMeldClaimed?.(pongOrKong.seat, meld));
 
@@ -739,6 +741,7 @@ export class MahjongGameState {
         sourceSeat: fromSeat,
         relativeSourceIndex: 1, // Chow centered
       };
+      this.isFirstTurnCycle = false;
       claimant.melds.push(meld);
       this.listeners.forEach((l) => l.onMeldClaimed?.(chow.seat, meld));
 
@@ -1010,6 +1013,7 @@ export class MahjongGameState {
       isRobbingKong?: boolean;
       isHeavenlyWin?: boolean;
       isEarthlyWin?: boolean;
+      isHumanWin?: boolean;
     } = {}
   ): void {
     this.phase = 'ROUND_SETTLEMENT';
@@ -1021,12 +1025,13 @@ export class MahjongGameState {
       : this.lastDiscard?.tile || winner.hand[winner.hand.length - 1];
 
     const isKongBloom = extraFlags.isKongBloom ?? (isSelfDrawn && this.deck.wasLastDrawFromTail());
+    const totalMelds = this.players.reduce((sum, p) => sum + p.melds.length, 0);
     const isEarthlyWin =
       extraFlags.isEarthlyWin ??
-      (isSelfDrawn && this.isFirstTurnCycle && winnerSeat !== this.dealerSeat);
+      (isSelfDrawn && this.isFirstTurnCycle && winnerSeat !== this.dealerSeat && totalMelds === 0 && winner.discards.length === 0);
     const isHumanWin =
-      winner.isHuman ??
-      (!isSelfDrawn && this.isFirstTurnCycle && this.players.every((p) => p.melds.length === 0));
+      extraFlags.isHumanWin ??
+      (!isSelfDrawn && this.isFirstTurnCycle && winnerSeat !== this.dealerSeat && totalMelds === 0 && winner.melds.length === 0 && winner.discards.length === 0);
 
     const winnerEffectiveWind = this.getEffectiveWind(winnerSeat);
     const breakdown = MahjongScoreCalculator.evaluateSettlement({

@@ -533,4 +533,82 @@ describe('MahjongGameState Unit Tests', () => {
     expect(p0.melds.length).toBe(1);
     expect(state.phase).toBe('ROUND_SETTLEMENT');
   });
+
+  it('should strictly not award 人胡 (Ren Hu) when player has open melds or after first turn cycle', () => {
+    state.startNewMatch();
+    state.startDealing();
+
+    const p0 = state.players[0];
+    p0.isHuman = true;
+    p0.melds = [
+      {
+        type: 'PONG',
+        tiles: [
+          { id: '1m_1', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+          { id: '1m_2', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+          { id: '1m_3', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+        ],
+        sourceSeat: 1,
+      },
+    ];
+
+    // Win by Ron from seat 1
+    state.settleWin(0, false, 1);
+
+    const settlement = state.currentSettlement;
+    expect(settlement).toBeDefined();
+    // Must NOT contain 人胡
+    const hasRenHu = settlement!.fans.some((f) => f.name.includes('人胡'));
+    expect(hasRenHu).toBe(false);
+  });
+
+  it('should strictly not award 人胡 when human ponged dealer discard in turn 1 and won on dealer next discard', () => {
+    state.startNewMatch();
+    state.startDealing();
+
+    // Force dealer to seat 3
+    state.dealerSeat = 3;
+    state.currentTurnSeat = 3;
+    state.isFirstTurnCycle = true;
+    state.currentTurnCount = 1;
+
+    const p0 = state.players[0]; // Human
+    p0.isHuman = true;
+    p0.hand = [
+      { id: 'west_1', suit: 'WINDS', value: 3, name: '西風', shortCode: 'west' },
+      { id: 'west_2', suit: 'WINDS', value: 3, name: '西風', shortCode: 'west' },
+      ...Array.from({ length: 14 }, (_, i) => ({
+        id: `tile_${i}`,
+        suit: 'CHARACTERS' as const,
+        value: (i % 9) + 1,
+        name: `${(i % 9) + 1}萬`,
+        shortCode: `${(i % 9) + 1}m`,
+      })),
+    ];
+
+    // Dealer (seat 3) discards 'west'
+    const discardWest: Tile = { id: 'west_3', suit: 'WINDS', value: 3, name: '西風', shortCode: 'west' };
+    state.lastDiscard = { tile: discardWest, fromSeat: 3 };
+    state.phase = 'ACTION_WAIT';
+
+    // Human responds PONG
+    state.humanRespondAction('PONG');
+    expect(p0.melds.length).toBe(1);
+    expect(state.isFirstTurnCycle).toBe(false);
+
+    // Human discards first tile to Ting
+    state.discardTile(0, 'tile_0');
+    expect(p0.discards.length).toBe(1);
+
+    // Next turn, dealer discards winning tile
+    const winningTile: Tile = { id: '9m_1', suit: 'CHARACTERS', value: 9, name: '九萬', shortCode: '9m' };
+    state.lastDiscard = { tile: winningTile, fromSeat: 3 };
+
+    // Settle Ron win for Human
+    state.settleWin(0, false, 3);
+    const settlement = state.currentSettlement;
+    expect(settlement).toBeDefined();
+    const hasRenHu = settlement!.fans.some((f) => f.name.includes('人胡'));
+    expect(hasRenHu).toBe(false);
+  });
 });

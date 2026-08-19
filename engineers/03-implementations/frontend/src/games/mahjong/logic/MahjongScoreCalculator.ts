@@ -523,9 +523,9 @@ export class MahjongScoreCalculator {
   ): void {
     if (ctx.isHeavenlyWin) {
       fans.push({ name: '天胡', fan: 16, description: '莊家起手配牌跳牌自摸' });
-    } else if (ctx.isEarthlyWin) {
+    } else if (ctx.isEarthlyWin && (!ctx.winnerMelds || ctx.winnerMelds.length === 0)) {
       fans.push({ name: '地胡', fan: 8, description: '閒家第一巡第一張摸牌自摸' });
-    } else if (ctx.isHumanWin) {
+    } else if (ctx.isHumanWin && (!ctx.winnerMelds || ctx.winnerMelds.length === 0)) {
       fans.push({ name: '人胡', fan: 8, description: '第一巡抓第一張放銃牌榮和' });
     }
 
