@@ -6,7 +6,7 @@
  */
 
 import Phaser from 'phaser';
-import { PlayerProfile, Tile, Meld, PlayerSeat } from '../logic/MahjongTypes';
+import { PlayerProfile, Tile, Meld, PlayerSeat, SeatWind } from '../logic/MahjongTypes';
 
 export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   public seat: PlayerSeat;
@@ -152,7 +152,8 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     isLastDiscardSeat: boolean = false,
     revealHand: boolean = false,
     roundWind: string = 'EAST',
-    diceResult: number[] | null = null
+    diceResult: number[] | null = null,
+    effectiveWind?: SeatWind
   ): void {
     this.updatePlayerInfo(profile, roundWind);
 
@@ -181,7 +182,8 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     // North (180°): Right edge at X = 1089, Top edge at Y = 128.
     // West (90°): Left edge at X = 191, Top edge at Y = 128.
     // East (270°): Right edge at X = 1089, Bottom edge at Y = 592.
-    this.renderFlowerRack(profile.flowers, profile.wind, handStartX);
+    const activeWind = effectiveWind || profile.wind;
+    this.renderFlowerRack(profile.flowers, activeWind, handStartX);
     this.showBankerDice(diceResult, profile.isDealer, handStartX);
 
     this.renderDiscards(profile.discards, isLastDiscardSeat);

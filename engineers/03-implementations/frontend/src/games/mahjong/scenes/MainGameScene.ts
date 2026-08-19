@@ -804,7 +804,8 @@ export class MainGameScene extends Phaser.Scene {
         lastSeat === i,
         revealAllHands,
         this.gameState.roundWind,
-        this.gameState.diceResult
+        this.gameState.diceResult,
+        this.gameState.getEffectiveWind(i as PlayerSeat)
       );
     }
     this.updateBankerDicePosition();

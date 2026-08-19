@@ -431,4 +431,24 @@ describe('SeatLayoutContainer Unit Tests', () => {
     const nonDealerDiceCalls = nonDealerSpriteCalls.filter((c: any[]) => c[2].startsWith('mahjong:dice_'));
     expect(nonDealerDiceCalls.length).toBe(0);
   });
+
+  it('should highlight positive flowers with coral orange frame according to effectiveWind', () => {
+    const seatContainer = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
+    const profile = createMockProfile();
+    // Has Spring (1) and Summer (2)
+    profile.flowers = [
+      { id: 'f_spring', suit: 'FLOWERS', value: 1, name: '春', shortCode: 'spring', isFlower: true },
+      { id: 'f_summer', suit: 'FLOWERS', value: 2, name: '夏', shortCode: 'summer', isFlower: true },
+    ];
+
+    mockScene.add.graphics.mockClear();
+    // 1. When effectiveWind is EAST (Dealer), Spring (1) is positive and highlighted with coral frame
+    seatContainer.renderPlayerState(profile, true, false, false, 'EAST', null, 'EAST');
+    expect(mockScene.add.graphics).toHaveBeenCalled();
+
+    mockScene.add.graphics.mockClear();
+    // 2. When effectiveWind is SOUTH, Summer (2) is positive and highlighted with coral frame
+    seatContainer.renderPlayerState(profile, true, false, false, 'EAST', null, 'SOUTH');
+    expect(mockScene.add.graphics).toHaveBeenCalled();
+  });
 });

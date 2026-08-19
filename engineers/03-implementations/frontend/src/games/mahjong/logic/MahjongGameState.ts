@@ -932,9 +932,12 @@ export class MahjongGameState {
     if (kongOpts.length > 0 && Math.random() > 0.4) {
       const kong = kongOpts[0];
       this.performSelfKong(seat, kong);
+      if (this.phase === 'ROUND_SETTLEMENT' || this.phase === 'MATCH_OVER' || this.phase === 'GAME_OVER') {
+        return;
+      }
     }
 
-    // Choose discard
+    // Choose discard with fresh hand after potential self kong
     const fullHand = p.drawnTile ? [...p.hand, p.drawnTile] : p.hand;
     const allVisible = this.getAllVisibleTiles();
     const opponents = this.players.filter((_, i) => i !== seat);
