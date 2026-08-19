@@ -25,6 +25,115 @@ describe('MahjongGameState Unit Tests', () => {
     expect(state.roundWind).toBe('EAST');
   });
 
+  it('should strictly satisfy 抓位 (startSeatingDraw) rules across 100 iterations', () => {
+    const allWindsOrder = ['EAST', 'SOUTH', 'WEST', 'NORTH'];
+
+    for (let iter = 0; iter < 100; iter++) {
+      state.startNewMatch();
+
+      // 1. Dice roll must have 3 dice between 1 and 6, sum between 3 and 18
+      expect(state.diceResult.length).toBe(3);
+      state.diceResult.forEach((d) => {
+        expect(d).toBeGreaterThanOrEqual(1);
+        expect(d).toBeLessThanOrEqual(6);
+      });
+      expect(state.diceSum).toBe(state.diceResult[0] + state.diceResult[1] + state.diceResult[2]);
+
+      // 2. Human must always be seated at Seat 0
+      expect(state.players[0].isHuman).toBe(true);
+      expect(state.players[0].name).toBe('賭神');
+
+      // 3. All 4 players must have unique winds from ['EAST', 'SOUTH', 'WEST', 'NORTH']
+      const assignedWinds = state.players.map((p) => p.wind);
+      expect(new Set(assignedWinds).size).toBe(4);
+
+      // 4. Physical seating must be strictly counter-clockwise contiguous (East -> South -> West -> North)
+      for (let s = 0; s < 4; s++) {
+        const curIdx = allWindsOrder.indexOf(state.players[s].wind);
+        const nextIdx = allWindsOrder.indexOf(state.players[(s + 1) % 4].wind);
+        expect(nextIdx).toBe((curIdx + 1) % 4);
+      }
+
+      // 5. The player who draws EAST must strictly be the initial dealer (起莊)
+      const eastSeat = state.players.findIndex((p) => p.wind === 'EAST');
+      expect(state.dealerSeat).toBe(eastSeat);
+      expect(state.players[eastSeat].isDealer).toBe(true);
+
+      // 6. The other 3 players must NOT be dealer
+      for (let s = 0; s < 4; s++) {
+        if (s !== eastSeat) {
+          expect(state.players[s].isDealer).toBe(false);
+        }
+      }
+
+      // 7. Initial round wind must be EAST and dealerRoundsPlayed must be 0 (東風東)
+      expect(state.roundWindIndex).toBe(0);
+      expect(state.dealerRoundsPlayed).toBe(0);
+      expect(state.roundWind).toBe('EAST');
+    }
+  });
+
+  it('should strictly produce standard Taiwanese Mahjong round & hand wind progression', () => {
+    state.startNewMatch();
+
+    const winds = ['東', '南', '西', '北'];
+    const getAnnouncement = () => {
+      const rw = winds[state.roundWindIndex] || '東';
+      const hw = winds[state.dealerRoundsPlayed % 4] || '東';
+      return `${rw}風${hw}`;
+    };
+
+    // 1. Initial game is always "東風東" regardless of which seat drew EAST
+    expect(getAnnouncement()).toBe('東風東');
+
+    // 2. Dealer streak (連莊) retains hand wind
+    state.dealerStreak = 1;
+    state.settleDraw(); // draw gives dealer streak++
+    expect(getAnnouncement()).toBe('東風東');
+    expect(state.dealerStreak).toBe(2);
+
+    // 3. Non-dealer win rotates dealer: advances to "東風南" (Hand 2)
+    state.startDealing();
+    const nonDealer1 = ((state.dealerSeat + 1) % 4) as any;
+    state.players[nonDealer1].hand = [
+      { id: '1m_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+    ];
+    state.settleWin(nonDealer1, false, state.dealerSeat);
+    expect(state.dealerRoundsPlayed).toBe(1);
+    expect(getAnnouncement()).toBe('東風南');
+
+    // 4. Next non-dealer win: advances to "東風西" (Hand 3)
+    state.startDealing();
+    const nonDealer2 = ((state.dealerSeat + 1) % 4) as any;
+    state.players[nonDealer2].hand = [
+      { id: '1m_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+    ];
+    state.settleWin(nonDealer2, false, state.dealerSeat);
+    expect(state.dealerRoundsPlayed).toBe(2);
+    expect(getAnnouncement()).toBe('東風西');
+
+    // 5. Next non-dealer win: advances to "東風北" (Hand 4)
+    state.startDealing();
+    const nonDealer3 = ((state.dealerSeat + 1) % 4) as any;
+    state.players[nonDealer3].hand = [
+      { id: '1m_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+    ];
+    state.settleWin(nonDealer3, false, state.dealerSeat);
+    expect(state.dealerRoundsPlayed).toBe(3);
+    expect(getAnnouncement()).toBe('東風北');
+
+    // 6. Next non-dealer win: 4 hands completed, round wind advances to "南風東"
+    state.startDealing();
+    const nonDealer4 = ((state.dealerSeat + 1) % 4) as any;
+    state.players[nonDealer4].hand = [
+      { id: '1m_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+    ];
+    state.settleWin(nonDealer4, false, state.dealerSeat);
+    expect(state.roundWindIndex).toBe(1);
+    expect(state.dealerRoundsPlayed).toBe(0);
+    expect(getAnnouncement()).toBe('南風東');
+  });
+
   it('should deal 16 tiles to non-dealers and 17 tiles to dealer, with all flowers replaced', () => {
     state.startNewMatch();
     state.startDealing();
