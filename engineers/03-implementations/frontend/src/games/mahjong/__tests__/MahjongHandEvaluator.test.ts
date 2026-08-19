@@ -138,11 +138,15 @@ describe('MahjongHandEvaluator Unit Tests', () => {
 
     // Called from upper player (seat 3 to seat 0 -> (3 + 1) % 4 === 0)
     const chowFromUpper = MahjongHandEvaluator.getChowOptions(hand, calledTile, 3, 0);
-    expect(chowFromUpper.length).toBe(3); // [1m, 3m, 2m], [2m, 3m, 4m], [4m, 3m, 5m]
-    // Called tile must strictly be placed in the center (index 1) per PRD 6.2 & US-05 AC4
+    expect(chowFromUpper.length).toBe(3); // [1m, 2m, 3m], [2m, 3m, 4m], [3m, 4m, 5m]
+    // Tiles must strictly be arranged in ascending numerical order
     chowFromUpper.forEach((opt) => {
-      expect(opt.tiles[1].shortCode).toBe('3m');
+      expect(opt.tiles[0].value).toBeLessThan(opt.tiles[1].value);
+      expect(opt.tiles[1].value).toBeLessThan(opt.tiles[2].value);
     });
+    expect(chowFromUpper[0].tiles.map((t) => t.shortCode)).toEqual(['1m', '2m', '3m']);
+    expect(chowFromUpper[1].tiles.map((t) => t.shortCode)).toEqual(['2m', '3m', '4m']);
+    expect(chowFromUpper[2].tiles.map((t) => t.shortCode)).toEqual(['3m', '4m', '5m']);
 
     // Called from across player (seat 2 to seat 0 -> not allowed)
     const chowFromAcross = MahjongHandEvaluator.getChowOptions(hand, calledTile, 2, 0);

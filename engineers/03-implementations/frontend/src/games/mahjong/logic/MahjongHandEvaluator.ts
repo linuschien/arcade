@@ -265,19 +265,19 @@ export class MahjongHandEvaluator {
       return hand.filter((t) => t.shortCode === code);
     };
 
-    // Pattern 1: [num-2, (num), num-1] (Called tile placed in center per PRD 6.2 & US-05 AC4)
+    // Pattern 1: [num-2, num-1, (num)] (Ascending numerical sequence)
     if (num >= 3) {
       const t1 = findTilesByCode(`${num - 2}${suit}`)[0];
       const t2 = findTilesByCode(`${num - 1}${suit}`)[0];
       if (t1 && t2) {
         options.push({
-          tiles: [t1, calledTile, t2],
+          tiles: [t1, t2, calledTile],
           discardTileIds: [t1.id, t2.id],
         });
       }
     }
 
-    // Pattern 2: [num-1, (num), num+1]
+    // Pattern 2: [num-1, (num), num+1] (Ascending numerical sequence)
     if (num >= 2 && num <= 8) {
       const t1 = findTilesByCode(`${num - 1}${suit}`)[0];
       const t2 = findTilesByCode(`${num + 1}${suit}`)[0];
@@ -289,13 +289,13 @@ export class MahjongHandEvaluator {
       }
     }
 
-    // Pattern 3: [num+1, (num), num+2] (Called tile placed in center per PRD 6.2 & US-05 AC4)
+    // Pattern 3: [(num), num+1, num+2] (Ascending numerical sequence)
     if (num <= 7) {
       const t1 = findTilesByCode(`${num + 1}${suit}`)[0];
       const t2 = findTilesByCode(`${num + 2}${suit}`)[0];
       if (t1 && t2) {
         options.push({
-          tiles: [t1, calledTile, t2],
+          tiles: [calledTile, t1, t2],
           discardTileIds: [t1.id, t2.id],
         });
       }

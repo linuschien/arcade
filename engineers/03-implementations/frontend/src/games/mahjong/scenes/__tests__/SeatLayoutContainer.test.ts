@@ -320,6 +320,38 @@ describe('SeatLayoutContainer Unit Tests', () => {
     expect(mockScene.add.container).toHaveBeenCalled();
   });
 
+  it('should rotate the eaten calledTile 90 degrees sideways in CHOW melds with tiles in numerical sequence', () => {
+    const seat0 = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
+    const profile = createMockProfile();
+    profile.hand = [];
+    profile.drawnTile = null;
+    profile.flowers = [];
+    profile.discards = [];
+
+    // Chow 3m with 4m, 5m -> tiles [3m, 4m, 5m], calledTile is 3m
+    profile.melds = [
+      {
+        type: 'CHOW',
+        tiles: [
+          { id: '3m_1', suit: 'CHARACTERS', value: 3, name: '三萬', shortCode: '3m' },
+          { id: '4m_1', suit: 'CHARACTERS', value: 4, name: '四萬', shortCode: '4m' },
+          { id: '5m_1', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' },
+        ],
+        calledTile: { id: '3m_1', suit: 'CHARACTERS', value: 3, name: '三萬', shortCode: '3m' },
+        sourceSeat: 3,
+      },
+    ];
+
+    mockScene.add.sprite.mockClear();
+    seat0.renderPlayerState(profile, true);
+
+    const spriteCalls = mockScene.add.sprite.mock.calls;
+    const meldSprites = spriteCalls.filter((c: any[]) =>
+      ['mahjong:tile_3m', 'mahjong:tile_4m', 'mahjong:tile_5m'].includes(c[2])
+    );
+    expect(meldSprites.length).toBe(3);
+  });
+
   it('should render 9x2 compact discard river with 9 columns per row', () => {
     const seatContainer = new SeatLayoutContainer(mockScene, 640, 645, 0, 0);
     const profile = createMockProfile();

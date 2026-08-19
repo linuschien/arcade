@@ -320,10 +320,19 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
           container.add(sprite);
         }
       } else {
-        // CHOW: 3 tiles (Chow piece placed strictly in the middle, index 1)
+        // CHOW: 3 tiles in ascending numerical order, with calledTile rotated 90 degrees sideways
         for (let i = 0; i < 3; i++) {
           const x = (i - 1) * tileStep;
-          const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${meld.tiles[i].shortCode}`);
+          const tile = meld.tiles[i];
+          const sprite = this.scene.add.sprite(x, 0, `mahjong:tile_${tile.shortCode}`);
+          const isCalledTile = meld.calledTile
+            ? tile.id === meld.calledTile.id ||
+              (tile.shortCode === meld.calledTile.shortCode &&
+                !meld.tiles.slice(0, i).some((prev) => prev.id === meld.calledTile?.id))
+            : false;
+          if (isCalledTile) {
+            sprite.setAngle(90);
+          }
           container.add(sprite);
         }
       }
