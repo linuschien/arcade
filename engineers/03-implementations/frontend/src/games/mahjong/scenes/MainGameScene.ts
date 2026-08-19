@@ -647,17 +647,6 @@ export class MainGameScene extends Phaser.Scene {
       container.animateTileSortSpin();
     });
 
-    // Human player hand ripple lift
-    const humanContainer = this.seatContainers[0];
-    if (this.tweens && humanContainer) {
-      this.tweens.add({
-        targets: humanContainer,
-        y: { from: 655, to: 645 },
-        duration: 400,
-        ease: 'Back.easeOut',
-      });
-    }
-
     // Proceed to multi-round flower replacement after sorting
     this.time.delayedCall(700, () => {
       this.gameState.startFlowerReplacement();
