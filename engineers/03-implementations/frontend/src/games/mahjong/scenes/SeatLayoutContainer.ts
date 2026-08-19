@@ -130,7 +130,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
     const isSideSeat = this.seat === 1 || this.seat === 3;
     const diceX = isSideSeat ? -155 : -400;
-    const diceY = isSideSeat ? -195 : -135;
+    const diceY = isSideSeat ? -195 : -160;
 
     const bg = this.scene.add.graphics();
     bg.fillStyle(0x020617, 0.9);
@@ -189,9 +189,9 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
   /**
    * 4x2 Flower Rack Pinwheel aligned with Discard River Row 2.
-   * Seat 0 (Human, 0°): Local center (-400, -79) -> World (240, 566), Bottom edge at Y = 591.
+   * Seat 0 (Human, 0°): Local center (-400, -103) -> World (240, 542), Bottom edge at Y = 591.
    * Seat 3 (West, 90°): Local center (-155, -140) -> World (240, 205), Top edge at Y = 129.
-   * Seat 2 (North, 180°): Local center (-400, -79) -> World (1040, 154), Top edge at Y = 129.
+   * Seat 2 (North, 180°): Local center (-400, -103) -> World (1040, 178), Top edge at Y = 129.
    * Seat 1 (East, 270°): Local center (-155, -140) -> World (1040, 515), Bottom edge at Y = 591.
    */
   private renderFlowerRack(flowers: Tile[], wind?: string, _handStartX: number = -288): void {
@@ -217,7 +217,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
     const isSideSeat = this.seat === 1 || this.seat === 3;
     const flowerCenterX = isSideSeat ? -155 : -400;
-    const flowerCenterY = isSideSeat ? -140 : -79;
+    const flowerCenterY = isSideSeat ? -140 : -103;
     const flowerStartX = flowerCenterX - ((4 * stepX) / 2);
 
     for (let r = 0; r < 2; r++) {
