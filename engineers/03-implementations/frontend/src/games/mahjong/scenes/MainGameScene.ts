@@ -1055,26 +1055,91 @@ export class MainGameScene extends Phaser.Scene {
     this.subMenuContainer.removeAll(true);
     this.subMenuContainer.setVisible(true);
 
+    const cardW = 108;
+    const cardH = 58;
+    const gap = 14;
+    const totalContentW = options.length * cardW + (options.length - 1) * gap;
+    const panelW = Math.max(280, totalContentW + 40);
+    const panelH = 92;
+
     const bg = this.add.graphics();
-    bg.fillStyle(0x0f172a, 0.95);
-    bg.fillRoundedRect(-160, -30, 320, 60, 8);
-    bg.lineStyle(1, 0xef4444, 0.8);
-    bg.strokeRoundedRect(-160, -30, 320, 60, 8);
+    bg.fillStyle(0x020617, 0.95);
+    bg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 10);
+    bg.lineStyle(1.5, 0xef4444, 0.9);
+    bg.strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 10);
     this.subMenuContainer.add(bg);
 
-    options.forEach((opt, idx) => {
-      const optBtn = this.add.container((idx - (options.length - 1) / 2) * 90, 0);
-      const labelText = opt.type === 'CONCEALED_KONG' ? `暗槓 ${opt.tileCode}` : `加槓 ${opt.tileCode}`;
-      const label = this.add.text(0, 0, labelText, {
-        fontSize: '12px',
-        fontFamily: '"Microsoft JhengHei", sans-serif',
-        color: '#f87171',
-        fontStyle: 'bold',
-      });
-      label.setOrigin(0.5);
-      label.setInteractive({ useHandCursor: true });
+    const title = this.add.text(0, -panelH / 2 + 15, '🔥 請選擇槓牌組合', {
+      fontSize: '12px',
+      fontFamily: '"Microsoft JhengHei", sans-serif',
+      color: '#fca5a5',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.subMenuContainer.add(title);
 
-      label.on('pointerdown', () => {
+    const closeBtn = this.add.text(panelW / 2 - 16, -panelH / 2 + 14, '✕', {
+      fontSize: '14px',
+      fontFamily: 'sans-serif',
+      color: '#94a3b8',
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    closeBtn.on('pointerover', () => closeBtn.setColor('#f87171'));
+    closeBtn.on('pointerout', () => closeBtn.setColor('#94a3b8'));
+    closeBtn.on('pointerdown', () => {
+      this.subMenuContainer.setVisible(false);
+    });
+    this.subMenuContainer.add(closeBtn);
+
+    const startX = -((options.length - 1) * (cardW + gap)) / 2;
+    options.forEach((opt, idx) => {
+      const optBtn = this.add.container(startX + idx * (cardW + gap), 12);
+
+      const cardBg = this.add.graphics();
+      cardBg.fillStyle(0x0f172a, 0.95);
+      cardBg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+      cardBg.lineStyle(1.5, 0xef4444, 0.75);
+      cardBg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+      optBtn.add(cardBg);
+
+      // Tile Sprite
+      const sprite = this.add.sprite(-22, 0, `mahjong:tile_${opt.tileCode}`);
+      sprite.setDisplaySize(30, 42);
+      optBtn.add(sprite);
+
+      // Label
+      const labelText = opt.type === 'CONCEALED_KONG' ? '暗槓\n(x4)' : '加槓\n(x4)';
+      const label = this.add.text(20, 0, labelText, {
+        fontSize: '11px',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
+        color: opt.type === 'CONCEALED_KONG' ? '#f87171' : '#facc15',
+        fontStyle: 'bold',
+        align: 'center',
+      }).setOrigin(0.5);
+      optBtn.add(label);
+
+      optBtn.setSize(cardW, cardH);
+      optBtn.setInteractive({ useHandCursor: true });
+
+      optBtn.on('pointerover', () => {
+        cardBg.clear();
+        cardBg.fillStyle(0x450a0a, 0.98);
+        cardBg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+        cardBg.lineStyle(2, 0xf87171, 1);
+        cardBg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+        optBtn.setY(9);
+      });
+
+      optBtn.on('pointerout', () => {
+        cardBg.clear();
+        cardBg.fillStyle(0x0f172a, 0.95);
+        cardBg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+        cardBg.lineStyle(1.5, 0xef4444, 0.75);
+        cardBg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+        optBtn.setY(12);
+      });
+
+      optBtn.on('pointerdown', () => {
+        MahjongAudioService.playTileSelect();
         this.subMenuContainer.setVisible(false);
         this.actionBarContainer.setVisible(false);
         if (this.gameState.phase === 'PLAYER_TURN') {
@@ -1085,7 +1150,6 @@ export class MainGameScene extends Phaser.Scene {
         }
       });
 
-      optBtn.add(label);
       this.subMenuContainer.add(optBtn);
     });
   }
@@ -1094,33 +1158,94 @@ export class MainGameScene extends Phaser.Scene {
     this.subMenuContainer.removeAll(true);
     this.subMenuContainer.setVisible(true);
 
+    const cardW = 118;
+    const cardH = 58;
+    const gap = 14;
+    const totalContentW = options.length * cardW + (options.length - 1) * gap;
+    const panelW = Math.max(300, totalContentW + 40);
+    const panelH = 92;
+
+    // Outer frosted modal dialog background
     const bg = this.add.graphics();
-    bg.fillStyle(0x0f172a, 0.95);
-    bg.fillRoundedRect(-160, -30, 320, 60, 8);
-    bg.lineStyle(1, 0x3b82f6, 0.8);
-    bg.strokeRoundedRect(-160, -30, 320, 60, 8);
+    bg.fillStyle(0x020617, 0.95);
+    bg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 10);
+    bg.lineStyle(1.5, 0x3b82f6, 0.9);
+    bg.strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 10);
     this.subMenuContainer.add(bg);
 
+    // Title label
+    const title = this.add.text(0, -panelH / 2 + 15, '🍽️ 請選擇吃牌組合', {
+      fontSize: '12px',
+      fontFamily: '"Microsoft JhengHei", sans-serif',
+      color: '#93c5fd',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.subMenuContainer.add(title);
+
+    // Cancel '✕' button in top-right
+    const closeBtn = this.add.text(panelW / 2 - 16, -panelH / 2 + 14, '✕', {
+      fontSize: '14px',
+      fontFamily: 'sans-serif',
+      color: '#94a3b8',
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    closeBtn.on('pointerover', () => closeBtn.setColor('#f87171'));
+    closeBtn.on('pointerout', () => closeBtn.setColor('#94a3b8'));
+    closeBtn.on('pointerdown', () => {
+      this.subMenuContainer.setVisible(false);
+    });
+    this.subMenuContainer.add(closeBtn);
+
+    // Render each 3-tile graphical combination option
+    const startX = -((options.length - 1) * (cardW + gap)) / 2;
     options.forEach((opt, idx) => {
-      const optBtn = this.add.container((idx - (options.length - 1) / 2) * 90, 0);
-      const text = opt.tiles.map((t) => t.name).join('');
+      const optBtn = this.add.container(startX + idx * (cardW + gap), 12);
 
-      const label = this.add.text(0, 0, text, {
-        fontSize: '12px',
-        fontFamily: '"Microsoft JhengHei", sans-serif',
-        color: '#60a5fa',
-        fontStyle: 'bold',
+      // Card outline
+      const cardBg = this.add.graphics();
+      cardBg.fillStyle(0x0f172a, 0.95);
+      cardBg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+      cardBg.lineStyle(1.5, 0x3b82f6, 0.75);
+      cardBg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+      optBtn.add(cardBg);
+
+      // 3 Mahjong Tile Sprites side-by-side
+      opt.tiles.forEach((tile, tIdx) => {
+        const tx = (tIdx - 1) * 34;
+        const sprite = this.add.sprite(tx, 0, `mahjong:tile_${tile.shortCode}`);
+        sprite.setDisplaySize(30, 42);
+        optBtn.add(sprite);
       });
-      label.setOrigin(0.5);
-      label.setInteractive({ useHandCursor: true });
 
-      label.on('pointerdown', () => {
+      // Hover & click interaction
+      optBtn.setSize(cardW, cardH);
+      optBtn.setInteractive({ useHandCursor: true });
+
+      optBtn.on('pointerover', () => {
+        cardBg.clear();
+        cardBg.fillStyle(0x1e3a8a, 0.98);
+        cardBg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+        cardBg.lineStyle(2, 0x60a5fa, 1);
+        cardBg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+        optBtn.setY(9);
+      });
+
+      optBtn.on('pointerout', () => {
+        cardBg.clear();
+        cardBg.fillStyle(0x0f172a, 0.95);
+        cardBg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+        cardBg.lineStyle(1.5, 0x3b82f6, 0.75);
+        cardBg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+        optBtn.setY(12);
+      });
+
+      optBtn.on('pointerdown', () => {
+        MahjongAudioService.playTileSelect();
         this.subMenuContainer.setVisible(false);
         this.actionBarContainer.setVisible(false);
         this.gameState.humanRespondAction('CHOW', opt);
       });
 
-      optBtn.add(label);
       this.subMenuContainer.add(optBtn);
     });
   }
