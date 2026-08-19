@@ -736,15 +736,15 @@ export class MainGameScene extends Phaser.Scene {
   private updateCompass(): void {
     const winds = ['東', '南', '西', '北'];
     const roundWind = winds[this.gameState.roundWindIndex] || '東';
+    const dealerHandWind = winds[this.gameState.dealerSeat] || '東';
+    this.roundWindText.setText(`${roundWind}風${dealerHandWind}`);
+
     const windChars: Record<string, string> = {
       EAST: '東',
       SOUTH: '南',
       WEST: '西',
       NORTH: '北',
     };
-    const dealer = this.gameState.players[this.gameState.dealerSeat];
-    const dealerWind = windChars[dealer.wind] || '東';
-    this.roundWindText.setText(`${roundWind}風${dealerWind}`);
 
     // Update 4 Integrated Player HUD Strips inside the Square Compass
     for (let i = 0; i < 4; i++) {

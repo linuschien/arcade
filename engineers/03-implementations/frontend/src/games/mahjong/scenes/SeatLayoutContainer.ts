@@ -122,7 +122,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Renders Banker Dice adjacent to the Flower Rack.
+   * Renders Banker Dice adjacent to the Flower Rack (below flower rack from dealer's perspective).
    */
   public showBankerDice(diceResult: number[] | null, isDealer: boolean = false, _handStartX: number = -288): void {
     this.bankerDiceGroup.removeAll(true);
@@ -130,7 +130,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
     const isSideSeat = this.seat === 1 || this.seat === 3;
     const diceX = isSideSeat ? -156 : -373;
-    const diceY = isSideSeat ? -190 : -187;
+    const diceY = isSideSeat ? -67 : -64;
 
     const bg = this.scene.add.graphics();
     bg.fillStyle(0x020617, 0.9);
@@ -158,10 +158,10 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
     // Calculate symmetrical centering for Hand + Reserved Drawn Slot + Melds
     const meldCount = profile.melds.length;
-    const stepX = isHuman ? SeatLayoutContainer.TILE_W : 28;
+    const stepX = SeatLayoutContainer.TILE_W;
     const meldW = SeatLayoutContainer.TILE_W * 3;
     const meldBlockW = meldW + 8;
-    const gapDrawn = isHuman ? 12 : 8;
+    const gapDrawn = 12;
 
     const maxConcealedTiles = 16 - meldCount * 3;
     const maxHandTilesW = maxConcealedTiles * stepX;
