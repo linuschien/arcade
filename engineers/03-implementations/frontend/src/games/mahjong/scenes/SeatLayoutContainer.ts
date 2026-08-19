@@ -122,16 +122,15 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Renders Banker Dice above the left-side Flower Rack.
+   * Renders Banker Dice adjacent to the Flower Rack.
    */
-  public showBankerDice(diceResult: number[] | null, isDealer: boolean = false, handStartX: number = -288): void {
+  public showBankerDice(diceResult: number[] | null, isDealer: boolean = false, _handStartX: number = -288): void {
     this.bankerDiceGroup.removeAll(true);
     if (!isDealer || !diceResult || diceResult.length < 3) return;
 
-    const cellStep = 38;
-    const rackWidth = 4 * cellStep;
-    const diceX = handStartX - 24 - rackWidth / 2;
-    const diceY = -58;
+    const isSideSeat = this.seat === 1 || this.seat === 3;
+    const diceX = isSideSeat ? -130 : -400;
+    const diceY = isSideSeat ? -195 : -210;
 
     const bg = this.scene.add.graphics();
     bg.fillStyle(0x020617, 0.9);
@@ -177,7 +176,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     this.renderMelds(profile.melds, isHuman, revealHand, meldStartX);
     this.renderHand(profile, isHuman, revealHand, handStartX, maxHandTilesW, stepX, gapDrawn);
 
-    // Flower Rack placed on the LEFT of the hand (Item 4)
+    // 4x2 Flower Rack situated within the wide left/right corridors according to Option B seat rotation
     this.renderFlowerRack(profile.flowers, profile.wind, handStartX);
     this.showBankerDice(diceResult, profile.isDealer, handStartX);
 
@@ -185,9 +184,13 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 4x2 Flower Rack situated on the LEFT flank of the Hand with full 36x48 standard tiles.
+   * 4x2 Flower Rack situated within the wide left/right corridors according to Option B seat rotation.
+   * Seat 0 (Human, 0°): Local center (-400, -155) -> World (240, 490).
+   * Seat 3 (West, 90°): Local center (-130, -140) -> World (240, 230).
+   * Seat 2 (North, 180°): Local center (-400, -155) -> World (1040, 230).
+   * Seat 1 (East, 270°): Local center (-130, -140) -> World (1040, 490).
    */
-  private renderFlowerRack(flowers: Tile[], wind?: string, handStartX: number = -288): void {
+  private renderFlowerRack(flowers: Tile[], wind?: string, _handStartX: number = -288): void {
     this.flowerGroup.removeAll(true);
 
     const cellW = SeatLayoutContainer.TILE_W;
@@ -208,13 +211,16 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     };
     const playerPositives = wind ? (positiveIndices[wind] || []) : [];
 
-    const flowerStartX = handStartX - 24 - 4 * stepX;
+    const isSideSeat = this.seat === 1 || this.seat === 3;
+    const flowerCenterX = isSideSeat ? -130 : -400;
+    const flowerCenterY = isSideSeat ? -140 : -155;
+    const flowerStartX = flowerCenterX - ((4 * stepX) / 2);
 
     for (let r = 0; r < 2; r++) {
       for (let c = 0; c < 4; c++) {
         const idx = r * 4 + c;
         const x = flowerStartX + c * stepX + cellW / 2;
-        const y = (r === 0 ? -25 : 25);
+        const y = flowerCenterY + (r === 0 ? -25 : 25);
 
         const slotCode = slotKeys[idx];
         const hasFlower = flowers.some((f) => f.shortCode === slotCode);
