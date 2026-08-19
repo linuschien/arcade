@@ -1134,12 +1134,9 @@ export class MahjongGameState {
     this.dealerSeat = ((this.dealerSeat + 1) % 4) as PlayerSeat;
     this.dealerRoundsPlayed++;
 
-    // Update isDealer and rotate physical door winds according to new Dealer (Dealer=East, 下家=South, 對家=West, 上家=North)
-    const allWindsOrder: SeatWind[] = ['EAST', 'SOUTH', 'WEST', 'NORTH'];
+    // Update isDealer while strictly preserving each player's permanent seating wind from 抓位
     for (let i = 0; i < 4; i++) {
       this.players[i].isDealer = (i === this.dealerSeat);
-      const windOffset = (i - this.dealerSeat + 4) % 4;
-      this.players[i].wind = allWindsOrder[windOffset];
     }
 
     // If 4 dealer rotations completed, advance round wind
