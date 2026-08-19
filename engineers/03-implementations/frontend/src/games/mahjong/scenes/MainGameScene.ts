@@ -1440,7 +1440,7 @@ export class MainGameScene extends Phaser.Scene {
           this.settlementContainer.add(sp);
 
           // Check if this flower is positive flower for winner
-          const winnerWind = ['EAST', 'SOUTH', 'WEST', 'NORTH'][(winner.seat - this.gameState.dealerSeat + 4) % 4];
+          const winnerWind = winner.wind;
           const posIndices: Record<string, string[]> = {
             EAST: ['1f', '5f'],
             SOUTH: ['2f', '6f'],

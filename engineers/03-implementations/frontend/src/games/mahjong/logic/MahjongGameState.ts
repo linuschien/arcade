@@ -589,7 +589,7 @@ export class MahjongGameState {
           p.hand,
           p.melds,
           this.roundWind,
-          p.wind
+          this.getEffectiveWind(p.seat)
         );
         claims.push({
           seat: p.seat,
@@ -990,6 +990,15 @@ export class MahjongGameState {
   }
 
   /**
+   * Returns the dynamic effective seat wind (當局門風) for tai and flower evaluation.
+   * Dealer is strictly EAST (1/5 flower, East wind), and CCW next seats are SOUTH, WEST, NORTH.
+   */
+  public getEffectiveWind(seat: PlayerSeat): SeatWind {
+    const winds: SeatWind[] = ['EAST', 'SOUTH', 'WEST', 'NORTH'];
+    return winds[(seat - this.dealerSeat + 4) % 4];
+  }
+
+  /**
    * Round Settlement for Win.
    */
   public settleWin(
@@ -997,10 +1006,10 @@ export class MahjongGameState {
     isSelfDrawn: boolean,
     loserSeat?: PlayerSeat,
     extraFlags: {
+      isKongBloom?: boolean;
+      isRobbingKong?: boolean;
       isHeavenlyWin?: boolean;
       isEarthlyWin?: boolean;
-      isHumanWin?: boolean;
-      isRobbingKong?: boolean;
     } = {}
   ): void {
     this.phase = 'ROUND_SETTLEMENT';
@@ -1011,14 +1020,15 @@ export class MahjongGameState {
       ? winner.drawnTile || winner.hand[winner.hand.length - 1]
       : this.lastDiscard?.tile || winner.hand[winner.hand.length - 1];
 
-    const isKongBloom = isSelfDrawn && this.deck.wasLastDrawFromTail();
+    const isKongBloom = extraFlags.isKongBloom ?? (isSelfDrawn && this.deck.wasLastDrawFromTail());
     const isEarthlyWin =
       extraFlags.isEarthlyWin ??
       (isSelfDrawn && this.isFirstTurnCycle && winnerSeat !== this.dealerSeat);
     const isHumanWin =
-      extraFlags.isHumanWin ??
+      winner.isHuman ??
       (!isSelfDrawn && this.isFirstTurnCycle && this.players.every((p) => p.melds.length === 0));
 
+    const winnerEffectiveWind = this.getEffectiveWind(winnerSeat);
     const breakdown = MahjongScoreCalculator.evaluateSettlement({
       winnerSeat,
       winnerHand: winner.hand,
@@ -1034,7 +1044,7 @@ export class MahjongGameState {
       isEarthlyWin,
       isHumanWin,
       roundWind: this.roundWind,
-      playerWind: winner.wind,
+      playerWind: winnerEffectiveWind,
       dealerSeat: this.dealerSeat,
       dealerStreak: this.dealerStreak,
       currentChips: this.players.map((p) => p.chips),
@@ -1067,6 +1077,7 @@ export class MahjongGameState {
     this.notifyPhase();
 
     const winner = this.players[winnerSeat];
+    const winnerEffectiveWind = this.getEffectiveWind(winnerSeat);
     const breakdown = MahjongScoreCalculator.evaluateSettlement({
       winnerSeat,
       winnerHand: winner.hand,
@@ -1076,7 +1087,7 @@ export class MahjongGameState {
       isSelfDrawn: winner.flowers.length === 8,
       isFlowerWin: true,
       roundWind: this.roundWind,
-      playerWind: winner.wind,
+      playerWind: winnerEffectiveWind,
       dealerSeat: this.dealerSeat,
       dealerStreak: this.dealerStreak,
       currentChips: this.players.map((p) => p.chips),

@@ -134,10 +134,10 @@ describe('MahjongGameState Unit Tests', () => {
     expect(getAnnouncement()).toBe('南風東');
   });
 
-  it('should strictly preserve permanent seating winds across all 16 rounds of dealer rotations', () => {
+  it('should strictly preserve permanent seating winds from 抓位 and calculate dynamic effective wind for tai evaluation across all 16 rounds', () => {
     state.startNewMatch();
 
-    // Record initial winds for all 4 players from 抓位
+    // Record initial seating winds for all 4 players from 抓位
     const initialWinds = state.players.map((p) => p.wind);
     expect(initialWinds.length).toBe(4);
 
@@ -152,10 +152,18 @@ describe('MahjongGameState Unit Tests', () => {
       ];
       state.settleWin(nonDealer, false, currentDealer);
 
-      // Verify that after every single dealer rotation, all 4 players strictly retain their initial seating wind!
+      // 1. Permanent Seating Winds (for capsules / HUD display) NEVER change across all 16 hands!
       state.players.forEach((p, idx) => {
         expect(p.wind).toBe(initialWinds[idx]);
       });
+
+      // 2. Dynamic Effective Wind (for tai & flower evaluation) rotates with dealer position:
+      // Current dealer always gets EAST (1/5 flower), next seats get SOUTH, WEST, NORTH!
+      const newDealer = state.dealerSeat;
+      expect(state.getEffectiveWind(newDealer)).toBe('EAST');
+      expect(state.getEffectiveWind(((newDealer + 1) % 4) as any)).toBe('SOUTH');
+      expect(state.getEffectiveWind(((newDealer + 2) % 4) as any)).toBe('WEST');
+      expect(state.getEffectiveWind(((newDealer + 3) % 4) as any)).toBe('NORTH');
     }
   });
 
