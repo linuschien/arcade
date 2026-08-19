@@ -387,4 +387,44 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     const tileSprites = spriteCalls.filter((c: any[]) => c[2].startsWith('mahjong:tile_'));
     expect(tileSprites.length).toBeGreaterThanOrEqual(1);
   });
+
+  it('should immediately clear and hide tingContainer on settlement and dealing phase change', () => {
+    scene.create();
+    (scene as any).tingContainer.setVisible(true);
+
+    // 1. Simulate onSettlement
+    const breakdown = {
+      winnerSeat: 0,
+      isSelfDrawn: true,
+      basePoints: 500,
+      fanRate: 200,
+      dealerMultiplierFan: 1,
+      dealerStreak: 0,
+      fans: [],
+      totalFans: 1,
+      chipDeltas: [600, -200, -200, -200],
+      remainingChips: [10600, 9800, 9800, 9800],
+      winnerName: '賭神',
+    };
+
+    (scene as any).tingContainer.setVisible.mockClear();
+    (scene as any).tingContainer.removeAll.mockClear();
+
+    // Trigger onSettlement via gameState callback
+    const listeners = (scene as any).gameState.listeners;
+    const settlementListener = listeners.find((l: any) => typeof l.onSettlement === 'function');
+    expect(settlementListener).toBeDefined();
+    settlementListener.onSettlement(breakdown);
+
+    expect((scene as any).tingContainer.setVisible).toHaveBeenCalledWith(false);
+    expect((scene as any).tingContainer.removeAll).toHaveBeenCalledWith(true);
+
+    // 2. Simulate phase change to DEALING
+    (scene as any).tingContainer.setVisible.mockClear();
+    (scene as any).tingContainer.removeAll.mockClear();
+    (scene as any).handlePhaseChange('DEALING');
+
+    expect((scene as any).tingContainer.setVisible).toHaveBeenCalledWith(false);
+    expect((scene as any).tingContainer.removeAll).toHaveBeenCalledWith(true);
+  });
 });

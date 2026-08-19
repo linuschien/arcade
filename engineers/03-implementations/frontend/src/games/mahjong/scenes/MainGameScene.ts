@@ -427,10 +427,18 @@ export class MainGameScene extends Phaser.Scene {
       },
       onSettlement: (breakdown: SettlementBreakdown) => {
         this.discardMarker.setVisible(false);
+        this.tingContainer.setVisible(false);
+        this.tingContainer.removeAll(true);
+        this.actionBarContainer.setVisible(false);
+        this.subMenuContainer.setVisible(false);
         this.showSettlementWindow(breakdown);
       },
       onGameOver: (summary) => {
         this.discardMarker.setVisible(false);
+        this.tingContainer.setVisible(false);
+        this.tingContainer.removeAll(true);
+        this.actionBarContainer.setVisible(false);
+        this.subMenuContainer.setVisible(false);
         this.showGameOverModal(summary);
       },
     });
@@ -438,8 +446,12 @@ export class MainGameScene extends Phaser.Scene {
 
   private handlePhaseChange(phase: GamePhase): void {
     if (phase === 'SEATING_DRAW') {
+      this.tingContainer.setVisible(false);
+      this.tingContainer.removeAll(true);
       this.playSeatingDiceAnimation();
     } else if (phase === 'DEALING') {
+      this.tingContainer.setVisible(false);
+      this.tingContainer.removeAll(true);
       this.playDealerWallBreakDiceAnimation();
     }
   }
@@ -1622,6 +1634,8 @@ export class MainGameScene extends Phaser.Scene {
     nextBtn.setInteractive(new Phaser.Geom.Rectangle(-80, 195, 160, 34), Phaser.Geom.Rectangle.Contains);
     nextBtn.on('pointerdown', () => {
       this.settlementContainer.setVisible(false);
+      this.tingContainer.setVisible(false);
+      this.tingContainer.removeAll(true);
       this.refreshAllSeats(false);
       MahjongAudioService.playBGM();
       this.gameState.startDealing(false);
