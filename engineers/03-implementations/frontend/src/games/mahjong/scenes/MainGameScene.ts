@@ -1053,10 +1053,11 @@ export class MainGameScene extends Phaser.Scene {
       });
     }
 
-    // Info text (show after arrow settles)
+    const windChinese: Record<string, string> = { EAST: '東', SOUTH: '南', WEST: '西', NORTH: '北' };
+    const breakWindCn = windChinese[this.gameState.getEffectiveWind(breakSeat as PlayerSeat)] ?? '?';
     const infoText = this.add.text(
       0, 85,
-      `【${breakPlayer.name}】${this.gameState.getEffectiveWind(breakSeat as PlayerSeat)}風牆 第 ${diceSum} 墩開門`,
+      `【${breakPlayer.name}】${breakWindCn}風牆 第 ${diceSum} 墩開門`,
       {
         fontSize: '18px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
