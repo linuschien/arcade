@@ -482,6 +482,13 @@ export class MainGameScene extends Phaser.Scene {
     this.bankerDiceOutsideCompassContainer.setVisible(false);
     this.diceContainer.setVisible(false);
 
+    // Hide central compass during Seating Draw to eliminate visual clutter
+    if (this.compassDial) this.compassDial.setVisible(false);
+    if (this.roundWindText) this.roundWindText.setVisible(false);
+    if (this.dealerStreakText) this.dealerStreakText.setVisible(false);
+    if (this.remainingTilesText) this.remainingTilesText.setVisible(false);
+    this.compassSeatWindTexts.forEach((t) => t.setVisible(false));
+
     const details = this.gameState.seatingDrawDetails;
     if (!details) {
       this.finishSeatingSequence();
@@ -622,14 +629,14 @@ export class MainGameScene extends Phaser.Scene {
     });
 
     // ==========================================
-    // Stage 2: Casino Dice Cup & Dice Roll
+    // Stage 2: Large Casino Dice Cup & Dice Roll (Grand & Prominent)
     // ==========================================
     const diceTray = this.add.sprite(640, 365, 'mahjong:dice_tray');
-    diceTray.setScale(0.85);
+    diceTray.setScale(1.25);
     this.seatingCinematicContainer.add(diceTray);
 
     const diceCup = this.add.sprite(640, 335, 'mahjong:dice_cup');
-    diceCup.setScale(0.9);
+    diceCup.setScale(1.3);
     this.seatingCinematicContainer.add(diceCup);
 
     MahjongAudioService.playDiceRoll();
@@ -637,8 +644,8 @@ export class MainGameScene extends Phaser.Scene {
     if (this.tweens) {
       this.tweens.add({
         targets: diceCup,
-        x: { from: 632, to: 648 },
-        angle: { from: -14, to: 14 },
+        x: { from: 630, to: 650 },
+        angle: { from: -15, to: 15 },
         duration: 50,
         yoyo: true,
         repeat: 8,
@@ -647,9 +654,9 @@ export class MainGameScene extends Phaser.Scene {
           // Cup lifts smoothly upwards
           this.tweens.add({
             targets: diceCup,
-            y: 220,
+            y: 200,
             alpha: 0,
-            scale: 1.05,
+            scale: 1.4,
             duration: 500,
             ease: 'Cubic.easeOut',
             onComplete: () => {
@@ -660,9 +667,9 @@ export class MainGameScene extends Phaser.Scene {
           // 3 Dice tumble onto tray
           const d = details.diceResult;
           const diceOffsets = [
-            { x: -38, y: -4 },
-            { x: 0, y: -12 },
-            { x: 38, y: 2 },
+            { x: -50, y: -4 },
+            { x: 0, y: -16 },
+            { x: 50, y: 4 },
           ];
 
           for (let i = 0; i < 3; i++) {
@@ -671,7 +678,7 @@ export class MainGameScene extends Phaser.Scene {
               365 + diceOffsets[i].y,
               `mahjong:dice_${d[i]}`
             );
-            dice.setDisplaySize(32, 32);
+            dice.setDisplaySize(38, 38);
             dice.setScale(0.3);
             dice.setAngle(-180);
             this.seatingCinematicContainer.add(dice);
@@ -755,6 +762,10 @@ export class MainGameScene extends Phaser.Scene {
                     scaleX: 1,
                     duration: 120,
                     onComplete: () => {
+                      // Reparent flyingTile into card container so it glides together with the character card!
+                      card.add(flyingTile);
+                      flyingTile.setPosition(60, -2);
+
                       // Update card status text
                       if (pInfo.isDealer) {
                         windText.setText('【東風 👑起莊】');
@@ -774,7 +785,7 @@ export class MainGameScene extends Phaser.Scene {
     });
 
     // ==========================================
-    // Stage 4: AI Opponents Animated Seating Realignment
+    // Stage 4: AI Opponents Animated Seating Realignment (Cards + Wind Tiles glide together!)
     // ==========================================
     const totalDealDuration = dealOrder.length * 400 + 450;
     this.time.delayedCall(totalDealDuration, () => {
@@ -830,6 +841,14 @@ export class MainGameScene extends Phaser.Scene {
   private finishSeatingSequence(): void {
     this.seatingCinematicContainer.removeAll(true);
     this.seatingCinematicContainer.setVisible(false);
+
+    // Restore central compass
+    if (this.compassDial) this.compassDial.setVisible(true);
+    if (this.roundWindText) this.roundWindText.setVisible(true);
+    if (this.dealerStreakText) this.dealerStreakText.setVisible(true);
+    if (this.remainingTilesText) this.remainingTilesText.setVisible(true);
+    this.compassSeatWindTexts.forEach((t) => t.setVisible(true));
+
     this.refreshAllSeats();
     this.updateCompass();
     this.gameState.startDealing(false);
