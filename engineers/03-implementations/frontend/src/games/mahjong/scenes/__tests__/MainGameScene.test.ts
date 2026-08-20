@@ -119,6 +119,8 @@ describe('Mahjong MainGameScene Unit Tests', () => {
         setVisible: vi.fn().mockReturnThis(),
         setDepth: vi.fn().mockReturnThis(),
         setDisplaySize: vi.fn().mockReturnThis(),
+        setAlpha: vi.fn().mockReturnThis(),
+        setScale: vi.fn().mockReturnThis(),
         setData: vi.fn().mockReturnThis(),
         getData: vi.fn(),
         setInteractive: vi.fn().mockReturnThis(),
@@ -203,8 +205,8 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     audioService.playDiceRoll.mockClear();
     audioService.playTileSort.mockClear();
 
-    // 1. Test Seating Dice Roll
-    (scene as any).playSeatingDiceAnimation();
+    // 1. Test Seating Cinematic Sequence
+    (scene as any).playSeatingCinematicSequence();
     expect(audioService.playDiceRoll).toHaveBeenCalledTimes(1);
 
     // 2. Test Dealer Wall Break Dice Roll
@@ -466,5 +468,43 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     gameState.dealerSeat = 3;
     (scene as any).showSettlementWindow(breakdown);
     expect((scene as any).add.graphics).toHaveBeenCalled();
+  });
+
+  it('should create and execute 5-stage seating cinematic sequence with dice cup and character cards on SEATING_DRAW phase', () => {
+    scene.create();
+    (scene as any).add.sprite.mockClear();
+    (scene as any).add.container.mockClear();
+    (scene as any).seatingCinematicContainer.setVisible.mockClear();
+
+    // Trigger SEATING_DRAW phase
+    (scene as any).handlePhaseChange('SEATING_DRAW');
+
+    // 1. seatingCinematicContainer should be made visible
+    expect((scene as any).seatingCinematicContainer.setVisible).toHaveBeenCalledWith(true);
+
+    // 2. Dice Tray and Dice Cup sprites should be created
+    const spriteCalls = (scene as any).add.sprite.mock.calls;
+    const trayCall = spriteCalls.find((c: any[]) => c[2] === 'mahjong:dice_tray');
+    const cupCall = spriteCalls.find((c: any[]) => c[2] === 'mahjong:dice_cup');
+    expect(trayCall).toBeDefined();
+    expect(cupCall).toBeDefined();
+  });
+
+  it('should cleanly tear down seatingCinematicContainer and trigger dealing on finishSeatingSequence', () => {
+    scene.create();
+    const gameState = (scene as any).gameState;
+    const startDealingSpy = vi.spyOn(gameState, 'startDealing');
+
+    (scene as any).seatingCinematicContainer.removeAll.mockClear();
+    (scene as any).seatingCinematicContainer.setVisible.mockClear();
+
+    (scene as any).finishSeatingSequence();
+
+    // Verify complete cleanup
+    expect((scene as any).seatingCinematicContainer.removeAll).toHaveBeenCalledWith(true);
+    expect((scene as any).seatingCinematicContainer.setVisible).toHaveBeenCalledWith(false);
+
+    // Verify game transitions to dealing phase
+    expect(startDealingSpy).toHaveBeenCalledWith(false);
   });
 });

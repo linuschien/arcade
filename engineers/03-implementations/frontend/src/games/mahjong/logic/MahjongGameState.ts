@@ -17,6 +17,8 @@ import {
   SettlementBreakdown,
   ChowOption,
   KongOption,
+  SeatingDrawDetails,
+  SeatingDrawPlayerInfo,
 } from './MahjongTypes';
 import { MahjongDeck } from './MahjongDeck';
 import { MahjongHandEvaluator } from './MahjongHandEvaluator';
@@ -61,6 +63,7 @@ export class MahjongGameState {
 
   public isFirstTurnCycle: boolean = true;
   public currentSettlement: SettlementBreakdown | null = null;
+  public seatingDrawDetails: SeatingDrawDetails | null = null;
   public autoStepAI: boolean = true;
 
   private listeners: GameStateListener[] = [];
@@ -199,7 +202,29 @@ export class MahjongGameState {
       }
     }
 
-    // 5. 所有風位與起莊計算完畢後，再發出狀態變更通知
+    // 5. 紀錄抓位完整過程細節，供前端動畫演繹
+    const seatingPlayers: SeatingDrawPlayerInfo[] = characters.map((c, initIdx) => {
+      const drawn = drawnResults.find((r) => r.name === c.name)!;
+      const finalSeat = seatWinds.indexOf(drawn.wind) as PlayerSeat;
+      return {
+        name: c.name,
+        isHuman: c.isHuman,
+        initialPosIndex: initIdx,
+        drawnWind: drawn.wind,
+        finalSeat,
+        isDealer: drawn.wind === 'EAST',
+      };
+    });
+
+    this.seatingDrawDetails = {
+      diceResult: [d1, d2, d3],
+      diceSum: this.diceSum,
+      firstDrawerIndex: firstDrawer,
+      firstDrawerName: characters[firstDrawer].name,
+      players: seatingPlayers,
+    };
+
+    // 6. 所有風位與起莊計算完畢後，再發出狀態變更通知
     this.notifyPhase();
   }
 

@@ -792,6 +792,158 @@ export class PreloadScene extends Phaser.Scene {
         }
       }
     }
+
+    // 14. Casino Leather & Gold Dice Cup (骰盅)
+    if (!this.textures.exists('mahjong:dice_cup')) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 110;
+      canvas.height = 130;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Drop shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        this.drawEllipse(ctx, 55, 120, 48, 10);
+        ctx.fill();
+
+        // Cup Body (Tapered Cylinder)
+        const cupGrad = ctx.createLinearGradient(15, 0, 95, 0);
+        cupGrad.addColorStop(0, '#1c0b05');
+        cupGrad.addColorStop(0.2, '#451a03');
+        cupGrad.addColorStop(0.5, '#78350f');
+        cupGrad.addColorStop(0.8, '#451a03');
+        cupGrad.addColorStop(1, '#0f0502');
+
+        ctx.beginPath();
+        ctx.moveTo(28, 16);
+        ctx.lineTo(82, 16);
+        this.drawQuadraticCurveTo(ctx, 94, 60, 98, 112);
+        this.drawQuadraticCurveTo(ctx, 55, 122, 12, 112);
+        this.drawQuadraticCurveTo(ctx, 16, 60, 28, 16);
+        ctx.closePath();
+        ctx.fillStyle = cupGrad;
+        ctx.fill();
+
+        // Gold Trim Bands
+        const drawGoldBand = (y: number, w: number, curvature: number) => {
+          const goldGrad = ctx.createLinearGradient(55 - w / 2, y, 55 + w / 2, y);
+          goldGrad.addColorStop(0, '#92400e');
+          goldGrad.addColorStop(0.3, '#f59e0b');
+          goldGrad.addColorStop(0.5, '#fef08a');
+          goldGrad.addColorStop(0.7, '#fbbf24');
+          goldGrad.addColorStop(1, '#78350f');
+
+          ctx.fillStyle = goldGrad;
+          this.drawEllipse(ctx, 55, y, w / 2, curvature);
+          ctx.fill();
+        };
+
+        // Top Gold Knob / Finial
+        drawGoldBand(14, 38, 4);
+        drawGoldBand(18, 56, 3);
+        // Mid Decorative Gold Ring
+        drawGoldBand(64, 82, 5);
+        // Bottom Opening Rim (Heavy Gold Lip)
+        drawGoldBand(112, 88, 7);
+
+        // Cup Body Specular Highlight (Left edge sheen)
+        const sheenGrad = ctx.createLinearGradient(28, 0, 50, 0);
+        sheenGrad.addColorStop(0, 'rgba(255, 255, 255, 0.28)');
+        sheenGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = sheenGrad;
+        ctx.beginPath();
+        ctx.moveTo(28, 22);
+        ctx.lineTo(44, 22);
+        ctx.lineTo(34, 108);
+        ctx.lineTo(18, 108);
+        ctx.closePath();
+        ctx.fill();
+
+        if (typeof this.textures.addCanvas === 'function') {
+          this.textures.addCanvas('mahjong:dice_cup', canvas);
+        }
+      }
+    }
+
+    // 15. Casino Velvet Dice Tray Base (骰托)
+    if (!this.textures.exists('mahjong:dice_tray')) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 240;
+      canvas.height = 140;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Outer Shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        this.drawEllipse(ctx, 120, 75, 112, 58);
+        ctx.fill();
+
+        // Mahogany & Gold Outer Rim
+        const rimGrad = ctx.createLinearGradient(0, 0, 240, 140);
+        rimGrad.addColorStop(0, '#b45309');
+        rimGrad.addColorStop(0.5, '#78350f');
+        rimGrad.addColorStop(1, '#451a03');
+
+        this.drawEllipse(ctx, 120, 70, 110, 55);
+        ctx.fillStyle = rimGrad;
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#fbbf24';
+        ctx.stroke();
+
+        // Inner Emerald Green Velvet Felt
+        const feltGrad =
+          typeof ctx.createRadialGradient === 'function'
+            ? ctx.createRadialGradient(120, 70, 10, 120, 70, 95)
+            : ctx.createLinearGradient(0, 0, 240, 140);
+        feltGrad.addColorStop(0, '#065f46');
+        feltGrad.addColorStop(0.8, '#064e3b');
+        feltGrad.addColorStop(1, '#022c22');
+
+        this.drawEllipse(ctx, 120, 70, 96, 46);
+        ctx.fillStyle = feltGrad;
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#34d399';
+        ctx.stroke();
+
+        if (typeof this.textures.addCanvas === 'function') {
+          this.textures.addCanvas('mahjong:dice_tray', canvas);
+        }
+      }
+    }
+  }
+
+  private drawEllipse(
+    ctx: CanvasRenderingContext2D,
+    cx: number,
+    cy: number,
+    rx: number,
+    ry: number
+  ): void {
+    if (typeof ctx.ellipse === 'function') {
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      return;
+    }
+    ctx.beginPath();
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(rx, ry);
+    ctx.arc(0, 0, 1, 0, Math.PI * 2);
+    ctx.restore();
+  }
+
+  private drawQuadraticCurveTo(
+    ctx: CanvasRenderingContext2D,
+    cpx: number,
+    cpy: number,
+    x: number,
+    y: number
+  ): void {
+    if (typeof ctx.quadraticCurveTo === 'function') {
+      ctx.quadraticCurveTo(cpx, cpy, x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
   }
 
   private drawRoundedRect(

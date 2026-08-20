@@ -14,12 +14,15 @@ import { MahjongAudioService } from '../audio/MahjongAudioService';
 import { MahjongHandEvaluator } from '../logic/MahjongHandEvaluator';
 import {
   PlayerSeat,
+  SeatWind,
   SettlementBreakdown,
   GamePhase,
   AvailableActions,
   ChowOption,
   KongOption,
   Tile,
+  SeatingDrawDetails,
+  SeatingDrawPlayerInfo,
 } from '../logic/MahjongTypes';
 
 export class MainGameScene extends Phaser.Scene {
@@ -55,6 +58,9 @@ export class MainGameScene extends Phaser.Scene {
   // Settlement Window
   private settlementContainer!: Phaser.GameObjects.Container;
 
+  // Seating Draw Cinematic Sequence
+  private seatingCinematicContainer!: Phaser.GameObjects.Container;
+
   private isPausedState: boolean = false;
 
   constructor() {
@@ -74,6 +80,7 @@ export class MainGameScene extends Phaser.Scene {
     this.createSmartTingUI();
     this.createActionBar();
     this.createSettlementModal();
+    this.createSeatingCinematicUI();
 
     this.setupGameStateListeners();
 
@@ -444,11 +451,17 @@ export class MainGameScene extends Phaser.Scene {
     });
   }
 
+  private createSeatingCinematicUI(): void {
+    this.seatingCinematicContainer = this.add.container(0, 0);
+    this.seatingCinematicContainer.setDepth(200);
+    this.seatingCinematicContainer.setVisible(false);
+  }
+
   private handlePhaseChange(phase: GamePhase): void {
     if (phase === 'SEATING_DRAW') {
       this.tingContainer.setVisible(false);
       this.tingContainer.removeAll(true);
-      this.playSeatingDiceAnimation();
+      this.playSeatingCinematicSequence();
     } else if (phase === 'DEALING') {
       this.tingContainer.setVisible(false);
       this.tingContainer.removeAll(true);
@@ -457,72 +470,369 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   /**
-   * 1. 抓風位擲骰動畫 (Seating Draw Dice Animation).
+   * 1. 抓風位五部曲開局流程 (Seating Draw Cinematic Flow).
+   * ① 四方牌咖就位亮相 (非羅盤)
+   * ② 賭場骰盅搖骰揭盅 (3D骰子滾出點數)
+   * ③ 四風洗勻依序翻牌 (3D翻牌揭曉抽到的風)
+   * ④ AI 牌咖平滑換位動畫 (真人視角固定不動)
+   * ⑤ 莊家加冕與平滑銜接開局
    */
-  private playSeatingDiceAnimation(): void {
+  private playSeatingCinematicSequence(): void {
     this.discardMarker.setVisible(false);
     this.bankerDiceOutsideCompassContainer.setVisible(false);
-    MahjongAudioService.playDiceRoll();
-    this.diceContainer.removeAll(true);
-    this.diceContainer.setVisible(true);
+    this.diceContainer.setVisible(false);
 
-    const d = this.gameState.diceResult;
-    const diceSum = d[0] + d[1] + d[2];
-
-    const bg = this.add.graphics();
-    bg.fillStyle(0x020617, 0.92);
-    bg.fillRoundedRect(-150, -45, 300, 90, 12);
-    bg.lineStyle(1.5, 0xd4af37, 0.9);
-    bg.strokeRoundedRect(-150, -45, 300, 90, 12);
-    this.diceContainer.add(bg);
-
-    for (let i = 0; i < 3; i++) {
-      const sprite = this.add.sprite((i - 1) * 44, -10, `mahjong:dice_${d[i]}`);
-      sprite.setDisplaySize(32, 32);
-      this.diceContainer.add(sprite);
-
-      if (this.tweens) {
-        this.tweens.add({
-          targets: sprite,
-          angle: { from: -180, to: 180 },
-          scale: { from: 0.7, to: 1.0 },
-          duration: 600,
-          ease: 'Cubic.easeOut',
-        });
-      }
+    const details = this.gameState.seatingDrawDetails;
+    if (!details) {
+      this.finishSeatingSequence();
+      return;
     }
 
-    const windChars: Record<string, string> = {
+    this.seatingCinematicContainer.removeAll(true);
+    this.seatingCinematicContainer.setAlpha(1);
+    this.seatingCinematicContainer.setVisible(true);
+
+    const seatPositions = [
+      { x: 640, y: 550 },  // 0: Bottom (賭神 / 真人)
+      { x: 1060, y: 360 }, // 1: Right (下家)
+      { x: 640, y: 155 },  // 2: Top (對家)
+      { x: 220, y: 360 },  // 3: Left (上家)
+    ];
+
+    const windNames: Record<SeatWind, string> = {
       EAST: '東風',
       SOUTH: '南風',
       WEST: '西風',
       NORTH: '北風',
     };
-    const humanWind = windChars[this.gameState.players[0].wind] || '東風';
-    const dealerName = this.gameState.players[this.gameState.dealerSeat].name;
-    const isHumanDealer = this.gameState.dealerSeat === 0;
-    const dealerLabel = isHumanDealer ? '您起莊' : `${dealerName}起莊`;
 
-    const infoText = this.add.text(
-      0,
-      25,
-      `🎲 抓位擲骰 ${d[0]}+${d[1]}+${d[2]}=${diceSum} 點 ｜ 您抽得【${humanWind}】(${dealerLabel})`,
-      {
-        fontSize: '12px',
-        fontFamily: '"Microsoft JhengHei", sans-serif',
-        color: '#facc15',
-        fontStyle: 'bold',
-      }
-    );
-    infoText.setOrigin(0.5);
-    this.diceContainer.add(infoText);
+    const windCodes: Record<SeatWind, string> = {
+      EAST: 'east',
+      SOUTH: 'south',
+      WEST: 'west',
+      NORTH: 'north',
+    };
 
-    this.time.delayedCall(1600, () => {
-      this.diceContainer.setVisible(false);
-      this.refreshAllSeats();
-      this.updateCompass();
-      this.gameState.startDealing(false);
+    // Dark table veil
+    const veil = this.add.graphics();
+    veil.fillStyle(0x000000, 0.45);
+    veil.fillRect(0, 0, 1280, 720);
+    this.seatingCinematicContainer.add(veil);
+
+    // Top Cinematic Title Banner
+    const bannerContainer = this.add.container(640, 50);
+    const bannerBg = this.add.graphics();
+    bannerBg.fillStyle(0x020617, 0.95);
+    bannerBg.fillRoundedRect(-220, -24, 440, 48, 12);
+    bannerBg.lineStyle(2, 0xd4af37, 0.9);
+    bannerBg.strokeRoundedRect(-220, -24, 440, 48, 12);
+    bannerContainer.add(bannerBg);
+
+    const bannerText = this.add.text(0, 0, '🎲 開局抓位 決定座次 🎲', {
+      fontSize: '17px',
+      fontFamily: '"Microsoft JhengHei", sans-serif',
+      color: '#facc15',
+      fontStyle: 'bold',
     });
+    bannerText.setOrigin(0.5);
+    bannerContainer.add(bannerText);
+    this.seatingCinematicContainer.add(bannerContainer);
+
+    // ==========================================
+    // Stage 1: Create 4 Character Cards at 4 Initial Positions
+    // ==========================================
+    const cardContainers: Phaser.GameObjects.Container[] = [];
+    const cardWindTexts: Phaser.GameObjects.Text[] = [];
+
+    details.players.forEach((pInfo, idx) => {
+      const pos = seatPositions[idx];
+      const card = this.add.container(pos.x, pos.y);
+
+      const cardBg = this.add.graphics();
+      cardBg.fillStyle(0x020617, 0.94);
+      cardBg.fillRoundedRect(-95, -40, 190, 80, 12);
+      if (pInfo.isHuman) {
+        cardBg.lineStyle(2.5, 0xfacc15, 1); // Gold for Human
+      } else {
+        const borderColors = [0x38bdf8, 0xa855f7, 0x34d399];
+        cardBg.lineStyle(2, borderColors[(idx - 1) % 3], 0.85);
+      }
+      cardBg.strokeRoundedRect(-95, -40, 190, 80, 12);
+      card.add(cardBg);
+
+      // Avatar Icon
+      const avatarText = this.add.text(-68, -14, pInfo.isHuman ? '👤' : '🤖', {
+        fontSize: '22px',
+      });
+      avatarText.setOrigin(0.5);
+      card.add(avatarText);
+
+      // Name Text
+      const displayName = pInfo.isHuman ? '賭神 (您)' : pInfo.name;
+      const nameText = this.add.text(-46, -22, displayName, {
+        fontSize: '14px',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
+        color: pInfo.isHuman ? '#facc15' : '#ffffff',
+        fontStyle: 'bold',
+      });
+      card.add(nameText);
+
+      // Chips Text
+      const chipsText = this.add.text(-46, -4, '🪙 10,000', {
+        fontSize: '11px',
+        fontFamily: 'monospace',
+        color: '#fbbf24',
+      });
+      card.add(chipsText);
+
+      // Wind Status Text (initially '待抽風位')
+      const windStatus = this.add.text(-46, 14, '[ 待抽風位 ]', {
+        fontSize: '11px',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
+        color: '#64748b',
+        fontStyle: 'bold',
+      });
+      card.add(windStatus);
+      cardWindTexts.push(windStatus);
+
+      // Wind Tile Slot Box (Right side of Card)
+      const slotBox = this.add.graphics();
+      slotBox.fillStyle(0x0f172a, 0.8);
+      slotBox.fillRoundedRect(42, -26, 36, 48, 4);
+      slotBox.lineStyle(1, 0x334155, 0.9);
+      slotBox.strokeRoundedRect(42, -26, 36, 48, 4);
+      card.add(slotBox);
+
+      // Scale in animation
+      card.setScale(0);
+      this.seatingCinematicContainer.add(card);
+      cardContainers.push(card);
+
+      if (this.tweens) {
+        this.tweens.add({
+          targets: card,
+          scale: 1,
+          duration: 400,
+          delay: idx * 80,
+          ease: 'Back.easeOut',
+        });
+      } else {
+        card.setScale(1);
+      }
+    });
+
+    // ==========================================
+    // Stage 2: Casino Dice Cup & Dice Roll
+    // ==========================================
+    const diceTray = this.add.sprite(640, 365, 'mahjong:dice_tray');
+    diceTray.setScale(0.85);
+    this.seatingCinematicContainer.add(diceTray);
+
+    const diceCup = this.add.sprite(640, 335, 'mahjong:dice_cup');
+    diceCup.setScale(0.9);
+    this.seatingCinematicContainer.add(diceCup);
+
+    MahjongAudioService.playDiceRoll();
+
+    if (this.tweens) {
+      this.tweens.add({
+        targets: diceCup,
+        x: { from: 632, to: 648 },
+        angle: { from: -14, to: 14 },
+        duration: 50,
+        yoyo: true,
+        repeat: 8,
+        ease: 'Sine.easeInOut',
+        onComplete: () => {
+          // Cup lifts smoothly upwards
+          this.tweens.add({
+            targets: diceCup,
+            y: 220,
+            alpha: 0,
+            scale: 1.05,
+            duration: 500,
+            ease: 'Cubic.easeOut',
+            onComplete: () => {
+              diceCup.destroy();
+            },
+          });
+
+          // 3 Dice tumble onto tray
+          const d = details.diceResult;
+          const diceOffsets = [
+            { x: -38, y: -4 },
+            { x: 0, y: -12 },
+            { x: 38, y: 2 },
+          ];
+
+          for (let i = 0; i < 3; i++) {
+            const dice = this.add.sprite(
+              640 + diceOffsets[i].x,
+              365 + diceOffsets[i].y,
+              `mahjong:dice_${d[i]}`
+            );
+            dice.setDisplaySize(32, 32);
+            dice.setScale(0.3);
+            dice.setAngle(-180);
+            this.seatingCinematicContainer.add(dice);
+
+            this.tweens.add({
+              targets: dice,
+              scale: 1,
+              angle: 0,
+              duration: 450,
+              ease: 'Back.easeOut',
+            });
+          }
+
+          // Update banner with dice result & first drawer
+          bannerText.setText(
+            `🎲 擲出 ${d[0]}+${d[1]}+${d[2]}=${details.diceSum} 點 ｜ 由【${details.firstDrawerName}】起抽風牌`
+          );
+
+          // Proceed to Stage 3 after short pause
+          this.time.delayedCall(700, () => {
+            this.executeWindDealSequence(
+              details,
+              cardContainers,
+              cardWindTexts,
+              seatPositions,
+              windNames,
+              windCodes,
+              bannerText
+            );
+          });
+        },
+      });
+    } else {
+      this.time.delayedCall(100, () => {
+        this.finishSeatingSequence();
+      });
+    }
+  }
+
+  private executeWindDealSequence(
+    details: SeatingDrawDetails,
+    cardContainers: Phaser.GameObjects.Container[],
+    cardWindTexts: Phaser.GameObjects.Text[],
+    seatPositions: { x: number; y: number }[],
+    windNames: Record<SeatWind, string>,
+    windCodes: Record<SeatWind, string>,
+    bannerText: Phaser.GameObjects.Text
+  ): void {
+    // 4 Face-down wind tiles in center
+    const dealOrder = [0, 1, 2, 3].map((k) => (details.firstDrawerIndex + k) % 4);
+
+    dealOrder.forEach((playerIdx, stepIdx) => {
+      this.time.delayedCall(stepIdx * 400, () => {
+        const pInfo = details.players[playerIdx];
+        const card = cardContainers[playerIdx];
+        const windText = cardWindTexts[playerIdx];
+
+        // Animated tile sliding from center (640, 360) to Card wind slot
+        const flyingTile = this.add.sprite(640, 360, 'mahjong:tile_back');
+        flyingTile.setDisplaySize(36, 48);
+        this.seatingCinematicContainer.add(flyingTile);
+
+        if (this.tweens) {
+          this.tweens.add({
+            targets: flyingTile,
+            x: card.x + 60,
+            y: card.y - 2,
+            duration: 350,
+            ease: 'Cubic.easeOut',
+            onComplete: () => {
+              // 3D Flip animation
+              this.tweens.add({
+                targets: flyingTile,
+                scaleX: 0,
+                duration: 120,
+                onComplete: () => {
+                  flyingTile.setTexture(`mahjong:tile_${windCodes[pInfo.drawnWind]}`);
+                  flyingTile.setDisplaySize(36, 48);
+                  this.tweens.add({
+                    targets: flyingTile,
+                    scaleX: 1,
+                    duration: 120,
+                    onComplete: () => {
+                      // Update card status text
+                      if (pInfo.isDealer) {
+                        windText.setText('【東風 👑起莊】');
+                        windText.setColor('#facc15');
+                      } else {
+                        windText.setText(`【${windNames[pInfo.drawnWind]}】`);
+                        windText.setColor('#38bdf8');
+                      }
+                    },
+                  });
+                },
+              });
+            },
+          });
+        }
+      });
+    });
+
+    // ==========================================
+    // Stage 4: AI Opponents Animated Seating Realignment
+    // ==========================================
+    const totalDealDuration = dealOrder.length * 400 + 450;
+    this.time.delayedCall(totalDealDuration, () => {
+      bannerText.setText('✨ 依照風位入座中... ✨');
+
+      // Human (Seat 0) stays at Seat 0 (Bottom) - does NOT move.
+      // 3 AI cards glide smoothly to their newly assigned seatPositions[pInfo.finalSeat]
+      details.players.forEach((pInfo, idx) => {
+        if (!pInfo.isHuman) {
+          const card = cardContainers[idx];
+          const targetPos = seatPositions[pInfo.finalSeat];
+
+          if (this.tweens) {
+            this.tweens.add({
+              targets: card,
+              x: targetPos.x,
+              y: targetPos.y,
+              duration: 850,
+              ease: 'Cubic.easeInOut',
+            });
+          } else {
+            card.setPosition(targetPos.x, targetPos.y);
+          }
+        }
+      });
+
+      // After migration settles
+      this.time.delayedCall(1000, () => {
+        const dealerPlayer = details.players.find((p) => p.isDealer)!;
+        const dealerName = dealerPlayer.isHuman ? '您 (賭神)' : dealerPlayer.name;
+        bannerText.setText(`👑【${dealerName}】抽得東風 起莊開局！`);
+
+        // Stage 5: Clean Teardown & Transition to Dealing
+        this.time.delayedCall(1300, () => {
+          if (this.tweens) {
+            this.tweens.add({
+              targets: this.seatingCinematicContainer,
+              alpha: 0,
+              duration: 400,
+              ease: 'Linear',
+              onComplete: () => {
+                this.finishSeatingSequence();
+              },
+            });
+          } else {
+            this.finishSeatingSequence();
+          }
+        });
+      });
+    });
+  }
+
+  private finishSeatingSequence(): void {
+    this.seatingCinematicContainer.removeAll(true);
+    this.seatingCinematicContainer.setVisible(false);
+    this.refreshAllSeats();
+    this.updateCompass();
+    this.gameState.startDealing(false);
   }
 
   /**

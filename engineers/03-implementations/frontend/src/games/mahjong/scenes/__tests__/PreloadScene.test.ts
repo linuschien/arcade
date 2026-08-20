@@ -79,6 +79,8 @@ describe('Mahjong PreloadScene Unit Tests', () => {
     expect(mockTextures.addCanvas).toHaveBeenCalledWith('mahjong:tile_spring', expect.anything());
     expect(mockTextures.addCanvas).toHaveBeenCalledWith('mahjong:action_btn_hu', expect.anything());
     expect(mockTextures.addCanvas).toHaveBeenCalledWith('mahjong:wall_tile_stack', expect.anything());
+    expect(mockTextures.addCanvas).toHaveBeenCalledWith('mahjong:dice_cup', expect.anything());
+    expect(mockTextures.addCanvas).toHaveBeenCalledWith('mahjong:dice_tray', expect.anything());
   });
 
   it('should transition to MainGameScene on create', () => {

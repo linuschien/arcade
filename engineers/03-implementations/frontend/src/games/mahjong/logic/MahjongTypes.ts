@@ -149,3 +149,20 @@ export interface GameStateSnapshot {
     actions: AvailableActions;
   }[];
 }
+
+export interface SeatingDrawPlayerInfo {
+  name: string;
+  isHuman: boolean;
+  initialPosIndex: number; // 0=Bottom (賭神), 1=Right (賭俠小刀), 2=Top (賭聖阿星), 3=Left (賭霸有喜)
+  drawnWind: SeatWind;
+  finalSeat: PlayerSeat;
+  isDealer: boolean;
+}
+
+export interface SeatingDrawDetails {
+  diceResult: [number, number, number];
+  diceSum: number;
+  firstDrawerIndex: number; // 0=Bottom, 1=Right, 2=Top, 3=Left
+  firstDrawerName: string;
+  players: SeatingDrawPlayerInfo[];
+}
