@@ -100,4 +100,27 @@ describe('MahjongDeck Unit Tests', () => {
     deck.setupWallBreak(17, 3);
     expect(deck.getBreakStackIndex()).toBe(35);
   });
+
+  it('should identify the 8 stacks (16 tiles) in the dead wall as iron stacks', () => {
+    // Setup wall break with diceSum = 9 at dealerSeat 0 -> breakSeat = 0, breakStackIndex = 9
+    deck.setupWallBreak(9, 0);
+    expect(deck.getBreakStackIndex()).toBe(9);
+
+    // Initial tail is at stack 8, dead wall spans counter-clockwise: 8, 7, 6, 5, 4, 3, 2, 1
+    for (let stack = 1; stack <= 8; stack++) {
+      expect(deck.isStackInDeadWall(stack)).toBe(true);
+    }
+    // Stacks outside the 8-stack window are not in dead wall
+    expect(deck.isStackInDeadWall(9)).toBe(false); // Wall head
+    expect(deck.isStackInDeadWall(0)).toBe(false);
+    expect(deck.isStackInDeadWall(71)).toBe(false);
+
+    // Draw from tail (槓尾/補花摸 2 張 = 1 墩) -> Tail moves CCW to stack 7
+    deck.drawTail();
+    deck.drawTail();
+
+    // Now dead wall spans 7 down to 0 (stack 8 consumed, stack 0 incorporated)
+    expect(deck.isStackInDeadWall(8)).toBe(false);
+    expect(deck.isStackInDeadWall(0)).toBe(true);
+  });
 });

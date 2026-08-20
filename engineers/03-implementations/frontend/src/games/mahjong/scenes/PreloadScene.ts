@@ -793,6 +793,40 @@ export class PreloadScene extends Phaser.Scene {
       }
     }
 
+    // 13b. 3D Dead Wall (16 鐵牌) Metallic Dark Gold Tile Blocks
+    if (!this.textures.exists('mahjong:wall_tile_stack_iron')) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 22;
+      canvas.height = 30;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Lower tile (Bronze metallic)
+        ctx.fillStyle = '#78350f';
+        this.drawRoundedRect(ctx, 1, 12, 20, 16, 2);
+        ctx.fill();
+        ctx.strokeStyle = '#b45309';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Upper tile (Dark Gold metallic)
+        ctx.fillStyle = '#92400e';
+        this.drawRoundedRect(ctx, 1, 1, 20, 16, 2);
+        ctx.fill();
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Top Gold Rim / Metallic lock
+        ctx.fillStyle = '#fef08a';
+        this.drawRoundedRect(ctx, 3, 3, 16, 3, 1);
+        ctx.fill();
+
+        if (typeof this.textures.addCanvas === 'function') {
+          this.textures.addCanvas('mahjong:wall_tile_stack_iron', canvas);
+        }
+      }
+    }
+
     // 14. Casino Leather & Gold Dice Cup (骰盅)
     if (!this.textures.exists('mahjong:dice_cup')) {
       const canvas = document.createElement('canvas');

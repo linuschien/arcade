@@ -258,37 +258,64 @@ export class MahjongGameState {
     this.deck.reset();
     this.deck.setupWallBreak(this.diceSum, this.dealerSeat);
 
-    // Deal 4 rounds of 4 tiles (16 tiles each in CCW order starting from East)
-    const dealingOrder: PlayerSeat[] = [];
-    for (let i = 0; i < 4; i++) {
-      dealingOrder.push(((this.dealerSeat + i) % 4) as PlayerSeat);
-    }
+    if (autoStartFlowers) {
+      // Deal 4 rounds of 4 tiles (16 tiles each in CCW order starting from East)
+      const dealingOrder: PlayerSeat[] = [];
+      for (let i = 0; i < 4; i++) {
+        dealingOrder.push(((this.dealerSeat + i) % 4) as PlayerSeat);
+      }
 
-    for (let round = 0; round < 4; round++) {
-      for (const seat of dealingOrder) {
-        for (let k = 0; k < 4; k++) {
-          const tile = this.deck.drawHead();
-          if (tile) {
-            this.players[seat].hand.push(tile);
-            this.listeners.forEach((l) => l.onDealingStep?.(seat, tile));
+      for (let round = 0; round < 4; round++) {
+        for (const seat of dealingOrder) {
+          for (let k = 0; k < 4; k++) {
+            const tile = this.deck.drawHead();
+            if (tile) {
+              this.players[seat].hand.push(tile);
+              this.listeners.forEach((l) => l.onDealingStep?.(seat, tile));
+            }
           }
         }
       }
-    }
 
-    // Dealer draws 17th jump tile (跳牌)
+      // Dealer draws 17th jump tile (跳牌)
+      const jumpTile = this.deck.drawHead();
+      if (jumpTile) {
+        this.players[this.dealerSeat].drawnTile = jumpTile;
+        this.listeners.forEach((l) => l.onDealingStep?.(this.dealerSeat, jumpTile));
+      }
+
+      // Sort all player hands into standard order
+      this.sortHandTiles();
+      this.startFlowerReplacement();
+    }
+  }
+
+  /**
+   * Draws a batch of tiles from the wall head directly to a player's hand during sequential dealing animation.
+   */
+  public dealStepBatch(seat: PlayerSeat, count: number): Tile[] {
+    const drawn: Tile[] = [];
+    for (let i = 0; i < count; i++) {
+      const tile = this.deck.drawHead();
+      if (tile) {
+        this.players[seat].hand.push(tile);
+        drawn.push(tile);
+        this.listeners.forEach((l) => l.onDealingStep?.(seat, tile));
+      }
+    }
+    return drawn;
+  }
+
+  /**
+   * Draws the dealer's 17th jump tile (跳牌) during sequential dealing animation.
+   */
+  public dealJumpTile(): Tile | null {
     const jumpTile = this.deck.drawHead();
     if (jumpTile) {
       this.players[this.dealerSeat].drawnTile = jumpTile;
       this.listeners.forEach((l) => l.onDealingStep?.(this.dealerSeat, jumpTile));
     }
-
-    // Sort all player hands into standard order
-    this.sortHandTiles();
-
-    if (autoStartFlowers) {
-      this.startFlowerReplacement();
-    }
+    return jumpTile;
   }
 
   /**
@@ -298,6 +325,74 @@ export class MahjongGameState {
     this.players.forEach((p) => {
       p.hand = MahjongHandEvaluator.sortTiles(p.hand);
     });
+  }
+
+  /**
+   * Executes ONE round of flower replacement across players in dealingOrder.
+   * Players replace their current flowers and draw from the tail of the wall.
+   * If newly drawn replacement tiles contain flowers, they are kept in hand for subsequent rounds.
+   */
+  public executeFlowerReplacementRound(order?: PlayerSeat[]): {
+    hasMoreFlowers: boolean;
+    results: { seat: PlayerSeat; flowers: Tile[]; newTiles: Tile[] }[];
+  } {
+    const dealingOrder =
+      order || ([0, 1, 2, 3].map((i) => ((this.dealerSeat + i) % 4) as PlayerSeat) as PlayerSeat[]);
+    const results: { seat: PlayerSeat; flowers: Tile[]; newTiles: Tile[] }[] = [];
+
+    for (const seat of dealingOrder) {
+      const p = this.players[seat];
+      const flowersToReplace: Tile[] = [];
+      const newTiles: Tile[] = [];
+
+      // 1. Check drawnTile (for dealer jump tile)
+      if (p.drawnTile && p.drawnTile.isFlower) {
+        const flower = p.drawnTile;
+        flowersToReplace.push(flower);
+        p.flowers.push(flower);
+        const rep = this.deck.drawTail();
+        if (rep) {
+          p.drawnTile = rep;
+          newTiles.push(rep);
+          this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, flower, rep));
+        } else {
+          p.drawnTile = null;
+        }
+      }
+
+      // 2. Check hand tiles
+      const nextHand: Tile[] = [];
+      for (const t of p.hand) {
+        if (t.isFlower) {
+          flowersToReplace.push(t);
+          p.flowers.push(t);
+          const rep = this.deck.drawTail();
+          if (rep) {
+            nextHand.push(rep);
+            newTiles.push(rep);
+            this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, t, rep));
+          }
+        } else {
+          nextHand.push(t);
+        }
+      }
+      p.hand = nextHand;
+
+      if (flowersToReplace.length > 0) {
+        results.push({
+          seat,
+          flowers: flowersToReplace,
+          newTiles,
+        });
+      }
+    }
+
+    // Check if any player still has flowers in hand or drawnTile for next round
+    const hasMoreFlowers = this.players.some(
+      (p) => (p.drawnTile && p.drawnTile.isFlower) || p.hand.some((t) => t.isFlower)
+    );
+
+    return { hasMoreFlowers, results };
   }
 
   /**
@@ -315,51 +410,15 @@ export class MahjongGameState {
       dealingOrder.push(((this.dealerSeat + i) % 4) as PlayerSeat);
     }
 
-    let hasAnyFlower = true;
     let iterations = 0;
-
-    while (hasAnyFlower && iterations < 10) {
-      hasAnyFlower = false;
+    while (iterations < 10) {
       iterations++;
-
-      for (const seat of dealingOrder) {
-        const p = this.players[seat];
-
-        // 1. Replace flower in drawnTile (if dealer jump tile is a flower)
-        while (p.drawnTile && p.drawnTile.isFlower) {
-          const flower = p.drawnTile;
-          p.flowers.push(flower);
-          const replacement = this.deck.drawTail();
-          p.drawnTile = replacement;
-          hasAnyFlower = true;
-          this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, flower, replacement!));
-        }
-
-        // 2. Replace flowers in hand tiles
-        let handHasFlower = true;
-        while (handHasFlower) {
-          handHasFlower = false;
-          const nextHand: Tile[] = [];
-          for (const t of p.hand) {
-            if (t.isFlower) {
-              p.flowers.push(t);
-              const replacement = this.deck.drawTail();
-              if (replacement) {
-                nextHand.push(replacement);
-                this.listeners.forEach((l) => l.onFlowerReplaced?.(seat, t, replacement));
-                if (replacement.isFlower) {
-                  handHasFlower = true;
-                }
-              }
-              hasAnyFlower = true;
-            } else {
-              nextHand.push(t);
-            }
-          }
-          p.hand = MahjongHandEvaluator.sortTiles(nextHand);
-        }
-      }
+      const { hasMoreFlowers } = this.executeFlowerReplacementRound(dealingOrder);
+      if (!hasMoreFlowers) break;
     }
+
+    // Sort all player hands into standard order
+    this.sortHandTiles();
 
     // Check instant flower wins (八仙過海 / 七搶一)
     for (const p of this.players) {

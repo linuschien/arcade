@@ -219,6 +219,16 @@ export class MahjongDeck {
   }
 
   /**
+   * Checks if a physical wall stack (0 to 71) currently belongs to the 16 Dead Wall (海底鐵牌) reserve.
+   */
+  public isStackInDeadWall(stackIndex: number): boolean {
+    const relStack = (stackIndex - this.breakStackIndex + 72) % 72;
+    const tailRelStack = Math.floor(this.tailIndex / 2);
+    const diff = (tailRelStack - relStack + 72) % 72;
+    return diff >= 0 && diff < 8;
+  }
+
+  /**
    * Regular draw from the head of the wall (clockwise dealing).
    * Returns null if remaining tiles would breach the 16 dead wall tiles.
    */

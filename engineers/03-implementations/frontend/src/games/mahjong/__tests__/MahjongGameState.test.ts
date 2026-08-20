@@ -4,9 +4,9 @@
  * pass lockout reset, four winds progression, and bankroll elimination.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MahjongGameState } from '../logic/MahjongGameState';
-import { Tile, Meld } from '../logic/MahjongTypes';
+import { Tile, Meld, PlayerSeat } from '../logic/MahjongTypes';
 
 describe('MahjongGameState Unit Tests', () => {
   let state: MahjongGameState;
@@ -182,6 +182,74 @@ describe('MahjongGameState Unit Tests', () => {
         expect(allTiles.length).toBe(16);
       }
     });
+  });
+
+  it('should support step-by-step 4-tile dealing and dealer 17th jump tile when autoStartFlowers is false', () => {
+    state.startNewMatch();
+    state.startDealing(false);
+
+    expect(state.phase).toBe('DEALING');
+    state.players.forEach((p) => {
+      expect(p.hand.length).toBe(0);
+      expect(p.drawnTile).toBeNull();
+    });
+
+    // 4 rounds of 4 tiles for each player
+    const dealingOrder = [0, 1, 2, 3].map((i) => ((state.dealerSeat + i) % 4) as PlayerSeat);
+    for (let round = 0; round < 4; round++) {
+      for (const seat of dealingOrder) {
+        const drawn = state.dealStepBatch(seat, 4);
+        expect(drawn.length).toBe(4);
+        expect(state.players[seat].hand.length).toBe((round + 1) * 4);
+      }
+    }
+
+    // Dealer draws 17th jump tile
+    const jumpTile = state.dealJumpTile();
+    expect(jumpTile).not.toBeNull();
+    expect(state.players[state.dealerSeat].drawnTile).toBe(jumpTile);
+
+    // Sort hands
+    state.sortHandTiles();
+    expect(state.players[0].hand.length).toBe(16);
+  });
+
+  it('should execute multi-round flower replacement sequentially across all 4 players', () => {
+    state.startNewMatch();
+    state.startDealing(false);
+    state.dealerSeat = 0;
+
+    // Setup players with flowers
+    const flower1: Tile = { id: 'f_spring', suit: 'FLOWERS', value: 1, name: '春', shortCode: '1f', isFlower: true };
+    const flower2: Tile = { id: 'f_summer', suit: 'FLOWERS', value: 2, name: '夏', shortCode: '2f', isFlower: true };
+    const normalTile1: Tile = { id: '1m_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' };
+    const normalTile2: Tile = { id: '2m_0', suit: 'CHARACTERS', value: 2, name: '二萬', shortCode: '2m' };
+
+    state.players[0].hand = [flower1, normalTile1];
+    state.players[1].hand = [normalTile2];
+    state.players[2].hand = [flower2];
+    state.players[3].hand = [normalTile1];
+
+    // Mock deck to return another flower on first tail draw, then normal tiles
+    const flower3: Tile = { id: 'f_autumn', suit: 'FLOWERS', value: 3, name: '秋', shortCode: '3f', isFlower: true };
+    const replacementTile: Tile = { id: '3m_0', suit: 'CHARACTERS', value: 3, name: '三萬', shortCode: '3m' };
+    vi.spyOn(state.deck, 'drawTail')
+      .mockReturnValueOnce(flower3) // Drawn by player 0 in round 1
+      .mockReturnValueOnce(replacementTile) // Drawn by player 2 in round 1
+      .mockReturnValueOnce(replacementTile); // Drawn by player 0 in round 2
+
+    // Round 1: Player 0 replaces flower1 -> gets flower3. Player 2 replaces flower2 -> gets replacementTile.
+    const round1 = state.executeFlowerReplacementRound();
+    expect(round1.hasMoreFlowers).toBe(true); // Player 0 now holds flower3 in hand!
+    expect(state.players[0].flowers).toContain(flower1);
+    expect(state.players[2].flowers).toContain(flower2);
+    expect(state.players[0].hand).toContain(flower3); // flower3 is kept in hand for round 2!
+
+    // Round 2: Player 0 replaces flower3 -> gets replacementTile
+    const round2 = state.executeFlowerReplacementRound();
+    expect(round2.hasMoreFlowers).toBe(false);
+    expect(state.players[0].flowers).toContain(flower3);
+    expect(state.players[0].hand.some((t) => t.isFlower)).toBe(false);
   });
 
   it('should arbitrate discard actions and reset Pass Lockout on discard', () => {

@@ -168,6 +168,11 @@ export class MainGameScene extends Phaser.Scene {
   private updateTileWalls(): void {
     this.wallSprites.forEach((sprite, idx) => {
       const count = this.gameState.deck.getStackRemainingTileCount(idx);
+      const isIron = this.gameState.deck.isStackInDeadWall(idx);
+      const targetTexture = isIron ? 'mahjong:wall_tile_stack_iron' : 'mahjong:wall_tile_stack';
+      if (sprite.texture?.key !== targetTexture && this.textures?.exists?.(targetTexture)) {
+        sprite.setTexture(targetTexture);
+      }
       if (count === 0) {
         sprite.setVisible(false);
       } else if (count === 1) {
@@ -862,6 +867,15 @@ export class MainGameScene extends Phaser.Scene {
    */
   private playDealerWallBreakDiceAnimation(): void {
     this.bankerDiceOutsideCompassContainer.setVisible(false);
+
+    // Hide central compass during dealer wall break to eliminate visual clutter
+    if (this.compassDial) this.compassDial.setVisible(false);
+    if (this.turnPointer) this.turnPointer.setVisible(false);
+    if (this.roundWindText) this.roundWindText.setVisible(false);
+    if (this.dealerStreakText) this.dealerStreakText.setVisible(false);
+    if (this.remainingTilesText) this.remainingTilesText.setVisible(false);
+    this.compassPlayerContainers.forEach((c) => c.setVisible(false));
+
     MahjongAudioService.playDiceRoll();
     this.diceContainer.removeAll(true);
     this.diceContainer.setVisible(true);
@@ -879,16 +893,19 @@ export class MainGameScene extends Phaser.Scene {
     const breakWind = windNames[breakPlayer.wind] || '東';
     const dealerName = this.gameState.players[this.gameState.dealerSeat].name;
 
+    // Solid opaque dark luxury panel (100% opacity, zero background compass peek)
     const bg = this.add.graphics();
-    bg.fillStyle(0x020617, 0.92);
-    bg.fillRoundedRect(-155, -45, 310, 90, 12);
-    bg.lineStyle(1.5, 0xd4af37, 0.9);
-    bg.strokeRoundedRect(-155, -45, 310, 90, 12);
+    bg.fillStyle(0x020617, 1.0);
+    bg.fillRoundedRect(-210, -55, 420, 110, 12);
+    bg.lineStyle(2, 0xd4af37, 1.0);
+    bg.strokeRoundedRect(-210, -55, 420, 110, 12);
+    bg.lineStyle(1, 0x334155, 0.9);
+    bg.strokeRoundedRect(-206, -51, 412, 102, 10);
     this.diceContainer.add(bg);
 
     for (let i = 0; i < 3; i++) {
-      const sprite = this.add.sprite((i - 1) * 44, -10, `mahjong:dice_${d[i]}`);
-      sprite.setDisplaySize(32, 32);
+      const sprite = this.add.sprite((i - 1) * 50, -18, `mahjong:dice_${d[i]}`);
+      sprite.setDisplaySize(38, 38);
       this.diceContainer.add(sprite);
 
       if (this.tweens) {
@@ -902,27 +919,48 @@ export class MainGameScene extends Phaser.Scene {
       }
     }
 
-    const infoText = this.add.text(
+    const titleText = this.add.text(
       0,
-      25,
-      `🎲 莊家${dealerName}開門 ${d[0]}+${d[1]}+${d[2]}=${diceSum} 點 (${breakWind}風第${diceSum}墩開門)`,
+      16,
+      `🎲 莊家【${dealerName}】擲出 ${d[0]} + ${d[1]} + ${d[2]} = ${diceSum} 點`,
       {
-        fontSize: '12px',
+        fontSize: '13px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#facc15',
         fontStyle: 'bold',
       }
-    );
-    infoText.setOrigin(0.5);
+    ).setOrigin(0.5);
+    this.diceContainer.add(titleText);
+
+    const infoText = this.add.text(
+      0,
+      36,
+      `➡️ 由【${breakPlayer.name}】(${breakWind}風位) 第 ${diceSum} 墩開門抓牌`,
+      {
+        fontSize: '12px',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
+        color: '#38bdf8',
+        fontStyle: 'bold',
+      }
+    ).setOrigin(0.5);
     this.diceContainer.add(infoText);
 
-    // 1. Center dice roll completes after 1400ms -> Central dice disappears, THEN Banker outer dice appear!
-    this.time.delayedCall(1400, () => {
+    // 1. Center dice roll completes after 1500ms -> Modal closes, compass restored, start 4-round dealing sequence!
+    this.time.delayedCall(1500, () => {
       this.diceContainer.setVisible(false);
-      this.bankerDiceOutsideCompassContainer.setVisible(true);
+
+      // Restore central compass
+      if (this.compassDial) this.compassDial.setVisible(true);
+      if (this.turnPointer) this.turnPointer.setVisible(true);
+      if (this.roundWindText) this.roundWindText.setVisible(true);
+      if (this.dealerStreakText) this.dealerStreakText.setVisible(true);
+      if (this.remainingTilesText) this.remainingTilesText.setVisible(true);
+      this.compassPlayerContainers.forEach((c) => c.setVisible(true));
+      this.updateCompass();
+
       this.updateBankerDicePosition();
       this.updateTileWalls();
-      this.animateTileSort();
+      this.executeSequentialDealingSequence();
     });
   }
 
@@ -935,7 +973,47 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   /**
-   * Animates card sorting cascade after dealing, then triggers flower replacement.
+   * Sequential 4-round dealing (each player takes 2 stacks / 4 tiles in CCW order) + dealer jump tile (17th tile).
+   */
+  private executeSequentialDealingSequence(): void {
+    const dealingOrder: PlayerSeat[] = [0, 1, 2, 3].map(
+      (i) => ((this.gameState.dealerSeat + i) % 4) as PlayerSeat
+    );
+
+    const totalRounds = 4;
+    const stepInterval = 180; // ms per 4-tile deal step
+
+    for (let round = 0; round < totalRounds; round++) {
+      for (let step = 0; step < 4; step++) {
+        const seat = dealingOrder[step];
+        const stepIndex = round * 4 + step;
+
+        this.time.delayedCall(stepIndex * stepInterval, () => {
+          this.gameState.dealStepBatch(seat, 4);
+          MahjongAudioService.playTileDraw();
+          this.updateTileWalls();
+          this.refreshAllSeats();
+        });
+      }
+    }
+
+    // Dealer draws 17th jump tile (跳牌) after all 16 steps
+    const jumpTileDelay = totalRounds * 4 * stepInterval + 150;
+    this.time.delayedCall(jumpTileDelay, () => {
+      this.gameState.dealJumpTile();
+      MahjongAudioService.playTileDraw();
+      this.updateTileWalls();
+      this.refreshAllSeats();
+
+      // Proceed to Tile Sort (理牌)
+      this.time.delayedCall(400, () => {
+        this.animateTileSort();
+      });
+    });
+  }
+
+  /**
+   * Animates card sorting cascade after dealing, then triggers multi-round flower replacement.
    */
   private animateTileSort(): void {
     MahjongAudioService.playTileSort();
@@ -947,10 +1025,94 @@ export class MainGameScene extends Phaser.Scene {
       container.animateTileSortSpin();
     });
 
-    // Proceed to multi-round flower replacement after sorting
+    // Proceed to sequential multi-round flower replacement after sorting
     this.time.delayedCall(700, () => {
-      this.gameState.startFlowerReplacement();
+      this.executeSequentialFlowerReplacement();
     });
+  }
+
+  /**
+   * Multi-round sequential flower replacement across 4 players (開門多輪輪替依序補花).
+   * 補花補到花時等其他三家補完一輪後，下一輪再補！
+   */
+  private executeSequentialFlowerReplacement(): void {
+    const dealingOrder: PlayerSeat[] = [0, 1, 2, 3].map(
+      (i) => ((this.gameState.dealerSeat + i) % 4) as PlayerSeat
+    );
+
+    let currentRound = 1;
+
+    const processNextRound = () => {
+      const { hasMoreFlowers, results } = this.gameState.executeFlowerReplacementRound(dealingOrder);
+
+      if (results.length === 0) {
+        // All players have 0 flowers left -> Flower replacement is 100% complete!
+        this.gameState.sortHandTiles();
+        this.refreshAllSeats();
+        this.updateTileWalls();
+        this.updateCompass();
+
+        // Check instant flower wins (八仙過海 / 七搶一)
+        for (const p of this.gameState.players) {
+          if (p.flowers.length === 8) {
+            this.gameState.settleFlowerWin(p.seat);
+            return;
+          }
+        }
+
+        // Check dealer Heavenly Win (天胡)
+        const dealer = this.gameState.players[this.gameState.dealerSeat];
+        if (
+          dealer.drawnTile &&
+          MahjongHandEvaluator.isWinningHand(dealer.hand, dealer.melds, dealer.drawnTile)
+        ) {
+          this.gameState.settleWin(this.gameState.dealerSeat, true, undefined, { isHeavenlyWin: true });
+          return;
+        }
+
+        // Start official player turn phase
+        this.gameState.isFirstTurnCycle = true;
+        this.gameState.currentTurnCount = 0;
+        this.gameState.startPlayerTurn(this.gameState.dealerSeat, false);
+
+        // If dealer is human (Seat 0), check self actions / ting
+        if (this.gameState.dealerSeat === 0) {
+          this.checkHumanSelfActions();
+          this.updateSmartTing();
+        } else {
+          // AI dealer discard turn
+          this.time.delayedCall(800, () => {
+            if (
+              this.gameState.currentTurnSeat === this.gameState.dealerSeat &&
+              this.gameState.phase === 'PLAYER_TURN'
+            ) {
+              this.gameState.stepAITurn(this.gameState.dealerSeat);
+            }
+          });
+        }
+        return;
+      }
+
+      // Animate each player's flower replacement in this round sequentially
+      results.forEach((res, idx) => {
+        this.time.delayedCall(idx * 700, () => {
+          MahjongAudioService.playFlowerReplace();
+          this.refreshAllSeats();
+          this.updateTileWalls();
+          this.updateCompass();
+        });
+      });
+
+      const roundDuration = results.length * 700 + 400;
+      this.time.delayedCall(roundDuration, () => {
+        currentRound++;
+        if (currentRound <= 10) {
+          processNextRound();
+        }
+      });
+    };
+
+    processNextRound();
   }
 
   /**

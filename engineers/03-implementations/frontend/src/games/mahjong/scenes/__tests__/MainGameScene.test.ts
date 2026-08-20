@@ -90,6 +90,7 @@ vi.mock('../../audio/MahjongAudioService', () => ({
     playVictory: vi.fn(),
     playGameOver: vi.fn(),
     playTileSelect: vi.fn(),
+    playTileDraw: vi.fn(),
     playTileDiscard: vi.fn(),
     playTileSort: vi.fn(),
     playDiceRoll: vi.fn(),
@@ -100,6 +101,7 @@ vi.mock('../../audio/MahjongAudioService', () => ({
     playVoiceKong: vi.fn(),
     playVoiceTing: vi.fn(),
     playVoiceHu: vi.fn(),
+    waitForVoiceComplete: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -194,13 +196,6 @@ describe('Mahjong MainGameScene Unit Tests', () => {
 
   it('should play seating dice roll animation and dealer wall break animation', () => {
     scene.create();
-    let timerCallback: Function | null = null;
-    (scene as any).time = {
-      delayedCall: vi.fn((_delay, cb) => {
-        timerCallback = cb;
-      }),
-    };
-
     const audioService = vi.mocked(MahjongAudioService);
     audioService.playDiceRoll.mockClear();
     audioService.playTileSort.mockClear();
@@ -214,8 +209,8 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     (scene as any).playDealerWallBreakDiceAnimation();
     expect(audioService.playDiceRoll).toHaveBeenCalledTimes(1);
 
-    // Simulate dealer dice roll completion timer -> triggers animateTileSort
-    if (timerCallback) (timerCallback as Function)();
+    // 3. Test Animate Tile Sort
+    (scene as any).animateTileSort();
     expect(audioService.playTileSort).toHaveBeenCalledTimes(1);
   });
 

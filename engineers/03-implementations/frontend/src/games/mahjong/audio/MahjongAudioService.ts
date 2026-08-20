@@ -113,6 +113,19 @@ class MahjongAudioServiceImpl {
   }
 
   /**
+   * SFX_TILE_DRAW (Quick subtle tile slide/lift click).
+   */
+  public playTileDraw(): void {
+    SoundEngine.playTone({
+      type: 'sine',
+      frequency: 620,
+      targetFrequency: 980,
+      durationSeconds: 0.035,
+      volume: 0.07,
+    });
+  }
+
+  /**
    * SFX_TILE_DISCARD (Crisp, solid wooden table tile strike).
    */
   public playTileDiscard(): void {
