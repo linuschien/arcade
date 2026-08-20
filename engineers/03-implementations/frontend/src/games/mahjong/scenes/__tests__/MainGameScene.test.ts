@@ -475,6 +475,7 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     (scene as any).add.sprite.mockClear();
     (scene as any).add.container.mockClear();
     (scene as any).seatingCinematicContainer.setVisible.mockClear();
+    (scene as any).compassDial.setVisible.mockClear();
 
     // Trigger SEATING_DRAW phase
     (scene as any).handlePhaseChange('SEATING_DRAW');
@@ -482,7 +483,10 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     // 1. seatingCinematicContainer should be made visible
     expect((scene as any).seatingCinematicContainer.setVisible).toHaveBeenCalledWith(true);
 
-    // 2. Dice Tray and Dice Cup sprites should be created
+    // 2. Central compass dial should be hidden during seating draw
+    expect((scene as any).compassDial.setVisible).toHaveBeenCalledWith(false);
+
+    // 3. Dice Tray and Dice Cup sprites should be created
     const spriteCalls = (scene as any).add.sprite.mock.calls;
     const trayCall = spriteCalls.find((c: any[]) => c[2] === 'mahjong:dice_tray');
     const cupCall = spriteCalls.find((c: any[]) => c[2] === 'mahjong:dice_cup');
@@ -497,12 +501,16 @@ describe('Mahjong MainGameScene Unit Tests', () => {
 
     (scene as any).seatingCinematicContainer.removeAll.mockClear();
     (scene as any).seatingCinematicContainer.setVisible.mockClear();
+    (scene as any).compassDial.setVisible.mockClear();
 
     (scene as any).finishSeatingSequence();
 
     // Verify complete cleanup
     expect((scene as any).seatingCinematicContainer.removeAll).toHaveBeenCalledWith(true);
     expect((scene as any).seatingCinematicContainer.setVisible).toHaveBeenCalledWith(false);
+
+    // Verify compass restored
+    expect((scene as any).compassDial.setVisible).toHaveBeenCalledWith(true);
 
     // Verify game transitions to dealing phase
     expect(startDealingSpy).toHaveBeenCalledWith(false);

@@ -194,6 +194,7 @@ export class MainGameScene extends Phaser.Scene {
 
     const dial = this.add.sprite(cx, cy, 'mahjong:compass_dial');
     dial.setDisplaySize(156, 156);
+    this.compassDial = dial;
 
     // Turn pointer (Breathing gold needle)
     this.turnPointer = this.add.graphics();
@@ -484,10 +485,11 @@ export class MainGameScene extends Phaser.Scene {
 
     // Hide central compass during Seating Draw to eliminate visual clutter
     if (this.compassDial) this.compassDial.setVisible(false);
+    if (this.turnPointer) this.turnPointer.setVisible(false);
     if (this.roundWindText) this.roundWindText.setVisible(false);
     if (this.dealerStreakText) this.dealerStreakText.setVisible(false);
     if (this.remainingTilesText) this.remainingTilesText.setVisible(false);
-    this.compassSeatWindTexts.forEach((t) => t.setVisible(false));
+    this.compassPlayerContainers.forEach((c) => c.setVisible(false));
 
     const details = this.gameState.seatingDrawDetails;
     if (!details) {
@@ -844,10 +846,11 @@ export class MainGameScene extends Phaser.Scene {
 
     // Restore central compass
     if (this.compassDial) this.compassDial.setVisible(true);
+    if (this.turnPointer) this.turnPointer.setVisible(true);
     if (this.roundWindText) this.roundWindText.setVisible(true);
     if (this.dealerStreakText) this.dealerStreakText.setVisible(true);
     if (this.remainingTilesText) this.remainingTilesText.setVisible(true);
-    this.compassSeatWindTexts.forEach((t) => t.setVisible(true));
+    this.compassPlayerContainers.forEach((c) => c.setVisible(true));
 
     this.refreshAllSeats();
     this.updateCompass();
