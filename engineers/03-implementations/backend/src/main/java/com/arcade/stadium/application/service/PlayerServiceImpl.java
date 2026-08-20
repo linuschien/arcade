@@ -8,7 +8,7 @@ import com.arcade.stadium.domain.dto.*;
 import com.arcade.stadium.domain.exception.ResourceNotFoundException;
 import com.arcade.stadium.domain.model.Player;
 import com.arcade.stadium.domain.model.UserWallet;
-import org.springframework.beans.factory.annotation.Value;
+import com.arcade.stadium.infrastructure.security.UserAuthentication;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.stereotype.Service;
@@ -20,9 +20,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Value;
-import java.util.List;
 
 @Service
 public class PlayerServiceImpl implements PlayerCommandService, PlayerQueryService {
@@ -55,12 +52,17 @@ public class PlayerServiceImpl implements PlayerCommandService, PlayerQueryServi
         Instant now = Instant.now();
         Player newPlayer = new Player(null, email, now, now, null);
 
-        return playerRepository.save(newPlayer)
-                .flatMap(savedPlayer -> {
-                    UserWallet newWallet = new UserWallet(null, savedPlayer.id(), 10, 0, now, null, now, now, null);
-                    return walletRepository.save(newWallet)
-                            .map(savedWallet -> mapToResponse(savedPlayer, savedWallet));
-                });
+        return Mono.deferContextual(ctx -> {
+            UserAuthentication auth = ctx.getOrDefault(UserAuthentication.class, null);
+            int initialBonus = (auth != null && auth.isGuest()) ? 100 : 0;
+
+            return playerRepository.save(newPlayer)
+                    .flatMap(savedPlayer -> {
+                        UserWallet newWallet = new UserWallet(null, savedPlayer.id(), 10, initialBonus, now, null, now, now, null);
+                        return walletRepository.save(newWallet)
+                                .map(savedWallet -> mapToResponse(savedPlayer, savedWallet));
+                    });
+        });
     }
 
     private Mono<UserWallet> checkAndApplyLazyReset(UserWallet wallet) {

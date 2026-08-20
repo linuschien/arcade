@@ -26,22 +26,19 @@ public class AuthenticationWebFilter implements WebFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String rawHeader = exchange.getRequest().getHeaders().getFirst("X-Goog-Authenticated-User-Email");
-        String email = parseEmail(rawHeader);
+        boolean isGuest = (rawHeader == null || rawHeader.isBlank());
+        String email = isGuest ? defaultGuestEmail : parseEmail(rawHeader);
         boolean isAdmin = adminEmails.contains(email);
 
-        UserAuthentication auth = new UserAuthentication(email, isAdmin);
+        UserAuthentication auth = new UserAuthentication(email, isAdmin, isGuest);
 
         return chain.filter(exchange)
                 .contextWrite(Context.of(UserAuthentication.class, auth));
     }
 
     private String parseEmail(String rawHeader) {
-        if (rawHeader == null || rawHeader.isBlank()) {
-            return defaultGuestEmail;
-        }
         if (rawHeader.contains(":")) {
-            String[] parts = rawHeader.split(":");
-            return parts[parts.length - 1];
+            return rawHeader.substring(rawHeader.lastIndexOf(':') + 1);
         }
         return rawHeader;
     }

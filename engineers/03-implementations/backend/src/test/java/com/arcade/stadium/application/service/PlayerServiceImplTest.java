@@ -59,6 +59,34 @@ class PlayerServiceImplTest {
     }
 
     @Test
+    void testWhoamiGuestGets100AdminBonusCoins() {
+        UUID playerId = UUID.randomUUID();
+        UUID walletId = UUID.randomUUID();
+        Instant now = Instant.now();
+        Player newGuest = new Player(playerId, "guest@arcade-stadium.local", now, now, null);
+        UserWallet wallet = new UserWallet(walletId, playerId, 10, 100, now, 1, now, now, null);
+
+        when(playerRepository.findByGcpIapEmail("guest@arcade-stadium.local")).thenReturn(Mono.empty());
+        when(playerRepository.save(any(Player.class))).thenReturn(Mono.just(newGuest));
+        when(walletRepository.save(any(UserWallet.class))).thenAnswer(inv -> {
+            UserWallet toSave = inv.getArgument(0);
+            assertEquals(100, toSave.adminBonusCredit());
+            return Mono.just(wallet);
+        });
+
+        playerService.whoami("guest@arcade-stadium.local")
+                .contextWrite(reactor.util.context.Context.of(
+                        com.arcade.stadium.infrastructure.security.UserAuthentication.class,
+                        new com.arcade.stadium.infrastructure.security.UserAuthentication("guest@arcade-stadium.local", false, true)))
+                .as(StepVerifier::create)
+                .consumeNextWith(resp -> {
+                    assertEquals(playerId, resp.id());
+                    assertEquals(100, resp.wallet().adminBonusCredit());
+                })
+                .verifyComplete();
+    }
+
+    @Test
     void testWhoamiNewPlayerProvisioning() {
         Instant now = Instant.now();
         UUID playerId = UUID.randomUUID();
