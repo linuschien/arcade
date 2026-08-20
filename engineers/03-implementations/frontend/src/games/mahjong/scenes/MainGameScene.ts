@@ -921,7 +921,7 @@ export class MainGameScene extends Phaser.Scene {
   private playDealerWallBreakDiceAnimation(): void {
     this.bankerDiceOutsideCompassContainer.setVisible(false);
 
-    // Hide central compass during dealer wall break to eliminate visual clutter
+    // Hide central compass during dealer wall break
     if (this.compassDial) this.compassDial.setVisible(false);
     if (this.turnPointer) this.turnPointer.setVisible(false);
     if (this.roundWindText) this.roundWindText.setVisible(false);
@@ -932,52 +932,56 @@ export class MainGameScene extends Phaser.Scene {
     MahjongAudioService.playDiceRoll();
     this.diceContainer.removeAll(true);
     this.diceContainer.setVisible(true);
+    this.diceContainer.setDepth(200);
 
-    const windNames: Record<string, string> = {
-      EAST: '東',
-      SOUTH: '南',
-      WEST: '西',
-      NORTH: '北',
-    };
     const d = this.gameState.diceResult;
     const diceSum = d[0] + d[1] + d[2];
     const breakSeat = (this.gameState.dealerSeat + (diceSum - 1)) % 4;
     const breakPlayer = this.gameState.players[breakSeat];
-    const breakWind = windNames[breakPlayer.wind] || '東';
     const dealerName = this.gameState.players[this.gameState.dealerSeat].name;
 
-    // Solid opaque dark luxury panel (100% opacity, zero background compass peek)
+    // ── 1. Full-screen dark overlay (covers seat discard-zone dashed lines) ──
+    // diceContainer is at (cx, cy) = (640, 360); use negative offset to fill screen
+    const screenOverlay = this.add.graphics();
+    screenOverlay.fillStyle(0x000000, 0.82);
+    screenOverlay.fillRect(-640, -360, 1280, 720);
+    this.diceContainer.add(screenOverlay);
+
+    // ── 2. Larger panel ───────────────────────────────────────────────────────
+    const PW = 480;
+    const PH = 200;
     const bg = this.add.graphics();
     bg.fillStyle(0x020617, 1.0);
-    bg.fillRoundedRect(-210, -55, 420, 110, 12);
+    bg.fillRoundedRect(-PW / 2, -PH / 2, PW, PH, 14);
     bg.lineStyle(2, 0xd4af37, 1.0);
-    bg.strokeRoundedRect(-210, -55, 420, 110, 12);
-    bg.lineStyle(1, 0x334155, 0.9);
-    bg.strokeRoundedRect(-206, -51, 412, 102, 10);
+    bg.strokeRoundedRect(-PW / 2, -PH / 2, PW, PH, 14);
+    bg.lineStyle(1, 0x334155, 0.8);
+    bg.strokeRoundedRect(-PW / 2 + 4, -PH / 2 + 4, PW - 8, PH - 8, 11);
     this.diceContainer.add(bg);
 
+    // ── 3. Dice sprites (larger: 52px) ───────────────────────────────────────
     for (let i = 0; i < 3; i++) {
-      const sprite = this.add.sprite((i - 1) * 50, -18, `mahjong:dice_${d[i]}`);
-      sprite.setDisplaySize(38, 38);
+      const sprite = this.add.sprite((i - 1) * 64, -58, `mahjong:dice_${d[i]}`);
+      sprite.setDisplaySize(52, 52);
       this.diceContainer.add(sprite);
 
       if (this.tweens) {
         this.tweens.add({
           targets: sprite,
-          angle: { from: -180, to: 180 },
-          scale: { from: 0.7, to: 1.0 },
-          duration: 600,
-          ease: 'Cubic.easeOut',
+          angle: { from: -180, to: 0 },
+          scale: { from: 0.5, to: 1.0 },
+          duration: 650,
+          ease: 'Back.easeOut',
         });
       }
     }
 
+    // ── 4. Larger text ───────────────────────────────────────────────────────
     const titleText = this.add.text(
-      0,
-      16,
+      0, -4,
       `🎲 莊家【${dealerName}】擲出 ${d[0]} + ${d[1]} + ${d[2]} = ${diceSum} 點`,
       {
-        fontSize: '13px',
+        fontSize: '20px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#facc15',
         fontStyle: 'bold',
@@ -985,24 +989,94 @@ export class MainGameScene extends Phaser.Scene {
     ).setOrigin(0.5);
     this.diceContainer.add(titleText);
 
+    // ── 5. Directional arrow (rotates while dice spin → settles on break wall) ─
+    // Arrow drawn pointing RIGHT (angle=0) using Graphics
+    const arrowContainer = this.add.container(0, 48);
+
+    const arrowGfx = this.add.graphics();
+    // Shaft
+    arrowGfx.fillStyle(0xf59e0b, 1.0);
+    arrowGfx.fillRect(-34, -7, 42, 14);
+    // Head (triangle)
+    arrowGfx.fillTriangle(36, 0, 4, -18, 4, 18);
+    // Bright highlight
+    arrowGfx.fillStyle(0xfef3c7, 0.6);
+    arrowGfx.fillRect(-32, -3, 38, 5);
+
+    arrowContainer.add(arrowGfx);
+    this.diceContainer.add(arrowContainer);
+
+    // Wall direction: seat → rotation angle (pointing toward that wall)
+    // Seat 0 = bottom (player's wall) → down → 90°
+    // Seat 1 = right wall            → right → 0°
+    // Seat 2 = top wall              → up → -90° (270°)
+    // Seat 3 = left wall             → left → 180°
+    const targetAngleDeg: Record<number, number> = { 0: 90, 1: 0, 2: -90, 3: 180 };
+    const targetRad = (targetAngleDeg[breakSeat] ?? 0) * (Math.PI / 180);
+
+    // Phase 1: fast spin (use .rotation — accumulates without normalization)
+    const SPIN_RPM = 3.5; // rotations per second during dice roll
+    const SPIN_MS = 700;  // spin for 700ms
+    const spinRotation = Math.PI * 2 * SPIN_RPM * (SPIN_MS / 1000);
+
+    let spinTween: Phaser.Tweens.Tween | undefined;
+    if (this.tweens) {
+      spinTween = this.tweens.add({
+        targets: arrowContainer,
+        rotation: `+=${spinRotation * 100}`, // large value, stopped early
+        duration: SPIN_MS * 100,
+        ease: 'Linear',
+      });
+    }
+
+    // Phase 2: after 700ms, stop spin + decelerate to correct angle
+    if (this.time) {
+      this.time.delayedCall(SPIN_MS, () => {
+        if (spinTween) spinTween.stop();
+        const cur = arrowContainer.rotation; // raw accumulated radians
+        // Snap to correct direction via shortest remaining path + 1.5 extra rotations
+        const curNorm = cur % (Math.PI * 2);
+        const delta = ((targetRad - curNorm) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+        const finalRot = cur + Math.PI * 2 * 1.5 + delta; // 1.5 extra spins then land
+
+        if (this.tweens) {
+          this.tweens.add({
+            targets: arrowContainer,
+            rotation: finalRot,
+            duration: 800,
+            ease: 'Cubic.easeOut',
+          });
+        }
+      });
+    }
+
+    // Info text (show after arrow settles)
     const infoText = this.add.text(
-      0,
-      36,
-      `➡️ 由【${breakPlayer.name}】(${breakWind}風位) 第 ${diceSum} 墩開門抓牌`,
+      0, 85,
+      `【${breakPlayer.name}】${this.gameState.getEffectiveWind(breakSeat as PlayerSeat)}風牆 第 ${diceSum} 墩開門`,
       {
-        fontSize: '12px',
+        fontSize: '18px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#38bdf8',
         fontStyle: 'bold',
       }
-    ).setOrigin(0.5);
+    ).setOrigin(0.5).setAlpha(0);
     this.diceContainer.add(infoText);
 
-    // 1. Center dice roll completes after 1500ms -> Modal closes, compass restored, start 4-round dealing sequence!
-    this.time.delayedCall(1500, () => {
+    if (this.tweens) {
+      this.tweens.add({
+        targets: infoText,
+        alpha: 1,
+        duration: 350,
+        delay: 900, // after arrow settles
+        ease: 'Sine.easeOut',
+      });
+    }
+
+    // ── 6. Close panel after 2200ms → restore compass → start dealing ─────────
+    this.time.delayedCall(2200, () => {
       this.diceContainer.setVisible(false);
 
-      // Restore central compass
       if (this.compassDial) this.compassDial.setVisible(true);
       if (this.turnPointer) this.turnPointer.setVisible(true);
       if (this.roundWindText) this.roundWindText.setVisible(true);
@@ -1016,6 +1090,7 @@ export class MainGameScene extends Phaser.Scene {
       this.executeSequentialDealingSequence();
     });
   }
+
 
   /**
    * Banker dice are now rendered inside each seat container to the right of the flower rack.
