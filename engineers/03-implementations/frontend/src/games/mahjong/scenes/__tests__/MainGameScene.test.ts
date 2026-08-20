@@ -510,4 +510,51 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     // Verify game transitions to dealing phase
     expect(startDealingSpy).toHaveBeenCalledWith(false);
   });
+
+  it('should show pulsing discard marker Container with two layers on highlightLatestDiscard', () => {
+    scene.create();
+    (scene as any).tweens = { add: vi.fn().mockReturnValue({ stop: vi.fn() }), killTweensOf: vi.fn() };
+
+    // Mock seatContainers[0].getLatestDiscardWorldPosition to return a valid position
+    (scene as any).seatContainers[0].getLatestDiscardWorldPosition = vi.fn().mockReturnValue({ x: 640, y: 600 });
+
+    const marker = (scene as any).discardMarker;
+    marker.setPosition.mockClear();
+    marker.setAngle.mockClear();
+    marker.setVisible.mockClear();
+    marker.setAlpha.mockClear();
+
+    (scene as any).highlightLatestDiscard(0, { id: 'test', suit: 'BAMBOO', value: 1 });
+
+    // Marker should be repositioned at the discard tile world position
+    expect(marker.setPosition).toHaveBeenCalledWith(640, 600);
+    // Seat 0 angle is 0 (player-facing up)
+    expect(marker.setAngle).toHaveBeenCalledWith(0);
+    // Marker should be made visible
+    expect(marker.setVisible).toHaveBeenCalledWith(true);
+    // Alpha reset to 1 before pulse tween starts
+    expect(marker.setAlpha).toHaveBeenCalledWith(1);
+
+    // Pulse tween should be started (tweens.add called)
+    expect((scene as any).tweens.add).toHaveBeenCalledWith(
+      expect.objectContaining({ targets: marker, yoyo: true, repeat: -1 })
+    );
+  });
+
+  it('should show board-clear overlay animation before starting next round on "繼續下一局" click', () => {
+    scene.create();
+    (scene as any).tweens = { add: vi.fn().mockReturnValue({ stop: vi.fn() }), killTweensOf: vi.fn() };
+    const gameState = (scene as any).gameState;
+    const startDealingSpy = vi.spyOn(gameState, 'startDealing');
+
+    (scene as any).animateBoardClearBeforeNewRound();
+
+    // An overlay container should be created (via add.container)
+    expect((scene as any).add.container).toHaveBeenCalledWith(640, 360);
+    // Tween should be called to fade the overlay and seat containers
+    expect((scene as any).tweens.add).toHaveBeenCalled();
+
+    // Because fade is async via tweens, startDealing is NOT called synchronously yet
+    expect(startDealingSpy).not.toHaveBeenCalled();
+  });
 });

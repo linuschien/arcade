@@ -43,8 +43,11 @@ export class MainGameScene extends Phaser.Scene {
   private wallContainer!: Phaser.GameObjects.Container;
   private wallSprites: Phaser.GameObjects.Sprite[] = [];
 
-  // Latest Discard Indicator
-  private discardMarker!: Phaser.GameObjects.Graphics;
+  // Latest Discard Indicator (Multi-layer pulsing glow frame)
+  private discardMarker!: Phaser.GameObjects.Container;
+  private discardMarkerGlow!: Phaser.GameObjects.Graphics;
+  private discardMarkerFrame!: Phaser.GameObjects.Graphics;
+  private discardMarkerTween: Phaser.Tweens.Tween | null = null;
 
   // Smart Ting UI
   private tingContainer!: Phaser.GameObjects.Container;
@@ -315,23 +318,57 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private createDiscardMarker(): void {
-    this.discardMarker = this.add.graphics();
-    this.discardMarker.lineStyle(2.5, 0x00f0ff, 1);
-    this.discardMarker.strokeRoundedRect(-18, -24, 34, 46, 3);
+    // Build a Container with two layers: outer diffuse glow + inner sharp frame
+    this.discardMarker = this.add.container(0, 0);
     this.discardMarker.setDepth(50);
     this.discardMarker.setVisible(false);
+
+    // Outer glow (wider, semi-transparent amber-orange)
+    this.discardMarkerGlow = this.add.graphics();
+    this.discardMarkerGlow.lineStyle(6, 0xff9900, 0.55);
+    this.discardMarkerGlow.strokeRoundedRect(-20, -26, 38, 50, 5);
+    this.discardMarkerGlow.lineStyle(4, 0xffcc00, 0.3);
+    this.discardMarkerGlow.strokeRoundedRect(-22, -28, 42, 54, 7);
+    this.discardMarker.add(this.discardMarkerGlow);
+
+    // Inner crisp neon-orange frame
+    this.discardMarkerFrame = this.add.graphics();
+    this.discardMarkerFrame.lineStyle(3, 0xff6600, 1);
+    this.discardMarkerFrame.strokeRoundedRect(-18, -24, 34, 46, 3);
+    this.discardMarkerFrame.lineStyle(1.5, 0xffee00, 0.9);
+    this.discardMarkerFrame.strokeRoundedRect(-17, -23, 32, 44, 2);
+    this.discardMarker.add(this.discardMarkerFrame);
   }
 
   private highlightLatestDiscard(seat: PlayerSeat, _tile: Tile): void {
     const pos = this.seatContainers[seat].getLatestDiscardWorldPosition();
     if (!pos) {
       this.discardMarker.setVisible(false);
+      if (this.discardMarkerTween) {
+        this.discardMarkerTween.stop();
+        this.discardMarkerTween = null;
+      }
       return;
     }
     const seatAngles = [0, 270, 180, 90];
     this.discardMarker.setPosition(pos.x, pos.y);
     this.discardMarker.setAngle(seatAngles[seat]);
+    this.discardMarker.setAlpha(1);
     this.discardMarker.setVisible(true);
+
+    // Stop any existing tween then start pulsing alpha animation
+    if (this.discardMarkerTween) {
+      this.discardMarkerTween.stop();
+      this.discardMarkerTween = null;
+    }
+    this.discardMarkerTween = this.tweens.add({
+      targets: this.discardMarker,
+      alpha: { from: 1, to: 0.25 },
+      duration: 380,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
   }
 
   private createSmartTingUI(): void {
@@ -432,6 +469,10 @@ export class MainGameScene extends Phaser.Scene {
         else MahjongAudioService.playVoiceKong();
 
         this.discardMarker.setVisible(false);
+        if (this.discardMarkerTween) {
+          this.discardMarkerTween.stop();
+          this.discardMarkerTween = null;
+        }
         this.actionBarContainer.setVisible(false);
         this.subMenuContainer.setVisible(false);
         this.refreshAllSeats();
@@ -440,6 +481,10 @@ export class MainGameScene extends Phaser.Scene {
       },
       onSettlement: (breakdown: SettlementBreakdown) => {
         this.discardMarker.setVisible(false);
+        if (this.discardMarkerTween) {
+          this.discardMarkerTween.stop();
+          this.discardMarkerTween = null;
+        }
         this.tingContainer.setVisible(false);
         this.tingContainer.removeAll(true);
         this.actionBarContainer.setVisible(false);
@@ -448,6 +493,10 @@ export class MainGameScene extends Phaser.Scene {
       },
       onGameOver: (summary) => {
         this.discardMarker.setVisible(false);
+        if (this.discardMarkerTween) {
+          this.discardMarkerTween.stop();
+          this.discardMarkerTween = null;
+        }
         this.tingContainer.setVisible(false);
         this.tingContainer.removeAll(true);
         this.actionBarContainer.setVisible(false);
@@ -485,6 +534,10 @@ export class MainGameScene extends Phaser.Scene {
    */
   private playSeatingCinematicSequence(): void {
     this.discardMarker.setVisible(false);
+    if (this.discardMarkerTween) {
+      this.discardMarkerTween.stop();
+      this.discardMarkerTween = null;
+    }
     this.bankerDiceOutsideCompassContainer.setVisible(false);
     this.diceContainer.setVisible(false);
 
@@ -2131,9 +2184,74 @@ export class MainGameScene extends Phaser.Scene {
       this.settlementContainer.setVisible(false);
       this.tingContainer.setVisible(false);
       this.tingContainer.removeAll(true);
-      this.refreshAllSeats(false);
       MahjongAudioService.playBGM();
-      this.gameState.startDealing(false);
+      this.animateBoardClearBeforeNewRound();
+    });
+  }
+
+  /**
+   * 整理牌桌動畫：局結束後，先淡出所有座位與牌牆，顯示「整理牌桌...」提示，
+   * 讓玩家有視覺上洗牌砌牌的儀式感，再正式進入下一局的開局流程。
+   */
+  private animateBoardClearBeforeNewRound(): void {
+    // 1. Flash an overlay message '整理牌桌...' at the center
+    const overlay = this.add.container(640, 360);
+    overlay.setDepth(190);
+
+    const overlayBg = this.add.graphics();
+    overlayBg.fillStyle(0x020617, 0.72);
+    overlayBg.fillRoundedRect(-160, -28, 320, 56, 10);
+    overlayBg.lineStyle(1.5, 0xd4af37, 0.8);
+    overlayBg.strokeRoundedRect(-160, -28, 320, 56, 10);
+    overlay.add(overlayBg);
+
+    const overlayText = this.add.text(0, 0, '🀄 整理牌桌...', {
+      fontSize: '22px',
+      fontFamily: '"Microsoft JhengHei", sans-serif',
+      color: '#facc15',
+      fontStyle: 'bold',
+    });
+    overlayText.setOrigin(0.5);
+    overlay.add(overlayText);
+    overlay.setAlpha(0);
+
+    // 2. Gather all seat containers and wall sprites to fade
+    const fadeTargets: Phaser.GameObjects.GameObject[] = [
+      ...this.seatContainers,
+      ...this.wallSprites,
+    ];
+
+    this.tweens.add({
+      targets: overlay,
+      alpha: 1,
+      duration: 220,
+      ease: 'Sine.easeOut',
+    });
+
+    this.tweens.add({
+      targets: fadeTargets,
+      alpha: 0,
+      duration: 400,
+      ease: 'Sine.easeInOut',
+      onComplete: () => {
+        // 3. After fade-out, restore seat/wall alpha and clear state for new round
+        fadeTargets.forEach((t) => {
+          (t as unknown as Phaser.GameObjects.Components.Alpha).setAlpha(1);
+        });
+        // 4. Fade out the overlay text then kick off next round
+        this.tweens.add({
+          targets: overlay,
+          alpha: 0,
+          duration: 220,
+          delay: 80,
+          ease: 'Sine.easeIn',
+          onComplete: () => {
+            overlay.destroy();
+            this.refreshAllSeats(false);
+            this.gameState.startDealing(false);
+          },
+        });
+      },
     });
   }
 
