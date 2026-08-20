@@ -123,4 +123,24 @@ describe('MahjongDeck Unit Tests', () => {
     expect(deck.isStackInDeadWall(8)).toBe(false);
     expect(deck.isStackInDeadWall(0)).toBe(true);
   });
+
+  it('should return false for all isStackInDeadWall calls before setupWallBreak() is invoked (no dice rolled yet)', () => {
+    // Fresh deck — setupWallBreak() has NOT been called yet
+    const freshDeck = new MahjongDeck();
+    for (let i = 0; i < 72; i++) {
+      expect(freshDeck.isStackInDeadWall(i)).toBe(false);
+    }
+
+    // Also false after reset()
+    freshDeck.setupWallBreak(9, 0); // call once to set ready
+    freshDeck.reset(); // reset clears ready flag
+    for (let i = 0; i < 72; i++) {
+      expect(freshDeck.isStackInDeadWall(i)).toBe(false);
+    }
+
+    // After a new setupWallBreak, it should work correctly again
+    freshDeck.setupWallBreak(9, 0);
+    expect(freshDeck.isStackInDeadWall(1)).toBe(true); // inside dead wall
+    expect(freshDeck.isStackInDeadWall(9)).toBe(false); // break point itself
+  });
 });

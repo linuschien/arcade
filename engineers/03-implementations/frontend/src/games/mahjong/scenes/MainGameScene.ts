@@ -2152,7 +2152,8 @@ export class MainGameScene extends Phaser.Scene {
       }
 
       const tSeat = this.add.text(colX.seat, curY, `${arrows[i]} ${p.name}`, { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: rowColor, fontStyle });
-      const tWind = this.add.text(colX.wind, curY, windNames[p.wind] || '東風', { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: rowColor, fontStyle });
+      const effectiveWind = this.gameState.getEffectiveWind(i as PlayerSeat);
+      const tWind = this.add.text(colX.wind, curY, windNames[effectiveWind] || '東風', { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: rowColor, fontStyle });
       const tId = this.add.text(colX.id, curY, p.isDealer ? '莊家' : '閒家', { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: p.isDealer ? '#fbbf24' : rowColor, fontStyle });
       const tRole = this.add.text(colX.role, curY, roleText, { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: isWinner ? '#4ade80' : isVictim ? '#f87171' : '#94a3b8', fontStyle });
       const tDelta = this.add.text(colX.delta, curY, deltaStr, { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: delta > 0 ? '#4ade80' : delta < 0 ? '#f87171' : '#94a3b8', fontStyle }).setOrigin(1, 0);

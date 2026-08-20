@@ -136,6 +136,7 @@ export class MahjongDeck {
     this.tailDrawnCount = 0;
     this.deadWallReserve = 16;
     this.isLastDrawFromTail = false;
+    this.isWallBreakReady = false; // Clear until dice are rolled
   }
 
   /**
@@ -149,6 +150,8 @@ export class MahjongDeck {
   }
 
   private breakStackIndex: number = 0;
+  /** True only after setupWallBreak() is called. False after reset(). */
+  private isWallBreakReady: boolean = false;
 
   /**
    * Sets up the circular wall break using 3 dice sum S in [3, 18].
@@ -187,6 +190,7 @@ export class MahjongDeck {
     this.totalDrawnCount = 0;
     this.tailDrawnCount = 0;
 
+    this.isWallBreakReady = true; // Dice rolled → dead wall highlights can now be shown
     return {
       breakSeat,
       breakStack,
@@ -220,8 +224,10 @@ export class MahjongDeck {
 
   /**
    * Checks if a physical wall stack (0 to 71) currently belongs to the 16 Dead Wall (海底鐵牌) reserve.
+   * Returns false if setupWallBreak() has not yet been called (no dice rolled).
    */
   public isStackInDeadWall(stackIndex: number): boolean {
+    if (!this.isWallBreakReady) return false;
     const relStack = (stackIndex - this.breakStackIndex + 72) % 72;
     const tailRelStack = Math.floor(this.tailIndex / 2);
     const diff = (tailRelStack - relStack + 72) % 72;
