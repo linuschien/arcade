@@ -679,4 +679,44 @@ describe('MahjongGameState Unit Tests', () => {
     const hasRenHu = settlement!.fans.some((f) => f.name.includes('人胡'));
     expect(hasRenHu).toBe(false);
   });
+
+  describe('prepareNewRound', () => {
+    it('should clear all player hands, discards, melds, flowers and reset deck without emitting a phase change', () => {
+      const state = new MahjongGameState();
+      state.startDealing(); // full round with state
+
+      // Confirm there is data from dealing
+      expect(state.players.some((p) => p.hand.length > 0)).toBe(true);
+
+      // Track phase change emissions
+      const phaseChanges: string[] = [];
+      state.addListener({ onPhaseChange: (phase) => phaseChanges.push(phase) });
+
+      state.prepareNewRound();
+
+      // All players should have clean slate
+      state.players.forEach((p) => {
+        expect(p.hand).toHaveLength(0);
+        expect(p.drawnTile).toBeNull();
+        expect(p.melds).toHaveLength(0);
+        expect(p.flowers).toHaveLength(0);
+        expect(p.discards).toHaveLength(0);
+        expect(p.isTing).toBe(false);
+        expect(p.isAutoPlay).toBe(false);
+      });
+
+      // lastDiscard should be null
+      expect(state.lastDiscard).toBeNull();
+
+      // Deck should be reset (72 full stacks)
+      let totalRemaining = 0;
+      for (let i = 0; i < 72; i++) {
+        totalRemaining += state.deck.getStackRemainingTileCount(i);
+      }
+      expect(totalRemaining).toBe(144); // Full deck
+
+      // NO phase change should have been emitted
+      expect(phaseChanges).toHaveLength(0);
+    });
+  });
 });

@@ -2193,19 +2193,26 @@ export class MainGameScene extends Phaser.Scene {
    * 整理牌桌動畫：局結束後，先淡出所有座位與牌牆，顯示「整理牌桌...」提示，
    * 讓玩家有視覺上洗牌砌牌的儀式感，再正式進入下一局的開局流程。
    */
+  /**
+   * 整理牌桌動畫 — 4 Stage Flow:
+   * 1. 棄牌區 + 牌牆 淡出（洗牌感）
+   * 2. 靜默重置 gameState (prepareNewRound)，不觸發 DEALING 事件
+   * 3. 四方牌牆依序砌回（72 墩逐一亮起，砌牌儀式感）
+   * 4. 座位淡入 → overlay 淡出 → startDealing() 才擲骰子開局
+   */
   private animateBoardClearBeforeNewRound(): void {
-    // 1. Flash an overlay message '整理牌桌...' at the center
+    // ── Overlay ──────────────────────────────────────────────────────────
     const overlay = this.add.container(640, 360);
-    overlay.setDepth(190);
+    overlay.setDepth(195); // above seating cinematic (200) is fine; above normal depth
 
     const overlayBg = this.add.graphics();
-    overlayBg.fillStyle(0x020617, 0.72);
-    overlayBg.fillRoundedRect(-160, -28, 320, 56, 10);
-    overlayBg.lineStyle(1.5, 0xd4af37, 0.8);
-    overlayBg.strokeRoundedRect(-160, -28, 320, 56, 10);
+    overlayBg.fillStyle(0x020617, 0.82);
+    overlayBg.fillRoundedRect(-180, -32, 360, 64, 12);
+    overlayBg.lineStyle(1.5, 0xd4af37, 0.9);
+    overlayBg.strokeRoundedRect(-180, -32, 360, 64, 12);
     overlay.add(overlayBg);
 
-    const overlayText = this.add.text(0, 0, '🀄 整理牌桌...', {
+    const overlayText = this.add.text(0, 0, '🀄 洗牌中...', {
       fontSize: '22px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#facc15',
@@ -2215,47 +2222,72 @@ export class MainGameScene extends Phaser.Scene {
     overlay.add(overlayText);
     overlay.setAlpha(0);
 
-    // 2. Gather all seat containers and wall sprites to fade
-    const fadeTargets: Phaser.GameObjects.GameObject[] = [
-      ...this.seatContainers,
-      ...this.wallSprites,
-    ];
+    // ── Stage 1: Fade-out seats + walls ─────────────────────────────────
+    this.tweens.add({ targets: overlay, alpha: 1, duration: 200, ease: 'Sine.easeOut' });
 
     this.tweens.add({
-      targets: overlay,
-      alpha: 1,
-      duration: 220,
-      ease: 'Sine.easeOut',
-    });
-
-    this.tweens.add({
-      targets: fadeTargets,
+      targets: [...this.seatContainers, ...this.wallSprites],
       alpha: 0,
-      duration: 400,
+      duration: 380,
       ease: 'Sine.easeInOut',
       onComplete: () => {
-        // 3. While seats are STILL INVISIBLE (alpha=0):
-        //    - Reset game state first → clears all discard history from last round
-        //    - Then re-render seats with the now-empty state
-        //    This guarantees seats are clean before they become visible again.
-        this.gameState.startDealing(false);
-        this.refreshAllSeats(false);
+        // ── Stage 2: Silent state reset (no phase event) ─────────────────
+        this.gameState.prepareNewRound();
+        this.refreshAllSeats(false); // render empty seats while still invisible
+        this.updateTileWalls();       // mark all 72 stacks as full (for correct textures)
 
-        // 4. NOW restore alpha — seats show empty discard areas
-        fadeTargets.forEach((t) => {
-          (t as unknown as Phaser.GameObjects.Components.Alpha).setAlpha(1);
+        // Reset all wall sprites to invisible so we can animate them back in
+        this.wallSprites.forEach((s) => {
+          s.setAlpha(0);
+          s.setScale(0.75);
+          s.setVisible(true);
         });
 
-        // 5. Fade out the overlay (the dice animation is already running beneath it)
-        this.tweens.add({
-          targets: overlay,
-          alpha: 0,
-          duration: 300,
-          delay: 0,
-          ease: 'Sine.easeIn',
-          onComplete: () => {
-            overlay.destroy();
-          },
+        // ── Stage 3: Build tile walls cascade ────────────────────────────
+        overlayText.setText('🧱 砌牌中...');
+
+        const TILE_STAGGER_MS = 11; // 72 × 11 = 792ms total cascade
+        const TILE_ANIM_MS = 160;
+
+        this.wallSprites.forEach((sprite, idx) => {
+          this.tweens.add({
+            targets: sprite,
+            alpha: 1,
+            scaleX: 1,
+            scaleY: 1,
+            duration: TILE_ANIM_MS,
+            delay: idx * TILE_STAGGER_MS,
+            ease: 'Back.easeOut',
+          });
+        });
+
+        const wallBuildTotalMs = this.wallSprites.length * TILE_STAGGER_MS + TILE_ANIM_MS;
+
+        // ── Stage 4: After walls are built, show seats then start dice ───
+        this.time.delayedCall(wallBuildTotalMs, () => {
+          overlayText.setText('✅ 準備完成！');
+
+          // Fade in seat containers (now showing empty discard areas)
+          this.tweens.add({
+            targets: this.seatContainers,
+            alpha: 1,
+            duration: 220,
+            ease: 'Sine.easeOut',
+          });
+
+          // Fade out overlay then trigger dice roll
+          this.tweens.add({
+            targets: overlay,
+            alpha: 0,
+            duration: 350,
+            delay: 120,
+            ease: 'Sine.easeIn',
+            onComplete: () => {
+              overlay.destroy();
+              // NOW trigger startDealing → emits DEALING → playDealerWallBreakDiceAnimation
+              this.gameState.startDealing(false);
+            },
+          });
         });
       },
     });

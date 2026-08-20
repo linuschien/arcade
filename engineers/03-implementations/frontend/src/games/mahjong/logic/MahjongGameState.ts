@@ -229,6 +229,30 @@ export class MahjongGameState {
   }
 
   /**
+   * Prepares display state for a new round WITHOUT emitting any phase change event.
+   * Used by the board-clear animation to clear discards and reset the deck
+   * so tile walls can be rebuilt visually before startDealing() triggers dice roll.
+   */
+  public prepareNewRound(): void {
+    this.players.forEach((p) => {
+      p.hand = [];
+      p.drawnTile = null;
+      p.melds = [];
+      p.flowers = [];
+      p.discards = [];
+      p.isTing = false;
+      p.isAutoPlay = false;
+      p.isPassLockout = false;
+      p.passPongCodesInTurn = new Set();
+    });
+    this.lastDiscard = null;
+    this.isFirstTurnCycle = true;
+    this.currentTurnSeat = this.dealerSeat;
+    // Reset deck so tile wall sprites reflect a full 72-stack wall
+    this.deck.reset();
+  }
+
+  /**
    * Phase 2: 莊家擲骰開門與配牌 (Dice Roll & Dealing).
    */
   public startDealing(autoStartFlowers: boolean = true): void {

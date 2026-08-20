@@ -541,20 +541,23 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     );
   });
 
-  it('should show board-clear overlay animation before starting next round on "繼續下一局" click', () => {
+  it('should call prepareNewRound (silent reset) and rebuild walls via cascade tweens on animateBoardClearBeforeNewRound', () => {
     scene.create();
     (scene as any).tweens = { add: vi.fn().mockReturnValue({ stop: vi.fn() }), killTweensOf: vi.fn() };
     const gameState = (scene as any).gameState;
+    const prepareNewRoundSpy = vi.spyOn(gameState, 'prepareNewRound');
     const startDealingSpy = vi.spyOn(gameState, 'startDealing');
 
     (scene as any).animateBoardClearBeforeNewRound();
 
-    // An overlay container should be created (via add.container)
+    // Overlay container created at center
     expect((scene as any).add.container).toHaveBeenCalledWith(640, 360);
-    // Tween should be called to fade the overlay and seat containers
+    // Tweens initiated for fade-out + overlay
     expect((scene as any).tweens.add).toHaveBeenCalled();
 
-    // Because fade is async via tweens, startDealing is NOT called synchronously yet
+    // prepareNewRound and startDealing are NOT called synchronously
+    // (they run inside tween onComplete callbacks)
+    expect(prepareNewRoundSpy).not.toHaveBeenCalled();
     expect(startDealingSpy).not.toHaveBeenCalled();
   });
 });
