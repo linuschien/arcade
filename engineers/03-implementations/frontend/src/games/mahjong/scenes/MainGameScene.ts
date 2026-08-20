@@ -2234,21 +2234,27 @@ export class MainGameScene extends Phaser.Scene {
       duration: 400,
       ease: 'Sine.easeInOut',
       onComplete: () => {
-        // 3. After fade-out, restore seat/wall alpha and clear state for new round
+        // 3. While seats are STILL INVISIBLE (alpha=0):
+        //    - Reset game state first → clears all discard history from last round
+        //    - Then re-render seats with the now-empty state
+        //    This guarantees seats are clean before they become visible again.
+        this.gameState.startDealing(false);
+        this.refreshAllSeats(false);
+
+        // 4. NOW restore alpha — seats show empty discard areas
         fadeTargets.forEach((t) => {
           (t as unknown as Phaser.GameObjects.Components.Alpha).setAlpha(1);
         });
-        // 4. Fade out the overlay text then kick off next round
+
+        // 5. Fade out the overlay (the dice animation is already running beneath it)
         this.tweens.add({
           targets: overlay,
           alpha: 0,
-          duration: 220,
-          delay: 80,
+          duration: 300,
+          delay: 0,
           ease: 'Sine.easeIn',
           onComplete: () => {
             overlay.destroy();
-            this.refreshAllSeats(false);
-            this.gameState.startDealing(false);
           },
         });
       },
