@@ -1033,11 +1033,14 @@ export class MainGameScene extends Phaser.Scene {
     if (this.time) {
       this.time.delayedCall(SPIN_MS, () => {
         if (spinTween) spinTween.stop();
-        const cur = arrowContainer.rotation; // raw accumulated radians
-        // Snap to correct direction via shortest remaining path + 1.5 extra rotations
-        const curNorm = cur % (Math.PI * 2);
-        const delta = ((targetRad - curNorm) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
-        const finalRot = cur + Math.PI * 2 * 1.5 + delta; // 1.5 extra spins then land
+        const cur = arrowContainer.rotation; // raw accumulated radians (no Phaser normalization)
+        // CORRECT: compute totalNorm from the *full* planned rotation (cur + extra spins),
+        // then calculate delta so that (cur + extra + delta) ≡ targetRad (mod 2π).
+        // Using curNorm = cur%2π would omit the extra spins and yield a ~π error.
+        const extraSpins = Math.PI * 2 * 1.5; // 1.5 dramatic extra rotations before settling
+        const totalNorm = (cur + extraSpins) % (Math.PI * 2);
+        const delta = ((targetRad - totalNorm) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+        const finalRot = cur + extraSpins + delta; // guaranteed visual angle == targetRad
 
         if (this.tweens) {
           this.tweens.add({
