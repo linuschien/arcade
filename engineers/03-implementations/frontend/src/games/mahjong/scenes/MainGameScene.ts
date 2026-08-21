@@ -2139,18 +2139,18 @@ export class MainGameScene extends Phaser.Scene {
 
       curY += tileH + 6;
 
-      // Row 2: Winner's Flowers (🌸 抓花牌組，獨立一行絕不擠壓手牌)
+      // Row 2: Winner's Flowers (🌸 花牌展示，獨立一行)
       const hasFlowers = winner.flowers && winner.flowers.length > 0;
       if (hasFlowers) {
-        const flowerLabel = this.add.text(-300, curY + 6, `🌸 花牌加台 (${winner.flowers.length}張):`, {
-          fontSize: '12px',
+        const flowerLabel = this.add.text(-300, curY + 6, '🌸 花牌:', {
+          fontSize: '13px',
           fontFamily: '"Microsoft JhengHei", sans-serif',
           color: '#f472b6',
           fontStyle: 'bold',
         });
         this.settlementContainer.add(flowerLabel);
 
-        let flowerX = -170;
+        let flowerX = -230;
         const ftW = 22;
         const ftH = 30;
 
