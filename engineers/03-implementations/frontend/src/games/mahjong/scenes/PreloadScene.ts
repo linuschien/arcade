@@ -722,13 +722,14 @@ export class PreloadScene extends Phaser.Scene {
       }
     }
 
-    // 12. Action Buttons (Chow, Pong, Kong, Ting, Hu, Pass)
+    // 12. Action Buttons (Chow, Pong, Kong, Ting, Hu, Zimo, Pass)
     const actionBtns = [
       { key: 'action_btn_chow', label: '吃', bg: '#2563eb' },
       { key: 'action_btn_pong', label: '碰', bg: '#059669' },
       { key: 'action_btn_kong', label: '槓', bg: '#d97706' },
       { key: 'action_btn_ting', label: '聽', bg: '#7c3aed' },
       { key: 'action_btn_hu', label: '胡', bg: '#dc2626' },
+      { key: 'action_btn_zimo', label: '自摸', bg: '#dc2626' },
       { key: 'action_btn_pass', label: '過', bg: '#475569' },
     ];
     actionBtns.forEach(({ key, label, bg }) => {

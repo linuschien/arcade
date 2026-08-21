@@ -1747,13 +1747,14 @@ export class MainGameScene extends Phaser.Scene {
     const buttons: { key: string; label: string; action: () => void }[] = [];
 
     if (actions.canHu) {
+      const isSelfDraw = this.gameState.currentTurnSeat === 0 && this.gameState.phase === 'PLAYER_TURN';
       buttons.push({
-        key: 'action_btn_hu',
-        label: '胡',
+        key: isSelfDraw ? 'action_btn_zimo' : 'action_btn_hu',
+        label: isSelfDraw ? '自摸' : '胡',
         action: () => {
           this.actionBarContainer.setVisible(false);
           this.subMenuContainer.setVisible(false);
-          if (this.gameState.currentTurnSeat === 0 && this.gameState.phase === 'PLAYER_TURN') {
+          if (isSelfDraw) {
             this.gameState.settleWin(0, true);
           } else {
             this.gameState.humanRespondAction('HU');

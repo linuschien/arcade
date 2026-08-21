@@ -563,4 +563,47 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     expect(prepareNewRoundSpy).not.toHaveBeenCalled();
     expect(startDealingSpy).not.toHaveBeenCalled();
   });
+
+  it('should display action_btn_zimo on self-draw win and action_btn_hu on discard claim win', () => {
+    scene.create();
+
+    // 1. Self-draw win scenario (PLAYER_TURN)
+    (scene as any).gameState.currentTurnSeat = 0;
+    (scene as any).gameState.phase = 'PLAYER_TURN';
+    (scene as any).add.sprite.mockClear();
+
+    (scene as any).showActionBar({
+      canHu: true,
+      canKong: false,
+      kongOptions: [],
+      canPong: false,
+      canChow: false,
+      chowOptions: [],
+      canTing: false,
+      canPass: true,
+    });
+
+    let spriteCalls = (scene as any).add.sprite.mock.calls;
+    expect(spriteCalls.some((c: any[]) => c[2] === 'mahjong:action_btn_zimo')).toBe(true);
+    expect(spriteCalls.some((c: any[]) => c[2] === 'mahjong:action_btn_hu')).toBe(false);
+
+    // 2. Claim win scenario (ACTION_WAIT)
+    (scene as any).gameState.phase = 'ACTION_WAIT';
+    (scene as any).add.sprite.mockClear();
+
+    (scene as any).showActionBar({
+      canHu: true,
+      canKong: false,
+      kongOptions: [],
+      canPong: false,
+      canChow: false,
+      chowOptions: [],
+      canTing: false,
+      canPass: true,
+    });
+
+    spriteCalls = (scene as any).add.sprite.mock.calls;
+    expect(spriteCalls.some((c: any[]) => c[2] === 'mahjong:action_btn_hu')).toBe(true);
+    expect(spriteCalls.some((c: any[]) => c[2] === 'mahjong:action_btn_zimo')).toBe(false);
+  });
 });
