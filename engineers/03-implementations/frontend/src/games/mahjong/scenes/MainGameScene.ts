@@ -371,8 +371,8 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private createSmartTingUI(): void {
-    // Compact Smart Ting Strip in original Bottom-Right location
-    this.tingContainer = this.add.container(1115, 655);
+    // Compact Smart Ting Strip positioned comfortably to the left of Seat 1
+    this.tingContainer = this.add.container(1020, 655);
     this.tingContainer.setVisible(false);
     this.tingContainer.setDepth(90);
 
@@ -497,6 +497,7 @@ export class MainGameScene extends Phaser.Scene {
         }
         this.actionBarContainer.setVisible(false);
         this.subMenuContainer.setVisible(false);
+        MahjongAudioService.stopVoice();
         this.showSettlementWindow(breakdown);
       },
       onGameOver: (summary) => {
@@ -1573,7 +1574,7 @@ export class MainGameScene extends Phaser.Scene {
           });
           this.autoPlayBtnContainer.on('pointerdown', () => {
             this.gameState.players[0].isAutoPlay = true;
-            MahjongAudioService.playVoiceTing();
+            MahjongAudioService.playTileSelect();
             this.updateSmartTing();
             if (this.gameState.currentTurnSeat === 0 && this.gameState.phase === 'PLAYER_TURN') {
               this.gameState.stepAITurn(0);
@@ -1613,6 +1614,7 @@ export class MainGameScene extends Phaser.Scene {
           });
           this.autoPlayBtnContainer.on('pointerdown', () => {
             this.gameState.players[0].isAutoPlay = false;
+            MahjongAudioService.playTileSelect();
             this.updateSmartTing();
           });
         }
@@ -2500,6 +2502,7 @@ export class MainGameScene extends Phaser.Scene {
     this.isPausedState = paused;
     if (paused) {
       MahjongAudioService.stopBGM();
+      MahjongAudioService.stopVoice();
     } else {
       MahjongAudioService.playBGM();
     }
@@ -2507,6 +2510,7 @@ export class MainGameScene extends Phaser.Scene {
 
   private handleShutdown(): void {
     MahjongAudioService.stopBGM();
+    MahjongAudioService.stopVoice();
     this.events.off(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
     this.events.off(Phaser.Scenes.Events.DESTROY, this.handleShutdown, this);
   }

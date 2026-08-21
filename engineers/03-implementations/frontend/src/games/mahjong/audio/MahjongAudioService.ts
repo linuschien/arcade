@@ -215,6 +215,20 @@ class MahjongAudioServiceImpl {
   }
 
   /**
+   * Immediately stops any ongoing speech synthesis announcement.
+   */
+  public stopVoice(): void {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {
+        // Ignore
+      }
+    }
+    this.activeVoicePromise = null;
+  }
+
+  /**
    * VOICE Announcements with speech synthesis or distinctive audio chords.
    */
   private speakOrTone(text: string, frequencies: number[]): Promise<void> {
@@ -239,6 +253,8 @@ class MahjongAudioServiceImpl {
 
       if (typeof window !== 'undefined' && 'speechSynthesis' in window && !SoundEngine.isMutedState()) {
         try {
+          // Cancel any previous queued speech to prevent backlog / speech overlap
+          window.speechSynthesis.cancel();
           const u = new SpeechSynthesisUtterance(text);
           u.lang = 'zh-TW';
           u.rate = 1.2;

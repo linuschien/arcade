@@ -28,6 +28,7 @@ describe('MahjongAudioService Unit Tests', () => {
       MahjongAudioService.playVoiceKong();
       MahjongAudioService.playVoiceTing();
       MahjongAudioService.playVoiceHu();
+      MahjongAudioService.stopVoice();
     }).not.toThrow();
   });
 });

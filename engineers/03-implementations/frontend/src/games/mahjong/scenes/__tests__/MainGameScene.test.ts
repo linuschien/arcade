@@ -102,6 +102,7 @@ vi.mock('../../audio/MahjongAudioService', () => ({
     playVoiceKong: vi.fn(),
     playVoiceTing: vi.fn(),
     playVoiceHu: vi.fn(),
+    stopVoice: vi.fn(),
     waitForVoiceComplete: vi.fn().mockResolvedValue(undefined),
   },
 }));
