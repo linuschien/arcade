@@ -371,13 +371,13 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private createSmartTingUI(): void {
-    // Compact Smart Ting Strip aligned to Seat 1 (East) flower rack X-center (1040), top edge Y=624 (center Y=645)
-    this.tingContainer = this.add.container(1040, 645);
+    // Compact Smart Ting Strip aligned to Seat 1 (East) flower rack X-center (1040), vertically centered at Y=624
+    this.tingContainer = this.add.container(1040, 624);
     this.tingContainer.setVisible(false);
     this.tingContainer.setDepth(90);
 
-    // Independent Auto-Play Button positioned directly above Seat 0 drawn tile slot
-    this.autoPlayBtnContainer = this.add.container(934, 636);
+    // Independent Auto-Play Button positioned above Seat 0 drawn tile slot, vertically centered at Y=624
+    this.autoPlayBtnContainer = this.add.container(934, 624);
     this.autoPlayBtnContainer.setVisible(false);
     this.autoPlayBtnContainer.setDepth(95);
   }
@@ -1483,50 +1483,63 @@ export class MainGameScene extends Phaser.Scene {
       this.tingContainer.setVisible(true);
 
       const count = tingInfo.winningTiles.length;
-      const tileW = 20;
-      const tileH = 28;
-      const gap = 6;
+      const tileW = 28;
+      const tileH = 38;
+      const gap = 8;
       const miniTilesW = count * tileW + (count - 1) * gap;
 
-      const padX = 8;
-      const labelW = 12;
-      const labelGap = 6;
+      const padX = 10;
+      const labelW = 14;
+      const labelGap = 8;
       const cardW = padX + labelW + labelGap + miniTilesW + padX;
-      const cardH = 42;
+      const cardH = 48;
 
       // 1. Sleek Compact Glassmorphic Background Panel
       const bg = this.add.graphics();
       bg.fillStyle(0x090d16, 0.94);
-      bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+      bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 7);
       bg.lineStyle(1.5, 0x8b5cf6, 0.9);
-      bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
+      bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 7);
       this.tingContainer.add(bg);
 
       // 2. Left label: 聽
       const labelX = -cardW / 2 + padX;
       const title = this.add.text(labelX, 0, '聽', {
-        fontSize: '11px',
+        fontSize: '12px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#c4b5fd',
         fontStyle: 'bold',
       }).setOrigin(0, 0.5);
       this.tingContainer.add(title);
 
-      // 3. Mini Winning Tiles Row (6px gap from '聽', matching 6px tile gap)
+      // 3. Mini Winning Tiles Row (Plan A: 28x38 HD Tiles + Top-Right Pill Badge)
       const tilesStartX = labelX + labelW + labelGap + tileW / 2;
       tingInfo.winningTiles.forEach((t, idx) => {
         const tx = tilesStartX + idx * (tileW + gap);
 
-        // Tile sprite
-        const sprite = this.add.sprite(tx, -5, `mahjong:tile_${t.tileCode}`);
+        // High-definition mini tile (28x38)
+        const sprite = this.add.sprite(tx, 0, `mahjong:tile_${t.tileCode}`);
         sprite.setDisplaySize(tileW, tileH);
         this.tingContainer.add(sprite);
 
-        // Remaining count badge
-        const countTxt = this.add.text(tx, 13, `${t.remainingCount}張`, {
-          fontSize: '9px',
+        // Elegant count badge on top-right of tile
+        const badgeW = 16;
+        const badgeH = 14;
+        const badgeX = tx + tileW / 2 - 2;
+        const badgeY = -tileH / 2 + 2;
+
+        const badgeBg = this.add.graphics();
+        const isAvailable = t.remainingCount > 0;
+        badgeBg.fillStyle(isAvailable ? 0x1e1b4b : 0x1e293b, 0.95);
+        badgeBg.fillRoundedRect(badgeX - badgeW / 2, badgeY - badgeH / 2, badgeW, badgeH, 4);
+        badgeBg.lineStyle(1, isAvailable ? 0xfacc15 : 0x64748b, 0.9);
+        badgeBg.strokeRoundedRect(badgeX - badgeW / 2, badgeY - badgeH / 2, badgeW, badgeH, 4);
+        this.tingContainer.add(badgeBg);
+
+        const countTxt = this.add.text(badgeX, badgeY, `${t.remainingCount}`, {
+          fontSize: '10px',
           fontFamily: '"Microsoft JhengHei", sans-serif',
-          color: t.remainingCount > 0 ? '#facc15' : '#64748b',
+          color: isAvailable ? '#facc15' : '#94a3b8',
           fontStyle: 'bold',
         }).setOrigin(0.5);
         this.tingContainer.add(countTxt);
@@ -1535,10 +1548,12 @@ export class MainGameScene extends Phaser.Scene {
       this.tingContainer.setVisible(false);
     }
 
-    // 4. Independent Auto-Play Button directly above Seat 0 drawn tile slot (Uniform 84x24 size, 4-char text)
+    // 4. Independent Auto-Play Button (Centered at Y=624, dynamically aligned with Seat 0 drawn slot X)
     if (this.autoPlayBtnContainer) {
       this.autoPlayBtnContainer.removeAll(true);
       if (tingInfo.winningTiles.length > 0 || p1.isAutoPlay) {
+        const drawnSlotWorldX = this.seatContainers[0]?.drawnSlotWorldX ?? 934;
+        this.autoPlayBtnContainer.setPosition(drawnSlotWorldX, 624);
         this.autoPlayBtnContainer.setVisible(true);
 
         const btnW = 84;

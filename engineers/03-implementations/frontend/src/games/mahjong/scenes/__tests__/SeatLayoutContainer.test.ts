@@ -11,8 +11,12 @@ import { PlayerProfile } from '../../logic/MahjongTypes';
 vi.mock('phaser', () => {
   class MockGameObject {
     scene: any;
-    constructor(scene?: any) {
+    x: number;
+    y: number;
+    constructor(scene?: any, x: number = 0, y: number = 0) {
       this.scene = scene;
+      this.x = x;
+      this.y = y;
     }
     add = vi.fn().mockReturnThis();
     removeAll = vi.fn().mockReturnThis();
@@ -450,5 +454,12 @@ describe('SeatLayoutContainer Unit Tests', () => {
     // 2. When effectiveWind is SOUTH, Summer (2) is positive and highlighted with coral frame
     seatContainer.renderPlayerState(profile, true, false, false, 'EAST', null, 'SOUTH');
     expect(mockScene.add.graphics).toHaveBeenCalled();
+  });
+
+  it('should accurately record drawnSlotWorldX after rendering player state', () => {
+    const seatContainer = new SeatLayoutContainer(mockScene, 640, 680, 0, 0);
+    const profile = createMockProfile();
+    seatContainer.renderPlayerState(profile, true);
+    expect(seatContainer.drawnSlotWorldX).toBeGreaterThan(640);
   });
 });

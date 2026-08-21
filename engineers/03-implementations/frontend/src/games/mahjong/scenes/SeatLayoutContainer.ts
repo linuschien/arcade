@@ -25,6 +25,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
   public onTileClick?: (tileId: string) => void;
   public onTileHover?: (shortCode: string | null) => void;
+  public drawnSlotWorldX: number = 934;
 
   public static readonly TILE_W = 36;
   public static readonly TILE_H = 48;
@@ -366,6 +367,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     const drawnSlotW = stepX;
     const drawnSlotH = SeatLayoutContainer.TILE_H;
     const drawnX = startX + maxHandTilesW + gapDrawn + stepX / 2;
+    this.drawnSlotWorldX = this.x + drawnX;
 
     const slotGraphics = this.scene.add.graphics();
     // Faint translucent slot base
