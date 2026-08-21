@@ -59,6 +59,10 @@ export class MahjongHandEvaluator {
 
   /**
    * Special hand: 嚦咕嚦咕 (Eight Pairs / 7 pairs + 1 triplet = 17 tiles).
+   * In Taiwanese Mahjong:
+   * 1. 17 tiles total, concealed in hand (0 melds).
+   * 2. Formed by exactly 7 pairs and 1 triplet, where 4-of-a-kind (quad) counts as 2 pairs.
+   * 3. Satisfies: tripletCount === 1 && (pairCount + 2 * quadCount === 7).
    */
   public static isEightPairs(tiles: Tile[]): boolean {
     if (tiles.length !== 17) return false;
@@ -84,9 +88,8 @@ export class MahjongHandEvaluator {
       }
     }
 
-    // 7 pairs + 1 triplet (8 distinct tile kinds) OR 5 pairs + 1 quad + 1 triplet etc.
-    // Standard rule: 7 pairs + 1 triplet = 8 distinct groups
-    return (pairCount === 7 && tripletCount === 1) || (pairCount === 5 && quadCount === 1 && tripletCount === 1);
+    // Must satisfy: exactly 1 triplet and total pairs (pairCount + 2 * quadCount) === 7
+    return tripletCount === 1 && pairCount + 2 * quadCount === 7;
   }
 
   /**

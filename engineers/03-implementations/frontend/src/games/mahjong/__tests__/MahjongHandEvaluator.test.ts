@@ -96,6 +96,68 @@ describe('MahjongHandEvaluator Unit Tests', () => {
     expect(isWin).toBe(true);
   });
 
+  it('should correctly determine Ting on the 4th tile of both triplets for 5 pairs + 2 triplets', () => {
+    // 5 pairs (1m,9m,1p,9p,1s) + 2 triplets (east,red) = 16 tiles
+    // Tings on 4th tile of east or red (which completes 5 pairs + 2 pairs from quad + 1 triplet = 7 pairs 1 triplet)
+    const handCodes = [
+      '1m', '1m', '9m', '9m', '1p', '1p', '9p', '9p', '1s', '1s',
+      'east', 'east', 'east',
+      'red', 'red', 'red',
+    ];
+    const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+    const ting = MahjongHandEvaluator.evaluateTing(hand, []);
+    expect(ting.winningTiles.length).toBe(2);
+    const codes = ting.winningTiles.map((t) => t.tileCode);
+    expect(codes).toEqual(expect.arrayContaining(['east', 'red']));
+  });
+
+  it('should correctly determine 2-way Ting for Eight Pairs when holding 3 quads + 2 pairs', () => {
+    // 3 quads (1m*4, 9m*4, 1p*4 = 6 pairs) + 2 pairs (9p*2, 1s*2 = 2 pairs) = 16 tiles (8 pairs total)
+    // Tings on 9p and 1s to become a triplet (7 pairs + 1 triplet)
+    const handCodes = [
+      '1m', '1m', '1m', '1m',
+      '9m', '9m', '9m', '9m',
+      '1p', '1p', '1p', '1p',
+      '9p', '9p',
+      '1s', '1s',
+    ];
+    const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+    const ting = MahjongHandEvaluator.evaluateTing(hand, []);
+    expect(ting.winningTiles.length).toBe(2);
+    const codes = ting.winningTiles.map((t) => t.tileCode);
+    expect(codes).toEqual(expect.arrayContaining(['9p', '1s']));
+  });
+
+  it('should correctly determine single-wait Ting for Eight Pairs (6 pairs + 1 triplet + 1 single)', () => {
+    // 6 pairs (1m,9m,1p,9p,1s,east) + 1 triplet (red) + 1 single (white) = 16 tiles (Ting on white)
+    const handCodes = [
+      '1m', '1m', '9m', '9m', '1p', '1p', '9p', '9p', '1s', '1s', 'east', 'east',
+      'red', 'red', 'red',
+      'white',
+    ];
+    const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+    const ting = MahjongHandEvaluator.evaluateTing(hand, []);
+    expect(ting.winningTiles.length).toBe(1);
+    expect(ting.winningTiles[0].tileCode).toBe('white');
+  });
+
+  it('should correctly determine 8-way Ting for Eight Pairs when player holds 8 full pairs', () => {
+    // 8 pairs (1m,9m,1p,9p,1s,east,south,red) = 16 tiles (Ting on all 8 pairs)
+    const handCodes = [
+      '1m', '1m', '9m', '9m', '1p', '1p', '9p', '9p',
+      '1s', '1s', 'east', 'east', 'south', 'south', 'red', 'red',
+    ];
+    const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+    const ting = MahjongHandEvaluator.evaluateTing(hand, []);
+    expect(ting.winningTiles.length).toBe(8);
+    const codes = ting.winningTiles.map((t) => t.tileCode);
+    expect(codes).toEqual(expect.arrayContaining(['1m', '9m', '1p', '9p', '1s', 'east', 'south', 'red']));
+  });
+
   it('should reject invalid / incomplete hands', () => {
     // Missing matching tiles
     const handCodes = [
