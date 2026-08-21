@@ -1487,10 +1487,11 @@ export class MainGameScene extends Phaser.Scene {
       const tileH = 28;
       const gap = 6;
       const miniTilesW = count * tileW + (count - 1) * gap;
-      const totalRemaining = tingInfo.winningTiles.reduce((sum, t) => sum + t.remainingCount, 0);
 
-      const labelW = 46;
-      const cardW = Math.max(88, labelW + 10 + miniTilesW + 12);
+      const padX = 8;
+      const labelW = 12;
+      const labelGap = 6;
+      const cardW = padX + labelW + labelGap + miniTilesW + padX;
       const cardH = 42;
 
       // 1. Sleek Compact Glassmorphic Background Panel
@@ -1501,9 +1502,9 @@ export class MainGameScene extends Phaser.Scene {
       bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
       this.tingContainer.add(bg);
 
-      // 2. Left label: 聽(X)
-      const labelX = -cardW / 2 + 8;
-      const title = this.add.text(labelX, 0, `聽(${totalRemaining})`, {
+      // 2. Left label: 聽
+      const labelX = -cardW / 2 + padX;
+      const title = this.add.text(labelX, 0, '聽', {
         fontSize: '11px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#c4b5fd',
@@ -1511,8 +1512,8 @@ export class MainGameScene extends Phaser.Scene {
       }).setOrigin(0, 0.5);
       this.tingContainer.add(title);
 
-      // 3. Mini Winning Tiles Row
-      const tilesStartX = labelX + labelW + tileW / 2;
+      // 3. Mini Winning Tiles Row (6px gap from '聽', matching 6px tile gap)
+      const tilesStartX = labelX + labelW + labelGap + tileW / 2;
       tingInfo.winningTiles.forEach((t, idx) => {
         const tx = tilesStartX + idx * (tileW + gap);
 
@@ -1534,18 +1535,21 @@ export class MainGameScene extends Phaser.Scene {
       this.tingContainer.setVisible(false);
     }
 
-    // 4. Independent Auto-Play Button directly above Seat 0 drawn tile slot
+    // 4. Independent Auto-Play Button directly above Seat 0 drawn tile slot (Uniform 84x24 size, 4-char text)
     if (this.autoPlayBtnContainer) {
       this.autoPlayBtnContainer.removeAll(true);
       if (tingInfo.winningTiles.length > 0 || p1.isAutoPlay) {
         this.autoPlayBtnContainer.setVisible(true);
 
+        const btnW = 84;
+        const btnH = 24;
+
         if (!p1.isAutoPlay) {
           const btnBg = this.add.graphics();
           btnBg.fillStyle(0x7c3aed, 0.95);
-          btnBg.fillRoundedRect(-40, -12, 80, 24, 5);
+          btnBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 5);
           btnBg.lineStyle(1.5, 0xa78bfa, 0.9);
-          btnBg.strokeRoundedRect(-40, -12, 80, 24, 5);
+          btnBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 5);
           this.autoPlayBtnContainer.add(btnBg);
 
           const btnTxt = this.add.text(0, 0, '🤖 聽牌託管', {
@@ -1556,21 +1560,21 @@ export class MainGameScene extends Phaser.Scene {
           }).setOrigin(0.5);
           this.autoPlayBtnContainer.add(btnTxt);
 
-          this.autoPlayBtnContainer.setSize(80, 24);
+          this.autoPlayBtnContainer.setSize(btnW, btnH);
           this.autoPlayBtnContainer.setInteractive({ useHandCursor: true });
           this.autoPlayBtnContainer.on('pointerover', () => {
             btnBg.clear();
             btnBg.fillStyle(0x9333ea, 1);
-            btnBg.fillRoundedRect(-40, -12, 80, 24, 5);
+            btnBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 5);
             btnBg.lineStyle(1.5, 0xc4b5fd, 1);
-            btnBg.strokeRoundedRect(-40, -12, 80, 24, 5);
+            btnBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 5);
           });
           this.autoPlayBtnContainer.on('pointerout', () => {
             btnBg.clear();
             btnBg.fillStyle(0x7c3aed, 0.95);
-            btnBg.fillRoundedRect(-40, -12, 80, 24, 5);
+            btnBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 5);
             btnBg.lineStyle(1.5, 0xa78bfa, 0.9);
-            btnBg.strokeRoundedRect(-40, -12, 80, 24, 5);
+            btnBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 5);
           });
           this.autoPlayBtnContainer.on('pointerdown', () => {
             this.gameState.players[0].isAutoPlay = true;
@@ -1582,34 +1586,34 @@ export class MainGameScene extends Phaser.Scene {
         } else {
           const btnBg = this.add.graphics();
           btnBg.fillStyle(0x065f46, 0.95);
-          btnBg.fillRoundedRect(-46, -12, 92, 24, 5);
+          btnBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 5);
           btnBg.lineStyle(1.5, 0x34d399, 1);
-          btnBg.strokeRoundedRect(-46, -12, 92, 24, 5);
+          btnBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 5);
           this.autoPlayBtnContainer.add(btnBg);
 
-          const btnTxt = this.add.text(0, 0, '⚡ 託管中 (取消)', {
-            fontSize: '10px',
+          const btnTxt = this.add.text(0, 0, '⚡ 解除託管', {
+            fontSize: '11px',
             fontFamily: '"Microsoft JhengHei", sans-serif',
             color: '#a7f3d0',
             fontStyle: 'bold',
           }).setOrigin(0.5);
           this.autoPlayBtnContainer.add(btnTxt);
 
-          this.autoPlayBtnContainer.setSize(92, 24);
+          this.autoPlayBtnContainer.setSize(btnW, btnH);
           this.autoPlayBtnContainer.setInteractive({ useHandCursor: true });
           this.autoPlayBtnContainer.on('pointerover', () => {
             btnBg.clear();
             btnBg.fillStyle(0x047857, 1);
-            btnBg.fillRoundedRect(-46, -12, 92, 24, 5);
+            btnBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 5);
             btnBg.lineStyle(1.5, 0x6ee7b7, 1);
-            btnBg.strokeRoundedRect(-46, -12, 92, 24, 5);
+            btnBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 5);
           });
           this.autoPlayBtnContainer.on('pointerout', () => {
             btnBg.clear();
             btnBg.fillStyle(0x065f46, 0.95);
-            btnBg.fillRoundedRect(-46, -12, 92, 24, 5);
+            btnBg.fillRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 5);
             btnBg.lineStyle(1.5, 0x34d399, 1);
-            btnBg.strokeRoundedRect(-46, -12, 92, 24, 5);
+            btnBg.strokeRoundedRect(-btnW / 2, -btnH / 2, btnW, btnH, 5);
           });
           this.autoPlayBtnContainer.on('pointerdown', () => {
             this.gameState.players[0].isAutoPlay = false;
