@@ -49,10 +49,9 @@ export class MainGameScene extends Phaser.Scene {
   private discardMarkerFrame!: Phaser.GameObjects.Graphics;
   private discardMarkerTween: Phaser.Tweens.Tween | null = null;
 
-  // Smart Ting UI
+  // Smart Ting UI & Independent Auto-Play Button
   private tingContainer!: Phaser.GameObjects.Container;
-  private tingText!: Phaser.GameObjects.Text;
-  private tingAutoBtn!: Phaser.GameObjects.Container;
+  private autoPlayBtnContainer!: Phaser.GameObjects.Container;
 
   // Floating Action Bar (Chow, Pong, Kong, Ting, Hu, Pass)
   private actionBarContainer!: Phaser.GameObjects.Container;
@@ -372,10 +371,15 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private createSmartTingUI(): void {
-    // Smart Ting Radar Card positioned in Bottom-Right corner
+    // Compact Smart Ting Strip in original Bottom-Right location
     this.tingContainer = this.add.container(1115, 655);
     this.tingContainer.setVisible(false);
     this.tingContainer.setDepth(90);
+
+    // Independent Auto-Play Button positioned directly above Seat 0 drawn tile slot
+    this.autoPlayBtnContainer = this.add.container(934, 636);
+    this.autoPlayBtnContainer.setVisible(false);
+    this.autoPlayBtnContainer.setDepth(95);
   }
 
   private createActionBar(): void {
@@ -487,6 +491,10 @@ export class MainGameScene extends Phaser.Scene {
         }
         this.tingContainer.setVisible(false);
         this.tingContainer.removeAll(true);
+        if (this.autoPlayBtnContainer) {
+          this.autoPlayBtnContainer.setVisible(false);
+          this.autoPlayBtnContainer.removeAll(true);
+        }
         this.actionBarContainer.setVisible(false);
         this.subMenuContainer.setVisible(false);
         this.showSettlementWindow(breakdown);
@@ -499,6 +507,10 @@ export class MainGameScene extends Phaser.Scene {
         }
         this.tingContainer.setVisible(false);
         this.tingContainer.removeAll(true);
+        if (this.autoPlayBtnContainer) {
+          this.autoPlayBtnContainer.setVisible(false);
+          this.autoPlayBtnContainer.removeAll(true);
+        }
         this.actionBarContainer.setVisible(false);
         this.subMenuContainer.setVisible(false);
         this.showGameOverModal(summary);
@@ -516,10 +528,18 @@ export class MainGameScene extends Phaser.Scene {
     if (phase === 'SEATING_DRAW') {
       this.tingContainer.setVisible(false);
       this.tingContainer.removeAll(true);
+      if (this.autoPlayBtnContainer) {
+        this.autoPlayBtnContainer.setVisible(false);
+        this.autoPlayBtnContainer.removeAll(true);
+      }
       this.playSeatingCinematicSequence();
     } else if (phase === 'DEALING') {
       this.tingContainer.setVisible(false);
       this.tingContainer.removeAll(true);
+      if (this.autoPlayBtnContainer) {
+        this.autoPlayBtnContainer.setVisible(false);
+        this.autoPlayBtnContainer.removeAll(true);
+      }
       this.playDealerWallBreakDiceAnimation();
     }
   }
@@ -1442,6 +1462,11 @@ export class MainGameScene extends Phaser.Scene {
     const p1 = this.gameState.players[0];
     if (!p1) {
       this.tingContainer.setVisible(false);
+      this.tingContainer.removeAll(true);
+      if (this.autoPlayBtnContainer) {
+        this.autoPlayBtnContainer.setVisible(false);
+        this.autoPlayBtnContainer.removeAll(true);
+      }
       return;
     }
 
@@ -1457,94 +1482,47 @@ export class MainGameScene extends Phaser.Scene {
       this.tingContainer.setVisible(true);
 
       const count = tingInfo.winningTiles.length;
-      const tileW = 24;
-      const tileH = 32;
-      const gap = 8;
-      const contentW = count * tileW + (count - 1) * gap;
+      const tileW = 20;
+      const tileH = 28;
+      const gap = 6;
+      const miniTilesW = count * tileW + (count - 1) * gap;
       const totalRemaining = tingInfo.winningTiles.reduce((sum, t) => sum + t.remainingCount, 0);
 
-      const cardW = Math.max(230, contentW + 36);
-      const cardH = 76;
+      const labelW = 46;
+      const cardW = Math.max(88, labelW + 10 + miniTilesW + 12);
+      const cardH = 42;
 
-      // 1. Sleek Glassmorphic Background Panel
+      // 1. Sleek Compact Glassmorphic Background Panel
       const bg = this.add.graphics();
       bg.fillStyle(0x090d16, 0.94);
-      bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 8);
+      bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
       bg.lineStyle(1.5, 0x8b5cf6, 0.9);
-      bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 8);
+      bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 6);
       this.tingContainer.add(bg);
 
-      // 2. Header Line
-      const title = this.add.text(-cardW / 2 + 12, -cardH / 2 + 8, `🎧 聽牌雷達 (共${totalRemaining}張)`, {
+      // 2. Left label: 聽(X)
+      const labelX = -cardW / 2 + 8;
+      const title = this.add.text(labelX, 0, `聽(${totalRemaining})`, {
         fontSize: '11px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#c4b5fd',
         fontStyle: 'bold',
-      });
+      }).setOrigin(0, 0.5);
       this.tingContainer.add(title);
 
-      // 3. Auto Play Button / Status Badge
-      if (!p1.isAutoPlay) {
-        const autoBtn = this.add.container(cardW / 2 - 42, -cardH / 2 + 15);
-        const btnBg = this.add.graphics();
-        btnBg.fillStyle(0x7c3aed, 1);
-        btnBg.fillRoundedRect(-32, -9, 64, 18, 4);
-        autoBtn.add(btnBg);
-
-        const btnTxt = this.add.text(0, 0, '聽牌託管', {
-          fontSize: '10px',
-          fontFamily: '"Microsoft JhengHei", sans-serif',
-          color: '#ffffff',
-          fontStyle: 'bold',
-        }).setOrigin(0.5);
-        autoBtn.add(btnTxt);
-
-        autoBtn.setSize(64, 18);
-        autoBtn.setInteractive({ useHandCursor: true });
-        autoBtn.on('pointerover', () => {
-          btnBg.clear();
-          btnBg.fillStyle(0x9333ea, 1);
-          btnBg.fillRoundedRect(-32, -9, 64, 18, 4);
-        });
-        autoBtn.on('pointerout', () => {
-          btnBg.clear();
-          btnBg.fillStyle(0x7c3aed, 1);
-          btnBg.fillRoundedRect(-32, -9, 64, 18, 4);
-        });
-        autoBtn.on('pointerdown', () => {
-          this.gameState.players[0].isAutoPlay = true;
-          MahjongAudioService.playVoiceTing();
-          this.updateSmartTing();
-          if (this.gameState.currentTurnSeat === 0) {
-            this.gameState.stepAITurn(0);
-          }
-        });
-        this.tingContainer.add(autoBtn);
-      } else {
-        const statusBadge = this.add.text(cardW / 2 - 12, -cardH / 2 + 8, '⚡ 極速託管中', {
-          fontSize: '10px',
-          fontFamily: '"Microsoft JhengHei", sans-serif',
-          color: '#a7f3d0',
-          fontStyle: 'bold',
-        }).setOrigin(1, 0);
-        this.tingContainer.add(statusBadge);
-      }
-
-      // 4. Graphical Mini Tiles Row with remaining counts
-      const startX = -((count - 1) * (tileW + gap)) / 2;
-      const tileCenterY = 10;
-
+      // 3. Mini Winning Tiles Row
+      const tilesStartX = labelX + labelW + tileW / 2;
       tingInfo.winningTiles.forEach((t, idx) => {
-        const tx = startX + idx * (tileW + gap);
+        const tx = tilesStartX + idx * (tileW + gap);
 
         // Tile sprite
-        const sprite = this.add.sprite(tx, tileCenterY - 5, `mahjong:tile_${t.tileCode}`);
+        const sprite = this.add.sprite(tx, -5, `mahjong:tile_${t.tileCode}`);
         sprite.setDisplaySize(tileW, tileH);
         this.tingContainer.add(sprite);
 
         // Remaining count badge
-        const countTxt = this.add.text(tx, tileCenterY + 18, `${t.remainingCount}張`, {
-          fontSize: '10px',
+        const countTxt = this.add.text(tx, 13, `${t.remainingCount}張`, {
+          fontSize: '9px',
           fontFamily: '"Microsoft JhengHei", sans-serif',
           color: t.remainingCount > 0 ? '#facc15' : '#64748b',
           fontStyle: 'bold',
@@ -1554,7 +1532,96 @@ export class MainGameScene extends Phaser.Scene {
     } else {
       this.tingContainer.setVisible(false);
     }
+
+    // 4. Independent Auto-Play Button directly above Seat 0 drawn tile slot
+    if (this.autoPlayBtnContainer) {
+      this.autoPlayBtnContainer.removeAll(true);
+      if (tingInfo.winningTiles.length > 0 || p1.isAutoPlay) {
+        this.autoPlayBtnContainer.setVisible(true);
+
+        if (!p1.isAutoPlay) {
+          const btnBg = this.add.graphics();
+          btnBg.fillStyle(0x7c3aed, 0.95);
+          btnBg.fillRoundedRect(-40, -12, 80, 24, 5);
+          btnBg.lineStyle(1.5, 0xa78bfa, 0.9);
+          btnBg.strokeRoundedRect(-40, -12, 80, 24, 5);
+          this.autoPlayBtnContainer.add(btnBg);
+
+          const btnTxt = this.add.text(0, 0, '🤖 聽牌託管', {
+            fontSize: '11px',
+            fontFamily: '"Microsoft JhengHei", sans-serif',
+            color: '#ffffff',
+            fontStyle: 'bold',
+          }).setOrigin(0.5);
+          this.autoPlayBtnContainer.add(btnTxt);
+
+          this.autoPlayBtnContainer.setSize(80, 24);
+          this.autoPlayBtnContainer.setInteractive({ useHandCursor: true });
+          this.autoPlayBtnContainer.on('pointerover', () => {
+            btnBg.clear();
+            btnBg.fillStyle(0x9333ea, 1);
+            btnBg.fillRoundedRect(-40, -12, 80, 24, 5);
+            btnBg.lineStyle(1.5, 0xc4b5fd, 1);
+            btnBg.strokeRoundedRect(-40, -12, 80, 24, 5);
+          });
+          this.autoPlayBtnContainer.on('pointerout', () => {
+            btnBg.clear();
+            btnBg.fillStyle(0x7c3aed, 0.95);
+            btnBg.fillRoundedRect(-40, -12, 80, 24, 5);
+            btnBg.lineStyle(1.5, 0xa78bfa, 0.9);
+            btnBg.strokeRoundedRect(-40, -12, 80, 24, 5);
+          });
+          this.autoPlayBtnContainer.on('pointerdown', () => {
+            this.gameState.players[0].isAutoPlay = true;
+            MahjongAudioService.playVoiceTing();
+            this.updateSmartTing();
+            if (this.gameState.currentTurnSeat === 0 && this.gameState.phase === 'PLAYER_TURN') {
+              this.gameState.stepAITurn(0);
+            }
+          });
+        } else {
+          const btnBg = this.add.graphics();
+          btnBg.fillStyle(0x065f46, 0.95);
+          btnBg.fillRoundedRect(-46, -12, 92, 24, 5);
+          btnBg.lineStyle(1.5, 0x34d399, 1);
+          btnBg.strokeRoundedRect(-46, -12, 92, 24, 5);
+          this.autoPlayBtnContainer.add(btnBg);
+
+          const btnTxt = this.add.text(0, 0, '⚡ 託管中 (取消)', {
+            fontSize: '10px',
+            fontFamily: '"Microsoft JhengHei", sans-serif',
+            color: '#a7f3d0',
+            fontStyle: 'bold',
+          }).setOrigin(0.5);
+          this.autoPlayBtnContainer.add(btnTxt);
+
+          this.autoPlayBtnContainer.setSize(92, 24);
+          this.autoPlayBtnContainer.setInteractive({ useHandCursor: true });
+          this.autoPlayBtnContainer.on('pointerover', () => {
+            btnBg.clear();
+            btnBg.fillStyle(0x047857, 1);
+            btnBg.fillRoundedRect(-46, -12, 92, 24, 5);
+            btnBg.lineStyle(1.5, 0x6ee7b7, 1);
+            btnBg.strokeRoundedRect(-46, -12, 92, 24, 5);
+          });
+          this.autoPlayBtnContainer.on('pointerout', () => {
+            btnBg.clear();
+            btnBg.fillStyle(0x065f46, 0.95);
+            btnBg.fillRoundedRect(-46, -12, 92, 24, 5);
+            btnBg.lineStyle(1.5, 0x34d399, 1);
+            btnBg.strokeRoundedRect(-46, -12, 92, 24, 5);
+          });
+          this.autoPlayBtnContainer.on('pointerdown', () => {
+            this.gameState.players[0].isAutoPlay = false;
+            this.updateSmartTing();
+          });
+        }
+      } else {
+        this.autoPlayBtnContainer.setVisible(false);
+      }
+    }
   }
+
 
   private checkHumanSelfActions(): void {
     const p1 = this.gameState.players[0];
@@ -2264,6 +2331,10 @@ export class MainGameScene extends Phaser.Scene {
       this.settlementContainer.setVisible(false);
       this.tingContainer.setVisible(false);
       this.tingContainer.removeAll(true);
+      if (this.autoPlayBtnContainer) {
+        this.autoPlayBtnContainer.setVisible(false);
+        this.autoPlayBtnContainer.removeAll(true);
+      }
       MahjongAudioService.playBGM();
       this.animateBoardClearBeforeNewRound();
     });
