@@ -1035,7 +1035,7 @@ export class MainGameScene extends Phaser.Scene {
     const targetAngleDeg: Record<number, number> = { 0: 90, 1: 0, 2: -90, 3: 180 };
     const targetRad = (targetAngleDeg[breakSeat] ?? 0) * (Math.PI / 180);
 
-    // Phase 1: fast spin (use .rotation — accumulates without normalization)
+    // Phase 1: fast counter-clockwise spin (use .rotation with -=)
     const SPIN_RPM = 3.5; // rotations per second during dice roll
     const SPIN_MS = 700;  // spin for 700ms
     const spinRotation = Math.PI * 2 * SPIN_RPM * (SPIN_MS / 1000);
@@ -1044,24 +1044,25 @@ export class MainGameScene extends Phaser.Scene {
     if (this.tweens) {
       spinTween = this.tweens.add({
         targets: arrowContainer,
-        rotation: `+=${spinRotation * 100}`, // large value, stopped early
+        rotation: `-=${spinRotation * 100}`, // counter-clockwise spin (decreasing radians)
         duration: SPIN_MS * 100,
         ease: 'Linear',
       });
     }
 
-    // Phase 2: after 700ms, stop spin + decelerate to correct angle
+    // Phase 2: after 700ms, stop spin + decelerate counter-clockwise to correct wall angle
     if (this.time) {
       this.time.delayedCall(SPIN_MS, () => {
         if (spinTween) spinTween.stop();
-        const cur = arrowContainer.rotation; // raw accumulated radians (no Phaser normalization)
-        // CORRECT: compute totalNorm from the *full* planned rotation (cur + extra spins),
-        // then calculate delta so that (cur + extra + delta) ≡ targetRad (mod 2π).
-        // Using curNorm = cur%2π would omit the extra spins and yield a ~π error.
-        const extraSpins = Math.PI * 2 * 1.5; // 1.5 dramatic extra rotations before settling
-        const totalNorm = (cur + extraSpins) % (Math.PI * 2);
-        const delta = ((targetRad - totalNorm) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
-        const finalRot = cur + extraSpins + delta; // guaranteed visual angle == targetRad
+        const cur = arrowContainer.rotation; // raw accumulated negative radians
+        const extraSpins = Math.PI * 2 * 1.5; // 1.5 extra counter-clockwise spins before settling
+        const plannedRot = cur - extraSpins;
+
+        // Calculate negative delta so that (plannedRot + deltaNeg) % 2π ≡ targetRad % 2π
+        const tRad = ((targetRad % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+        const pNorm = ((plannedRot % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+        const deltaNeg = -(((pNorm - tRad) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2));
+        const finalRot = plannedRot + deltaNeg; // purely counter-clockwise, stops exactly at targetRad
 
         if (this.tweens) {
           this.tweens.add({
