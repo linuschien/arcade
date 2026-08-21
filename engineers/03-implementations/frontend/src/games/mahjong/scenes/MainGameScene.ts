@@ -2046,18 +2046,19 @@ export class MainGameScene extends Phaser.Scene {
     this.settlementContainer.removeAll(true);
     this.settlementContainer.setVisible(true);
 
+    // Modal Background: 640x480 with gold border and deep navy glassmorphism
     const bg = this.add.graphics();
     bg.fillStyle(0x020617, 0.96);
-    bg.fillRoundedRect(-310, -240, 620, 480, 16);
+    bg.fillRoundedRect(-320, -240, 640, 480, 16);
     bg.lineStyle(2, 0xd4af37, 1);
-    bg.strokeRoundedRect(-310, -240, 620, 480, 16);
+    bg.strokeRoundedRect(-320, -240, 640, 480, 16);
     this.settlementContainer.add(bg);
 
     const isDraw = breakdown.isDraw;
     const winner = this.gameState.players[breakdown.winnerSeat];
     const loser = breakdown.loserSeat !== undefined ? this.gameState.players[breakdown.loserSeat] : null;
 
-    // 2.3 Title showing winner & who discarded (放槍者)
+    // Title showing winner & who discarded (放槍者)
     let titleText = '=== 流局 (荒莊，莊家連莊) ===';
     if (!isDraw) {
       if (breakdown.isSelfDrawn) {
@@ -2069,7 +2070,7 @@ export class MainGameScene extends Phaser.Scene {
       }
     }
 
-    const title = this.add.text(0, -215, titleText, {
+    const title = this.add.text(0, -216, titleText, {
       fontSize: '20px',
       fontFamily: '"Microsoft JhengHei", serif',
       color: '#facc15',
@@ -2078,79 +2079,84 @@ export class MainGameScene extends Phaser.Scene {
     title.setOrigin(0.5);
     this.settlementContainer.add(title);
 
-    // 1. Visual Winning Hand (圖形牌型展示，包含副露、立牌、胡牌、花牌)
-    let curY = -185;
+    // 1. Visual Winning Hand (圖形牌型展示: 兩行佈局，手牌一行、花牌一行)
+    let curY = -190;
     if (!isDraw) {
-      const patternLabel = this.add.text(-285, curY, '胡牌牌型:', {
-        fontSize: '12px',
+      // Row 1: 17 Winning Hand Tiles (26x36 HD Tiles: Melds + Concealed + Winning Tile)
+      const patternLabel = this.add.text(-300, curY + 10, '胡牌牌型:', {
+        fontSize: '13px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#93c5fd',
         fontStyle: 'bold',
       });
       this.settlementContainer.add(patternLabel);
 
-      let tileX = -215;
-      const tileW = 20;
-      const tileH = 28;
+      let tileX = -230;
+      const tileW = 26;
+      const tileH = 36;
 
       // 1.1 Render Melds
       winner.melds.forEach((meld) => {
         meld.tiles.forEach((t) => {
-          const sp = this.add.sprite(tileX + tileW / 2, curY + 14, `mahjong:tile_${t.shortCode}`);
+          const sp = this.add.sprite(tileX + tileW / 2, curY + tileH / 2, `mahjong:tile_${t.shortCode}`);
           sp.setDisplaySize(tileW, tileH);
           this.settlementContainer.add(sp);
           tileX += tileW + 1;
         });
-        tileX += 4; // gap between melds
+        tileX += 5; // clear gap between meld sets
       });
 
       // 1.2 Render Concealed Hand
       winner.hand.forEach((t) => {
-        const sp = this.add.sprite(tileX + tileW / 2, curY + 14, `mahjong:tile_${t.shortCode}`);
+        const sp = this.add.sprite(tileX + tileW / 2, curY + tileH / 2, `mahjong:tile_${t.shortCode}`);
         sp.setDisplaySize(tileW, tileH);
         this.settlementContainer.add(sp);
         tileX += tileW + 1;
       });
 
-      // 1.3 Render Winning Tile (with gap & neon cyan focus box + '胡' badge)
+      // 1.3 Render Winning Tile (with neon cyan focus box + '胡' badge)
       const winTile = breakdown.winningTile || winner.drawnTile || this.gameState.lastDiscard?.tile;
       if (winTile) {
         tileX += 6;
         const winBox = this.add.graphics();
         winBox.lineStyle(2, 0x00f0ff, 1);
-        winBox.strokeRoundedRect(tileX, curY, tileW - 2, tileH - 2, 3);
+        winBox.strokeRoundedRect(tileX - 1, curY - 1, tileW + 2, tileH + 2, 4);
         this.settlementContainer.add(winBox);
 
-        const sp = this.add.sprite(tileX + tileW / 2, curY + 14, `mahjong:tile_${winTile.shortCode}`);
+        const sp = this.add.sprite(tileX + tileW / 2, curY + tileH / 2, `mahjong:tile_${winTile.shortCode}`);
         sp.setDisplaySize(tileW, tileH);
         this.settlementContainer.add(sp);
 
-        const winBadge = this.add.text(tileX + tileW / 2, curY - 7, '胡', {
-          fontSize: '10px',
+        const winBadge = this.add.text(tileX + tileW / 2, curY - 8, '胡', {
+          fontSize: '11px',
           fontFamily: '"Microsoft JhengHei", sans-serif',
           color: '#ef4444',
           fontStyle: 'bold',
         });
         winBadge.setOrigin(0.5);
         this.settlementContainer.add(winBadge);
-        tileX += tileW + 6;
       }
 
-      // 1.4 Render Winner's Flowers (🌸 花牌)
-      if (winner.flowers && winner.flowers.length > 0) {
-        tileX += 8;
-        const flowerLabel = this.add.text(tileX, curY + 6, '🌸花:', {
-          fontSize: '11px',
+      curY += tileH + 6;
+
+      // Row 2: Winner's Flowers (🌸 抓花牌組，獨立一行絕不擠壓手牌)
+      const hasFlowers = winner.flowers && winner.flowers.length > 0;
+      if (hasFlowers) {
+        const flowerLabel = this.add.text(-300, curY + 6, `🌸 花牌加台 (${winner.flowers.length}張):`, {
+          fontSize: '12px',
           fontFamily: '"Microsoft JhengHei", sans-serif',
           color: '#f472b6',
           fontStyle: 'bold',
         });
         this.settlementContainer.add(flowerLabel);
-        tileX += 34;
+
+        let flowerX = -170;
+        const ftW = 22;
+        const ftH = 30;
 
         winner.flowers.forEach((flower) => {
-          const sp = this.add.sprite(tileX + tileW / 2, curY + 14, `mahjong:tile_${flower.shortCode}`);
-          sp.setDisplaySize(tileW, tileH);
+          const sp = this.add.sprite(flowerX + ftW / 2, curY + ftH / 2, `mahjong:tile_${flower.shortCode}`);
+          sp.setDisplaySize(ftW, ftH);
           this.settlementContainer.add(sp);
 
           // Check if this flower is positive flower for winner
@@ -2165,32 +2171,35 @@ export class MainGameScene extends Phaser.Scene {
           if (isPos) {
             const fBox = this.add.graphics();
             fBox.lineStyle(1.5, 0xf97316, 1);
-            fBox.strokeRoundedRect(tileX, curY, tileW - 2, tileH - 2, 2);
+            fBox.strokeRoundedRect(flowerX - 1, curY - 1, ftW + 2, ftH + 2, 3);
             this.settlementContainer.add(fBox);
           }
 
-          tileX += tileW + 1;
+          flowerX += ftW + 3;
         });
-      }
 
-      curY += 38;
+        curY += ftH + 8;
+      } else {
+        curY += 4;
+      }
     } else {
       curY += 10;
     }
 
     // 2. Fan Breakdown Box (條列式明細 + 總計台數)
-    const fanBoxHeight = isDraw ? 50 : 125;
+    const hasFlowers = !isDraw && winner.flowers && winner.flowers.length > 0;
+    const fanBoxHeight = isDraw ? 52 : hasFlowers ? 98 : 112;
     const fanBoxBg = this.add.graphics();
     fanBoxBg.fillStyle(0x0f172a, 0.85);
-    fanBoxBg.fillRoundedRect(-285, curY, 570, fanBoxHeight, 8);
+    fanBoxBg.fillRoundedRect(-300, curY, 600, fanBoxHeight, 8);
     fanBoxBg.lineStyle(1, 0x334155, 0.8);
-    fanBoxBg.strokeRoundedRect(-285, curY, 570, fanBoxHeight, 8);
+    fanBoxBg.strokeRoundedRect(-300, curY, 600, fanBoxHeight, 8);
     this.settlementContainer.add(fanBoxBg);
 
     let fanY = curY + 8;
     if (isDraw) {
-      const drawLine = this.add.text(-270, fanY + 8, '海底牌盡無人胡牌，莊家連莊保留莊位', {
-        fontSize: '13px',
+      const drawLine = this.add.text(-280, fanY + 8, '海底牌盡無人胡牌，莊家連莊保留莊位', {
+        fontSize: '14px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#94a3b8',
       });
@@ -2201,11 +2210,11 @@ export class MainGameScene extends Phaser.Scene {
       fans.forEach((f, idx) => {
         const col = idx % 2;
         const row = Math.floor(idx / 2);
-        const fx = col === 0 ? -270 : 10;
-        const fy = fanY + row * 18;
+        const fx = col === 0 ? -285 : 15;
+        const fy = fanY + row * 19;
 
         const fanLine = this.add.text(fx, fy, `• ${f.name} (+${f.fan}台)`, {
-          fontSize: '12px',
+          fontSize: '13px',
           fontFamily: '"Microsoft JhengHei", sans-serif',
           color: '#f8fafc',
         });
@@ -2213,7 +2222,7 @@ export class MainGameScene extends Phaser.Scene {
       });
 
       const maxFanRows = Math.ceil(fans.length / 2);
-      let dealerY = fanY + Math.max(maxFanRows * 18, 20);
+      let dealerY = fanY + Math.max(maxFanRows * 19, 20);
 
       // Dealer Streak liability line with precise phrasing
       let dealerNote = '';
@@ -2225,23 +2234,22 @@ export class MainGameScene extends Phaser.Scene {
         dealerNote = `• 閒家自摸莊家額外賠付: 莊家 1台 + 連${breakdown.dealerStreak}拉${breakdown.dealerStreak} ${2 * breakdown.dealerStreak}台 (莊家加賠 ${breakdown.dealerMultiplierFan}台)`;
       }
 
-      if (dealerNote) {
-        const dealerText = this.add.text(-270, dealerY, dealerNote, {
-          fontSize: '12px',
+      if (dealerNote && dealerY < curY + fanBoxHeight - 24) {
+        const dealerText = this.add.text(-285, dealerY, dealerNote, {
+          fontSize: '12.5px',
           fontFamily: '"Microsoft JhengHei", sans-serif',
           color: '#fbbf24',
         });
         this.settlementContainer.add(dealerText);
-        dealerY += 18;
       }
 
       // 4. Prominent Total Fans Banner (總計台數)
       const totalFansLine = this.add.text(
-        -270,
+        -285,
         curY + fanBoxHeight - 22,
         `【 總計台數: ${breakdown.totalFans} 台 】 (底 500 點 / 台 200 點)`,
         {
-          fontSize: '13px',
+          fontSize: '14px',
           fontFamily: '"Microsoft JhengHei", sans-serif',
           color: '#38bdf8',
           fontStyle: 'bold',
@@ -2250,32 +2258,32 @@ export class MainGameScene extends Phaser.Scene {
       this.settlementContainer.add(totalFansLine);
     }
 
-    curY += fanBoxHeight + 12;
+    curY += fanBoxHeight + 10;
 
     // 2.3 Four-player Ledger Table (四家點數計算清單，精確座標對齊)
     const colX = {
-      seat: -280,
-      wind: -140,
-      id: -75,
-      role: -10,
-      delta: 140,
-      chips: 280,
+      seat: -290,
+      wind: -145,
+      id: -80,
+      role: -15,
+      delta: 145,
+      chips: 290,
     };
 
     const headerBg = this.add.graphics();
-    headerBg.fillStyle(0x1e293b, 0.7);
-    headerBg.fillRoundedRect(-285, curY - 2, 570, 20, 4);
+    headerBg.fillStyle(0x1e293b, 0.8);
+    headerBg.fillRoundedRect(-300, curY, 600, 24, 4);
     this.settlementContainer.add(headerBg);
 
-    const h1 = this.add.text(colX.seat, curY, '座位 / 玩家', { fontSize: '11px', fontFamily: '"Microsoft JhengHei", sans-serif', color: '#94a3b8', fontStyle: 'bold' });
-    const h2 = this.add.text(colX.wind, curY, '門風', { fontSize: '11px', fontFamily: '"Microsoft JhengHei", sans-serif', color: '#94a3b8', fontStyle: 'bold' });
-    const h3 = this.add.text(colX.id, curY, '身份', { fontSize: '11px', fontFamily: '"Microsoft JhengHei", sans-serif', color: '#94a3b8', fontStyle: 'bold' });
-    const h4 = this.add.text(colX.role, curY, '勝負角色', { fontSize: '11px', fontFamily: '"Microsoft JhengHei", sans-serif', color: '#94a3b8', fontStyle: 'bold' });
-    const h5 = this.add.text(colX.delta, curY, '點數變動', { fontSize: '11px', fontFamily: '"Microsoft JhengHei", sans-serif', color: '#94a3b8', fontStyle: 'bold' }).setOrigin(1, 0);
-    const h6 = this.add.text(colX.chips, curY, '剩餘籌碼', { fontSize: '11px', fontFamily: '"Microsoft JhengHei", sans-serif', color: '#94a3b8', fontStyle: 'bold' }).setOrigin(1, 0);
+    const h1 = this.add.text(colX.seat, curY + 3, '座位 / 玩家', { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: '#94a3b8', fontStyle: 'bold' });
+    const h2 = this.add.text(colX.wind, curY + 3, '門風', { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: '#94a3b8', fontStyle: 'bold' });
+    const h3 = this.add.text(colX.id, curY + 3, '身份', { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: '#94a3b8', fontStyle: 'bold' });
+    const h4 = this.add.text(colX.role, curY + 3, '勝負角色', { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: '#94a3b8', fontStyle: 'bold' });
+    const h5 = this.add.text(colX.delta, curY + 3, '點數變動', { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: '#94a3b8', fontStyle: 'bold' }).setOrigin(1, 0);
+    const h6 = this.add.text(colX.chips, curY + 3, '剩餘籌碼', { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: '#94a3b8', fontStyle: 'bold' }).setOrigin(1, 0);
     this.settlementContainer.add([h1, h2, h3, h4, h5, h6]);
 
-    curY += 22;
+    curY += 26;
 
     const arrows = ['▼', '▶', '▲', '◀'];
     const windNames: Record<string, string> = {
@@ -2307,38 +2315,46 @@ export class MainGameScene extends Phaser.Scene {
       const deltaStr = delta > 0 ? `+${delta.toLocaleString()} 點` : delta < 0 ? `${delta.toLocaleString()} 點` : '0 點';
       const remainingStr = `${breakdown.remainingChips[i].toLocaleString()} 點`;
 
-      const rowColor = isWinner ? '#4ade80' : isVictim ? '#f87171' : '#94a3b8';
+      const rowColor = isWinner ? '#4ade80' : isVictim ? '#f87171' : '#cbd5e1';
       const fontStyle = isWinner || p.isDealer ? 'bold' : 'normal';
 
-      if (i % 2 === 1) {
-        const rowBg = this.add.graphics();
+      const rowBg = this.add.graphics();
+      if (isWinner) {
+        rowBg.fillStyle(0x14532d, 0.45);
+        rowBg.fillRoundedRect(-300, curY - 1, 600, 22, 3);
+        this.settlementContainer.add(rowBg);
+      } else if (i % 2 === 1) {
         rowBg.fillStyle(0x1e293b, 0.35);
-        rowBg.fillRoundedRect(-285, curY - 2, 570, 18, 2);
+        rowBg.fillRoundedRect(-300, curY - 1, 600, 22, 3);
         this.settlementContainer.add(rowBg);
       }
 
-      const tSeat = this.add.text(colX.seat, curY, `${arrows[i]} ${p.name}`, { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: rowColor, fontStyle });
+      const tSeat = this.add.text(colX.seat, curY + 2, `${arrows[i]} ${p.name}`, { fontSize: '13px', fontFamily: '"Microsoft JhengHei", sans-serif', color: rowColor, fontStyle });
       const effectiveWind = this.gameState.getEffectiveWind(i as PlayerSeat);
-      const tWind = this.add.text(colX.wind, curY, windNames[effectiveWind] || '東風', { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: rowColor, fontStyle });
-      const tId = this.add.text(colX.id, curY, p.isDealer ? '莊家' : '閒家', { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: p.isDealer ? '#fbbf24' : rowColor, fontStyle });
-      const tRole = this.add.text(colX.role, curY, roleText, { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: isWinner ? '#4ade80' : isVictim ? '#f87171' : '#94a3b8', fontStyle });
-      const tDelta = this.add.text(colX.delta, curY, deltaStr, { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: delta > 0 ? '#4ade80' : delta < 0 ? '#f87171' : '#94a3b8', fontStyle }).setOrigin(1, 0);
-      const tChips = this.add.text(colX.chips, curY, remainingStr, { fontSize: '12px', fontFamily: '"Microsoft JhengHei", sans-serif', color: '#e2e8f0', fontStyle }).setOrigin(1, 0);
+      const tWind = this.add.text(colX.wind, curY + 2, windNames[effectiveWind] || '東風', { fontSize: '13px', fontFamily: '"Microsoft JhengHei", sans-serif', color: rowColor, fontStyle });
+      const tId = this.add.text(colX.id, curY + 2, p.isDealer ? '莊家' : '閒家', { fontSize: '13px', fontFamily: '"Microsoft JhengHei", sans-serif', color: p.isDealer ? '#fbbf24' : rowColor, fontStyle });
+      const tRole = this.add.text(colX.role, curY + 2, roleText, { fontSize: '13px', fontFamily: '"Microsoft JhengHei", sans-serif', color: isWinner ? '#4ade80' : isVictim ? '#f87171' : '#cbd5e1', fontStyle });
+      const tDelta = this.add.text(colX.delta, curY + 2, deltaStr, { fontSize: '13px', fontFamily: '"Microsoft JhengHei", sans-serif', color: delta > 0 ? '#4ade80' : delta < 0 ? '#f87171' : '#cbd5e1', fontStyle }).setOrigin(1, 0);
+      const tChips = this.add.text(colX.chips, curY + 2, remainingStr, { fontSize: '13px', fontFamily: '"Microsoft JhengHei", sans-serif', color: '#f1f5f9', fontStyle }).setOrigin(1, 0);
 
       this.settlementContainer.add([tSeat, tWind, tId, tRole, tDelta, tChips]);
-      curY += 20;
+      curY += 23;
     }
 
-    // Continue Button (繼續下一局)
+    // Continue Button (繼續下一局，放大至 180x38 大按鈕，帶懸浮反饋)
+    const btnW = 180;
+    const btnH = 38;
+    const btnY = 194;
+
     const nextBtn = this.add.graphics();
     nextBtn.fillStyle(0x2563eb, 1);
-    nextBtn.fillRoundedRect(-80, 195, 160, 34, 6);
-    nextBtn.lineStyle(1, 0x93c5fd, 0.8);
-    nextBtn.strokeRoundedRect(-80, 195, 160, 34, 6);
+    nextBtn.fillRoundedRect(-btnW / 2, btnY, btnW, btnH, 8);
+    nextBtn.lineStyle(1.5, 0x93c5fd, 0.9);
+    nextBtn.strokeRoundedRect(-btnW / 2, btnY, btnW, btnH, 8);
     this.settlementContainer.add(nextBtn);
 
-    const nextTxt = this.add.text(0, 212, '繼續下一局', {
-      fontSize: '14px',
+    const nextTxt = this.add.text(0, btnY + btnH / 2, '繼續下一局', {
+      fontSize: '15px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#ffffff',
       fontStyle: 'bold',
@@ -2346,7 +2362,21 @@ export class MainGameScene extends Phaser.Scene {
     nextTxt.setOrigin(0.5);
     this.settlementContainer.add(nextTxt);
 
-    nextBtn.setInteractive(new Phaser.Geom.Rectangle(-80, 195, 160, 34), Phaser.Geom.Rectangle.Contains);
+    nextBtn.setInteractive(new Phaser.Geom.Rectangle(-btnW / 2, btnY, btnW, btnH), Phaser.Geom.Rectangle.Contains);
+    nextBtn.on('pointerover', () => {
+      nextBtn.clear();
+      nextBtn.fillStyle(0x3b82f6, 1);
+      nextBtn.fillRoundedRect(-btnW / 2, btnY, btnW, btnH, 8);
+      nextBtn.lineStyle(1.5, 0xdbeafe, 1);
+      nextBtn.strokeRoundedRect(-btnW / 2, btnY, btnW, btnH, 8);
+    });
+    nextBtn.on('pointerout', () => {
+      nextBtn.clear();
+      nextBtn.fillStyle(0x2563eb, 1);
+      nextBtn.fillRoundedRect(-btnW / 2, btnY, btnW, btnH, 8);
+      nextBtn.lineStyle(1.5, 0x93c5fd, 0.9);
+      nextBtn.strokeRoundedRect(-btnW / 2, btnY, btnW, btnH, 8);
+    });
     nextBtn.on('pointerdown', () => {
       this.settlementContainer.setVisible(false);
       this.tingContainer.setVisible(false);
