@@ -452,13 +452,15 @@ describe('MahjongGameState Unit Tests', () => {
       state.stepAITurn(state.dealerSeat);
       const postDiscardTileCount = dealer.hand.length + (dealer.drawnTile ? 1 : 0);
       expect(postDiscardTileCount).toBe(16);
-      expect(dealer.discards.length).toBe(1);
+      const hasClaimedMeld = state.players.some((p) => p.melds.length > 0);
+      expect(dealer.discards.length + (hasClaimedMeld ? 1 : 0)).toBe(1);
     } else {
       const discardTileId = dealer.drawnTile ? dealer.drawnTile.id : dealer.hand[0].id;
       state.discardTile(0, discardTileId);
       const postDiscardTileCount = dealer.hand.length + (dealer.drawnTile ? 1 : 0);
       expect(postDiscardTileCount).toBe(16);
-      expect(dealer.discards.length).toBe(1);
+      const hasClaimedMeld = state.players.some((p) => p.melds.length > 0);
+      expect(dealer.discards.length + (hasClaimedMeld ? 1 : 0)).toBe(1);
     }
   });
 
