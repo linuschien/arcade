@@ -7,6 +7,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MahjongGameState } from '../logic/MahjongGameState';
 import { Tile, Meld, PlayerSeat } from '../logic/MahjongTypes';
+import { MahjongHandEvaluator } from '../logic/MahjongHandEvaluator';
 
 describe('MahjongGameState Unit Tests', () => {
   let state: MahjongGameState;
@@ -326,6 +327,102 @@ describe('MahjongGameState Unit Tests', () => {
     // Human declares PASS
     state.humanRespondAction('PASS');
     expect(state.phase).toBe('PLAYER_TURN');
+  });
+
+  it('should enforce 同巡禁碰 (passPongCodesInTurn) until player draws in next turn', () => {
+    state.startNewMatch();
+    const p0 = state.players[0];
+    p0.hand = [
+      { id: '5m_1', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' },
+      { id: '5m_2', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' },
+      { id: '1s_0', suit: 'BAMBOO', value: 1, name: '一條', shortCode: '1s' },
+    ];
+    p0.drawnTile = null;
+
+    // 1. Seat 1 (下家) discards 5m
+    const discard5m_1: Tile = { id: '5m_a', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' };
+    state.lastDiscard = { tile: discard5m_1, fromSeat: 1 };
+    state.phase = 'ACTION_WAIT';
+
+    // Player 0 PASSes on Ponging 5m from Seat 1
+    state.humanRespondAction('PASS');
+    expect(p0.passPongCodesInTurn.has('5m')).toBe(true);
+
+    // 2. In the same turn cycle, Seat 2 (對家) discards another 5m
+    const discard5m_2: Tile = { id: '5m_b', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' };
+    state.lastDiscard = { tile: discard5m_2, fromSeat: 2 };
+    state.phase = 'ACTION_WAIT';
+
+    // Verify Player 0 CANNOT Pong this 5m because of 同巡禁碰
+    const canPongInSameTurn = MahjongHandEvaluator.canPong(p0.hand, discard5m_2, p0.passPongCodesInTurn);
+    expect(canPongInSameTurn).toBe(false);
+
+    // 3. Seat 3 (上家) discards 9s (ending other players' turns)
+    const discard9s: Tile = { id: '9s_a', suit: 'BAMBOO', value: 9, name: '九條', shortCode: '9s' };
+    state.lastDiscard = { tile: discard9s, fromSeat: 3 };
+
+    // 4. Now it is Player 0's turn! Player 0 starts turn, draws, and discards -> passPongCodesInTurn is cleared
+    state.startPlayerTurn(0, false);
+    p0.drawnTile = { id: 'drawn_1', suit: 'DOTS', value: 1, name: '一筒', shortCode: '1p' };
+    state.discardTile(0, p0.drawnTile.id);
+    expect(p0.passPongCodesInTurn.size).toBe(0);
+
+    // 5. In the next turn cycle, Seat 1 (下家) discards 5m again -> Player 0 CAN now legally Pong!
+    const canPongInNextTurn = MahjongHandEvaluator.canPong(p0.hand, discard5m_1, p0.passPongCodesInTurn);
+    expect(canPongInNextTurn).toBe(true);
+  });
+
+  it('should enforce 過胡禁胡 (isPassLockout) until player completes 過水 (draw and discard)', () => {
+    state.startNewMatch();
+    const p0 = state.players[0];
+    // 16-tile hand in 0-Shanten Ting on 3s and 6s
+    p0.hand = [
+      { id: '1m_1', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      { id: '2m_1', suit: 'CHARACTERS', value: 2, name: '二萬', shortCode: '2m' },
+      { id: '3m_1', suit: 'CHARACTERS', value: 3, name: '三萬', shortCode: '3m' },
+      { id: '4m_1', suit: 'CHARACTERS', value: 4, name: '四萬', shortCode: '4m' },
+      { id: '5m_1', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' },
+      { id: '6m_1', suit: 'CHARACTERS', value: 6, name: '六萬', shortCode: '6m' },
+      { id: '7m_1', suit: 'CHARACTERS', value: 7, name: '七萬', shortCode: '7m' },
+      { id: '8m_1', suit: 'CHARACTERS', value: 8, name: '八萬', shortCode: '8m' },
+      { id: '9m_1', suit: 'CHARACTERS', value: 9, name: '九萬', shortCode: '9m' },
+      { id: '1p_1', suit: 'DOTS', value: 1, name: '一筒', shortCode: '1p' },
+      { id: '2p_1', suit: 'DOTS', value: 2, name: '二筒', shortCode: '2p' },
+      { id: '3p_1', suit: 'DOTS', value: 3, name: '三筒', shortCode: '3p' },
+      { id: '4s_1', suit: 'BAMBOO', value: 4, name: '四條', shortCode: '4s' },
+      { id: '5s_1', suit: 'BAMBOO', value: 5, name: '五條', shortCode: '5s' },
+      { id: '9p_1', suit: 'DOTS', value: 9, name: '九筒', shortCode: '9p' },
+      { id: '9p_2', suit: 'DOTS', value: 9, name: '九筒', shortCode: '9p' },
+    ];
+    p0.drawnTile = null;
+
+    // 1. Seat 1 (下家) discards 3s (winning tile)
+    const discard3s: Tile = { id: '3s_1', suit: 'BAMBOO', value: 3, name: '三條', shortCode: '3s' };
+    state.lastDiscard = { tile: discard3s, fromSeat: 1 };
+    state.phase = 'ACTION_WAIT';
+
+    // Player 0 PASSes on Hu (過胡)
+    state.humanRespondAction('PASS');
+    expect(p0.isPassLockout).toBe(true);
+
+    // 2. In the same cycle, Seat 2 (對家) discards 6s (also a winning tile)
+    const discard6s: Tile = { id: '6s_1', suit: 'BAMBOO', value: 6, name: '六條', shortCode: '6s' };
+    state.lastDiscard = { tile: discard6s, fromSeat: 2 };
+    // Verify Player 0 cannot Hu because of Pass Lockout
+    const canHuWhileLocked = !p0.isPassLockout && MahjongHandEvaluator.isWinningHand(p0.hand, p0.melds, discard6s);
+    expect(canHuWhileLocked).toBe(false);
+
+    // 3. Seat 3 (上家) discards 9s
+    state.lastDiscard = { tile: { id: '9s_1', suit: 'BAMBOO', value: 9, name: '九條', shortCode: '9s' }, fromSeat: 3 };
+
+    // 4. Player 0 draws a tile and discards a tile (完成過水)
+    p0.drawnTile = { id: 'drawn_2', suit: 'DOTS', value: 1, name: '一筒', shortCode: '1p' };
+    state.discardTile(0, p0.drawnTile.id);
+    expect(p0.isPassLockout).toBe(false); // Lockout is now cleared!
+
+    // 5. Next cycle, Seat 1 (下家) discards 6s -> Player 0 CAN now legally win (Hu)!
+    const canHuAfterWaterPass = !p0.isPassLockout && MahjongHandEvaluator.isWinningHand(p0.hand, p0.melds, discard6s);
+    expect(canHuAfterWaterPass).toBe(true);
   });
 
   it('should handle Draw (流局) with dealer retaining streak (N = N + 1)', () => {

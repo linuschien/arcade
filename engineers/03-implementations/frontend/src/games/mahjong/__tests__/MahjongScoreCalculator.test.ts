@@ -452,4 +452,72 @@ describe('MahjongScoreCalculator Unit Tests', () => {
     expect(result.fans.some((f) => f.name === '門清自摸' && f.fan === 3)).toBe(true);
     expect(result.totalFans).toBe(15);
   });
+
+  it('should evaluate 搶槓 (1 fan) on Robbing Kong Ron settlement', () => {
+    // Hand: 123m, 456m, 789m, 123p, 45s + 9s9s (Ron on opponent 6s Added Kong)
+    const handCodes = [
+      '1m', '2m', '3m',
+      '4m', '5m', '6m',
+      '7m', '8m', '9m',
+      '1p', '2p', '3p',
+      '4s', '5s',
+      '9s', '9s',
+    ];
+    const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+    const winningTile = createTile('6s', 'robbing_kong');
+
+    const result = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 1,
+      winnerHand: hand,
+      winnerMelds: [],
+      winnerFlowers: [],
+      winningTile,
+      isSelfDrawn: false,
+      loserSeat: 2,
+      isRobbingKong: true,
+      roundWind: 'EAST',
+      playerWind: 'SOUTH',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+
+    expect(result.fans.some((f) => f.name === '搶槓' && f.fan === 1)).toBe(true);
+    expect(result.fans.some((f) => f.name === '門清' && f.fan === 1)).toBe(true);
+    expect(result.fans.some((f) => f.name === '平胡' && f.fan === 2)).toBe(true);
+    expect(result.totalFans).toBe(4);
+  });
+
+  it('should evaluate 海底撈月 (1 fan) on Last Tile Draw Self-Win', () => {
+    // Hand: 123m, 456m, 789m, 123p, 456s + 9s9s (Self-drawn from last remaining wall tile)
+    const handCodes = [
+      '1m', '2m', '3m',
+      '4m', '5m', '6m',
+      '7m', '8m', '9m',
+      '1p', '2p', '3p',
+      '4s', '5s', '6s',
+      '9s',
+    ];
+    const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+    const winningTile = createTile('9s', 'last_tile');
+
+    const result = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 1,
+      winnerHand: hand,
+      winnerMelds: [],
+      winnerFlowers: [],
+      winningTile,
+      isSelfDrawn: true,
+      isLastTileDraw: true,
+      roundWind: 'EAST',
+      playerWind: 'SOUTH',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+
+    expect(result.fans.some((f) => f.name === '海底撈月' && f.fan === 1)).toBe(true);
+    expect(result.fans.some((f) => f.name === '門清自摸' && f.fan === 3)).toBe(true);
+    expect(result.totalFans).toBe(4);
+  });
 });

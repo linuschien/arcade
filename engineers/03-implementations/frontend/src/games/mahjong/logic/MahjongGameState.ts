@@ -481,6 +481,7 @@ export class MahjongGameState {
     }
 
     const player = this.players[seat];
+    player.passPongCodesInTurn.clear();
 
     if (needDraw) {
       if (!this.deck.hasRegularTilesLeft()) {
