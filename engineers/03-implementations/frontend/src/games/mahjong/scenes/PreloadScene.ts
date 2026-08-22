@@ -115,20 +115,22 @@ export class PreloadScene extends Phaser.Scene {
       }
     }
 
-    // 3. Characters (1m ~ 9m) - 硃砂紅
+    // 3. Characters (1m ~ 9m) - 硃砂紅 (飽滿大氣 75% 覆蓋率)
     const numChars = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
     for (let i = 1; i <= 9; i++) {
       createTileCanvas(`mahjong:tile_${i}m`, (ctx) => {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        ctx.font = 'bold 13px "Microsoft JhengHei", "Songti TC", serif';
+        // Upper Numeral (18px bold, rich cinnabar red)
+        ctx.font = 'bold 18px "Microsoft JhengHei", "PingFang TC", "Noto Serif TC", "Songti TC", serif';
         ctx.fillStyle = '#b91c1c'; // Cinnabar Red
-        ctx.fillText(numChars[i], W / 2 - 1, H / 2 - 8);
+        ctx.fillText(numChars[i], W / 2 - 1, H / 2 - 9);
 
-        ctx.font = 'bold 12px "Microsoft JhengHei", "Songti TC", serif';
+        // Lower '萬' (17px bold, rich cinnabar red)
+        ctx.font = 'bold 17px "Microsoft JhengHei", "PingFang TC", "Noto Serif TC", "Songti TC", serif';
         ctx.fillStyle = '#b91c1c';
-        ctx.fillText('萬', W / 2 - 1, H / 2 + 8);
+        ctx.fillText('萬', W / 2 - 1, H / 2 + 10);
       });
     }
 
@@ -551,7 +553,7 @@ export class PreloadScene extends Phaser.Scene {
       }
     });
 
-    // 6. Winds (East, South, West, North) - 蒼黑
+    // 6. Winds (East, South, West, North) - 蒼黑 (大氣 26px)
     const winds = [
       { key: 'east', char: '東' },
       { key: 'south', char: '南' },
@@ -562,7 +564,7 @@ export class PreloadScene extends Phaser.Scene {
       createTileCanvas(`mahjong:tile_${key}`, (ctx) => {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.font = 'bold 18px "Microsoft JhengHei", "Songti TC", serif';
+        ctx.font = 'bold 26px "Microsoft JhengHei", "PingFang TC", "Noto Serif TC", "Songti TC", serif';
         ctx.fillStyle = '#0f172a'; // Deep Black
         ctx.fillText(char, W / 2 - 1, H / 2 - 1);
       });
@@ -570,27 +572,37 @@ export class PreloadScene extends Phaser.Scene {
 
     // 7. Dragons (Red, Green, White)
     const dragons = [
-      { key: 'red', char: '中', color: '#dc2626' },
-      { key: 'green', char: '發', color: '#16a34a' },
-      { key: 'white', char: '白', color: '#0284c7' },
+      { key: 'red', char: '中', color: '#dc2626', size: 27 },
+      { key: 'green', char: '發', color: '#15803d', size: 26 },
+      { key: 'white', char: '白', color: '#0284c7', size: 0 },
     ];
-    dragons.forEach(({ key, char, color }) => {
+    dragons.forEach(({ key, char, color, size }) => {
       createTileCanvas(`mahjong:tile_${key}`, (ctx) => {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         if (key === 'white') {
-          // White Dragon Box
+          // White Dragon Box: Elegant double-line geometric acrylic frame (22x34)
           ctx.strokeStyle = '#0284c7';
-          ctx.lineWidth = 2.5;
+          ctx.lineWidth = 2.2;
           if (typeof ctx.strokeRect === 'function') {
-            ctx.strokeRect(W / 2 - 9, H / 2 - 13, 16, 24);
+            ctx.strokeRect(W / 2 - 12, H / 2 - 18, 22, 34);
           } else if (typeof ctx.rect === 'function') {
             ctx.beginPath();
-            ctx.rect(W / 2 - 9, H / 2 - 13, 16, 24);
+            ctx.rect(W / 2 - 12, H / 2 - 18, 22, 34);
+            ctx.stroke?.();
+          }
+          // Inner thin decorative groove
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 0.8;
+          if (typeof ctx.strokeRect === 'function') {
+            ctx.strokeRect(W / 2 - 9, H / 2 - 15, 16, 28);
+          } else if (typeof ctx.rect === 'function') {
+            ctx.beginPath();
+            ctx.rect(W / 2 - 9, H / 2 - 15, 16, 28);
             ctx.stroke?.();
           }
         } else {
-          ctx.font = 'bold 19px "Microsoft JhengHei", "Songti TC", serif';
+          ctx.font = `bold ${size}px "Microsoft JhengHei", "PingFang TC", "Noto Serif TC", "Songti TC", serif`;
           ctx.fillStyle = color;
           ctx.fillText?.(char, W / 2 - 1, H / 2 - 1);
         }
@@ -613,13 +625,13 @@ export class PreloadScene extends Phaser.Scene {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        ctx.font = 'bold 15px "Microsoft JhengHei", "Songti TC", serif';
+        ctx.font = 'bold 20px "Microsoft JhengHei", "PingFang TC", "Noto Serif TC", "Songti TC", serif';
         ctx.fillStyle = color;
         ctx.fillText(char, W / 2 - 1, H / 2 - 7);
 
         ctx.font = 'bold 12px monospace';
         ctx.fillStyle = '#7c2d12';
-        ctx.fillText(num, W / 2 - 1, H / 2 + 10);
+        ctx.fillText(num, W / 2 - 1, H / 2 + 12);
       });
     });
 
