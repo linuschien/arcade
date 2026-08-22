@@ -1,10 +1,11 @@
 /**
  * MahjongAI.ts
  * Implements Shanten calculation, effective tile acceptance maximization,
- * defensive danger rating (Genbutsu, Suji, Dead Honors), and Meld EV decisions.
+ * defensive danger rating (Genbutsu, Suji, Dead Honors), universal Kong evaluation,
+ * and aggressive Shanten-reduction Meld decisions.
  */
 
-import { Tile, Meld, AvailableActions, PlayerProfile, SeatWind } from './MahjongTypes';
+import { Tile, Meld, AvailableActions, PlayerProfile, SeatWind, KongOption } from './MahjongTypes';
 import { MahjongHandEvaluator } from './MahjongHandEvaluator';
 
 export class MahjongAI {
@@ -117,6 +118,41 @@ export class MahjongAI {
   }
 
   /**
+   * Counts the total remaining copies of winning tiles outside in visible information.
+   * Reuses the Single Source of Truth from MahjongHandEvaluator.evaluateTing.
+   */
+  public static countWinningTilesRemaining(
+    hand: Tile[],
+    melds: Meld[],
+    allKnownVisibleTiles: Tile[] = []
+  ): number {
+    const tingInfo = MahjongHandEvaluator.evaluateTing(hand, melds, allKnownVisibleTiles);
+    return tingInfo.winningTiles.reduce((sum, w) => sum + w.remainingCount, 0);
+  }
+
+  /**
+   * Evaluates whether the AI should switch to defense mode based on Shanten and remaining draws.
+   */
+  public static shouldDefend(
+    currentShanten: number,
+    remainingWallTiles: number,
+    isDeadWait: boolean = false
+  ): boolean {
+    // 1. If in dead wait (0 live winning tiles left), defense is mandatory
+    if (isDeadWait) return true;
+
+    // 2. If in live Ting (0-Shanten with > 0 live winning tiles), 100% attack
+    if (currentShanten === 0) return false;
+
+    // 3. For all Shanten >= 1:
+    // Personal remaining draws M = Math.floor(remainingWallTiles / 4).
+    // From S-Shanten, minimum draws needed to win under perfect consecutive draws is S + 1.
+    // When M <= S (M < S + 1), it is mathematically impossible to complete the hand -> Defend!
+    const remainingDraws = Math.floor(remainingWallTiles / 4);
+    return remainingDraws <= currentShanten;
+  }
+
+  /**
    * Evaluates the best discard for the AI player.
    */
   public static chooseBestDiscard(
@@ -133,20 +169,16 @@ export class MahjongAI {
       return hand[0];
     }
 
-    // Check if defense mode should be activated
     const currentShanten = this.calculateShanten(hand, melds);
-    const shouldDefend =
-      currentShanten >= 2 &&
-      (opponents.some((p) => p.isTing || p.melds.length >= 3) || remainingWallTiles < 30);
+    const isDeadWait = currentShanten === 0 && this.countWinningTilesRemaining(hand, melds, allKnownVisibleTiles) === 0;
 
-    if (shouldDefend) {
+    if (this.shouldDefend(currentShanten, remainingWallTiles, isDeadWait)) {
       return this.chooseSafestDiscard(hand, opponents, allKnownVisibleTiles);
     }
 
     let bestTile = hand[0];
     let bestScore = -999999;
 
-    // Count duplicates in hand
     const handCounts = new Map<string, number>();
     hand.forEach((t) => handCounts.set(t.shortCode, (handCounts.get(t.shortCode) || 0) + 1));
 
@@ -168,8 +200,13 @@ export class MahjongAI {
         }
       }
 
-      // Total score: heavily weight lower shanten, then acceptance, then discard bias
-      const score = (10 - s) * 10000 + acceptance * 100 + discardBonus;
+      // Penalty for discarding into a 0-tile dead wait (never deliberately choose a dead Ting)
+      let deadTingPenalty = 0;
+      if (s === 0 && acceptance === 0) {
+        deadTingPenalty = -50000;
+      }
+
+      const score = (10 - s) * 10000 + acceptance * 100 + discardBonus + deadTingPenalty;
 
       if (score > bestScore) {
         bestScore = score;
@@ -265,15 +302,9 @@ export class MahjongAI {
     allKnownVisibleTiles.forEach((t) => {
       visibleCounts.set(t.shortCode, (visibleCounts.get(t.shortCode) || 0) + 1);
     });
+
     if (currentShanten === 0) {
-      let totalWinningTiles = 0;
-      for (const testTile of sampleTiles) {
-        if (MahjongHandEvaluator.isWinningHand(hand, melds, testTile)) {
-          const usedCount = visibleCounts.get(testTile.shortCode) || 0;
-          totalWinningTiles += Math.max(0, 4 - usedCount);
-        }
-      }
-      return totalWinningTiles;
+      return this.countWinningTilesRemaining(hand, melds, allKnownVisibleTiles);
     }
 
     let totalAcceptance = 0;
@@ -293,6 +324,155 @@ export class MahjongAI {
   }
 
   /**
+   * Universal Kong Evaluation Engine.
+   * Evaluates whether executing a kongOption (CONCEALED_KONG, ADDED_KONG, MELDED_KONG)
+   * is beneficial and safe regarding Shanten, winning tiles count, and fan preservation.
+   */
+  public static isKongBeneficial(
+    kong: KongOption,
+    hand: Tile[],
+    melds: Meld[],
+    allKnownVisibleTiles: Tile[] = []
+  ): boolean {
+    const isConcealed = melds.length === 0;
+
+    // 1. Melded Kong (大明槓) Fan Checks:
+    if (kong.type === 'MELDED_KONG') {
+      // Must preserve 門清
+      if (isConcealed) return false;
+
+      // Must preserve 三暗刻 / 四暗刻
+      const codeCounts = new Map<string, number>();
+      for (const t of hand) {
+        if (!t.isFlower) {
+          codeCounts.set(t.shortCode, (codeCounts.get(t.shortCode) || 0) + 1);
+        }
+      }
+      let concealedTriplets = 0;
+      for (const count of codeCounts.values()) {
+        if (count >= 3) concealedTriplets++;
+      }
+      if (concealedTriplets >= 3) {
+        return false; // Protect 三暗刻 / 四暗刻
+      }
+    }
+
+    // 2. Simulate Hand & Melds after Kong:
+    const remainingHand: Tile[] = [];
+    const simulatedMelds: Meld[] = [...melds];
+
+    if (kong.type === 'CONCEALED_KONG') {
+      let removed = 0;
+      const kongTiles: Tile[] = [];
+      for (const t of hand) {
+        if (t.shortCode === kong.tileCode && removed < 4) {
+          kongTiles.push(t);
+          removed++;
+        } else {
+          remainingHand.push(t);
+        }
+      }
+      simulatedMelds.push({
+        type: 'CONCEALED_KONG',
+        tiles: kongTiles,
+        sourceSeat: 0,
+      });
+    } else if (kong.type === 'ADDED_KONG') {
+      let removed = 0;
+      for (const t of hand) {
+        if (t.shortCode === kong.tileCode && removed < 1) {
+          removed++;
+        } else {
+          remainingHand.push(t);
+        }
+      }
+      if (typeof kong.meldIndex === 'number' && simulatedMelds[kong.meldIndex]) {
+        const oldMeld = simulatedMelds[kong.meldIndex];
+        simulatedMelds[kong.meldIndex] = {
+          ...oldMeld,
+          type: 'ADDED_KONG',
+        };
+      }
+    } else if (kong.type === 'MELDED_KONG') {
+      let removed = 0;
+      const kongTiles: Tile[] = [];
+      for (const t of hand) {
+        if (t.shortCode === kong.tileCode && removed < 3) {
+          kongTiles.push(t);
+          removed++;
+        } else {
+          remainingHand.push(t);
+        }
+      }
+      simulatedMelds.push({
+        type: 'MELDED_KONG',
+        tiles: kongTiles,
+        sourceSeat: 1,
+      });
+    }
+
+    const currentShanten = this.calculateShanten(hand, melds);
+    const postKongShanten = this.calculateShanten(remainingHand, simulatedMelds);
+
+    // Shanten must not regress (increase)
+    if (postKongShanten > currentShanten) {
+      return false;
+    }
+
+    // If currently in Ting (currentShanten === 0):
+    // Kong must maintain Ting (postKongShanten === 0) AND must not reduce winning tiles count (protect multi-way Ting / Screwdriver)
+    if (currentShanten === 0) {
+      if (postKongShanten !== 0) return false;
+
+      // Calculate pre-kong winning tiles count
+      let currentWinningCount = 0;
+      const expectedConcealed = 16 - melds.length * 3;
+      const activeHand = hand.filter((t) => !t.isFlower);
+
+      if (activeHand.length === expectedConcealed) {
+        currentWinningCount = this.countWinningTilesRemaining(hand, melds, allKnownVisibleTiles);
+      } else {
+        // Hand has drawn tile (17 - melds * 3): find max winning count among all 0-shanten discards
+        for (let i = 0; i < hand.length; i++) {
+          const testHand = hand.filter((_, idx) => idx !== i);
+          if (this.calculateShanten(testHand, melds) === 0) {
+            const count = this.countWinningTilesRemaining(testHand, melds, allKnownVisibleTiles);
+            if (count > currentWinningCount) {
+              currentWinningCount = count;
+            }
+          }
+        }
+      }
+
+      const postWinningCount = this.countWinningTilesRemaining(remainingHand, simulatedMelds, allKnownVisibleTiles);
+
+      // If winning tiles count strictly decreases (e.g. 5556 dropping from 3-way to 1-way wait), reject!
+      if (postWinningCount < currentWinningCount) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Decides which self kong (Concealed or Added) to execute during AI's turn, if beneficial.
+   */
+  public static decideSelfKong(
+    kongOptions: KongOption[],
+    hand: Tile[],
+    melds: Meld[],
+    allKnownVisibleTiles: Tile[] = []
+  ): KongOption | null {
+    for (const kong of kongOptions) {
+      if (this.isKongBeneficial(kong, hand, melds, allKnownVisibleTiles)) {
+        return kong;
+      }
+    }
+    return null;
+  }
+
+  /**
    * AI Decision for available meld actions (Chow, Pong, Kong, Hu, Pass).
    */
   public static decideAction(
@@ -300,43 +480,97 @@ export class MahjongAI {
     hand: Tile[],
     melds: Meld[],
     roundWind: SeatWind,
-    playerWind: SeatWind
+    playerWind: SeatWind,
+    allKnownVisibleTiles: Tile[] = [],
+    calledTile?: Tile
   ): 'HU' | 'KONG' | 'PONG' | 'CHOW' | 'PASS' {
     // 1. Always Hu if possible
     if (actions.canHu) {
       return 'HU';
     }
 
-    // 2. Pong decision
-    if (actions.canPong) {
-      // Prioritize Honor tiles (Dragons, Round Wind, Seat Wind)
-      const targetTile = actions.chowOptions[0]?.tiles[2] || hand[0]; // Representative
-      const isValuableHonor =
-        targetTile.suit === 'DRAGONS' ||
-        (targetTile.suit === 'WINDS' &&
-          (targetTile.shortCode === roundWind.toLowerCase() ||
-            targetTile.shortCode === playerWind.toLowerCase()));
+    // Representative called tile
+    const targetTile = calledTile || actions.chowOptions[0]?.tiles[2] || hand[0];
+    const currentShanten = this.calculateShanten(hand, melds);
 
-      if (isValuableHonor) {
-        return 'PONG';
-      }
-
-      // If hand is already open, Pong is beneficial
-      if (melds.length > 0) {
-        return 'PONG';
+    // 2. Kong decision (Melded Kong)
+    if (actions.canKong && actions.kongOptions.length > 0) {
+      const kong = actions.kongOptions[0];
+      if (this.isKongBeneficial(kong, hand, melds, allKnownVisibleTiles)) {
+        return 'KONG';
       }
     }
 
-    // 3. Kong decision
-    if (actions.canKong && actions.kongOptions.length > 0) {
-      return 'KONG';
+    // 3. Pong decision
+    if (actions.canPong) {
+      const isHonor = targetTile.suit === 'WINDS' || targetTile.suit === 'DRAGONS';
+      const isDragon = targetTile.suit === 'DRAGONS';
+      const isRoundWind = targetTile.suit === 'WINDS' && targetTile.shortCode === roundWind.toLowerCase();
+      const isSeatWind = targetTile.suit === 'WINDS' && targetTile.shortCode === playerWind.toLowerCase();
+      const hasFan = isDragon || isRoundWind || isSeatWind;
+
+      // Count pairs in hand
+      const codeCounts = new Map<string, number>();
+      for (const t of hand) {
+        if (!t.isFlower) {
+          codeCounts.set(t.shortCode, (codeCounts.get(t.shortCode) || 0) + 1);
+        }
+      }
+      let pairCount = 0;
+      for (const count of codeCounts.values()) {
+        if (count >= 2) pairCount++;
+      }
+      const isSoleEye = pairCount <= 1;
+
+      // Simulate Pong hand & Shanten:
+      let removed = 0;
+      const postHand: Tile[] = [];
+      const pongTiles: Tile[] = [];
+      for (const t of hand) {
+        if (t.shortCode === targetTile.shortCode && removed < 2) {
+          pongTiles.push(t);
+          removed++;
+        } else {
+          postHand.push(t);
+        }
+      }
+      const postMelds: Meld[] = [
+        ...melds,
+        { type: 'PONG', tiles: [...pongTiles, targetTile], sourceSeat: 1 },
+      ];
+      const postShanten = this.calculateShanten(postHand, postMelds);
+
+      if (isHonor) {
+        // Honor tile rule:
+        // Only reject if it has NO fan (guest wind) AND it's the sole eye/pair in hand.
+        if (!hasFan && isSoleEye) {
+          // Keep as eye, do not Pong
+        } else {
+          return 'PONG';
+        }
+      } else {
+        // Number tile rule:
+        // Pong if it strictly reduces Shanten
+        if (postShanten < currentShanten) {
+          return 'PONG';
+        }
+      }
     }
 
     // 4. Chow decision
     if (actions.canChow && actions.chowOptions.length > 0) {
-      // If hand already open, take chow
-      if (melds.length >= 1) {
-        return 'CHOW';
+      for (const opt of actions.chowOptions) {
+        const removeIds = new Set(opt.discardTileIds);
+        const postHand = hand.filter((t) => !removeIds.has(t.id));
+        const postMelds: Meld[] = [
+          ...melds,
+          { type: 'CHOW', tiles: opt.tiles, sourceSeat: 3 },
+        ];
+        const postShanten = this.calculateShanten(postHand, postMelds);
+
+        if (postShanten < currentShanten) {
+          return 'CHOW';
+        }
       }
     }
 

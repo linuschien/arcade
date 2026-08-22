@@ -692,12 +692,15 @@ export class MahjongGameState {
         }
       } else {
         // AI decision
+        const allVisible = this.getAllVisibleTiles();
         const choice = MahjongAI.decideAction(
           actions,
           p.hand,
           p.melds,
           this.roundWind,
-          this.getEffectiveWind(p.seat)
+          this.getEffectiveWind(p.seat),
+          allVisible,
+          tile
         );
         claims.push({
           seat: p.seat,
@@ -929,12 +932,15 @@ export class MahjongGameState {
         canPass: true,
       };
 
+      const allVisible = this.getAllVisibleTiles();
       const choice = MahjongAI.decideAction(
         actions,
         p.hand,
         p.melds,
         this.roundWind,
-        p.wind
+        p.wind,
+        allVisible,
+        this.lastDiscard.tile
       );
       claims.push({
         seat: p.seat,
@@ -1032,14 +1038,16 @@ export class MahjongGameState {
     }
 
     // Check Self Kongs (Concealed or Added)
+    const fullHandForKong = p.drawnTile ? [...p.hand, p.drawnTile] : p.hand;
     const kongOpts = MahjongHandEvaluator.getSelfKongOptions(
-      p.drawnTile ? [...p.hand, p.drawnTile] : p.hand,
+      fullHandForKong,
       p.melds
     );
 
-    if (kongOpts.length > 0 && Math.random() > 0.4) {
-      const kong = kongOpts[0];
-      this.performSelfKong(seat, kong);
+    const allVisible = this.getAllVisibleTiles();
+    const chosenKong = MahjongAI.decideSelfKong(kongOpts, fullHandForKong, p.melds, allVisible);
+    if (chosenKong) {
+      this.performSelfKong(seat, chosenKong);
       if (this.phase === 'ROUND_SETTLEMENT' || this.phase === 'MATCH_OVER' || this.phase === 'GAME_OVER') {
         return;
       }
@@ -1047,13 +1055,13 @@ export class MahjongGameState {
 
     // Choose discard with fresh hand after potential self kong
     const fullHand = p.drawnTile ? [...p.hand, p.drawnTile] : p.hand;
-    const allVisible = this.getAllVisibleTiles();
+    const freshAllVisible = this.getAllVisibleTiles();
     const opponents = this.players.filter((_, i) => i !== seat);
 
     const bestDiscard = MahjongAI.chooseBestDiscard(
       fullHand,
       p.melds,
-      allVisible,
+      freshAllVisible,
       opponents,
       this.deck.getRegularRemainingCount()
     );
