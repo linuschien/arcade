@@ -58,6 +58,67 @@ describe('MahjongAI Unit Tests', () => {
     expect(shanten).toBe(0);
   });
 
+  describe('Discard Selection (Attack & Defense Mode)', () => {
+    it('should choose discard that minimizes shanten in attack mode', () => {
+      // 16 tiles + 1 extra useless 'east' tile
+      const handCodes = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '7m', '8m', '9m',
+        '1p', '2p', '3p',
+        '5s', '5s', '5s',
+        '9s', 'east',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+      const mockOpponents: PlayerProfile[] = [];
+      const best = MahjongAI.chooseBestDiscard(hand, [], [], mockOpponents, 60);
+
+      // Discarding 'east' preserves 0-shanten on 9s
+      expect(best.shortCode).toBe('east');
+    });
+
+    it('should prioritize Genbutsu (現物) in defense mode', () => {
+      // Hand has 3m (dangerous middle card) and 1p (already in opponent discard river)
+      // 2-Shanten hand: 345m (meld 1), 1p (floating), 9s, 8p (floating)
+      // Wall remaining = 8 tiles -> M = 2 <= S (2), mathematically hopeless -> triggers defense mode!
+      const hand = [
+        createTile('3m', '1'),
+        createTile('4m', '1'),
+        createTile('5m', '1'),
+        createTile('1p', '1'),
+        createTile('8p', '1'),
+        createTile('9s', '1'),
+      ];
+
+      const opponent: PlayerProfile = {
+        seat: 1,
+        name: '小刀',
+        isHuman: false,
+        wind: 'SOUTH',
+        isDealer: false,
+        chips: 10000,
+        hand: [],
+        drawnTile: null,
+        melds: [
+          { type: 'CHOW', tiles: [], sourceSeat: 0 },
+          { type: 'CHOW', tiles: [], sourceSeat: 0 },
+          { type: 'PONG', tiles: [], sourceSeat: 2 },
+        ],
+        flowers: [],
+        discards: [createTile('1p', 'd1'), createTile('9s', 'd2')], // 1p is Genbutsu!
+        isTing: true,
+        isAutoPlay: false,
+        isPassLockout: false,
+        passPongCodesInTurn: new Set(),
+      };
+
+      // Remaining wall = 8 tiles (M = 2 draws <= S=2) -> triggers defense mode
+      const safest = MahjongAI.chooseBestDiscard(hand, [], [], [opponent], 8);
+      expect(safest.shortCode).toBe('1p'); // Genbutsu 100% safe
+    });
+  });
+
   describe('Dynamic Shanten-to-Draw Defense (shouldDefend)', () => {
     it('should 100% attack when in live Ting (0-Shanten with > 0 live winning tiles)', () => {
       // 0-Shanten, not dead wait
@@ -244,7 +305,7 @@ describe('MahjongAI Unit Tests', () => {
       expect(decision).toBe('PONG');
     });
 
-    it('should PASS on Guest Wind (无台字牌) if it is the SOLE eye in hand', () => {
+    it('should PASS on Guest Wind (無台字牌) if it is the SOLE eye in hand', () => {
       // Hand with only 1 pair: 'west' (西風, Guest Wind for South player in East round -> 0 Fan)
       const handCodes = ['1m', '2m', '3m', '4m', '5m', '6m', '7m', '8m', '9m', '1p', '2p', '3p', '1s', '2s', 'west', 'west'];
       const hand = handCodes.map((c, i) => createTile(c, `${i}`));

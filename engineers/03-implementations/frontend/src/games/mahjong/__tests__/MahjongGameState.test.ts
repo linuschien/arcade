@@ -447,9 +447,15 @@ describe('MahjongGameState Unit Tests', () => {
       expect(state.players[s].hand.length).toBe(16);
     }
 
-    // AI or Human dealer can step turn
+    // AI or Human dealer can step/discard turn
     if (state.dealerSeat !== 0) {
       state.stepAITurn(state.dealerSeat);
+      const postDiscardTileCount = dealer.hand.length + (dealer.drawnTile ? 1 : 0);
+      expect(postDiscardTileCount).toBe(16);
+      expect(dealer.discards.length).toBe(1);
+    } else {
+      const discardTileId = dealer.drawnTile ? dealer.drawnTile.id : dealer.hand[0].id;
+      state.discardTile(0, discardTileId);
       const postDiscardTileCount = dealer.hand.length + (dealer.drawnTile ? 1 : 0);
       expect(postDiscardTileCount).toBe(16);
       expect(dealer.discards.length).toBe(1);
@@ -653,6 +659,11 @@ describe('MahjongGameState Unit Tests', () => {
         shortCode: `${(i % 9) + 1}m`,
       })),
     ];
+
+    // Ensure AI players don't have random conflicting claims during this deterministic test
+    state.players[1].hand = [];
+    state.players[2].hand = [];
+    state.players[3].hand = [];
 
     // Dealer (seat 3) discards 'west'
     const discardWest: Tile = { id: 'west_3', suit: 'WINDS', value: 3, name: '西風', shortCode: 'west' };

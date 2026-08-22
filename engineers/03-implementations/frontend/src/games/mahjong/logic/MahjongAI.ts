@@ -170,7 +170,22 @@ export class MahjongAI {
     }
 
     const currentShanten = this.calculateShanten(hand, melds);
-    const isDeadWait = currentShanten === 0 && this.countWinningTilesRemaining(hand, melds, allKnownVisibleTiles) === 0;
+    let isDeadWait = false;
+
+    // 當處於聽牌（打一張即聽牌）狀態時：檢查是否存在能聽「活牌（W > 0）」的出牌方式
+    if (currentShanten === 0) {
+      let hasLiveTingDiscard = false;
+      for (let i = 0; i < hand.length; i++) {
+        const testHand = hand.filter((_, idx) => idx !== i);
+        if (this.calculateShanten(testHand, melds) === 0) {
+          if (this.countWinningTilesRemaining(testHand, melds, allKnownVisibleTiles) > 0) {
+            hasLiveTingDiscard = true;
+            break;
+          }
+        }
+      }
+      isDeadWait = !hasLiveTingDiscard;
+    }
 
     if (this.shouldDefend(currentShanten, remainingWallTiles, isDeadWait)) {
       return this.chooseSafestDiscard(hand, opponents, allKnownVisibleTiles);
@@ -206,7 +221,7 @@ export class MahjongAI {
         deadTingPenalty = -50000;
       }
 
-      const score = (10 - s) * 10000 + acceptance * 100 + discardBonus + deadTingPenalty;
+      const score = (10 - s) * 100000 + acceptance * 100 + discardBonus + deadTingPenalty;
 
       if (score > bestScore) {
         bestScore = score;
@@ -426,13 +441,12 @@ export class MahjongAI {
 
       // Calculate pre-kong winning tiles count
       let currentWinningCount = 0;
-      const expectedConcealed = 16 - melds.length * 3;
-      const activeHand = hand.filter((t) => !t.isFlower);
 
-      if (activeHand.length === expectedConcealed) {
+      if (kong.type === 'MELDED_KONG') {
+        // Claim on opponent discard: hand has 16 tiles
         currentWinningCount = this.countWinningTilesRemaining(hand, melds, allKnownVisibleTiles);
       } else {
-        // Hand has drawn tile (17 - melds * 3): find max winning count among all 0-shanten discards
+        // Self kong (Concealed or Added): hand has 17 tiles. Find max winning count among all 0-shanten discards
         for (let i = 0; i < hand.length; i++) {
           const testHand = hand.filter((_, idx) => idx !== i);
           if (this.calculateShanten(testHand, melds) === 0) {
