@@ -520,4 +520,145 @@ describe('MahjongScoreCalculator Unit Tests', () => {
     expect(result.fans.some((f) => f.name === '門清自摸' && f.fan === 3)).toBe(true);
     expect(result.totalFans).toBe(4);
   });
+
+  it('should evaluate 字一色 (16 fans) + 大四喜 (16 fans) = 32 fans excluding single wind fans', () => {
+    const melds: Meld[] = [
+      {
+        type: 'PONG',
+        tiles: [createTile('east'), createTile('east'), createTile('east')],
+        sourceSeat: 1,
+      },
+      {
+        type: 'PONG',
+        tiles: [createTile('south'), createTile('south'), createTile('south')],
+        sourceSeat: 2,
+      },
+      {
+        type: 'PONG',
+        tiles: [createTile('west'), createTile('west'), createTile('west')],
+        sourceSeat: 3,
+      },
+      {
+        type: 'PONG',
+        tiles: [createTile('north'), createTile('north'), createTile('north')],
+        sourceSeat: 1,
+      },
+    ];
+
+    const hand = [
+      createTile('red', '1'),
+      createTile('red', '2'),
+      createTile('red', '3'),
+      createTile('green', '1'),
+    ];
+    const winningTile = createTile('green', 'win');
+
+    const result = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 0,
+      winnerHand: hand,
+      winnerMelds: melds,
+      winnerFlowers: [],
+      winningTile,
+      isSelfDrawn: false,
+      loserSeat: 1,
+      roundWind: 'EAST',
+      playerWind: 'EAST',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+
+    expect(result.fans.some((f) => f.name === '字一色' && f.fan === 16)).toBe(true);
+    expect(result.fans.some((f) => f.name === '大四喜' && f.fan === 16)).toBe(true);
+    expect(result.fans.some((f) => f.name === '紅中刻子' && f.fan === 1)).toBe(true);
+    expect(result.fans.some((f) => f.name === '東風刻子')).toBe(false); // Excluded by 大四喜
+    expect(result.fans.some((f) => f.name === '南風刻子')).toBe(false);
+    expect(result.totalFans).toBe(33);
+  });
+
+  it('should evaluate 小三元 (4 fans) + 混一色 (4 fans) = 8 fans excluding single dragon fans', () => {
+    const melds: Meld[] = [
+      {
+        type: 'PONG',
+        tiles: [createTile('red'), createTile('red'), createTile('red')],
+        sourceSeat: 1,
+      },
+      {
+        type: 'PONG',
+        tiles: [createTile('green'), createTile('green'), createTile('green')],
+        sourceSeat: 2,
+      },
+    ];
+
+    const hand = [
+      createTile('1m', '1'),
+      createTile('2m', '2'),
+      createTile('3m', '3'),
+      createTile('4m', '4'),
+      createTile('5m', '5'),
+      createTile('6m', '6'),
+      createTile('white', '1'),
+    ];
+    const winningTile = createTile('white', 'win'); // Dragon pair (eye)
+
+    const result = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 0,
+      winnerHand: hand,
+      winnerMelds: melds,
+      winnerFlowers: [],
+      winningTile,
+      isSelfDrawn: false,
+      loserSeat: 1,
+      roundWind: 'EAST',
+      playerWind: 'SOUTH',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+
+    expect(result.fans.some((f) => f.name === '小三元' && f.fan === 4)).toBe(true);
+    expect(result.fans.some((f) => f.name === '混一色' && f.fan === 4)).toBe(true);
+    expect(result.fans.some((f) => f.name === '紅中刻子')).toBe(false); // Excluded by 小三元
+    expect(result.fans.some((f) => f.name === '青發刻子')).toBe(false);
+    expect(result.totalFans).toBe(8);
+  });
+
+  it('should evaluate 七搶一 (8 fans) special flower win', () => {
+    const sevenFlowers: Tile[] = [
+      { id: 'f_spring', suit: 'FLOWERS', value: 1, name: '春', shortCode: 'spring', isFlower: true },
+      { id: 'f_summer', suit: 'FLOWERS', value: 2, name: '夏', shortCode: 'summer', isFlower: true },
+      { id: 'f_autumn', suit: 'FLOWERS', value: 3, name: '秋', shortCode: 'autumn', isFlower: true },
+      { id: 'f_winter', suit: 'FLOWERS', value: 4, name: '冬', shortCode: 'winter', isFlower: true },
+      { id: 'f_plum', suit: 'FLOWERS', value: 1, name: '梅', shortCode: 'plum', isFlower: true },
+      { id: 'f_orchid', suit: 'FLOWERS', value: 2, name: '蘭', shortCode: 'orchid', isFlower: true },
+      { id: 'f_bamboo', suit: 'FLOWERS', value: 3, name: '竹', shortCode: 'bamboo', isFlower: true },
+    ];
+    const eighthFlower: Tile = {
+      id: 'f_chrysanthemum',
+      suit: 'FLOWERS',
+      value: 4,
+      name: '菊',
+      shortCode: 'chrysanthemum',
+      isFlower: true,
+    };
+
+    const result = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 0,
+      winnerHand: [],
+      winnerMelds: [],
+      winnerFlowers: sevenFlowers,
+      winningTile: eighthFlower,
+      isSelfDrawn: false,
+      isFlowerWin: true,
+      loserSeat: 2,
+      roundWind: 'EAST',
+      playerWind: 'EAST',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+
+    expect(result.fans.some((f) => f.name === '七搶一' && f.fan === 8)).toBe(true);
+    expect(result.totalFans).toBe(8);
+  });
 });
