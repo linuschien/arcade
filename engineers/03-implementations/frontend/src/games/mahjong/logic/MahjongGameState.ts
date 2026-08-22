@@ -99,6 +99,7 @@ export class MahjongGameState {
         flowers: [],
         discards: [],
         isTing: false,
+        tingInfo: null,
         isAutoPlay: false,
         isPassLockout: false,
         passPongCodesInTurn: new Set(),
@@ -241,6 +242,7 @@ export class MahjongGameState {
       p.flowers = [];
       p.discards = [];
       p.isTing = false;
+      p.tingInfo = null;
       p.isAutoPlay = false;
       p.isPassLockout = false;
       p.passPongCodesInTurn = new Set();
@@ -264,6 +266,7 @@ export class MahjongGameState {
       p.flowers = [];
       p.discards = [];
       p.isTing = false;
+      p.tingInfo = null;
       p.isAutoPlay = false;
       p.isPassLockout = false;
       p.passPongCodesInTurn = new Set();
@@ -463,6 +466,11 @@ export class MahjongGameState {
       return;
     }
 
+    // Initialize real-time Ting state for all 4 players
+    for (let s = 0; s < 4; s++) {
+      this.updatePlayerTingState(s as PlayerSeat);
+    }
+
     // Start playing phase
     this.isFirstTurnCycle = true;
     this.currentTurnCount = 0;
@@ -620,6 +628,9 @@ export class MahjongGameState {
     // Reset pass lockout on successful discard
     player.isPassLockout = false;
     player.passPongCodesInTurn.clear();
+
+    // Update real-time Ting state of the discarder
+    this.updatePlayerTingState(seat);
 
     this.listeners.forEach((l) => l.onTileDiscarded?.(seat, discarded!));
 
@@ -1264,6 +1275,21 @@ export class MahjongGameState {
     this.listeners.forEach((l) => l.onSettlement?.(breakdown));
 
     this.checkGameOrMatchEnd();
+  }
+
+  /**
+   * Evaluates and updates the real-time Ting state and winning tiles for a player.
+   */
+  public updatePlayerTingState(seat: PlayerSeat): void {
+    const player = this.players[seat];
+    if (!player) return;
+    const tingInfo = MahjongHandEvaluator.evaluateTing(
+      player.hand,
+      player.melds,
+      this.getAllVisibleTiles()
+    );
+    player.tingInfo = tingInfo;
+    player.isTing = tingInfo.winningTiles.length > 0;
   }
 
   private rotateDealer(): void {

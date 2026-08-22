@@ -113,6 +113,7 @@ export interface PlayerProfile {
   flowers: Tile[];
   discards: Tile[];
   isTing: boolean;
+  tingInfo?: TingInfo | null;
   isAutoPlay: boolean;
   isPassLockout: boolean; // 過水不胡鎖定
   passPongCodesInTurn: Set<string>; // 同巡過碰不得碰同名牌

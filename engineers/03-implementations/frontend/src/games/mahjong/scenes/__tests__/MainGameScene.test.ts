@@ -428,6 +428,95 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     expect((scene as any).tingContainer.removeAll).toHaveBeenCalledWith(true);
   });
 
+  it('should create 4 tingContainers with exact next-player flower rack geometric center alignment and rotation angle', () => {
+    scene.create();
+    const tingContainers = (scene as any).tingContainers;
+    expect(tingContainers).toBeDefined();
+    expect(tingContainers.length).toBe(4);
+
+    // Verify container positions match the design geometry
+    const addContainerCalls = (scene as any).add.container.mock.calls;
+    const ting0 = addContainerCalls.find((c: any[]) => c[0] === 1040 && c[1] === 624);
+    const ting1 = addContainerCalls.find((c: any[]) => c[0] === 1116 && c[1] === 177);
+    const ting2 = addContainerCalls.find((c: any[]) => c[0] === 240 && c[1] === 96);
+    const ting3 = addContainerCalls.find((c: any[]) => c[0] === 164 && c[1] === 543);
+
+    expect(ting0).toBeDefined();
+    expect(ting1).toBeDefined();
+    expect(ting2).toBeDefined();
+    expect(ting3).toBeDefined();
+
+    // Verify rotation angles match seat angles (0, 270, 180, 90)
+    expect(tingContainers[0].setAngle).toHaveBeenCalledWith(0);
+    expect(tingContainers[1].setAngle).toHaveBeenCalledWith(270);
+    expect(tingContainers[2].setAngle).toHaveBeenCalledWith(180);
+    expect(tingContainers[3].setAngle).toHaveBeenCalledWith(90);
+  });
+
+  it('should reactively reveal Smart Ting panels for all players in Ting during settlement and keep non-Ting players hidden', () => {
+    scene.create();
+    const gameState = (scene as any).gameState;
+    gameState.startNewMatch();
+
+    // Setup: Seat 0 in Ting (waiting on 1s/4s)
+    const p0 = gameState.players[0];
+    p0.hand = [
+      { id: '2s_1', suit: 'BAMBOO', value: 2, name: '二條', shortCode: '2s' },
+      { id: '3s_1', suit: 'BAMBOO', value: 3, name: '三條', shortCode: '3s' },
+      ...Array.from({ length: 14 }, (_, i) => ({
+        id: `t_${i}`,
+        suit: 'CHARACTERS',
+        value: (Math.floor(i / 3) + 1),
+        name: `${Math.floor(i / 3) + 1}萬`,
+        shortCode: `${Math.floor(i / 3) + 1}m`,
+      })),
+    ];
+    p0.isTing = true;
+    p0.tingInfo = {
+      winningTiles: [{ tileCode: '1s', tileName: '一條', remainingCount: 4 }, { tileCode: '4s', tileName: '四條', remainingCount: 3 }],
+    };
+
+    // Setup: Seat 2 in Ting (waiting on 9p)
+    const p2 = gameState.players[2];
+    p2.hand = [
+      { id: '9p_1', suit: 'DOTS', value: 9, name: '九筒', shortCode: '9p' },
+      ...Array.from({ length: 15 }, (_, i) => ({
+        id: `t2_${i}`,
+        suit: 'CHARACTERS',
+        value: (Math.floor(i / 3) + 1),
+        name: `${Math.floor(i / 3) + 1}萬`,
+        shortCode: `${Math.floor(i / 3) + 1}m`,
+      })),
+    ];
+    p2.isTing = true;
+    p2.tingInfo = {
+      winningTiles: [{ tileCode: '9p', tileName: '九筒', remainingCount: 2 }],
+    };
+
+    // Setup: Seat 1 and Seat 3 NOT in Ting
+    const p1 = gameState.players[1];
+    p1.isTing = false;
+    p1.tingInfo = null;
+
+    const p3 = gameState.players[3];
+    p3.isTing = false;
+    p3.tingInfo = null;
+
+    const tingContainers = (scene as any).tingContainers;
+    tingContainers.forEach((c: any) => c.setVisible.mockClear());
+
+    // Trigger revealAllHands = true (as done during showSettlementWindow)
+    (scene as any).refreshAllSeats(true);
+
+    // Verify Seat 0 and Seat 2 Ting containers are shown
+    expect(tingContainers[0].setVisible).toHaveBeenCalledWith(true);
+    expect(tingContainers[2].setVisible).toHaveBeenCalledWith(true);
+
+    // Verify Seat 1 and Seat 3 Ting containers remain hidden
+    expect(tingContainers[1].setVisible).toHaveBeenCalledWith(false);
+    expect(tingContainers[3].setVisible).toHaveBeenCalledWith(false);
+  });
+
   it('should highlight positive flowers with orange stroke in settlement window according to effectiveWind', () => {
     scene.create();
     const gameState = (scene as any).gameState;
