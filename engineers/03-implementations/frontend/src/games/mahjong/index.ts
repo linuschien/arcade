@@ -97,3 +97,6 @@ export class MahjongGame implements IArcadeGame {
 export function createMahjongGame(container: string | HTMLElement): IArcadeGame {
   return new MahjongGame(container);
 }
+
+export * from './MahjongThemeConfig';
+

@@ -6,6 +6,11 @@
  */
 
 import Phaser from 'phaser';
+import {
+  MAHJONG_FONTS,
+  MAHJONG_COLORS,
+  MAHJONG_TILE_TYPOGRAPHY,
+} from '../MahjongThemeConfig';
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -115,22 +120,23 @@ export class PreloadScene extends Phaser.Scene {
       }
     }
 
-    // 3. Characters (1m ~ 9m) - 硃砂紅 (飽滿大氣 75% 覆蓋率)
+    // 3. Characters (1m ~ 9m) - 硃砂紅 (飽滿大氣 75% 覆蓋率，書法楷體)
     const numChars = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+    const charCfg = MAHJONG_TILE_TYPOGRAPHY.CHARACTERS;
     for (let i = 1; i <= 9; i++) {
       createTileCanvas(`mahjong:tile_${i}m`, (ctx) => {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Upper Numeral (18px bold, rich cinnabar red)
-        ctx.font = 'bold 18px "Microsoft JhengHei", "PingFang TC", "Noto Serif TC", "Songti TC", serif';
-        ctx.fillStyle = '#b91c1c'; // Cinnabar Red
-        ctx.fillText(numChars[i], W / 2 - 1, H / 2 - 9);
+        // Upper Numeral (18px bold, rich cinnabar red, KaiTi calligraphy)
+        ctx.font = `bold ${charCfg.NUMERAL_FONT_SIZE}px ${MAHJONG_FONTS.KAI}`;
+        ctx.fillStyle = charCfg.COLOR;
+        ctx.fillText(numChars[i], W / 2 - 1, H / 2 + charCfg.NUMERAL_Y_OFFSET);
 
-        // Lower '萬' (17px bold, rich cinnabar red)
-        ctx.font = 'bold 17px "Microsoft JhengHei", "PingFang TC", "Noto Serif TC", "Songti TC", serif';
-        ctx.fillStyle = '#b91c1c';
-        ctx.fillText('萬', W / 2 - 1, H / 2 + 10);
+        // Lower '萬' (17px bold, rich cinnabar red, KaiTi calligraphy)
+        ctx.font = `bold ${charCfg.WAN_FONT_SIZE}px ${MAHJONG_FONTS.KAI}`;
+        ctx.fillStyle = charCfg.COLOR;
+        ctx.fillText('萬', W / 2 - 1, H / 2 + charCfg.WAN_Y_OFFSET);
       });
     }
 
@@ -553,28 +559,30 @@ export class PreloadScene extends Phaser.Scene {
       }
     });
 
-    // 6. Winds (East, South, West, North) - 蒼黑 (大氣 26px)
+    // 6. Winds (East, South, West, North) - 蒼黑 (大氣 26px 書法楷體)
     const winds = [
       { key: 'east', char: '東' },
       { key: 'south', char: '南' },
       { key: 'west', char: '西' },
       { key: 'north', char: '北' },
     ];
+    const windCfg = MAHJONG_TILE_TYPOGRAPHY.WINDS;
     winds.forEach(({ key, char }) => {
       createTileCanvas(`mahjong:tile_${key}`, (ctx) => {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.font = 'bold 26px "Microsoft JhengHei", "PingFang TC", "Noto Serif TC", "Songti TC", serif';
-        ctx.fillStyle = '#0f172a'; // Deep Black
-        ctx.fillText(char, W / 2 - 1, H / 2 - 1);
+        ctx.font = `bold ${windCfg.FONT_SIZE}px ${MAHJONG_FONTS.KAI}`;
+        ctx.fillStyle = windCfg.COLOR;
+        ctx.fillText(char, W / 2 - 1, H / 2 + windCfg.Y_OFFSET);
       });
     });
 
-    // 7. Dragons (Red, Green, White)
+    // 7. Dragons (Red, Green, White) - 正紅/翡翠綠/雙層青藍
+    const dragonCfg = MAHJONG_TILE_TYPOGRAPHY.DRAGONS;
     const dragons = [
-      { key: 'red', char: '中', color: '#dc2626', size: 27 },
-      { key: 'green', char: '發', color: '#15803d', size: 26 },
-      { key: 'white', char: '白', color: '#0284c7', size: 0 },
+      { key: 'red', char: '中', color: dragonCfg.RED_COLOR, size: dragonCfg.RED_SIZE },
+      { key: 'green', char: '發', color: dragonCfg.GREEN_COLOR, size: dragonCfg.GREEN_SIZE },
+      { key: 'white', char: '白', color: dragonCfg.WHITE_OUTER_COLOR, size: 0 },
     ];
     dragons.forEach(({ key, char, color, size }) => {
       createTileCanvas(`mahjong:tile_${key}`, (ctx) => {
@@ -582,17 +590,17 @@ export class PreloadScene extends Phaser.Scene {
         ctx.textBaseline = 'middle';
         if (key === 'white') {
           // White Dragon Box: Elegant double-line geometric acrylic frame (22x34)
-          ctx.strokeStyle = '#0284c7';
+          ctx.strokeStyle = dragonCfg.WHITE_OUTER_COLOR;
           ctx.lineWidth = 2.2;
           if (typeof ctx.strokeRect === 'function') {
-            ctx.strokeRect(W / 2 - 12, H / 2 - 18, 22, 34);
+            ctx.strokeRect(W / 2 - 12, H / 2 - 18, dragonCfg.WHITE_OUTER_W, dragonCfg.WHITE_OUTER_H);
           } else if (typeof ctx.rect === 'function') {
             ctx.beginPath();
-            ctx.rect(W / 2 - 12, H / 2 - 18, 22, 34);
+            ctx.rect(W / 2 - 12, H / 2 - 18, dragonCfg.WHITE_OUTER_W, dragonCfg.WHITE_OUTER_H);
             ctx.stroke?.();
           }
           // Inner thin decorative groove
-          ctx.strokeStyle = '#38bdf8';
+          ctx.strokeStyle = dragonCfg.WHITE_INNER_COLOR;
           ctx.lineWidth = 0.8;
           if (typeof ctx.strokeRect === 'function') {
             ctx.strokeRect(W / 2 - 9, H / 2 - 15, 16, 28);
@@ -602,36 +610,37 @@ export class PreloadScene extends Phaser.Scene {
             ctx.stroke?.();
           }
         } else {
-          ctx.font = `bold ${size}px "Microsoft JhengHei", "PingFang TC", "Noto Serif TC", "Songti TC", serif`;
+          ctx.font = `bold ${size}px ${MAHJONG_FONTS.KAI}`;
           ctx.fillStyle = color;
           ctx.fillText?.(char, W / 2 - 1, H / 2 - 1);
         }
       });
     });
 
-    // 8. Flowers (Spring1~Winter4, Plum1~Chrysanthemum4)
+    // 8. Flowers (Spring1~Winter4, Plum1~Chrysanthemum4) - 書法花牌
+    const flowerCfg = MAHJONG_TILE_TYPOGRAPHY.FLOWERS;
     const flowers = [
-      { key: 'spring', char: '春', num: '1', color: '#ea580c' },
-      { key: 'summer', char: '夏', num: '2', color: '#ea580c' },
-      { key: 'autumn', char: '秋', num: '3', color: '#ea580c' },
-      { key: 'winter', char: '冬', num: '4', color: '#ea580c' },
-      { key: 'plum', char: '梅', num: '1', color: '#ca8a04' },
-      { key: 'orchid', char: '蘭', num: '2', color: '#ca8a04' },
-      { key: 'bamboo_f', char: '竹', num: '3', color: '#ca8a04' },
-      { key: 'chrysanthemum', char: '菊', num: '4', color: '#ca8a04' },
+      { key: 'spring', char: '春', num: '1', color: flowerCfg.SEASON_COLOR },
+      { key: 'summer', char: '夏', num: '2', color: flowerCfg.SEASON_COLOR },
+      { key: 'autumn', char: '秋', num: '3', color: flowerCfg.SEASON_COLOR },
+      { key: 'winter', char: '冬', num: '4', color: flowerCfg.SEASON_COLOR },
+      { key: 'plum', char: '梅', num: '1', color: flowerCfg.PLANT_COLOR },
+      { key: 'orchid', char: '蘭', num: '2', color: flowerCfg.PLANT_COLOR },
+      { key: 'bamboo_f', char: '竹', num: '3', color: flowerCfg.PLANT_COLOR },
+      { key: 'chrysanthemum', char: '菊', num: '4', color: flowerCfg.PLANT_COLOR },
     ];
     flowers.forEach(({ key, char, num, color }) => {
       createTileCanvas(`mahjong:tile_${key}`, (ctx) => {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        ctx.font = 'bold 20px "Microsoft JhengHei", "PingFang TC", "Noto Serif TC", "Songti TC", serif';
+        ctx.font = `bold ${flowerCfg.CHAR_FONT_SIZE}px ${MAHJONG_FONTS.KAI}`;
         ctx.fillStyle = color;
-        ctx.fillText(char, W / 2 - 1, H / 2 - 7);
+        ctx.fillText(char, W / 2 - 1, H / 2 + flowerCfg.CHAR_Y_OFFSET);
 
-        ctx.font = 'bold 12px monospace';
-        ctx.fillStyle = '#7c2d12';
-        ctx.fillText(num, W / 2 - 1, H / 2 + 12);
+        ctx.font = `bold ${flowerCfg.NUM_FONT_SIZE}px ${MAHJONG_FONTS.MONO}`;
+        ctx.fillStyle = flowerCfg.NUMBER_COLOR;
+        ctx.fillText(num, W / 2 - 1, H / 2 + flowerCfg.NUM_Y_OFFSET);
       });
     });
 
