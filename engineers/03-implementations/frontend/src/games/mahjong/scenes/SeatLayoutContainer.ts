@@ -220,7 +220,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
 
     const isSideSeat = this.seat === 1 || this.seat === 3;
     const flowerCenterX = isSideSeat ? -156 : -373;
-    const flowerCenterY = isSideSeat ? -140 : -137;
+    const flowerCenterY = -137;
     const flowerStartX = flowerCenterX - ((4 * stepX) / 2);
 
     for (let r = 0; r < 2; r++) {
@@ -508,7 +508,7 @@ export class SeatLayoutContainer extends Phaser.GameObjects.Container {
     const stepY = 50;
 
     const isSideSeat = this.seat === 1 || this.seat === 3;
-    const baseY = isSideSeat ? -432 : -212;
+    const baseY = isSideSeat ? -429 : -212;
 
     // 1. Draw 18 placeholder grid cells (4 / 6 / 8 trapezoid) - 由內而外
     for (let idx = 0; idx < 18; idx++) {

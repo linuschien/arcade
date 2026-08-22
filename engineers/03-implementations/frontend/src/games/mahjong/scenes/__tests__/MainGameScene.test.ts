@@ -434,12 +434,12 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     expect(tingContainers).toBeDefined();
     expect(tingContainers.length).toBe(4);
 
-    // Verify container positions match the design geometry (centered between flower rack & hand)
+    // Verify container positions match the design geometry (local Y = -56, 64px gap)
     const addContainerCalls = (scene as any).add.container.mock.calls;
     const ting0 = addContainerCalls.find((c: any[]) => c[0] === 1040 && c[1] === 624);
-    const ting1 = addContainerCalls.find((c: any[]) => c[0] === 1122.5 && c[1] === 177);
+    const ting1 = addContainerCalls.find((c: any[]) => c[0] === 1121 && c[1] === 177);
     const ting2 = addContainerCalls.find((c: any[]) => c[0] === 240 && c[1] === 96);
-    const ting3 = addContainerCalls.find((c: any[]) => c[0] === 157.5 && c[1] === 543);
+    const ting3 = addContainerCalls.find((c: any[]) => c[0] === 159 && c[1] === 543);
 
     expect(ting0).toBeDefined();
     expect(ting1).toBeDefined();
