@@ -100,8 +100,25 @@ export const componentRegistry: Record<string, ComponentType<any>> = {
   ),
 
   // ── 2. Custom layout shell ───────────────────────────────────────────────
-  'Container:page': ({ children }: any) =>
-    React.createElement('div', { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6' }, children),
+  'Container:page': ({ children }: any) => {
+    let isPlaying = false;
+    try {
+      const store: any = useStateStore();
+      isPlaying = Boolean(store?.get?.('/game/isPlaying'));
+    } catch {
+      isPlaying = false;
+    }
+
+    return React.createElement(
+      'div',
+      {
+        className: isPlaying
+          ? 'w-full h-full max-w-none m-0 p-2 flex flex-col justify-between items-stretch overflow-hidden'
+          : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6',
+      },
+      children
+    );
+  },
 
   // ── 3. Custom composites (imported from src/json-render/components/) ─────
   MetricCard: adapt(MetricCard),

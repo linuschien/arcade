@@ -129,6 +129,63 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
     }
   }, [isPauseModalOpen, isPlaying]);
 
+  // Dynamic Control Bar Width Alignment: Tracks active game canvas width exactly
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    let canvasObserver: ResizeObserver | null = null;
+    let containerObserver: ResizeObserver | null = null;
+
+    const updateControlBarWidth = () => {
+      const canvas = document.querySelector('#phaser-game-canvas-container canvas') as HTMLElement | null;
+      const controlBar = document.getElementById('game-control-bar');
+
+      if (canvas && controlBar) {
+        const width = canvas.getBoundingClientRect().width || canvas.clientWidth || canvas.offsetWidth;
+        if (width > 0) {
+          controlBar.style.setProperty('width', `${Math.round(width)}px`, 'important');
+          controlBar.style.setProperty('max-width', `${Math.round(width)}px`, 'important');
+        }
+      }
+    };
+
+    // Fast polling until canvas is attached and sized by Phaser
+    const timer50 = setTimeout(updateControlBarWidth, 50);
+    const timer150 = setTimeout(updateControlBarWidth, 150);
+    const timer300 = setTimeout(updateControlBarWidth, 300);
+    const timer600 = setTimeout(updateControlBarWidth, 600);
+
+    const interval = setInterval(() => {
+      const canvas = document.querySelector('#phaser-game-canvas-container canvas') as HTMLElement | null;
+      const container = document.getElementById('phaser-game-canvas-container');
+      if (canvas) {
+        clearInterval(interval);
+        updateControlBarWidth();
+        if (typeof ResizeObserver !== 'undefined') {
+          canvasObserver = new ResizeObserver(() => updateControlBarWidth());
+          canvasObserver.observe(canvas);
+          if (container) {
+            containerObserver = new ResizeObserver(() => updateControlBarWidth());
+            containerObserver.observe(container);
+          }
+        }
+      }
+    }, 50);
+
+    window.addEventListener('resize', updateControlBarWidth);
+
+    return () => {
+      clearTimeout(timer50);
+      clearTimeout(timer150);
+      clearTimeout(timer300);
+      clearTimeout(timer600);
+      clearInterval(interval);
+      if (canvasObserver) canvasObserver.disconnect();
+      if (containerObserver) containerObserver.disconnect();
+      window.removeEventListener('resize', updateControlBarWidth);
+    };
+  }, [isPlaying]);
+
   // Auto-pause when tab/window loses focus
   useEffect(() => {
     if (!isPlaying) return;
@@ -178,6 +235,9 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
         if (activeGameInstanceRef.current) {
           activeGameInstanceRef.current.destroyGame();
           activeGameInstanceRef.current = null;
+        }
+        if (typeof document !== 'undefined' && document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
         }
         store.set('/game/isPlaying', false);
         store.set('/game/isLobbyVisible', true);
@@ -325,6 +385,13 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
             store.set('/game/isLobbyVisible', false);
             ArcadeBridge.emit('COIN_INSERTED', totalCredits - 1);
             showToast('Coin inserted successfully! Launching game...');
+
+            // Enter fullscreen upon starting game
+            if (typeof document !== 'undefined' && document.documentElement?.requestFullscreen && !document.fullscreenElement) {
+              document.documentElement.requestFullscreen().catch((e) => {
+                console.warn('[ArcadeLobby] Fullscreen request not granted or unsupported:', e);
+              });
+            }
           } catch (err: any) {
             const errorMessage = err?.data?.message || err?.message || 'Coin insert failed.';
             showToast(`Insert Coin Failed: ${errorMessage}`);
@@ -379,6 +446,12 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
             activeGameInstanceRef.current.destroyGame();
             activeGameInstanceRef.current = null;
           }
+          // Exit fullscreen upon returning to lobby
+          if (typeof document !== 'undefined' && document.fullscreenElement && document.exitFullscreen) {
+            document.exitFullscreen().catch((e) => {
+              console.warn('[ArcadeLobby] Exit fullscreen warning:', e);
+            });
+          }
           ArcadeBridge.emit('RESUME_REQUESTED');
           store.set('/modals/game-pause-modal', false);
           store.set('/game/isPlaying', false);
@@ -397,13 +470,30 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
     },
   };
 
+  // Handle fullscreen transitions to smoothly refresh Phaser Scale Manager
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 100);
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 350);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   const handlers = propHandlers || defaultHandlers;
 
   return (
     <JSONUIProvider store={store} handlers={handlers} registry={componentRegistry}>
       <div
         className={`relative bg-slate-950 text-slate-100 font-sans antialiased ${
-          isPlaying ? 'h-screen max-h-screen overflow-hidden flex flex-col justify-center' : 'min-h-screen'
+          isPlaying ? 'w-screen h-screen max-w-none max-h-screen overflow-hidden flex flex-col p-0 m-0' : 'min-h-screen'
         }`}
       >
         {isCrtEnabled && <div className="crt-overlay" aria-hidden="true" />}

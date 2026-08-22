@@ -209,3 +209,23 @@ label {
   );
   background-size: 100% 4px, 6px 100%;
 }
+
+/* Phaser Canvas Global Centering: Overrides Phaser inline margin conflict with Flexbox */
+#phaser-game-canvas-container {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#phaser-game-canvas-container canvas {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  margin-top: auto !important;
+  margin-bottom: auto !important;
+  display: block !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
