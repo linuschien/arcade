@@ -159,6 +159,41 @@ describe('MahjongAI Unit Tests', () => {
       expect(safest.shortCode).toBe('white');
     });
 
+    it('should prioritize Suji (筋牌) in defense mode when no Genbutsu or dead honors exist', () => {
+      // Opponent discarded 4m in river -> 1m is Suji of 4m (danger score 30 - 20 = 10)
+      // Hand contains 1m (Suji, danger 10) and 5p (dangerous middle tile, danger 70)
+      // 2-Shanten hand, wall = 8 tiles (M = 2 <= S=2) -> defense mode
+      const hand = [
+        createTile('1m', '1'),
+        createTile('5p', '1'),
+        createTile('2m', '1'),
+        createTile('3m', '1'),
+        createTile('7s', '1'),
+        createTile('8s', '1'),
+      ];
+
+      const opponent: PlayerProfile = {
+        seat: 1,
+        name: '高進',
+        isHuman: false,
+        wind: 'SOUTH',
+        isDealer: false,
+        chips: 10000,
+        hand: [],
+        drawnTile: null,
+        melds: [{ type: 'CHOW', tiles: [], sourceSeat: 0 }],
+        flowers: [],
+        discards: [createTile('4m', 'd1')], // 4m discarded -> makes 1m Suji!
+        isTing: true,
+        isAutoPlay: false,
+        isPassLockout: false,
+        passPongCodesInTurn: new Set(),
+      };
+
+      const safest = MahjongAI.chooseBestDiscard(hand, [], [], [opponent], 8);
+      expect(safest.shortCode).toBe('1m'); // 1m (Suji danger 10) is much safer than 5p (danger 70)
+    });
+
     it('should choose discard that advances Eight Pairs (嚦咕嚦咕 / 8對半) to 0-Shanten Ting', () => {
       // 17-tile hand: 7 pairs (14 tiles) + 3 singles (8m, 1p, east)
       const handCodes = [
@@ -381,6 +416,36 @@ describe('MahjongAI Unit Tests', () => {
       const chosenKong = MahjongAI.decideSelfKong([kong], hand, openMelds);
       expect(chosenKong).toEqual(kong);
     });
+
+    it('should REJECT Added Kong when it breaks Ting (destroys 567m meld and regresses to 1-Shanten)', () => {
+      // Exactly 4 copies of 5m in existence: 3 in open Pong meld + 1 in hand!
+      // Open Pong: 555m (3 tiles)
+      // Concealed hand in 0-Shanten: 123p (3), 456p (3), 789p (3), 5m, 6m, 7m (3: forms 567m meld), 9s (eye wait = 1), 1s (drawn = 1) = 14 tiles
+      // Without kong: AI discards 1s, leaving 4 sequence melds + 555m pong meld + 9s -> in 0-Shanten Ting (waiting on 9s)!
+      // If Added Kong on 5m is executed:
+      // Concealed hand becomes: 123p, 456p, 789p, 67m, 9s -> loses 567m meld and drops to 1-Shanten!
+      // AI must REJECT Added Kong to preserve Ting!
+      const handCodes = ['1p', '2p', '3p', '4p', '5p', '6p', '7p', '8p', '9p', '5m', '6m', '7m', '9s', '1s'];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+      const openMelds: Meld[] = [
+        {
+          type: 'PONG',
+          tiles: [createTile('5m', 'p1'), createTile('5m', 'p2'), createTile('5m', 'p3')],
+          sourceSeat: 1,
+        },
+      ];
+
+      const kong: KongOption = {
+        type: 'ADDED_KONG',
+        tileCode: '5m',
+        handTileIds: [hand.find((t) => t.shortCode === '5m')!.id],
+        meldIndex: 0,
+      };
+
+      const isBeneficial = MahjongAI.isKongBeneficial(kong, hand, openMelds);
+      expect(isBeneficial).toBe(false);
+      expect(MahjongAI.decideSelfKong([kong], hand, openMelds)).toBeNull();
+    });
   });
 
   describe('Aggressive Meld Decisions (decideAction: Chow & Pong)', () => {
@@ -538,6 +603,52 @@ describe('MahjongAI Unit Tests', () => {
           {
             tiles: [hand[0], hand[1], calledTile],
             discardTileIds: [hand[0].id, hand[1].id],
+          },
+        ],
+        canTing: false,
+        canPass: true,
+      };
+
+      const decision = MahjongAI.decideAction(
+        actions,
+        hand,
+        [],
+        'EAST',
+        'SOUTH',
+        [],
+        calledTile
+      );
+
+      expect(decision).toBe('CHOW'); // Advances hand from 2-Shanten to 1-Shanten!
+    });
+
+    it('should CHOW on 2345s shape when 1s is discarded to generate 45s partial and reduce Shanten', () => {
+      // 16-tile hand in 2-Shanten: 123m (1), 456m (2), 789m (3), 2345s (1 meld + 5s single), 9p, 8s, east (3 singles)
+      // Current Shanten = (5 - 4) * 2 - 0 - 0 = 2 (2-Shanten)
+      // Upper player discards 1s. Chow option: 123s (uses 2s, 3s from hand).
+      // Post-hand has: 123m, 456m, 789m, 45s (new partial meld!), 9p, 8s, east + open meld 123s
+      // Post-shanten = (5 - 4) * 2 - 1 - 0 = 1 (1-Shanten!).
+      // Shanten strictly decreases from 2 to 1 -> AI executes CHOW!
+      const handCodes = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '7m', '8m', '9m',
+        '2s', '3s', '4s', '5s',
+        '9p', '8s', 'east',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+      const calledTile = createTile('1s', 'called');
+      const actions: AvailableActions = {
+        canHu: false,
+        canKong: false,
+        kongOptions: [],
+        canPong: false,
+        canChow: true,
+        chowOptions: [
+          {
+            tiles: [calledTile, hand[9], hand[10]], // 1s, 2s, 3s
+            discardTileIds: [hand[9].id, hand[10].id],
           },
         ],
         canTing: false,

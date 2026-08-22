@@ -693,6 +693,29 @@ describe('MahjongGameState Unit Tests', () => {
     expect(hasRenHu).toBe(false);
   });
 
+  it('should enforce strict priority arbitration: HU intercepts PONG and CHOW', () => {
+    state.startNewMatch();
+    const discardTile: Tile = { id: '1p_d', suit: 'DOTS', value: 1, name: '一筒', shortCode: '1p' };
+    state.lastDiscard = { tile: discardTile, fromSeat: 3 };
+
+    // Seat 0 (Human) claims Chow, Seat 1 claims Pong, Seat 2 claims Hu
+    const claims = [
+      { seat: 0 as const, action: 'CHOW' as const, option: { tiles: [discardTile], discardTileIds: [] } },
+      { seat: 1 as const, action: 'PONG' as const },
+      { seat: 2 as const, action: 'HU' as const },
+    ];
+
+    state.resolveClaims(3, discardTile, claims);
+
+    // Hu must take absolute priority -> Seat 2 wins, phase becomes ROUND_SETTLEMENT
+    expect(state.phase).toBe('ROUND_SETTLEMENT');
+    expect(state.currentSettlement).toBeDefined();
+    expect(state.currentSettlement!.winnerSeat).toBe(2);
+    // Seat 0 and Seat 1 melds must remain empty (claims intercepted)
+    expect(state.players[0].melds.length).toBe(0);
+    expect(state.players[1].melds.length).toBe(0);
+  });
+
   describe('prepareNewRound', () => {
     it('should clear all player hands, discards, melds, flowers and reset deck without emitting a phase change', () => {
       const state = new MahjongGameState();
