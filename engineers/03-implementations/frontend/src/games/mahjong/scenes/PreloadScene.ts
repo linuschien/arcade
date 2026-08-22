@@ -120,7 +120,7 @@ export class PreloadScene extends Phaser.Scene {
       }
     }
 
-    // 3. Characters (1m ~ 9m) - 硃砂紅 (飽滿大氣 75% 覆蓋率，書法楷體)
+    // 3. Characters (1m ~ 9m) - 上黑下紅 (飽滿大氣 75% 覆蓋率，書法楷體)
     const numChars = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
     const charCfg = MAHJONG_TILE_TYPOGRAPHY.CHARACTERS;
     for (let i = 1; i <= 9; i++) {
@@ -128,14 +128,14 @@ export class PreloadScene extends Phaser.Scene {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Upper Numeral (18px bold, rich cinnabar red, KaiTi calligraphy)
+        // Upper Numeral (18px bold, deep ink black, KaiTi calligraphy)
         ctx.font = `bold ${charCfg.NUMERAL_FONT_SIZE}px ${MAHJONG_FONTS.KAI}`;
-        ctx.fillStyle = charCfg.COLOR;
+        ctx.fillStyle = charCfg.NUMERAL_COLOR;
         ctx.fillText(numChars[i], W / 2 - 1, H / 2 + charCfg.NUMERAL_Y_OFFSET);
 
         // Lower '萬' (17px bold, rich cinnabar red, KaiTi calligraphy)
         ctx.font = `bold ${charCfg.WAN_FONT_SIZE}px ${MAHJONG_FONTS.KAI}`;
-        ctx.fillStyle = charCfg.COLOR;
+        ctx.fillStyle = charCfg.WAN_COLOR;
         ctx.fillText('萬', W / 2 - 1, H / 2 + charCfg.WAN_Y_OFFSET);
       });
     }
