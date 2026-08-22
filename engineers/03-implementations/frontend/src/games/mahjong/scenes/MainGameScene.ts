@@ -379,12 +379,12 @@ export class MainGameScene extends Phaser.Scene {
 
   private createSmartTingUI(): void {
     // 4 Smart Ting Containers for Seats 0..3:
-    // Each precisely center-aligned with its respective 下家 (next player)'s flower rack and rotated to match seat angle!
+    // Centered vertically between each player's flower rack edge and hand edge, aligned with their 下家's flower rack:
     const tingPositions = [
-      { x: 1040, y: 624, angle: 0 },   // Seat 0 (本家): Vertically aligned with Seat 1 Flower Rack center X = 1040
-      { x: 1116, y: 177, angle: 270 }, // Seat 1 (下家): Horizontally aligned with Seat 2 Flower Rack center Y = 177
-      { x: 240, y: 96, angle: 180 },   // Seat 2 (對家): Vertically aligned with Seat 3 Flower Rack center X = 240
-      { x: 164, y: 543, angle: 90 },   // Seat 3 (上家): Horizontally aligned with Seat 0 Flower Rack center Y = 543
+      { x: 1040, y: 624, angle: 0 },     // Seat 0 (本家): Midpoint between flower rack (Y=592) & hand (Y=656) -> Y=624 (gap 8px)
+      { x: 1122.5, y: 177, angle: 270 }, // Seat 1 (下家): Midpoint between flower rack (X=1089) & hand (X=1156) -> X=1122.5 (gap 9.5px)
+      { x: 240, y: 96, angle: 180 },     // Seat 2 (對家): Midpoint between flower rack (Y=128) & hand (Y=64) -> Y=96 (gap 8px)
+      { x: 157.5, y: 543, angle: 90 },   // Seat 3 (上家): Midpoint between flower rack (X=191) & hand (X=124) -> X=157.5 (gap 9.5px)
     ];
 
     this.tingContainers = tingPositions.map((pos) => {
