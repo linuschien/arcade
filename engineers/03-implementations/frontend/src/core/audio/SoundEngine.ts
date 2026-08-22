@@ -16,6 +16,8 @@ class SoundEngineImpl {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
   private isExplicitlyPaused: boolean = false;
+  private activeOscillators: Set<OscillatorNode> = new Set();
+  private activeTimeouts: Set<any> = new Set();
 
   private getContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
@@ -55,10 +57,31 @@ class SoundEngineImpl {
 
   public setMuted(muted: boolean): void {
     this.isMuted = muted;
+    if (muted) {
+      this.stopAll();
+    }
   }
 
   public isMutedState(): boolean {
     return this.isMuted;
+  }
+
+  /**
+   * Immediately cancel and stop all playing and scheduled tones/sequences.
+   */
+  public stopAll(): void {
+    this.activeTimeouts.forEach((t) => clearTimeout(t));
+    this.activeTimeouts.clear();
+
+    this.activeOscillators.forEach((osc) => {
+      try {
+        osc.stop();
+        osc.disconnect();
+      } catch {
+        // Ignore already stopped
+      }
+    });
+    this.activeOscillators.clear();
   }
 
   /**
@@ -85,6 +108,11 @@ class SoundEngineImpl {
 
       osc.connect(gain);
       gain.connect(ctx.destination);
+
+      this.activeOscillators.add(osc);
+      osc.onended = () => {
+        this.activeOscillators.delete(osc);
+      };
 
       osc.start();
       osc.stop(ctx.currentTime + opts.durationSeconds);
@@ -116,6 +144,11 @@ class SoundEngineImpl {
 
         osc.connect(gain);
         gain.connect(ctx.destination);
+
+        this.activeOscillators.add(osc);
+        osc.onended = () => {
+          this.activeOscillators.delete(osc);
+        };
 
         osc.start(startSec);
         osc.stop(startSec + t.durationSeconds);

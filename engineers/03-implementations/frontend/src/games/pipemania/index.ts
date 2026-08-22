@@ -6,8 +6,10 @@
 
 import Phaser from 'phaser';
 import { IArcadeGame, ArcadeBridge } from '@/core/bridge/ArcadeBridge';
+import { SoundEngine } from '@/core/audio/SoundEngine';
 import { PreloadScene } from './scenes/PreloadScene';
 import { MainGameScene } from './scenes/MainGameScene';
+import { PipeManiaAudioService } from './audio/PipeManiaAudioService';
 
 export class PipeManiaGame implements IArcadeGame {
   private game: Phaser.Game | null = null;
@@ -83,6 +85,9 @@ export class PipeManiaGame implements IArcadeGame {
   public destroyGame(): void {
     this.unsubscribeListeners.forEach((unsub) => unsub());
     this.unsubscribeListeners = [];
+
+    PipeManiaAudioService.stopBGM();
+    SoundEngine.stopAll();
 
     if (this.game) {
       this.game.destroy(true);

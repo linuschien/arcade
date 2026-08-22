@@ -6,8 +6,10 @@
 
 import Phaser from 'phaser';
 import { IArcadeGame, ArcadeBridge } from '@/core/bridge/ArcadeBridge';
+import { SoundEngine } from '@/core/audio/SoundEngine';
 import { PreloadScene } from './scenes/PreloadScene';
 import { MainGameScene } from './scenes/MainGameScene';
+import { PacmanAudioService } from './audio/PacmanAudioService';
 
 export class PacmanGame implements IArcadeGame {
   private game: Phaser.Game | null = null;
@@ -83,6 +85,9 @@ export class PacmanGame implements IArcadeGame {
   public destroyGame(): void {
     this.unsubscribeListeners.forEach((unsub) => unsub());
     this.unsubscribeListeners = [];
+
+    PacmanAudioService.stopSiren();
+    SoundEngine.stopAll();
 
     if (this.game) {
       this.game.destroy(true);

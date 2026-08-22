@@ -232,6 +232,7 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
       }
 
       setTimeout(() => {
+        SoundEngine.stopAll();
         if (activeGameInstanceRef.current) {
           activeGameInstanceRef.current.destroyGame();
           activeGameInstanceRef.current = null;
@@ -442,6 +443,7 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
         }
 
         case 'ReturnToLobby': {
+          SoundEngine.stopAll();
           if (activeGameInstanceRef.current) {
             activeGameInstanceRef.current.destroyGame();
             activeGameInstanceRef.current = null;

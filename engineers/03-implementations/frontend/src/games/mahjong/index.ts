@@ -6,6 +6,7 @@
 
 import Phaser from 'phaser';
 import { IArcadeGame, ArcadeBridge } from '@/core/bridge/ArcadeBridge';
+import { SoundEngine } from '@/core/audio/SoundEngine';
 import { PreloadScene } from './scenes/PreloadScene';
 import { MainGameScene } from './scenes/MainGameScene';
 
@@ -83,6 +84,8 @@ export class MahjongGame implements IArcadeGame {
   public destroyGame(): void {
     this.unsubscribeListeners.forEach((unsub) => unsub());
     this.unsubscribeListeners = [];
+
+    SoundEngine.stopAll();
 
     if (this.game) {
       this.game.destroy(true);
