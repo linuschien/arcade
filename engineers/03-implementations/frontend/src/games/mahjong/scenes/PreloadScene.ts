@@ -373,91 +373,91 @@ export class PreloadScene extends Phaser.Scene {
     };
 
     // 4. Dots (1p ~ 9p) - Authentic Traditional Concentric Circles & Rosettes
-    // 1p (Big Dot / 大餅 with outer enclosing green ring)
+    // 1p (Big Dot / 大餅 with outer enclosing green ring - Tier 1 Giant r=14.0)
     createTileCanvas('mahjong:tile_1p', (ctx) => {
-      drawBigDot(ctx, cx, cy, 14);
+      drawBigDot(ctx, cx, cy, 14.0);
     });
 
-    // 2p (Top Green, Bottom Blue)
+    // 2p (Top Green, Bottom Blue - Tier 1 Second-largest r=7.5)
     createTileCanvas('mahjong:tile_2p', (ctx) => {
-      drawDot(ctx, cx, cy - 9, 5.0, '#15803d');
-      drawDot(ctx, cx, cy + 9, 5.0, '#0284c7');
+      drawDot(ctx, cx, cy - 10.5, 7.5, '#15803d');
+      drawDot(ctx, cx, cy + 10.5, 7.5, '#0284c7');
     });
 
-    // 3p (Diagonal: Top-Left Blue, Center Red, Bottom-Right Green)
+    // 3p (Diagonal: Top-Left Blue, Center Red, Bottom-Right Green - Tier 2 r=5.8)
     createTileCanvas('mahjong:tile_3p', (ctx) => {
-      drawDot(ctx, cx - 7, cy - 10, 4.4, '#0284c7');
-      drawDot(ctx, cx, cy, 4.4, '#dc2626');
-      drawDot(ctx, cx + 7, cy + 10, 4.4, '#15803d');
+      drawDot(ctx, cx - 8.2, cy - 11.2, 5.8, '#0284c7');
+      drawDot(ctx, cx, cy, 5.8, '#dc2626');
+      drawDot(ctx, cx + 8.2, cy + 11.2, 5.8, '#15803d');
     });
 
-    // 4p (4 Dots: Top-Left Blue, Top-Right Green, Bottom-Left Green, Bottom-Right Blue)
+    // 4p (4 Dots: Top-Left Blue, Top-Right Green, Bottom-Left Green, Bottom-Right Blue - Tier 2 r=5.8)
     createTileCanvas('mahjong:tile_4p', (ctx) => {
-      drawDot(ctx, cx - 7, cy - 9, 4.4, '#0284c7');
-      drawDot(ctx, cx + 7, cy - 9, 4.4, '#15803d');
-      drawDot(ctx, cx - 7, cy + 9, 4.4, '#15803d');
-      drawDot(ctx, cx + 7, cy + 9, 4.4, '#0284c7');
+      drawDot(ctx, cx - 7.4, cy - 10.0, 5.8, '#0284c7');
+      drawDot(ctx, cx + 7.4, cy - 10.0, 5.8, '#15803d');
+      drawDot(ctx, cx - 7.4, cy + 10.0, 5.8, '#15803d');
+      drawDot(ctx, cx + 7.4, cy + 10.0, 5.8, '#0284c7');
     });
 
-    // 5p (4 outer corners Blue/Green + 1 center Red dot)
+    // 5p (Traditional Quincunx: 4 outer corners Blue/Green + 1 center Red dot - Tier 2 Uniform r=5.8)
     createTileCanvas('mahjong:tile_5p', (ctx) => {
-      drawDot(ctx, cx - 7.5, cy - 10, 4.0, '#0284c7');
-      drawDot(ctx, cx + 7.5, cy - 10, 4.0, '#15803d');
-      drawDot(ctx, cx, cy, 4.6, '#dc2626', '#facc15');
-      drawDot(ctx, cx - 7.5, cy + 10, 4.0, '#15803d');
-      drawDot(ctx, cx + 7.5, cy + 10, 4.0, '#0284c7');
+      drawDot(ctx, cx - 8.2, cy - 11.2, 5.8, '#0284c7');
+      drawDot(ctx, cx + 8.2, cy - 11.2, 5.8, '#15803d');
+      drawDot(ctx, cx, cy, 5.8, '#dc2626');
+      drawDot(ctx, cx - 8.2, cy + 11.2, 5.8, '#15803d');
+      drawDot(ctx, cx + 8.2, cy + 11.2, 5.8, '#0284c7');
     });
 
-    // 6p (Top 2 Green, Bottom 4 Red with clear vertical separation)
+    // 6p (Top 2 Green, Bottom 4 Red - Tier 3 Uniform r=4.7, Touching Horizontally)
     createTileCanvas('mahjong:tile_6p', (ctx) => {
-      // Top 2 Green (separated from bottom)
-      drawDot(ctx, cx - 6.5, cy - 12, 4.0, '#15803d');
-      drawDot(ctx, cx + 6.5, cy - 12, 4.0, '#15803d');
+      // Top 2 Green (horizontal zero gap)
+      drawDot(ctx, cx - 4.7, cy - 11.0, 4.7, '#15803d');
+      drawDot(ctx, cx + 4.7, cy - 11.0, 4.7, '#15803d');
 
-      // Bottom 4 Red
-      drawDot(ctx, cx - 6.5, cy + 2, 4.0, '#dc2626');
-      drawDot(ctx, cx + 6.5, cy + 2, 4.0, '#dc2626');
-      drawDot(ctx, cx - 6.5, cy + 12, 4.0, '#dc2626');
-      drawDot(ctx, cx + 6.5, cy + 12, 4.0, '#dc2626');
+      // Bottom 4 Red (horizontal zero gap)
+      drawDot(ctx, cx - 4.7, cy + 2.5, 4.7, '#dc2626');
+      drawDot(ctx, cx + 4.7, cy + 2.5, 4.7, '#dc2626');
+      drawDot(ctx, cx - 4.7, cy + 11.9, 4.7, '#dc2626');
+      drawDot(ctx, cx + 4.7, cy + 11.9, 4.7, '#dc2626');
     });
 
-    // 7p (Top 3 slanted ALL GREEN + Bottom 4 square RED)
+    // 7p (Top 3 slanted ALL GREEN + Bottom 4 square RED - Tier 3 Uniform r=4.7, Touching Horizontally)
     createTileCanvas('mahjong:tile_7p', (ctx) => {
-      // Top 3 slanted ALL GREEN
-      drawDot(ctx, cx - 8, cy - 12, 3.6, '#15803d');
-      drawDot(ctx, cx, cy - 9, 3.6, '#15803d');
-      drawDot(ctx, cx + 8, cy - 6, 3.6, '#15803d');
+      // Top 3 slanted ALL GREEN (horizontal zero gap)
+      drawDot(ctx, cx - 9.4, cy - 12.0, 4.7, '#15803d');
+      drawDot(ctx, cx, cy - 9.0, 4.7, '#15803d');
+      drawDot(ctx, cx + 9.4, cy - 6.0, 4.7, '#15803d');
 
-      // Bottom 4 RED
-      drawDot(ctx, cx - 6.5, cy + 5, 3.8, '#dc2626');
-      drawDot(ctx, cx + 6.5, cy + 5, 3.8, '#dc2626');
-      drawDot(ctx, cx - 6.5, cy + 13.5, 3.8, '#dc2626');
-      drawDot(ctx, cx + 6.5, cy + 13.5, 3.8, '#dc2626');
+      // Bottom 4 RED (horizontal zero gap)
+      drawDot(ctx, cx - 4.7, cy + 4.5, 4.7, '#dc2626');
+      drawDot(ctx, cx + 4.7, cy + 4.5, 4.7, '#dc2626');
+      drawDot(ctx, cx - 4.7, cy + 13.9, 4.7, '#dc2626');
+      drawDot(ctx, cx + 4.7, cy + 13.9, 4.7, '#dc2626');
     });
 
-    // 8p (2 columns of 4 Blue dots)
+    // 8p (2 columns of 4 Blue dots - Tier 3 Uniform r=4.7, Touching Horizontally)
     createTileCanvas('mahjong:tile_8p', (ctx) => {
-      const yOffsets = [-13.5, -4.5, 4.5, 13.5];
+      const yOffsets = [-14.1, -4.7, 4.7, 14.1];
       for (const dy of yOffsets) {
-        drawDot(ctx, cx - 6.5, cy + dy, 3.5, '#0284c7');
-        drawDot(ctx, cx + 6.5, cy + dy, 3.5, '#0284c7');
+        drawDot(ctx, cx - 4.7, cy + dy, 4.7, '#0284c7');
+        drawDot(ctx, cx + 4.7, cy + dy, 4.7, '#0284c7');
       }
     });
 
-    // 9p (3x3 grid: Top Row 3 Blue, Middle Row 3 Red, Bottom Row 3 Green)
+    // 9p (3x3 grid: Top Row 3 Blue, Middle Row 3 Red, Bottom Row 3 Green - Tier 3 Uniform r=4.7, Touching Horizontally)
     createTileCanvas('mahjong:tile_9p', (ctx) => {
-      const xOffsets = [-7.5, 0, 7.5];
+      const xOffsets = [-9.4, 0, 9.4];
       // Row 1 (Top): Blue
       for (const dx of xOffsets) {
-        drawDot(ctx, cx + dx, cy - 11, 3.7, '#0284c7');
+        drawDot(ctx, cx + dx, cy - 11.0, 4.7, '#0284c7');
       }
       // Row 2 (Middle): Red
       for (const dx of xOffsets) {
-        drawDot(ctx, cx + dx, cy, 3.7, '#dc2626');
+        drawDot(ctx, cx + dx, cy, 4.7, '#dc2626');
       }
       // Row 3 (Bottom): Green
       for (const dx of xOffsets) {
-        drawDot(ctx, cx + dx, cy + 11, 3.7, '#15803d');
+        drawDot(ctx, cx + dx, cy + 11.0, 4.7, '#15803d');
       }
     });
 
