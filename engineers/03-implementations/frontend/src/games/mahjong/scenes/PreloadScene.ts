@@ -224,15 +224,14 @@ export class PreloadScene extends Phaser.Scene {
       ctx.fill();
     };
 
-    // Reusable Helper: Bamboo Stick Joint (竹節，支援角度旋轉)
-    const drawBambooStick = (
+    // Reusable Helper: Hollow Double-Segment Bamboo Stick (正統雙截空心竹節)
+    const drawHollowBambooStick = (
       ctx: CanvasRenderingContext2D,
       x: number,
       y: number,
       w: number,
       h: number,
       color: string,
-      nodeColor: string = '#ffffff',
       angle: number = 0
     ) => {
       ctx.save();
@@ -243,28 +242,26 @@ export class PreloadScene extends Phaser.Scene {
 
       const halfW = w / 2;
       const halfH = h / 2;
+      const segH = (h - 2.8) / 2;
 
-      // 1. Bamboo stick main shaft
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.3;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // 1. Upper Hollow Bamboo Segment (上空心節)
+      this.drawRoundedRect(ctx, -halfW + 0.6, -halfH + 0.8, w - 1.2, segH, 1.6);
+      ctx.stroke();
+
+      // 2. Lower Hollow Bamboo Segment (下空心節)
+      this.drawRoundedRect(ctx, -halfW + 0.6, 0.6, w - 1.2, segH, 1.6);
+      ctx.stroke();
+
+      // 3. Top, Center, Bottom solid accent nodes (橫向竹節凸緣)
       ctx.fillStyle = color;
-      ctx.fillRect(-halfW + 0.5, -halfH + 1, w - 1, h - 2);
-
-      // 2. Top & Bottom flared nodes (rounded knobs)
-      ctx.beginPath();
-      ctx.arc(0, -halfH + 1.2, halfW * 0.9, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(0, halfH - 1.2, halfW * 0.9, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 3. Center joint band (white with accent dot)
-      ctx.fillStyle = nodeColor;
-      ctx.fillRect(-halfW, -0.75, w, 1.5);
-
-      // 4. Center accent dot
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(0, 0, 0.75, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(-halfW - 0.2, -halfH + 0.2, w + 0.4, 1.0);
+      ctx.fillRect(-halfW - 0.2, -0.5, w + 0.4, 1.0);
+      ctx.fillRect(-halfW - 0.2, halfH - 1.2, w + 0.4, 1.0);
 
       ctx.restore();
     };
@@ -467,88 +464,87 @@ export class PreloadScene extends Phaser.Scene {
       drawBirdOneBamboo(ctx, cx, cy);
     });
 
-    // 2s (Top Green, Bottom Blue)
+    // 2s (Top Green, Bottom Blue - 2-tier w=5.2, h=15.5)
     createTileCanvas('mahjong:tile_2s', (ctx) => {
-      drawBambooStick(ctx, cx, cy - 9, 5.0, 13, '#15803d', '#dc2626');
-      drawBambooStick(ctx, cx, cy + 9, 5.0, 13, '#0284c7', '#dc2626');
+      drawHollowBambooStick(ctx, cx, cy - 9.0, 5.2, 15.5, '#15803d');
+      drawHollowBambooStick(ctx, cx, cy + 9.0, 5.2, 15.5, '#0284c7');
     });
 
-    // 3s (Top Blue, Bottom 2 Green)
+    // 3s (Top Blue, Bottom 2 Green - 2-tier w=5.2, h=15.5)
     createTileCanvas('mahjong:tile_3s', (ctx) => {
-      drawBambooStick(ctx, cx, cy - 9, 4.8, 12, '#0284c7', '#dc2626');
-      drawBambooStick(ctx, cx - 6.5, cy + 9, 4.8, 12, '#15803d', '#dc2626');
-      drawBambooStick(ctx, cx + 6.5, cy + 9, 4.8, 12, '#15803d', '#dc2626');
+      drawHollowBambooStick(ctx, cx, cy - 9.0, 5.2, 15.5, '#0284c7');
+      drawHollowBambooStick(ctx, cx - 6.5, cy + 9.0, 5.2, 15.5, '#15803d');
+      drawHollowBambooStick(ctx, cx + 6.5, cy + 9.0, 5.2, 15.5, '#15803d');
     });
 
-    // 4s (Top-Left Green, Top-Right Blue, Bottom-Left Blue, Bottom-Right Green)
+    // 4s (Top-Left Green, Top-Right Blue, Bottom-Left Blue, Bottom-Right Green - 2-tier w=5.2, h=15.5)
     createTileCanvas('mahjong:tile_4s', (ctx) => {
-      drawBambooStick(ctx, cx - 6.5, cy - 9, 4.5, 12.5, '#15803d');
-      drawBambooStick(ctx, cx + 6.5, cy - 9, 4.5, 12.5, '#0284c7');
-      drawBambooStick(ctx, cx - 6.5, cy + 9, 4.5, 12.5, '#0284c7');
-      drawBambooStick(ctx, cx + 6.5, cy + 9, 4.5, 12.5, '#15803d');
+      drawHollowBambooStick(ctx, cx - 6.5, cy - 9.0, 5.2, 15.5, '#15803d');
+      drawHollowBambooStick(ctx, cx + 6.5, cy - 9.0, 5.2, 15.5, '#0284c7');
+      drawHollowBambooStick(ctx, cx - 6.5, cy + 9.0, 5.2, 15.5, '#0284c7');
+      drawHollowBambooStick(ctx, cx + 6.5, cy + 9.0, 5.2, 15.5, '#15803d');
     });
 
-    // 5s (4 Corners Green/Blue + Center Red with Gold Node)
+    // 5s (4 Corners Green/Blue + Center Red - 2-tier w=5.2, h=15.5)
     createTileCanvas('mahjong:tile_5s', (ctx) => {
-      drawBambooStick(ctx, cx - 7.5, cy - 10, 4.2, 11.5, '#15803d');
-      drawBambooStick(ctx, cx + 7.5, cy - 10, 4.2, 11.5, '#0284c7');
-      drawBambooStick(ctx, cx, cy, 4.6, 12, '#dc2626', '#facc15');
-      drawBambooStick(ctx, cx - 7.5, cy + 10, 4.2, 11.5, '#0284c7');
-      drawBambooStick(ctx, cx + 7.5, cy + 10, 4.2, 11.5, '#15803d');
+      drawHollowBambooStick(ctx, cx - 7.5, cy - 9.0, 5.2, 15.5, '#15803d');
+      drawHollowBambooStick(ctx, cx + 7.5, cy - 9.0, 5.2, 15.5, '#0284c7');
+      drawHollowBambooStick(ctx, cx, cy, 5.2, 15.5, '#dc2626');
+      drawHollowBambooStick(ctx, cx - 7.5, cy + 9.0, 5.2, 15.5, '#0284c7');
+      drawHollowBambooStick(ctx, cx + 7.5, cy + 9.0, 5.2, 15.5, '#15803d');
     });
 
-    // 6s (All 6 Bamboo Sticks are Green)
+    // 6s (Top 3 Blue, Bottom 3 Green - 上青下綠 2-tier w=5.2, h=15.5)
     createTileCanvas('mahjong:tile_6s', (ctx) => {
-      // Top 3 Green
-      drawBambooStick(ctx, cx - 7.5, cy - 9, 4.0, 12, '#15803d');
-      drawBambooStick(ctx, cx, cy - 9, 4.0, 12, '#15803d');
-      drawBambooStick(ctx, cx + 7.5, cy - 9, 4.0, 12, '#15803d');
+      // Top 3 Blue (上青)
+      drawHollowBambooStick(ctx, cx - 7.5, cy - 9.0, 5.2, 15.5, '#0284c7');
+      drawHollowBambooStick(ctx, cx, cy - 9.0, 5.2, 15.5, '#0284c7');
+      drawHollowBambooStick(ctx, cx + 7.5, cy - 9.0, 5.2, 15.5, '#0284c7');
 
-      // Bottom 3 Green
-      drawBambooStick(ctx, cx - 7.5, cy + 9, 4.0, 12, '#15803d');
-      drawBambooStick(ctx, cx, cy + 9, 4.0, 12, '#15803d');
-      drawBambooStick(ctx, cx + 7.5, cy + 9, 4.0, 12, '#15803d');
+      // Bottom 3 Green (下綠)
+      drawHollowBambooStick(ctx, cx - 7.5, cy + 9.0, 5.2, 15.5, '#15803d');
+      drawHollowBambooStick(ctx, cx, cy + 9.0, 5.2, 15.5, '#15803d');
+      drawHollowBambooStick(ctx, cx + 7.5, cy + 9.0, 5.2, 15.5, '#15803d');
     });
 
-    // 7s (1 / 3 / 3 Stacking: Top 1 Red, Middle 3 Green, Bottom 3 Green)
+    // 7s (Top 1 Red, Middle & Bottom Center Blue, Sides Green - 3-tier w=5.0, h=10.5)
     createTileCanvas('mahjong:tile_7s', (ctx) => {
-      // Top 1 Red
-      drawBambooStick(ctx, cx, cy - 13, 4.0, 8.5, '#dc2626');
+      // Top 1 Red (中央上為紅)
+      drawHollowBambooStick(ctx, cx, cy - 11.5, 5.0, 10.5, '#dc2626');
 
-      // Middle 3 Green
-      drawBambooStick(ctx, cx - 7.5, cy, 3.8, 8.5, '#15803d');
-      drawBambooStick(ctx, cx, cy, 3.8, 8.5, '#15803d');
-      drawBambooStick(ctx, cx + 7.5, cy, 3.8, 8.5, '#15803d');
+      // Middle 3 (兩側綠、中為青)
+      drawHollowBambooStick(ctx, cx - 7.5, cy, 5.0, 10.5, '#15803d');
+      drawHollowBambooStick(ctx, cx, cy, 5.0, 10.5, '#0284c7');
+      drawHollowBambooStick(ctx, cx + 7.5, cy, 5.0, 10.5, '#15803d');
 
-      // Bottom 3 Green
-      drawBambooStick(ctx, cx - 7.5, cy + 12, 3.8, 8.5, '#15803d');
-      drawBambooStick(ctx, cx, cy + 12, 3.8, 8.5, '#15803d');
-      drawBambooStick(ctx, cx + 7.5, cy + 12, 3.8, 8.5, '#15803d');
+      // Bottom 3 (兩側綠、中為青)
+      drawHollowBambooStick(ctx, cx - 7.5, cy + 11.5, 5.0, 10.5, '#15803d');
+      drawHollowBambooStick(ctx, cx, cy + 11.5, 5.0, 10.5, '#0284c7');
+      drawHollowBambooStick(ctx, cx + 7.5, cy + 11.5, 5.0, 10.5, '#15803d');
     });
 
-    // 8s (Horizontal Mirror Symmetric M / W: Outer sticks vertical, Inner sticks slanted, All Green)
+    // 8s (Top W Blue + Bottom M Green - 上青下綠 2-tier w=5.2, h=15.5)
     createTileCanvas('mahjong:tile_8s', (ctx) => {
-      const rot = 0.42; // ~24 degrees for inner diagonal sticks
-      // Top 4 Green (M shape: | \ / |)
-      drawBambooStick(ctx, cx - 8.5, cy - 9, 3.8, 11, '#15803d', '#ffffff', 0); // Left outer straight
-      drawBambooStick(ctx, cx - 2.8, cy - 9, 3.8, 11, '#15803d', '#ffffff', rot); // Left inner slanted down-right \
-      drawBambooStick(ctx, cx + 2.8, cy - 9, 3.8, 11, '#15803d', '#ffffff', -rot); // Right inner slanted down-left /
-      drawBambooStick(ctx, cx + 8.5, cy - 9, 3.8, 11, '#15803d', '#ffffff', 0); // Right outer straight
+      // Top W Shape (Blue 上青 | \ / |)
+      drawHollowBambooStick(ctx, cx - 8.5, cy - 9.0, 5.2, 15.5, '#0284c7', 0);
+      drawHollowBambooStick(ctx, cx - 4.25, cy - 9.0, 5.2, 16.5, '#0284c7', 0.58);
+      drawHollowBambooStick(ctx, cx + 4.25, cy - 9.0, 5.2, 16.5, '#0284c7', -0.58);
+      drawHollowBambooStick(ctx, cx + 8.5, cy - 9.0, 5.2, 15.5, '#0284c7', 0);
 
-      // Bottom 4 Green (W shape / Horizontal Mirror of M: | / \ |)
-      drawBambooStick(ctx, cx - 8.5, cy + 9, 3.8, 11, '#15803d', '#ffffff', 0); // Left outer straight
-      drawBambooStick(ctx, cx - 2.8, cy + 9, 3.8, 11, '#15803d', '#ffffff', -rot); // Left inner slanted up-right /
-      drawBambooStick(ctx, cx + 2.8, cy + 9, 3.8, 11, '#15803d', '#ffffff', rot); // Right inner slanted up-left \
-      drawBambooStick(ctx, cx + 8.5, cy + 9, 3.8, 11, '#15803d', '#ffffff', 0); // Right outer straight
+      // Bottom M Shape (Green 下綠 | / \ |)
+      drawHollowBambooStick(ctx, cx - 8.5, cy + 9.0, 5.2, 15.5, '#15803d', 0);
+      drawHollowBambooStick(ctx, cx - 4.25, cy + 9.0, 5.2, 16.5, '#15803d', -0.58);
+      drawHollowBambooStick(ctx, cx + 4.25, cy + 9.0, 5.2, 16.5, '#15803d', 0.58);
+      drawHollowBambooStick(ctx, cx + 8.5, cy + 9.0, 5.2, 15.5, '#15803d', 0);
     });
 
-    // 9s (3x3 grid: Left Green, Middle Red, Right Blue)
+    // 9s (3x3 grid: Left Green, Middle Red, Right Blue - 3-tier w=5.0, h=10.5)
     createTileCanvas('mahjong:tile_9s', (ctx) => {
-      const yOffsets = [-11, 0, 11];
+      const yOffsets = [-11.5, 0, 11.5];
       for (const dy of yOffsets) {
-        drawBambooStick(ctx, cx - 7.5, cy + dy, 4.0, 9.5, '#15803d');
-        drawBambooStick(ctx, cx, cy + dy, 4.0, 9.5, '#dc2626');
-        drawBambooStick(ctx, cx + 7.5, cy + dy, 4.0, 9.5, '#0284c7');
+        drawHollowBambooStick(ctx, cx - 7.5, cy + dy, 5.0, 10.5, '#15803d');
+        drawHollowBambooStick(ctx, cx, cy + dy, 5.0, 10.5, '#dc2626');
+        drawHollowBambooStick(ctx, cx + 7.5, cy + dy, 5.0, 10.5, '#0284c7');
       }
     });
 
