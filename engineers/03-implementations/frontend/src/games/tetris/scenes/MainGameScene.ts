@@ -5,6 +5,7 @@
  */
 
 import Phaser from 'phaser';
+import { BaseArcadeScene } from '@/core/phaser/BaseArcadeScene';
 import { GAME_ID } from './PreloadScene';
 import { TetrisBoard, MODERN_CONFIG } from '../logic/TetrisBoard';
 import { TETROMINOES, TetrominoType } from '../logic/Tetromino';
@@ -12,7 +13,7 @@ import { InputService, PlayerIndex, ArcadeAction } from '@/core/input/InputServi
 import { ArcadeBridge } from '@/core/bridge/ArcadeBridge';
 import { TetrisAudioService } from '../audio/TetrisAudioService';
 
-export class MainGameScene extends Phaser.Scene {
+export class MainGameScene extends BaseArcadeScene {
   private board!: TetrisBoard;
   private dropTimerAccumulator: number = 0;
   private lockTimerAccumulator: number = 0;
@@ -50,6 +51,8 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.initHighDpiCamera(800);
+
     this.board = new TetrisBoard(MODERN_CONFIG);
     this.dropTimerAccumulator = 0;
     this.lockTimerAccumulator = 0;

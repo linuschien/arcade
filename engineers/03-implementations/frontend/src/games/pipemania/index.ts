@@ -4,43 +4,25 @@
  * Implements IArcadeGame lifecycle contract and bridges ArcadeBridge events.
  */
 
-import Phaser from 'phaser';
+import { BaseArcadeGame } from '@/core/phaser/BaseArcadeGame';
 import { IArcadeGame, ArcadeBridge } from '@/core/bridge/ArcadeBridge';
 import { SoundEngine } from '@/core/audio/SoundEngine';
 import { PreloadScene } from './scenes/PreloadScene';
 import { MainGameScene } from './scenes/MainGameScene';
 import { PipeManiaAudioService } from './audio/PipeManiaAudioService';
 
-export class PipeManiaGame implements IArcadeGame {
-  private game: Phaser.Game | null = null;
+export class PipeManiaGame extends BaseArcadeGame {
   private unsubscribeListeners: Array<() => void> = [];
 
   constructor(parentContainerId: string | HTMLElement) {
-    const parent =
-      typeof parentContainerId === 'string'
-        ? document.getElementById(parentContainerId) || undefined
-        : parentContainerId;
-
-    const config: Phaser.Types.Core.GameConfig = {
-      type: Phaser.AUTO,
-      parent: parent,
+    super({
+      parentContainerId,
+      baseWidth: 920,
+      baseHeight: 640,
       backgroundColor: '#020617',
-      scale: {
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: 920,
-        height: 640,
-      },
       scene: [PreloadScene, MainGameScene],
-      physics: {
-        default: 'arcade',
-        arcade: {
-          debug: false,
-        },
-      },
-    };
+    });
 
-    this.game = new Phaser.Game(config);
     this.setupBridgeListeners();
   }
 

@@ -4,43 +4,25 @@
  * Implements IArcadeGame lifecycle contract and bridges ArcadeBridge events.
  */
 
-import Phaser from 'phaser';
+import { BaseArcadeGame } from '@/core/phaser/BaseArcadeGame';
 import { IArcadeGame, ArcadeBridge } from '@/core/bridge/ArcadeBridge';
 import { SoundEngine } from '@/core/audio/SoundEngine';
 import { PreloadScene } from './scenes/PreloadScene';
 import { MainGameScene } from './scenes/MainGameScene';
 import { PacmanAudioService } from './audio/PacmanAudioService';
 
-export class PacmanGame implements IArcadeGame {
-  private game: Phaser.Game | null = null;
+export class PacmanGame extends BaseArcadeGame {
   private unsubscribeListeners: Array<() => void> = [];
 
   constructor(parentContainerId: string | HTMLElement) {
-    const parent =
-      typeof parentContainerId === 'string'
-        ? document.getElementById(parentContainerId) || undefined
-        : parentContainerId;
-
-    const config: Phaser.Types.Core.GameConfig = {
-      type: Phaser.AUTO,
-      parent: parent,
+    super({
+      parentContainerId,
+      baseWidth: 600,
+      baseHeight: 735,
       backgroundColor: '#020617',
-      scale: {
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: 600,
-        height: 735,
-      },
       scene: [PreloadScene, MainGameScene],
-      physics: {
-        default: 'arcade',
-        arcade: {
-          debug: false,
-        },
-      },
-    };
+    });
 
-    this.game = new Phaser.Game(config);
     this.setupBridgeListeners();
   }
 

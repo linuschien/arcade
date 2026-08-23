@@ -5,6 +5,7 @@
  */
 
 import Phaser from 'phaser';
+import { BaseArcadeScene } from '@/core/phaser/BaseArcadeScene';
 import { InputService, PlayerIndex, ArcadeAction } from '@/core/input/InputService';
 import { ArcadeBridge } from '@/core/bridge/ArcadeBridge';
 import { SoundEngine } from '@/core/audio/SoundEngine';
@@ -39,7 +40,7 @@ export interface GhostEntity {
   eyesAtHouseFloor?: boolean;
 }
 
-export class MainGameScene extends Phaser.Scene {
+export class MainGameScene extends BaseArcadeScene {
   private maze!: PacmanMaze;
   private gameState!: PacmanGameState;
 
@@ -81,6 +82,8 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   public create(): void {
+    this.initHighDpiCamera(600);
+
     this.maze = new PacmanMaze();
     this.gameState = new PacmanGameState(1);
 

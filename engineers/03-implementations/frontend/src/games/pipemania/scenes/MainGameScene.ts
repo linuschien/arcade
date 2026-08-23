@@ -7,6 +7,7 @@
  */
 
 import Phaser from 'phaser';
+import { BaseArcadeScene } from '@/core/phaser/BaseArcadeScene';
 import { InputService, PlayerIndex, ArcadeAction } from '@/core/input/InputService';
 import { ArcadeBridge } from '@/core/bridge/ArcadeBridge';
 import {
@@ -29,7 +30,7 @@ const SIDEBAR_Y = 96;
 const BOARD_CENTER_X = BOARD_X + (GRID_COLS * TILE_SIZE) / 2; // 160 + 370 = 530
 const BOARD_CENTER_Y = BOARD_Y + (GRID_ROWS * TILE_SIZE) / 2; // 96 + 259 = 355
 
-export class MainGameScene extends Phaser.Scene {
+export class MainGameScene extends BaseArcadeScene {
   private gameState!: PipeManiaGameState;
   private isPausedState: boolean = false;
 
@@ -74,6 +75,8 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   public create(): void {
+    this.initHighDpiCamera(920);
+
     this.gameState = new PipeManiaGameState(1);
 
     this.createBoardFrame();

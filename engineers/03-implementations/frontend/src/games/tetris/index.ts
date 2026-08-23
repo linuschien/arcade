@@ -4,43 +4,25 @@
  * Implements IArcadeGame lifecycle contract and bridges ArcadeBridge events.
  */
 
-import Phaser from 'phaser';
+import { BaseArcadeGame } from '@/core/phaser/BaseArcadeGame';
 import { IArcadeGame, ArcadeBridge } from '@/core/bridge/ArcadeBridge';
 import { SoundEngine } from '@/core/audio/SoundEngine';
 import { PreloadScene } from './scenes/PreloadScene';
 import { MainGameScene } from './scenes/MainGameScene';
 import { TetrisAudioService } from './audio/TetrisAudioService';
 
-export class TetrisGame implements IArcadeGame {
-  private game: Phaser.Game | null = null;
+export class TetrisGame extends BaseArcadeGame {
   private unsubscribeListeners: Array<() => void> = [];
 
   constructor(parentContainerId: string | HTMLElement) {
-    const parent =
-      typeof parentContainerId === 'string'
-        ? document.getElementById(parentContainerId) || undefined
-        : parentContainerId;
-
-    const config: Phaser.Types.Core.GameConfig = {
-      type: Phaser.AUTO,
-      parent: parent,
+    super({
+      parentContainerId,
+      baseWidth: 800,
+      baseHeight: 720,
       backgroundColor: '#020617',
-      scale: {
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: 800,
-        height: 720,
-      },
       scene: [PreloadScene, MainGameScene],
-      physics: {
-        default: 'arcade',
-        arcade: {
-          debug: false,
-        },
-      },
-    };
+    });
 
-    this.game = new Phaser.Game(config);
     this.setupBridgeListeners();
   }
 
