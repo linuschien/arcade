@@ -323,8 +323,8 @@ export class MainGameScene extends BaseArcadeScene {
 
   private setupPointerInput(): void {
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-      const col = Math.floor((pointer.x - BOARD_X) / TILE_SIZE);
-      const row = Math.floor((pointer.y - BOARD_Y) / TILE_SIZE);
+      const col = Math.floor((pointer.worldX - BOARD_X) / TILE_SIZE);
+      const row = Math.floor((pointer.worldY - BOARD_Y) / TILE_SIZE);
       if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS) {
         this.cursorCol = col;
         this.cursorRow = row;
