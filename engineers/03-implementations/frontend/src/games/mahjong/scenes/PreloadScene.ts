@@ -31,94 +31,87 @@ export class PreloadScene extends Phaser.Scene {
 
     const createTileCanvas = (
       key: string,
-      drawContent: (ctx: CanvasRenderingContext2D, w: number, h: number) => void
+      drawContent: (ctx: CanvasRenderingContext2D) => void
+    ) => {
+      createProceduralTexture(key, W, H, (ctx) => {
+        // 1. Drop shadow & dark bevel
+        ctx.fillStyle = '#06130b';
+        this.drawRoundedRect(ctx, 2, 2, W - 2, H - 2, 4);
+        ctx.fill();
+
+        // 2. Ivory acrylic face gradient
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.7, '#fdfbf7');
+        grad.addColorStop(1, '#e8e2d5');
+        ctx.fillStyle = grad;
+        this.drawRoundedRect(ctx, 0, 0, W - 2, H - 2, 4);
+        ctx.fill();
+
+        // 3. Champagne gold outer border
+        ctx.strokeStyle = '#c5a059';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // 4. Subtle inner card recess
+        ctx.strokeStyle = '#d5dbdb';
+        ctx.lineWidth = 0.8;
+        this.drawRoundedRect(ctx, 2.5, 2.5, W - 7, H - 7, 2);
+        ctx.stroke();
+
+        // 5. Draw specific tile content
+        drawContent(ctx);
+      });
+    };
+
+    const createProceduralTexture = (
+      key: string,
+      width: number,
+      height: number,
+      draw: (ctx: CanvasRenderingContext2D) => void
     ) => {
       if (this.textures.exists(key)) return;
-
-      const canvas = document.createElement('canvas');
-      canvas.width = W;
-      canvas.height = H;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      // 1. Drop shadow & dark bevel
-      ctx.fillStyle = '#06130b';
-      this.drawRoundedRect(ctx, 2, 2, W - 2, H - 2, 4);
-      ctx.fill();
-
-      // 2. Ivory acrylic face gradient
-      const grad = ctx.createLinearGradient(0, 0, 0, H);
-      grad.addColorStop(0, '#ffffff');
-      grad.addColorStop(0.7, '#fdfbf7');
-      grad.addColorStop(1, '#e8e2d5');
-      ctx.fillStyle = grad;
-      this.drawRoundedRect(ctx, 0, 0, W - 2, H - 2, 4);
-      ctx.fill();
-
-      // 3. Champagne gold outer border
-      ctx.strokeStyle = '#c5a059';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      // 4. Subtle inner card recess
-      ctx.strokeStyle = '#d5dbdb';
-      ctx.lineWidth = 0.8;
-      this.drawRoundedRect(ctx, 2.5, 2.5, W - 7, H - 7, 2);
-      ctx.stroke();
-
-      // 5. Draw specific tile content
-      drawContent(ctx, W, H);
-
-      if (typeof this.textures.addCanvas === 'function') {
-        this.textures.addCanvas(key, canvas);
-      }
+      const tex = this.textures.createCanvas(key, width, height);
+      if (!tex) return;
+      draw(tex.context);
+      tex.refresh();
     };
 
     // 1. Base Blank Face
     createTileCanvas('mahjong:tile_face_base', () => {});
 
     // 2. Tile Back (Jade Green with Golden Diamond Emblem)
-    if (!this.textures.exists('mahjong:tile_back')) {
-      const canvas = document.createElement('canvas');
-      canvas.width = W;
-      canvas.height = H;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        // Shadow
-        ctx.fillStyle = '#06130b';
-        this.drawRoundedRect(ctx, 2, 2, W - 2, H - 2, 4);
-        ctx.fill();
+    createProceduralTexture('mahjong:tile_back', W, H, (ctx) => {
+      // Shadow
+      ctx.fillStyle = '#06130b';
+      this.drawRoundedRect(ctx, 2, 2, W - 2, H - 2, 4);
+      ctx.fill();
 
-        // Emerald Jade Gradient
-        const grad = ctx.createLinearGradient(0, 0, W, H);
-        grad.addColorStop(0, '#15803d');
-        grad.addColorStop(0.5, '#0f5132');
-        grad.addColorStop(1, '#064e3b');
-        ctx.fillStyle = grad;
-        this.drawRoundedRect(ctx, 0, 0, W - 2, H - 2, 4);
-        ctx.fill();
+      // Emerald Jade Gradient
+      const grad = ctx.createLinearGradient(0, 0, W, H);
+      grad.addColorStop(0, '#15803d');
+      grad.addColorStop(0.5, '#0f5132');
+      grad.addColorStop(1, '#064e3b');
+      ctx.fillStyle = grad;
+      this.drawRoundedRect(ctx, 0, 0, W - 2, H - 2, 4);
+      ctx.fill();
 
-        // Emerald inner trim
-        ctx.strokeStyle = '#4ade80';
-        ctx.lineWidth = 1;
-        this.drawRoundedRect(ctx, 2.5, 2.5, W - 7, H - 7, 2);
-        ctx.stroke();
+      // Emerald inner trim
+      ctx.strokeStyle = '#4ade80';
+      ctx.lineWidth = 1;
+      this.drawRoundedRect(ctx, 2.5, 2.5, W - 7, H - 7, 2);
+      ctx.stroke();
 
-        // Golden diamond in center
-        ctx.fillStyle = '#facc15';
-        ctx.beginPath();
-        ctx.moveTo(W / 2 - 1, H / 2 - 8);
-        ctx.lineTo(W / 2 + 7, H / 2 - 1);
-        ctx.lineTo(W / 2 - 1, H / 2 + 6);
-        ctx.lineTo(W / 2 - 9, H / 2 - 1);
-        ctx.closePath();
-        ctx.fill();
-
-        if (typeof this.textures.addCanvas === 'function') {
-          this.textures.addCanvas('mahjong:tile_back', canvas);
-        }
-      }
-    }
+      // Golden diamond in center
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.moveTo(W / 2 - 1, H / 2 - 8);
+      ctx.lineTo(W / 2 + 7, H / 2 - 1);
+      ctx.lineTo(W / 2 - 1, H / 2 + 6);
+      ctx.lineTo(W / 2 - 9, H / 2 - 1);
+      ctx.closePath();
+      ctx.fill();
+    });
 
     // 3. Characters (1m ~ 9m) - 上黑下紅 (飽滿大氣 75% 覆蓋率，書法楷體)
     const numChars = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
@@ -645,102 +638,71 @@ export class PreloadScene extends Phaser.Scene {
     });
 
     // 9. Flower Rack Slot Cell Frame
-    if (!this.textures.exists('mahjong:flower_cell')) {
-      const canvas = document.createElement('canvas');
-      canvas.width = W;
-      canvas.height = H;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
-        this.drawRoundedRect(ctx, 1, 1, W - 2, H - 2, 3);
-        ctx.fill();
+    createProceduralTexture('mahjong:flower_cell', W, H, (ctx) => {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+      this.drawRoundedRect(ctx, 1, 1, W - 2, H - 2, 3);
+      ctx.fill();
 
-        ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash?.([2, 2]);
-        ctx.stroke?.();
-        ctx.setLineDash?.([]);
-
-        if (typeof this.textures.addCanvas === 'function') {
-          this.textures.addCanvas('mahjong:flower_cell', canvas);
-        }
-      }
-    }
+      ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash?.([2, 2]);
+      ctx.stroke?.();
+      ctx.setLineDash?.([]);
+    });
 
     // 10. Central Square HUD Wind Compass (156 x 156)
-    if (!this.textures.exists('mahjong:compass_dial')) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 156;
-      canvas.height = 156;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        // Outer dark slate bezel
-        ctx.fillStyle = '#0f172a';
-        this.drawRoundedRect(ctx, 0, 0, 156, 156, 12);
-        ctx.fill();
+    createProceduralTexture('mahjong:compass_dial', 156, 156, (ctx) => {
+      // Outer dark slate bezel
+      ctx.fillStyle = '#0f172a';
+      this.drawRoundedRect(ctx, 0, 0, 156, 156, 12);
+      ctx.fill();
 
-        // Golden outer rim
-        ctx.strokeStyle = '#d4af37';
-        ctx.lineWidth = 2.5;
-        this.drawRoundedRect(ctx, 3, 3, 150, 150, 10);
-        ctx.stroke();
+      // Golden outer rim
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 2.5;
+      this.drawRoundedRect(ctx, 3, 3, 150, 150, 10);
+      ctx.stroke();
 
-        // Inner center core plate for round wind / tile count (Emerald core)
-        ctx.fillStyle = '#064e3b';
-        ctx.beginPath();
-        ctx.arc(78, 78, 30, 0, Math.PI * 2);
-        ctx.fill();
+      // Inner center core plate for round wind / tile count (Emerald core)
+      ctx.fillStyle = '#064e3b';
+      ctx.beginPath();
+      ctx.arc(78, 78, 30, 0, Math.PI * 2);
+      ctx.fill();
 
-        ctx.strokeStyle = '#10b981';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        if (typeof this.textures.addCanvas === 'function') {
-          this.textures.addCanvas('mahjong:compass_dial', canvas);
-        }
-      }
-    }
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
 
     // 11. Dice Textures (1 ~ 6)
     for (let i = 1; i <= 6; i++) {
-      const key = `mahjong:dice_${i}`;
-      if (!this.textures.exists(key)) {
-        const canvas = document.createElement('canvas');
-        canvas.width = 30;
-        canvas.height = 30;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          // Dice Body
-          ctx.fillStyle = '#ffffff';
-          this.drawRoundedRect(ctx, 1, 1, 28, 28, 4);
+      createProceduralTexture(`mahjong:dice_${i}`, 30, 30, (ctx) => {
+        // Dice Body
+        ctx.fillStyle = '#ffffff';
+        this.drawRoundedRect(ctx, 1, 1, 28, 28, 4);
+        ctx.fill();
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Dots
+        ctx.fillStyle = i === 1 || i === 4 ? '#dc2626' : '#0f172a';
+        const p = [
+          [],
+          [[15, 15]],
+          [[8, 8], [22, 22]],
+          [[8, 8], [15, 15], [22, 22]],
+          [[8, 8], [22, 8], [8, 22], [22, 22]],
+          [[8, 8], [22, 8], [15, 15], [8, 22], [22, 22]],
+          [[8, 7], [22, 7], [8, 15], [22, 15], [8, 23], [22, 23]],
+        ][i];
+
+        p.forEach(([dx, dy]) => {
+          ctx.beginPath();
+          ctx.arc(dx, dy, i === 1 ? 4 : 2.5, 0, Math.PI * 2);
           ctx.fill();
-          ctx.strokeStyle = '#cbd5e1';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-
-          // Dots
-          ctx.fillStyle = i === 1 || i === 4 ? '#dc2626' : '#0f172a';
-          const p = [
-            [],
-            [[15, 15]],
-            [[8, 8], [22, 22]],
-            [[8, 8], [15, 15], [22, 22]],
-            [[8, 8], [22, 8], [8, 22], [22, 22]],
-            [[8, 8], [22, 8], [15, 15], [8, 22], [22, 22]],
-            [[8, 7], [22, 7], [8, 15], [22, 15], [8, 23], [22, 23]],
-          ][i];
-
-          p.forEach(([dx, dy]) => {
-            ctx.beginPath();
-            ctx.arc(dx, dy, i === 1 ? 4 : 2.5, 0, Math.PI * 2);
-            ctx.fill();
-          });
-
-          if (typeof this.textures.addCanvas === 'function') {
-            this.textures.addCanvas(key, canvas);
-          }
-        }
-      }
+        });
+      });
     }
 
     // 12. Action Buttons (Chow, Pong, Kong, Ting, Hu, Zimo, Pass)
@@ -754,218 +716,167 @@ export class PreloadScene extends Phaser.Scene {
       { key: 'action_btn_pass', label: '過', bg: '#475569' },
     ];
     actionBtns.forEach(({ key, label, bg }) => {
-      const textureKey = `mahjong:${key}`;
-      if (!this.textures.exists(textureKey)) {
-        const canvas = document.createElement('canvas');
-        canvas.width = 64;
-        canvas.height = 36;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.fillStyle = bg;
-          this.drawRoundedRect(ctx, 0, 0, 64, 36, 6);
-          ctx.fill();
+      createProceduralTexture(`mahjong:${key}`, 64, 36, (ctx) => {
+        ctx.fillStyle = bg;
+        this.drawRoundedRect(ctx, 0, 0, 64, 36, 6);
+        ctx.fill();
 
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 1.5;
-          this.drawRoundedRect(ctx, 1.5, 1.5, 61, 33, 5);
-          ctx.stroke();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        this.drawRoundedRect(ctx, 1.5, 1.5, 61, 33, 5);
+        ctx.stroke();
 
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 16px "Microsoft JhengHei", sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(label, 32, 18);
-
-          if (typeof this.textures.addCanvas === 'function') {
-            this.textures.addCanvas(textureKey, canvas);
-          }
-        }
-      }
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px "Microsoft JhengHei", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, 32, 18);
+      });
     });
 
     // 13. 3D Wall Tile Blocks
-    if (!this.textures.exists('mahjong:wall_tile_stack')) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 22;
-      canvas.height = 30;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        // Lower tile
-        ctx.fillStyle = '#0f5132';
-        this.drawRoundedRect(ctx, 1, 12, 20, 16, 2);
-        ctx.fill();
-        ctx.strokeStyle = '#15803d';
-        ctx.stroke();
+    createProceduralTexture('mahjong:wall_tile_stack', 22, 30, (ctx) => {
+      // Lower tile
+      ctx.fillStyle = '#0f5132';
+      this.drawRoundedRect(ctx, 1, 12, 20, 16, 2);
+      ctx.fill();
+      ctx.strokeStyle = '#15803d';
+      ctx.stroke();
 
-        // Upper tile
-        ctx.fillStyle = '#15803d';
-        this.drawRoundedRect(ctx, 1, 1, 20, 16, 2);
-        ctx.fill();
-        ctx.strokeStyle = '#4ade80';
-        ctx.stroke();
+      // Upper tile
+      ctx.fillStyle = '#15803d';
+      this.drawRoundedRect(ctx, 1, 1, 20, 16, 2);
+      ctx.fill();
+      ctx.strokeStyle = '#4ade80';
+      ctx.stroke();
 
-        // Top ivory face rim
-        ctx.fillStyle = '#f8fafc';
-        this.drawRoundedRect(ctx, 3, 3, 16, 3, 1);
-        ctx.fill();
-
-        if (typeof this.textures.addCanvas === 'function') {
-          this.textures.addCanvas('mahjong:wall_tile_stack', canvas);
-        }
-      }
-    }
+      // Top ivory face rim
+      ctx.fillStyle = '#f8fafc';
+      this.drawRoundedRect(ctx, 3, 3, 16, 3, 1);
+      ctx.fill();
+    });
 
     // 13b. 3D Dead Wall (16 鐵牌) Metallic Dark Gold Tile Blocks
-    if (!this.textures.exists('mahjong:wall_tile_stack_iron')) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 22;
-      canvas.height = 30;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        // Lower tile (Bronze metallic)
-        ctx.fillStyle = '#78350f';
-        this.drawRoundedRect(ctx, 1, 12, 20, 16, 2);
-        ctx.fill();
-        ctx.strokeStyle = '#b45309';
-        ctx.lineWidth = 1;
-        ctx.stroke();
+    createProceduralTexture('mahjong:wall_tile_stack_iron', 22, 30, (ctx) => {
+      // Lower tile (Bronze metallic)
+      ctx.fillStyle = '#78350f';
+      this.drawRoundedRect(ctx, 1, 12, 20, 16, 2);
+      ctx.fill();
+      ctx.strokeStyle = '#b45309';
+      ctx.lineWidth = 1;
+      ctx.stroke();
 
-        // Upper tile (Dark Gold metallic)
-        ctx.fillStyle = '#92400e';
-        this.drawRoundedRect(ctx, 1, 1, 20, 16, 2);
-        ctx.fill();
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
+      // Upper tile (Dark Gold metallic)
+      ctx.fillStyle = '#92400e';
+      this.drawRoundedRect(ctx, 1, 1, 20, 16, 2);
+      ctx.fill();
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
 
-        // Top Gold Rim / Metallic lock
-        ctx.fillStyle = '#fef08a';
-        this.drawRoundedRect(ctx, 3, 3, 16, 3, 1);
-        ctx.fill();
-
-        if (typeof this.textures.addCanvas === 'function') {
-          this.textures.addCanvas('mahjong:wall_tile_stack_iron', canvas);
-        }
-      }
-    }
+      // Top Gold Rim / Metallic lock
+      ctx.fillStyle = '#fef08a';
+      this.drawRoundedRect(ctx, 3, 3, 16, 3, 1);
+      ctx.fill();
+    });
 
     // 14. Casino Leather & Gold Dice Cup (骰盅)
-    if (!this.textures.exists('mahjong:dice_cup')) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 110;
-      canvas.height = 130;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        // Drop shadow
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-        this.drawEllipse(ctx, 55, 120, 48, 10);
+    createProceduralTexture('mahjong:dice_cup', 110, 130, (ctx) => {
+      // Drop shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      this.drawEllipse(ctx, 55, 120, 48, 10);
+      ctx.fill();
+
+      // Cup Body (Tapered Cylinder)
+      const cupGrad = ctx.createLinearGradient(15, 0, 95, 0);
+      cupGrad.addColorStop(0, '#1c0b05');
+      cupGrad.addColorStop(0.2, '#451a03');
+      cupGrad.addColorStop(0.5, '#78350f');
+      cupGrad.addColorStop(0.8, '#451a03');
+      cupGrad.addColorStop(1, '#0f0502');
+
+      ctx.beginPath();
+      ctx.moveTo(28, 16);
+      ctx.lineTo(82, 16);
+      this.drawQuadraticCurveTo(ctx, 94, 60, 98, 112);
+      this.drawQuadraticCurveTo(ctx, 55, 122, 12, 112);
+      this.drawQuadraticCurveTo(ctx, 16, 60, 28, 16);
+      ctx.closePath();
+      ctx.fillStyle = cupGrad;
+      ctx.fill();
+
+      // Gold Trim Bands
+      const drawGoldBand = (y: number, w: number, curvature: number) => {
+        const goldGrad = ctx.createLinearGradient(55 - w / 2, y, 55 + w / 2, y);
+        goldGrad.addColorStop(0, '#92400e');
+        goldGrad.addColorStop(0.3, '#f59e0b');
+        goldGrad.addColorStop(0.5, '#fef08a');
+        goldGrad.addColorStop(0.7, '#fbbf24');
+        goldGrad.addColorStop(1, '#78350f');
+
+        ctx.fillStyle = goldGrad;
+        this.drawEllipse(ctx, 55, y, w / 2, curvature);
         ctx.fill();
+      };
 
-        // Cup Body (Tapered Cylinder)
-        const cupGrad = ctx.createLinearGradient(15, 0, 95, 0);
-        cupGrad.addColorStop(0, '#1c0b05');
-        cupGrad.addColorStop(0.2, '#451a03');
-        cupGrad.addColorStop(0.5, '#78350f');
-        cupGrad.addColorStop(0.8, '#451a03');
-        cupGrad.addColorStop(1, '#0f0502');
+      // Top Gold Knob / Finial
+      drawGoldBand(14, 38, 4);
+      drawGoldBand(18, 56, 3);
+      // Mid Decorative Gold Ring
+      drawGoldBand(64, 82, 5);
+      // Bottom Opening Rim (Heavy Gold Lip)
+      drawGoldBand(112, 88, 7);
 
-        ctx.beginPath();
-        ctx.moveTo(28, 16);
-        ctx.lineTo(82, 16);
-        this.drawQuadraticCurveTo(ctx, 94, 60, 98, 112);
-        this.drawQuadraticCurveTo(ctx, 55, 122, 12, 112);
-        this.drawQuadraticCurveTo(ctx, 16, 60, 28, 16);
-        ctx.closePath();
-        ctx.fillStyle = cupGrad;
-        ctx.fill();
-
-        // Gold Trim Bands
-        const drawGoldBand = (y: number, w: number, curvature: number) => {
-          const goldGrad = ctx.createLinearGradient(55 - w / 2, y, 55 + w / 2, y);
-          goldGrad.addColorStop(0, '#92400e');
-          goldGrad.addColorStop(0.3, '#f59e0b');
-          goldGrad.addColorStop(0.5, '#fef08a');
-          goldGrad.addColorStop(0.7, '#fbbf24');
-          goldGrad.addColorStop(1, '#78350f');
-
-          ctx.fillStyle = goldGrad;
-          this.drawEllipse(ctx, 55, y, w / 2, curvature);
-          ctx.fill();
-        };
-
-        // Top Gold Knob / Finial
-        drawGoldBand(14, 38, 4);
-        drawGoldBand(18, 56, 3);
-        // Mid Decorative Gold Ring
-        drawGoldBand(64, 82, 5);
-        // Bottom Opening Rim (Heavy Gold Lip)
-        drawGoldBand(112, 88, 7);
-
-        // Cup Body Specular Highlight (Left edge sheen)
-        const sheenGrad = ctx.createLinearGradient(28, 0, 50, 0);
-        sheenGrad.addColorStop(0, 'rgba(255, 255, 255, 0.28)');
-        sheenGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-        ctx.fillStyle = sheenGrad;
-        ctx.beginPath();
-        ctx.moveTo(28, 22);
-        ctx.lineTo(44, 22);
-        ctx.lineTo(34, 108);
-        ctx.lineTo(18, 108);
-        ctx.closePath();
-        ctx.fill();
-
-        if (typeof this.textures.addCanvas === 'function') {
-          this.textures.addCanvas('mahjong:dice_cup', canvas);
-        }
-      }
-    }
+      // Cup Body Specular Highlight (Left edge sheen)
+      const sheenGrad = ctx.createLinearGradient(28, 0, 50, 0);
+      sheenGrad.addColorStop(0, 'rgba(255, 255, 255, 0.28)');
+      sheenGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = sheenGrad;
+      ctx.beginPath();
+      ctx.moveTo(28, 22);
+      ctx.lineTo(44, 22);
+      ctx.lineTo(34, 108);
+      ctx.lineTo(18, 108);
+      ctx.closePath();
+      ctx.fill();
+    });
 
     // 15. Casino Velvet Dice Tray Base (骰托)
-    if (!this.textures.exists('mahjong:dice_tray')) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 240;
-      canvas.height = 140;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        // Outer Shadow
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-        this.drawEllipse(ctx, 120, 75, 112, 58);
-        ctx.fill();
+    createProceduralTexture('mahjong:dice_tray', 240, 140, (ctx) => {
+      // Outer Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      this.drawEllipse(ctx, 120, 75, 112, 58);
+      ctx.fill();
 
-        // Mahogany & Gold Outer Rim
-        const rimGrad = ctx.createLinearGradient(0, 0, 240, 140);
-        rimGrad.addColorStop(0, '#b45309');
-        rimGrad.addColorStop(0.5, '#78350f');
-        rimGrad.addColorStop(1, '#451a03');
+      // Mahogany & Gold Outer Rim
+      const rimGrad = ctx.createLinearGradient(0, 0, 240, 140);
+      rimGrad.addColorStop(0, '#b45309');
+      rimGrad.addColorStop(0.5, '#78350f');
+      rimGrad.addColorStop(1, '#451a03');
 
-        this.drawEllipse(ctx, 120, 70, 110, 55);
-        ctx.fillStyle = rimGrad;
-        ctx.fill();
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = '#fbbf24';
-        ctx.stroke();
+      this.drawEllipse(ctx, 120, 70, 110, 55);
+      ctx.fillStyle = rimGrad;
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#fbbf24';
+      ctx.stroke();
 
-        // Inner Emerald Green Velvet Felt
-        const feltGrad =
-          typeof ctx.createRadialGradient === 'function'
-            ? ctx.createRadialGradient(120, 70, 10, 120, 70, 95)
-            : ctx.createLinearGradient(0, 0, 240, 140);
-        feltGrad.addColorStop(0, '#065f46');
-        feltGrad.addColorStop(0.8, '#064e3b');
-        feltGrad.addColorStop(1, '#022c22');
+      // Inner Emerald Green Velvet Felt
+      const feltGrad =
+        typeof ctx.createRadialGradient === 'function'
+          ? ctx.createRadialGradient(120, 70, 10, 120, 70, 95)
+          : ctx.createLinearGradient(0, 0, 240, 140);
+      feltGrad.addColorStop(0, '#065f46');
+      feltGrad.addColorStop(0.8, '#064e3b');
+      feltGrad.addColorStop(1, '#022c22');
 
-        this.drawEllipse(ctx, 120, 70, 96, 46);
-        ctx.fillStyle = feltGrad;
-        ctx.fill();
-        ctx.lineWidth = 1.5;
-        ctx.strokeStyle = '#34d399';
-        ctx.stroke();
-
-        if (typeof this.textures.addCanvas === 'function') {
-          this.textures.addCanvas('mahjong:dice_tray', canvas);
-        }
-      }
-    }
+      this.drawEllipse(ctx, 120, 70, 96, 46);
+      ctx.fillStyle = feltGrad;
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#34d399';
+      ctx.stroke();
+    });
   }
 
   private drawEllipse(
