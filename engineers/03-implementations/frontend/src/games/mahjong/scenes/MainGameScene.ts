@@ -7,6 +7,7 @@
  */
 
 import Phaser from 'phaser';
+import { BaseArcadeScene } from '@/core/phaser/BaseArcadeScene';
 import { ArcadeBridge } from '@/core/bridge/ArcadeBridge';
 import { MahjongGameState } from '../logic/MahjongGameState';
 import { SeatLayoutContainer } from './SeatLayoutContainer';
@@ -26,7 +27,7 @@ import {
   SeatingDrawPlayerInfo,
 } from '../logic/MahjongTypes';
 
-export class MainGameScene extends Phaser.Scene {
+export class MainGameScene extends BaseArcadeScene {
   private gameState!: MahjongGameState;
   private seatContainers: SeatLayoutContainer[] = [];
 
@@ -77,6 +78,8 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   public create(): void {
+    this.initHighDpiCamera(1280);
+
     this.gameState = new MahjongGameState();
     // Disable synchronous auto-stepping in gameState so Phaser controls visual turn timing
     this.gameState.autoStepAI = false;
@@ -219,7 +222,6 @@ export class MainGameScene extends Phaser.Scene {
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#facc15',
       fontStyle: 'bold',
-      resolution: 2,
     }).setOrigin(0.5);
 
     this.dealerStreakText = this.add.text(cx, cy, '連 0 拉 0', {
@@ -227,7 +229,6 @@ export class MainGameScene extends Phaser.Scene {
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#94a3b8',
       fontStyle: 'bold',
-      resolution: 2,
     }).setOrigin(0.5);
 
     this.remainingTilesText = this.add.text(cx, cy + 14, '餘 70 張', {
@@ -235,7 +236,6 @@ export class MainGameScene extends Phaser.Scene {
       fontFamily: '"Microsoft JhengHei", "Roboto Mono", Consolas, monospace',
       color: '#38bdf8',
       fontStyle: 'bold',
-      resolution: 2,
     }).setOrigin(0.5);
 
     // 4 Integrated Player HUD Strips around the 4 borders of the square compass:
@@ -266,7 +266,6 @@ export class MainGameScene extends Phaser.Scene {
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#f8fafc',
         fontStyle: 'bold',
-        resolution: 2,
       }).setOrigin(0.5);
       container.add(pText);
       this.compassPlayerTexts.push(pText);
@@ -277,7 +276,6 @@ export class MainGameScene extends Phaser.Scene {
         fontFamily: '"Microsoft JhengHei", "Roboto Mono", Consolas, sans-serif',
         color: '#facc15',
         fontStyle: 'bold',
-        resolution: 2,
       }).setOrigin(0.5);
       container.add(chipsText);
       this.compassPlayerChipsTexts.push(chipsText);

@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ArcadeLobbyPage from './pages/arcade-lobby.page';
+import '@/core/phaser/init-high-dpi';
 import './index.css';
 
 const queryClient = new QueryClient({
