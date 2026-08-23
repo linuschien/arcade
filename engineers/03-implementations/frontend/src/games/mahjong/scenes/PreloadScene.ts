@@ -232,7 +232,8 @@ export class PreloadScene extends Phaser.Scene {
       w: number,
       h: number,
       color: string,
-      angle: number = 0
+      angle: number = 0,
+      bgFill: string = '#fdfbf7'
     ) => {
       ctx.save();
       ctx.translate(x, y);
@@ -249,12 +250,16 @@ export class PreloadScene extends Phaser.Scene {
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      // 1. Upper Hollow Bamboo Segment (上空心節)
+      // 1. Upper Hollow Bamboo Segment (上空心節，填底色遮蓋下層 + 描框)
       this.drawRoundedRect(ctx, -halfW + 0.6, -halfH + 0.8, w - 1.2, segH, 1.6);
+      ctx.fillStyle = bgFill;
+      ctx.fill();
       ctx.stroke();
 
-      // 2. Lower Hollow Bamboo Segment (下空心節)
+      // 2. Lower Hollow Bamboo Segment (下空心節，填底色遮蓋下層 + 描框)
       this.drawRoundedRect(ctx, -halfW + 0.6, 0.6, w - 1.2, segH, 1.6);
+      ctx.fillStyle = bgFill;
+      ctx.fill();
       ctx.stroke();
 
       // 3. Top, Center, Bottom solid accent nodes (橫向竹節凸緣)
@@ -523,18 +528,24 @@ export class PreloadScene extends Phaser.Scene {
       drawHollowBambooStick(ctx, cx + 7.5, cy + 11.5, 5.0, 10.5, '#15803d');
     });
 
-    // 8s (Top W Blue + Bottom M Green - 上青下綠 2-tier w=5.2, h=15.5)
+    // 8s (Top W Blue + Bottom M Green - 上青下綠 2-tier w=5.2, h=15.5 圖層覆蓋)
     createTileCanvas('mahjong:tile_8s', (ctx) => {
       // Top W Shape (Blue 上青 | \ / |)
+      // Layer 1 (底層): 右斜條 (/)
+      drawHollowBambooStick(ctx, cx + 4.25, cy - 9.0, 5.2, 15.0, '#0284c7', -0.58);
+      // Layer 2 (中層): 左斜條 (\，覆蓋中央谷底交會點)
+      drawHollowBambooStick(ctx, cx - 4.25, cy - 9.0, 5.2, 15.0, '#0284c7', 0.58);
+      // Layer 3 (頂層): 左右直條 (覆蓋外側兩個頂角交會點)
       drawHollowBambooStick(ctx, cx - 8.5, cy - 9.0, 5.2, 15.5, '#0284c7', 0);
-      drawHollowBambooStick(ctx, cx - 4.25, cy - 9.0, 5.2, 16.5, '#0284c7', 0.58);
-      drawHollowBambooStick(ctx, cx + 4.25, cy - 9.0, 5.2, 16.5, '#0284c7', -0.58);
       drawHollowBambooStick(ctx, cx + 8.5, cy - 9.0, 5.2, 15.5, '#0284c7', 0);
 
       // Bottom M Shape (Green 下綠 | / \ |)
+      // Layer 1 (底層): 右斜條 (\)
+      drawHollowBambooStick(ctx, cx + 4.25, cy + 9.0, 5.2, 15.0, '#15803d', 0.58);
+      // Layer 2 (中層): 左斜條 (/，覆蓋中央峰頂交會點)
+      drawHollowBambooStick(ctx, cx - 4.25, cy + 9.0, 5.2, 15.0, '#15803d', -0.58);
+      // Layer 3 (頂層): 左右直條 (覆蓋外側兩個底角交會點)
       drawHollowBambooStick(ctx, cx - 8.5, cy + 9.0, 5.2, 15.5, '#15803d', 0);
-      drawHollowBambooStick(ctx, cx - 4.25, cy + 9.0, 5.2, 16.5, '#15803d', -0.58);
-      drawHollowBambooStick(ctx, cx + 4.25, cy + 9.0, 5.2, 16.5, '#15803d', 0.58);
       drawHollowBambooStick(ctx, cx + 8.5, cy + 9.0, 5.2, 15.5, '#15803d', 0);
     });
 
