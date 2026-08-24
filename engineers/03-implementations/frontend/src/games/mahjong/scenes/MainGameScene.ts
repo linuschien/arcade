@@ -72,6 +72,7 @@ export class MainGameScene extends BaseArcadeScene {
   private seatingCinematicContainer!: Phaser.GameObjects.Container;
 
   private isPausedState: boolean = false;
+  private lastGameOverSummary: { score: number; cleared: boolean; reason: string } | null = null;
 
   constructor() {
     super({ key: 'mahjong:MainGameScene' });
@@ -536,7 +537,11 @@ export class MainGameScene extends BaseArcadeScene {
         }
         this.actionBarContainer.setVisible(false);
         this.subMenuContainer.setVisible(false);
-        this.showGameOverModal(summary);
+        this.lastGameOverSummary = summary;
+        // If settlement window is not currently showing (e.g. instant bankruptcy), show game over modal directly
+        if (!this.settlementContainer || !this.settlementContainer.visible) {
+          this.showGameOverModal(summary);
+        }
       },
     });
   }
@@ -2368,7 +2373,12 @@ export class MainGameScene extends BaseArcadeScene {
       curY += 23;
     }
 
-    // Continue Button (繼續下一局，放大至 180x38 大按鈕，帶懸浮反饋)
+    // Check if this is the final match round (Match Over / Game Over)
+    const isFinalRound =
+      this.gameState.phase === 'MATCH_OVER' ||
+      this.gameState.phase === 'GAME_OVER' ||
+      this.lastGameOverSummary !== null;
+
     const btnW = 180;
     const btnH = 38;
     const btnY = 194;
@@ -2380,7 +2390,7 @@ export class MainGameScene extends BaseArcadeScene {
     nextBtn.strokeRoundedRect(-btnW / 2, btnY, btnW, btnH, 8);
     this.settlementContainer.add(nextBtn);
 
-    const nextTxt = this.add.text(0, btnY + btnH / 2, '繼續下一局', {
+    const nextTxt = this.add.text(0, btnY + btnH / 2, isFinalRound ? '戰績結算' : '繼續下一局', {
       fontSize: '15px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#ffffff',
@@ -2412,8 +2422,17 @@ export class MainGameScene extends BaseArcadeScene {
         this.autoPlayBtnContainer.setVisible(false);
         this.autoPlayBtnContainer.removeAll(true);
       }
-      MahjongAudioService.playBGM();
-      this.animateBoardClearBeforeNewRound();
+      if (isFinalRound) {
+        const summary = this.lastGameOverSummary || {
+          score: Math.max(0, this.gameState.players[0].chips),
+          cleared: this.gameState.players[0].chips > 0,
+          reason: this.gameState.players[0].chips <= 0 ? '真人玩家籌碼破產淘汰！' : '四圈大滿貫完賽結算！',
+        };
+        this.showGameOverModal(summary);
+      } else {
+        MahjongAudioService.playBGM();
+        this.animateBoardClearBeforeNewRound();
+      }
     });
   }
 
@@ -2530,47 +2549,121 @@ export class MainGameScene extends BaseArcadeScene {
     }
 
     const modal = this.add.container(640, 360);
+    modal.setDepth(250);
+
+    const modalW = 600;
+    const modalH = 430;
+
     const bg = this.add.graphics();
     bg.fillStyle(0x020617, 0.98);
-    bg.fillRoundedRect(-220, -140, 440, 280, 16);
-    bg.lineStyle(2, summary.cleared ? 0xd4af37 : 0xef4444, 1);
-    bg.strokeRoundedRect(-220, -140, 440, 280, 16);
+    bg.fillRoundedRect(-modalW / 2, -modalH / 2, modalW, modalH, 16);
+    bg.lineStyle(2.5, summary.cleared ? 0xd4af37 : 0xef4444, 1);
+    bg.strokeRoundedRect(-modalW / 2, -modalH / 2, modalW, modalH, 16);
     modal.add(bg);
 
-    const title = this.add.text(0, -90, summary.cleared ? '🎉 通關大勝利！' : '💀 GAME OVER', {
-      fontSize: '24px',
+    const title = this.add.text(0, -modalH / 2 + 38, summary.cleared ? '🏆 四圈完賽・總戰績結算' : '💀 GAME OVER', {
+      fontSize: '26px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: summary.cleared ? '#facc15' : '#ef4444',
       fontStyle: 'bold',
     });
     title.setOrigin(0.5);
 
-    const reason = this.add.text(0, -40, summary.reason, {
-      fontSize: '14px',
+    const reason = this.add.text(0, -modalH / 2 + 75, summary.reason, {
+      fontSize: '15px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#cbd5e1',
     });
     reason.setOrigin(0.5);
 
-    const score = this.add.text(0, 10, `最終積分: ${summary.score.toLocaleString()} 點`, {
-      fontSize: '18px',
-      fontFamily: 'monospace',
-      color: '#38bdf8',
-      fontStyle: 'bold',
+    modal.add([title, reason]);
+
+    // 4 Players Standings sorted by chips descending
+    const initialChips = 10000;
+    const sortedPlayers = [...this.gameState.players].sort((a, b) => b.chips - a.chips);
+
+    const startY = -modalH / 2 + 105;
+    const rowH = 52;
+    const medals = ['🥇', '🥈', '🥉', '🏅'];
+
+    sortedPlayers.forEach((p, rankIdx) => {
+      const rowY = startY + rankIdx * (rowH + 8);
+      const isHuman = p.isHuman;
+      const delta = p.chips - initialChips;
+      const deltaStr = delta >= 0 ? `+${delta.toLocaleString()}` : `${delta.toLocaleString()}`;
+      const deltaColor = delta >= 0 ? '#4ade80' : '#f87171';
+
+      const rowBg = this.add.graphics();
+      rowBg.fillStyle(isHuman ? 0x1e3a8a : 0x0f172a, isHuman ? 0.85 : 0.65);
+      rowBg.fillRoundedRect(-modalW / 2 + 24, rowY, modalW - 48, rowH, 10);
+      if (isHuman) {
+        rowBg.lineStyle(1.8, 0x60a5fa, 0.95);
+        rowBg.strokeRoundedRect(-modalW / 2 + 24, rowY, modalW - 48, rowH, 10);
+      }
+      modal.add(rowBg);
+
+      // Rank Medal + Name
+      const rankText = this.add.text(-modalW / 2 + 44, rowY + rowH / 2, `${medals[rankIdx]} 第 ${rankIdx + 1} 名`, {
+        fontSize: '17px',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
+        color: isHuman ? '#93c5fd' : '#e2e8f0',
+        fontStyle: 'bold',
+      }).setOrigin(0, 0.5);
+
+      const nameText = this.add.text(-modalW / 2 + 168, rowY + rowH / 2, `${p.name} ${isHuman ? '(您)' : ''}`, {
+        fontSize: '16px',
+        fontFamily: '"Microsoft JhengHei", sans-serif',
+        color: isHuman ? '#facc15' : '#cbd5e1',
+        fontStyle: isHuman ? 'bold' : 'normal',
+      }).setOrigin(0, 0.5);
+
+      // Chips + Delta
+      const chipsText = this.add.text(modalW / 2 - 145, rowY + rowH / 2, `${p.chips.toLocaleString()} 點`, {
+        fontSize: '18px',
+        fontFamily: 'monospace',
+        color: '#38bdf8',
+        fontStyle: 'bold',
+      }).setOrigin(1, 0.5);
+
+      const deltaText = this.add.text(modalW / 2 - 44, rowY + rowH / 2, deltaStr, {
+        fontSize: '16px',
+        fontFamily: 'monospace',
+        color: deltaColor,
+        fontStyle: 'bold',
+      }).setOrigin(1, 0.5);
+
+      modal.add([rankText, nameText, chipsText, deltaText]);
     });
-    score.setOrigin(0.5);
 
-    modal.add([title, reason, score]);
+    // 10-second countdown timer before auto returning to lobby
+    let countdown = 10;
+    const countdownText = this.add.text(0, modalH / 2 - 26, `⏳ 將於 ${countdown} 秒後自動返回大廳...`, {
+      fontSize: '15px',
+      fontFamily: '"Microsoft JhengHei", sans-serif',
+      color: '#facc15',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    modal.add(countdownText);
 
-    // Emit GAME_OVER to Arcade Stadium Bridge
-    if (summary.cleared) {
-      ArcadeBridge.emit('GAME_OVER', {
-        gameId: 'mahjong',
-        score: summary.score,
-        playTimeSeconds: 120,
-        creditsUsed: 1,
-      });
-    }
+    this.time.addEvent({
+      delay: 1000,
+      repeat: 9,
+      callback: () => {
+        countdown--;
+        if (countdown > 0) {
+          countdownText.setText(`⏳ 將於 ${countdown} 秒後自動返回大廳...`);
+        } else {
+          countdownText.setText('⏳ 正在返回大廳...');
+          // Emit GAME_OVER to Arcade Stadium Bridge after 10-second countdown
+          ArcadeBridge.emit('GAME_OVER', {
+            gameId: 'mahjong',
+            score: summary.score,
+            playTimeSeconds: 120,
+            creditsUsed: 1,
+          });
+        }
+      },
+    });
   }
 
   public setPauseState(paused: boolean): void {
