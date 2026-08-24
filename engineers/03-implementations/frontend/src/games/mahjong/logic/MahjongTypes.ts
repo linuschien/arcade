@@ -98,6 +98,7 @@ export interface SettlementBreakdown {
   chipDeltas: number[]; // Index 0..3 net chip changes
   remainingChips: number[]; // Index 0..3 after settlement
   winnerName: string;
+  isFinalRound?: boolean;
 }
 
 export interface PlayerProfile {

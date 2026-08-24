@@ -888,5 +888,112 @@ describe('MahjongGameState Unit Tests', () => {
       expect(p1.flowers.some((f) => f.id === 'f_autumn_0')).toBe(true);
     });
   });
+
+  describe('Match Over and Settlement Breakdown Flag', () => {
+    it('should set breakdown.isFinalRound = false for normal ongoing rounds', () => {
+      const state = new MahjongGameState();
+      state.startNewMatch();
+      state.startDealing();
+
+      let settlementBreakdown: any = null;
+      state.addListener({
+        onSettlement: (breakdown) => {
+          settlementBreakdown = breakdown;
+        },
+      });
+
+      state.players[1].hand = [
+        { id: '1m_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      ];
+      state.settleWin(1, true);
+
+      expect(settlementBreakdown).not.toBeNull();
+      expect(settlementBreakdown.isFinalRound).toBe(false);
+    });
+
+    it('should set breakdown.isFinalRound = true on North 4 non-dealer win', () => {
+      const state = new MahjongGameState();
+      state.startNewMatch();
+
+      (state as any).roundWindIndex = 3;
+      (state as any).roundWind = 'NORTH';
+      (state as any).dealerRoundsPlayed = 3;
+      (state as any).dealerSeat = 3;
+
+      let settlementBreakdown: any = null;
+      let gameOverSummary: any = null;
+      state.addListener({
+        onSettlement: (breakdown) => {
+          settlementBreakdown = breakdown;
+        },
+        onGameOver: (summary) => {
+          gameOverSummary = summary;
+        },
+      });
+
+      state.players[0].hand = [
+        { id: '1m_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      ];
+      state.settleWin(0, true);
+
+      expect(settlementBreakdown).not.toBeNull();
+      expect(settlementBreakdown.isFinalRound).toBe(true);
+      expect(gameOverSummary).not.toBeNull();
+      expect(gameOverSummary.reason).toBe('恭喜順利打滿四圈通關一將！');
+    });
+
+    it('should set breakdown.isFinalRound = false on North 4 when dealer wins (dealer continuation)', () => {
+      const state = new MahjongGameState();
+      state.startNewMatch();
+
+      (state as any).roundWindIndex = 3;
+      (state as any).roundWind = 'NORTH';
+      (state as any).dealerRoundsPlayed = 3;
+      (state as any).dealerSeat = 3;
+
+      let settlementBreakdown: any = null;
+      state.addListener({
+        onSettlement: (breakdown) => {
+          settlementBreakdown = breakdown;
+        },
+      });
+
+      state.players[3].hand = [
+        { id: '1m_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      ];
+      state.settleWin(3, true);
+
+      expect(settlementBreakdown).not.toBeNull();
+      expect(settlementBreakdown.isFinalRound).toBe(false);
+    });
+
+    it('should set breakdown.isFinalRound = true when human player bankrupts', () => {
+      const state = new MahjongGameState();
+      state.startNewMatch();
+      state.startDealing();
+
+      let settlementBreakdown: any = null;
+      let gameOverSummary: any = null;
+      state.addListener({
+        onSettlement: (breakdown) => {
+          settlementBreakdown = breakdown;
+        },
+        onGameOver: (summary) => {
+          gameOverSummary = summary;
+        },
+      });
+
+      state.players[0].chips = 400; // drops <= 0
+      state.players[1].hand = [
+        { id: '1m_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      ];
+      state.settleWin(1, true);
+
+      expect(settlementBreakdown).not.toBeNull();
+      expect(settlementBreakdown.isFinalRound).toBe(true);
+      expect(gameOverSummary).not.toBeNull();
+      expect(gameOverSummary.reason).toBe('真人玩家籌碼破產淘汰！');
+    });
+  });
 });
 

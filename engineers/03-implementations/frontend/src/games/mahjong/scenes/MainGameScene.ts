@@ -525,23 +525,7 @@ export class MainGameScene extends BaseArcadeScene {
         this.showSettlementWindow(breakdown);
       },
       onGameOver: (summary) => {
-        this.discardMarker.setVisible(false);
-        if (this.discardMarkerTween) {
-          this.discardMarkerTween.stop();
-          this.discardMarkerTween = null;
-        }
-        this.clearAllTingContainers();
-        if (this.autoPlayBtnContainer) {
-          this.autoPlayBtnContainer.setVisible(false);
-          this.autoPlayBtnContainer.removeAll(true);
-        }
-        this.actionBarContainer.setVisible(false);
-        this.subMenuContainer.setVisible(false);
         this.lastGameOverSummary = summary;
-        // If settlement window is not currently showing (e.g. instant bankruptcy), show game over modal directly
-        if (!this.settlementContainer || !this.settlementContainer.visible) {
-          this.showGameOverModal(summary);
-        }
       },
     });
   }
@@ -1748,12 +1732,12 @@ export class MainGameScene extends BaseArcadeScene {
         canKong,
         kongOptions: canKong
           ? [
-              {
-                type: 'MELDED_KONG',
-                tileCode: last.tile.shortCode,
-                handTileIds: fullHand.filter((t) => t.shortCode === last.tile.shortCode).map((t) => t.id),
-              },
-            ]
+            {
+              type: 'MELDED_KONG',
+              tileCode: last.tile.shortCode,
+              handTileIds: fullHand.filter((t) => t.shortCode === last.tile.shortCode).map((t) => t.id),
+            },
+          ]
           : [],
         canChow: chowOptions.length > 0,
         chowOptions,
@@ -2334,14 +2318,14 @@ export class MainGameScene extends BaseArcadeScene {
       const roleText = isDraw
         ? '流局'
         : isWinner
-        ? breakdown.isSelfDrawn
-          ? '自摸'
-          : '胡牌'
-        : breakdown.isSelfDrawn
-        ? '被自摸'
-        : isLoser
-        ? '放槍'
-        : '陪打';
+          ? breakdown.isSelfDrawn
+            ? '自摸'
+            : '胡牌'
+          : breakdown.isSelfDrawn
+            ? '被自摸'
+            : isLoser
+              ? '放槍'
+              : '陪打';
 
       const delta = breakdown.chipDeltas[i];
       const deltaStr = delta > 0 ? `+${delta.toLocaleString()} 點` : delta < 0 ? `${delta.toLocaleString()} 點` : '0 點';
@@ -2373,12 +2357,6 @@ export class MainGameScene extends BaseArcadeScene {
       curY += 23;
     }
 
-    // Check if this is the final match round (Match Over / Game Over)
-    const isFinalRound =
-      this.gameState.phase === 'MATCH_OVER' ||
-      this.gameState.phase === 'GAME_OVER' ||
-      this.lastGameOverSummary !== null;
-
     const btnW = 180;
     const btnH = 38;
     const btnY = 194;
@@ -2390,7 +2368,7 @@ export class MainGameScene extends BaseArcadeScene {
     nextBtn.strokeRoundedRect(-btnW / 2, btnY, btnW, btnH, 8);
     this.settlementContainer.add(nextBtn);
 
-    const nextTxt = this.add.text(0, btnY + btnH / 2, isFinalRound ? '戰績結算' : '繼續下一局', {
+    const nextTxt = this.add.text(0, btnY + btnH / 2, breakdown.isFinalRound ? '戰績結算' : '繼續下一局', {
       fontSize: '15px',
       fontFamily: '"Microsoft JhengHei", sans-serif',
       color: '#ffffff',
@@ -2416,19 +2394,13 @@ export class MainGameScene extends BaseArcadeScene {
     });
     nextBtn.on('pointerdown', () => {
       this.settlementContainer.setVisible(false);
-      this.tingContainer.setVisible(false);
-      this.tingContainer.removeAll(true);
+      this.clearAllTingContainers();
       if (this.autoPlayBtnContainer) {
         this.autoPlayBtnContainer.setVisible(false);
         this.autoPlayBtnContainer.removeAll(true);
       }
-      if (isFinalRound) {
-        const summary = this.lastGameOverSummary || {
-          score: Math.max(0, this.gameState.players[0].chips),
-          cleared: this.gameState.players[0].chips > 0,
-          reason: this.gameState.players[0].chips <= 0 ? '真人玩家籌碼破產淘汰！' : '四圈大滿貫完賽結算！',
-        };
-        this.showGameOverModal(summary);
+      if (breakdown.isFinalRound) {
+        this.showGameOverModal(this.lastGameOverSummary!);
       } else {
         MahjongAudioService.playBGM();
         this.animateBoardClearBeforeNewRound();

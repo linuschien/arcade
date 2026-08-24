@@ -1209,23 +1209,7 @@ export class MahjongGameState {
       currentChips: this.players.map((p) => p.chips),
     });
 
-    // Update chip balances
-    for (let i = 0; i < 4; i++) {
-      this.players[i].chips = breakdown.remainingChips[i];
-    }
-
-    this.currentSettlement = breakdown;
-    this.listeners.forEach((l) => l.onSettlement?.(breakdown));
-
-    // Update dealer streak / rotation
-    if (winnerSeat === this.dealerSeat) {
-      this.dealerStreak++;
-    } else {
-      this.dealerStreak = 0;
-      this.rotateDealer();
-    }
-
-    this.checkGameOrMatchEnd();
+    this.finalizeSettlement(winnerSeat, breakdown);
   }
 
   /**
@@ -1252,14 +1236,30 @@ export class MahjongGameState {
       currentChips: this.players.map((p) => p.chips),
     });
 
+    this.finalizeSettlement(winnerSeat, breakdown);
+  }
+
+  /**
+   * Finalizes the settlement for a winning round: updates chip balances, checks for match
+   * completion (isFinalRound), notifies listeners, rotates the dealer, and evaluates game/match end.
+   */
+  private finalizeSettlement(winnerSeat: PlayerSeat, breakdown: SettlementBreakdown): void {
+    // Update chip balances
     for (let i = 0; i < 4; i++) {
       this.players[i].chips = breakdown.remainingChips[i];
     }
 
+    // Check match completion flags without mutating dealer state yet
+    const isDealerContinuing = winnerSeat === this.dealerSeat;
+    const isHumanBankrupt = breakdown.remainingChips[0] <= 0;
+    const isFourWindsComplete = !isDealerContinuing && this.roundWindIndex === 3 && this.dealerRoundsPlayed === 3;
+    breakdown.isFinalRound = isHumanBankrupt || isFourWindsComplete;
+
     this.currentSettlement = breakdown;
     this.listeners.forEach((l) => l.onSettlement?.(breakdown));
 
-    if (winnerSeat === this.dealerSeat) {
+    // Update dealer streak / rotation
+    if (isDealerContinuing) {
       this.dealerStreak++;
     } else {
       this.dealerStreak = 0;
@@ -1292,12 +1292,11 @@ export class MahjongGameState {
       chipDeltas: [0, 0, 0, 0],
       remainingChips: this.players.map((p) => p.chips),
       winnerName: '流局',
+      isFinalRound: false,
     };
 
     this.currentSettlement = breakdown;
     this.listeners.forEach((l) => l.onSettlement?.(breakdown));
-
-    this.checkGameOrMatchEnd();
   }
 
   /**

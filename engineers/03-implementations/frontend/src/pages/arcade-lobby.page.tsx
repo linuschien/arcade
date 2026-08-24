@@ -221,14 +221,17 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
       const activeGameObj = games.find((g: any) => g.gameId === currentActiveId);
       const gameCardId = activeGameObj?.id || '98765432-10fe-dcba-9876-543210fedcba';
 
-      showToast(`🏆 Game Over! Submitting score: ${score}...`);
-
-      try {
-        await submitHighScoreMutation.mutateAsync({ gameCardId, playerEmail, score });
-        showToast(`🏆 Game Over! Final Score ${score} submitted to Leaderboard!`);
-      } catch (err: any) {
-        console.warn('Score submission warning:', err);
-        showToast(`🏆 Game Over! Final Score: ${score}`);
+      if (score > 0) {
+        showToast(`🏆 Game Over! Submitting score: ${score}...`);
+        try {
+          await submitHighScoreMutation.mutateAsync({ gameCardId, playerEmail, score });
+          showToast(`🏆 Game Over! Final Score ${score} submitted to Leaderboard!`);
+        } catch (err: any) {
+          console.warn('Score submission warning:', err);
+          showToast(`🏆 Game Over! Final Score: ${score}`);
+        }
+      } else {
+        showToast(`💀 Game Over! Final Score: 0`);
       }
 
       setTimeout(() => {

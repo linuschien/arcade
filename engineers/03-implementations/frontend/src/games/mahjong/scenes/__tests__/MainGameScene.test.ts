@@ -182,6 +182,7 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     };
     (scene as any).time = {
       delayedCall: vi.fn(),
+      addEvent: vi.fn(),
     };
   });
 
@@ -694,5 +695,77 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     spriteCalls = (scene as any).add.sprite.mock.calls;
     expect(spriteCalls.some((c: any[]) => c[2] === 'mahjong:action_btn_hu')).toBe(true);
     expect(spriteCalls.some((c: any[]) => c[2] === 'mahjong:action_btn_zimo')).toBe(false);
+  });
+
+  describe('Match Over Settlement Flow and Smart Ting Retention', () => {
+    it('should render 戰績結算 button text when breakdown.isFinalRound is true', () => {
+      scene.create();
+      (scene as any).add.text.mockClear();
+
+      const breakdown = {
+        winnerSeat: 0,
+        isSelfDrawn: true,
+        winningTile: { id: '1m_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+        basePoints: 500,
+        fanRate: 200,
+        dealerMultiplierFan: 1,
+        dealerStreak: 0,
+        fans: [{ name: '自摸', fan: 1 }],
+        totalFans: 1,
+        chipDeltas: [600, -200, -200, -200],
+        remainingChips: [10600, 9800, 9800, 9800],
+        winnerName: '賭神',
+        isFinalRound: true,
+      };
+
+      (scene as any).showSettlementWindow(breakdown);
+
+      const textCalls = (scene as any).add.text.mock.calls;
+      const finalBtnCall = textCalls.find((c: any[]) => c[2] === '戰績結算');
+      expect(finalBtnCall).toBeDefined();
+    });
+
+    it('should render 繼續下一局 button text when breakdown.isFinalRound is false', () => {
+      scene.create();
+      (scene as any).add.text.mockClear();
+
+      const breakdown = {
+        winnerSeat: 0,
+        isSelfDrawn: true,
+        winningTile: { id: '1m_0', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+        basePoints: 500,
+        fanRate: 200,
+        dealerMultiplierFan: 1,
+        dealerStreak: 0,
+        fans: [{ name: '自摸', fan: 1 }],
+        totalFans: 1,
+        chipDeltas: [600, -200, -200, -200],
+        remainingChips: [10600, 9800, 9800, 9800],
+        winnerName: '賭神',
+        isFinalRound: false,
+      };
+
+      (scene as any).showSettlementWindow(breakdown);
+
+      const textCalls = (scene as any).add.text.mock.calls;
+      const nextBtnCall = textCalls.find((c: any[]) => c[2] === '繼續下一局');
+      expect(nextBtnCall).toBeDefined();
+    });
+
+    it('should not wipe ting containers when onGameOver event is received', () => {
+      scene.create();
+      const tingContainers = (scene as any).tingContainers;
+      tingContainers.forEach((c: any) => c.removeAll.mockClear());
+
+      const onGameOverListener = (scene as any).gameState.listeners.find((l: any) => l.onGameOver)?.onGameOver;
+      expect(onGameOverListener).toBeDefined();
+
+      onGameOverListener({ score: 10000, cleared: true, reason: '四圈大滿貫完賽結算！' });
+
+      // tingContainers should NOT be removed/cleared by onGameOver
+      tingContainers.forEach((c: any) => {
+        expect(c.removeAll).not.toHaveBeenCalled();
+      });
+    });
   });
 });
