@@ -35,26 +35,26 @@ export class PreloadScene extends Phaser.Scene {
     ) => {
       createProceduralTexture(key, W, H, (ctx) => {
         // 1. Drop shadow & dark bevel
-        ctx.fillStyle = '#06130b';
+        ctx.fillStyle = MAHJONG_COLORS.DROP_SHADOW;
         this.drawRoundedRect(ctx, 2, 2, W - 2, H - 2, 4);
         ctx.fill();
 
         // 2. Ivory acrylic face gradient
         const grad = ctx.createLinearGradient(0, 0, 0, H);
-        grad.addColorStop(0, '#ffffff');
-        grad.addColorStop(0.7, '#fdfbf7');
-        grad.addColorStop(1, '#e8e2d5');
+        grad.addColorStop(0, MAHJONG_COLORS.IVORY_GRADIENT_START);
+        grad.addColorStop(0.7, MAHJONG_COLORS.IVORY_GRADIENT_MID);
+        grad.addColorStop(1, MAHJONG_COLORS.IVORY_GRADIENT_END);
         ctx.fillStyle = grad;
         this.drawRoundedRect(ctx, 0, 0, W - 2, H - 2, 4);
         ctx.fill();
 
         // 3. Champagne gold outer border
-        ctx.strokeStyle = '#c5a059';
+        ctx.strokeStyle = MAHJONG_COLORS.GOLD_BORDER;
         ctx.lineWidth = 1;
         ctx.stroke();
 
         // 4. Subtle inner card recess
-        ctx.strokeStyle = '#d5dbdb';
+        ctx.strokeStyle = MAHJONG_COLORS.CARD_RECESS;
         ctx.lineWidth = 0.8;
         this.drawRoundedRect(ctx, 2.5, 2.5, W - 7, H - 7, 2);
         ctx.stroke();
@@ -83,27 +83,27 @@ export class PreloadScene extends Phaser.Scene {
     // 2. Tile Back (Jade Green with Golden Diamond Emblem)
     createProceduralTexture('mahjong:tile_back', W, H, (ctx) => {
       // Shadow
-      ctx.fillStyle = '#06130b';
+      ctx.fillStyle = MAHJONG_COLORS.DROP_SHADOW;
       this.drawRoundedRect(ctx, 2, 2, W - 2, H - 2, 4);
       ctx.fill();
 
       // Emerald Jade Gradient
       const grad = ctx.createLinearGradient(0, 0, W, H);
-      grad.addColorStop(0, '#15803d');
-      grad.addColorStop(0.5, '#0f5132');
-      grad.addColorStop(1, '#064e3b');
+      grad.addColorStop(0, MAHJONG_COLORS.JADE_START);
+      grad.addColorStop(0.5, MAHJONG_COLORS.JADE_MID);
+      grad.addColorStop(1, MAHJONG_COLORS.JADE_END);
       ctx.fillStyle = grad;
       this.drawRoundedRect(ctx, 0, 0, W - 2, H - 2, 4);
       ctx.fill();
 
       // Emerald inner trim
-      ctx.strokeStyle = '#4ade80';
+      ctx.strokeStyle = MAHJONG_COLORS.JADE_TRIM;
       ctx.lineWidth = 1;
       this.drawRoundedRect(ctx, 2.5, 2.5, W - 7, H - 7, 2);
       ctx.stroke();
 
       // Golden diamond in center
-      ctx.fillStyle = '#facc15';
+      ctx.fillStyle = MAHJONG_COLORS.GOLD_ACCENT;
       ctx.beginPath();
       ctx.moveTo(W / 2 - 1, H / 2 - 8);
       ctx.lineTo(W / 2 + 7, H / 2 - 1);
@@ -154,14 +154,14 @@ export class PreloadScene extends Phaser.Scene {
       // 2. White concentric groove
       ctx.beginPath();
       ctx.arc(x, y, r * 0.62, 0, Math.PI * 2);
-      ctx.strokeStyle = '#ffffff';
+      ctx.strokeStyle = MAHJONG_COLORS.CARVING_WHITE;
       ctx.lineWidth = Math.max(0.6, r * 0.2);
       ctx.stroke();
 
       // 3. Center colored core
       ctx.beginPath();
       ctx.arc(x, y, r * 0.35, 0, Math.PI * 2);
-      ctx.fillStyle = centerColor || '#ffffff';
+      ctx.fillStyle = centerColor || MAHJONG_COLORS.CARVING_WHITE;
       ctx.fill();
     };
 
@@ -170,20 +170,20 @@ export class PreloadScene extends Phaser.Scene {
       // 1. Outermost solid enclosing ring (翡翠綠大外圈)
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fillStyle = '#15803d'; // Jade Green outer ring
+      ctx.fillStyle = MAHJONG_COLORS.DRAGON_GREEN;
       ctx.fill();
 
       // 2. Outer ring white decorative groove
       ctx.beginPath();
       ctx.arc(x, y, r - 1.2, 0, Math.PI * 2);
-      ctx.strokeStyle = '#ffffff';
+      ctx.strokeStyle = MAHJONG_COLORS.CARVING_WHITE;
       ctx.lineWidth = 0.8;
       ctx.stroke();
 
       // 3. Inner base inside the outer ring
       ctx.beginPath();
       ctx.arc(x, y, r - 2, 0, Math.PI * 2);
-      ctx.fillStyle = '#fdfbf7'; // Ivory white inner face
+      ctx.fillStyle = MAHJONG_COLORS.IVORY_GRADIENT_MID;
       ctx.fill();
 
       // 4. 8 Petals nested inside the outer ring (翡翠綠內嵌花瓣)
@@ -194,33 +194,33 @@ export class PreloadScene extends Phaser.Scene {
         const py = y + Math.sin(angle) * (r * 0.58);
         ctx.beginPath();
         ctx.arc(px, py, r * 0.26, 0, Math.PI * 2);
-        ctx.fillStyle = '#15803d';
+        ctx.fillStyle = MAHJONG_COLORS.DRAGON_GREEN;
         ctx.fill();
       }
 
       // 5. Red concentric ring
       ctx.beginPath();
       ctx.arc(x, y, r * 0.60, 0, Math.PI * 2);
-      ctx.fillStyle = '#dc2626';
+      ctx.fillStyle = MAHJONG_COLORS.DRAGON_RED;
       ctx.fill();
 
       // 6. White groove
       ctx.beginPath();
       ctx.arc(x, y, r * 0.40, 0, Math.PI * 2);
-      ctx.strokeStyle = '#ffffff';
+      ctx.strokeStyle = MAHJONG_COLORS.CARVING_WHITE;
       ctx.lineWidth = 1.0;
       ctx.stroke();
 
       // 7. Sapphire Blue core
       ctx.beginPath();
       ctx.arc(x, y, r * 0.28, 0, Math.PI * 2);
-      ctx.fillStyle = '#0284c7';
+      ctx.fillStyle = MAHJONG_COLORS.DRAGON_BLUE;
       ctx.fill();
 
       // 8. Golden sunburst center dot
       ctx.beginPath();
       ctx.arc(x, y, r * 0.12, 0, Math.PI * 2);
-      ctx.fillStyle = '#facc15';
+      ctx.fillStyle = MAHJONG_COLORS.GOLD_ACCENT;
       ctx.fill();
     };
 
@@ -233,7 +233,7 @@ export class PreloadScene extends Phaser.Scene {
       h: number,
       color: string,
       angle: number = 0,
-      bgFill: string = '#fdfbf7'
+      bgFill: string = MAHJONG_COLORS.IVORY_GRADIENT_MID
     ) => {
       ctx.save();
       ctx.translate(x, y);
@@ -282,11 +282,11 @@ export class PreloadScene extends Phaser.Scene {
       };
 
       // 1. Bamboo perch branch at the bottom
-      ctx.fillStyle = '#15803d';
+      ctx.fillStyle = MAHJONG_COLORS.DRAGON_GREEN;
       ctx.fillRect(x - 9, y + 11, 18, 3);
 
       // 2. Flowing Tail feathers (3 curved plumes in Green, Red, Blue)
-      ctx.fillStyle = '#15803d';
+      ctx.fillStyle = MAHJONG_COLORS.DRAGON_GREEN;
       ctx.beginPath();
       ctx.moveTo(x - 2, y + 5);
       curve(x - 7, y + 9, x - 10, y + 16);
@@ -294,7 +294,7 @@ export class PreloadScene extends Phaser.Scene {
       ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = '#dc2626';
+      ctx.fillStyle = MAHJONG_COLORS.DRAGON_RED;
       ctx.beginPath();
       ctx.moveTo(x - 1, y + 6);
       curve(x - 4, y + 12, x - 6, y + 19);
@@ -302,7 +302,7 @@ export class PreloadScene extends Phaser.Scene {
       ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = '#0284c7';
+      ctx.fillStyle = MAHJONG_COLORS.DRAGON_BLUE;
       ctx.beginPath();
       ctx.moveTo(x, y + 7);
       curve(x - 2, y + 13, x - 3, y + 20);
@@ -312,36 +312,36 @@ export class PreloadScene extends Phaser.Scene {
 
       // 3. Bird Body & Wings
       // Body (Ruby Red)
-      ctx.fillStyle = '#dc2626';
+      ctx.fillStyle = MAHJONG_COLORS.DRAGON_RED;
       ctx.beginPath();
       ctx.arc(x, y + 3, 5.8, 0, Math.PI * 2);
       ctx.fill();
 
       // Wing (Emerald Green with gold rim)
-      ctx.fillStyle = '#15803d';
+      ctx.fillStyle = MAHJONG_COLORS.DRAGON_GREEN;
       ctx.beginPath();
       ctx.arc(x - 1.5, y + 3, 4.2, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = '#facc15';
+      ctx.fillStyle = MAHJONG_COLORS.GOLD_ACCENT;
       ctx.beginPath();
       ctx.arc(x - 1.5, y + 2, 2, 0, Math.PI * 2);
       ctx.fill();
 
       // 4. Bird Chest (Gold/Orange breast)
-      ctx.fillStyle = '#f97316';
+      ctx.fillStyle = MAHJONG_COLORS.ORANGE_ACCENT;
       ctx.beginPath();
       ctx.arc(x + 2.5, y + 3, 3.2, 0, Math.PI * 2);
       ctx.fill();
 
       // 5. Bird Head (Emerald Green)
-      ctx.fillStyle = '#15803d';
+      ctx.fillStyle = MAHJONG_COLORS.DRAGON_GREEN;
       ctx.beginPath();
       ctx.arc(x + 3, y - 6, 4.2, 0, Math.PI * 2);
       ctx.fill();
 
       // 6. Beak (Cinnabar Red triangle pointing right)
-      ctx.fillStyle = '#dc2626';
+      ctx.fillStyle = MAHJONG_COLORS.DRAGON_RED;
       ctx.beginPath();
       ctx.moveTo(x + 6, y - 7.5);
       ctx.lineTo(x + 11, y - 6);
@@ -350,17 +350,17 @@ export class PreloadScene extends Phaser.Scene {
       ctx.fill();
 
       // 7. Eye (White circle + Black pupil)
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = MAHJONG_COLORS.CARVING_WHITE;
       ctx.beginPath();
       ctx.arc(x + 3.8, y - 6.8, 1.5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = MAHJONG_COLORS.DEEP_INK_BLACK;
       ctx.beginPath();
       ctx.arc(x + 4.2, y - 6.8, 0.8, 0, Math.PI * 2);
       ctx.fill();
 
       // 8. Head Crest / Crown feathers (Red & Gold)
-      ctx.fillStyle = '#dc2626';
+      ctx.fillStyle = MAHJONG_COLORS.DRAGON_RED;
       ctx.beginPath();
       ctx.moveTo(x + 1, y - 10);
       ctx.lineTo(x - 2, y - 14);
@@ -368,7 +368,7 @@ export class PreloadScene extends Phaser.Scene {
       ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = '#facc15';
+      ctx.fillStyle = MAHJONG_COLORS.GOLD_ACCENT;
       ctx.beginPath();
       ctx.arc(x - 2, y - 14, 1.2, 0, Math.PI * 2);
       ctx.fill();
@@ -382,67 +382,67 @@ export class PreloadScene extends Phaser.Scene {
 
     // 2p (Top Green, Bottom Blue - Tier 1 Second-largest r=7.5)
     createTileCanvas('mahjong:tile_2p', (ctx) => {
-      drawDot(ctx, cx, cy - 10.5, 7.5, '#15803d');
-      drawDot(ctx, cx, cy + 10.5, 7.5, '#0284c7');
+      drawDot(ctx, cx, cy - 10.5, 7.5, MAHJONG_COLORS.DRAGON_GREEN);
+      drawDot(ctx, cx, cy + 10.5, 7.5, MAHJONG_COLORS.DRAGON_BLUE);
     });
 
     // 3p (Diagonal: Top-Left Blue, Center Red, Bottom-Right Green - Tier 2 r=5.8)
     createTileCanvas('mahjong:tile_3p', (ctx) => {
-      drawDot(ctx, cx - 8.2, cy - 11.2, 5.8, '#0284c7');
-      drawDot(ctx, cx, cy, 5.8, '#dc2626');
-      drawDot(ctx, cx + 8.2, cy + 11.2, 5.8, '#15803d');
+      drawDot(ctx, cx - 8.2, cy - 11.2, 5.8, MAHJONG_COLORS.DRAGON_BLUE);
+      drawDot(ctx, cx, cy, 5.8, MAHJONG_COLORS.DRAGON_RED);
+      drawDot(ctx, cx + 8.2, cy + 11.2, 5.8, MAHJONG_COLORS.DRAGON_GREEN);
     });
 
     // 4p (4 Dots: Top-Left Blue, Top-Right Green, Bottom-Left Green, Bottom-Right Blue - Tier 2 r=5.8)
     createTileCanvas('mahjong:tile_4p', (ctx) => {
-      drawDot(ctx, cx - 7.4, cy - 10.0, 5.8, '#0284c7');
-      drawDot(ctx, cx + 7.4, cy - 10.0, 5.8, '#15803d');
-      drawDot(ctx, cx - 7.4, cy + 10.0, 5.8, '#15803d');
-      drawDot(ctx, cx + 7.4, cy + 10.0, 5.8, '#0284c7');
+      drawDot(ctx, cx - 7.4, cy - 10.0, 5.8, MAHJONG_COLORS.DRAGON_BLUE);
+      drawDot(ctx, cx + 7.4, cy - 10.0, 5.8, MAHJONG_COLORS.DRAGON_GREEN);
+      drawDot(ctx, cx - 7.4, cy + 10.0, 5.8, MAHJONG_COLORS.DRAGON_GREEN);
+      drawDot(ctx, cx + 7.4, cy + 10.0, 5.8, MAHJONG_COLORS.DRAGON_BLUE);
     });
 
     // 5p (Traditional Quincunx: 4 outer corners Blue/Green + 1 center Red dot - Tier 2 Uniform r=5.8)
     createTileCanvas('mahjong:tile_5p', (ctx) => {
-      drawDot(ctx, cx - 8.2, cy - 11.2, 5.8, '#0284c7');
-      drawDot(ctx, cx + 8.2, cy - 11.2, 5.8, '#15803d');
-      drawDot(ctx, cx, cy, 5.8, '#dc2626');
-      drawDot(ctx, cx - 8.2, cy + 11.2, 5.8, '#15803d');
-      drawDot(ctx, cx + 8.2, cy + 11.2, 5.8, '#0284c7');
+      drawDot(ctx, cx - 8.2, cy - 11.2, 5.8, MAHJONG_COLORS.DRAGON_BLUE);
+      drawDot(ctx, cx + 8.2, cy - 11.2, 5.8, MAHJONG_COLORS.DRAGON_GREEN);
+      drawDot(ctx, cx, cy, 5.8, MAHJONG_COLORS.DRAGON_RED);
+      drawDot(ctx, cx - 8.2, cy + 11.2, 5.8, MAHJONG_COLORS.DRAGON_GREEN);
+      drawDot(ctx, cx + 8.2, cy + 11.2, 5.8, MAHJONG_COLORS.DRAGON_BLUE);
     });
 
     // 6p (Top 2 Green, Bottom 4 Red - Tier 3 Uniform r=4.7, Touching Horizontally)
     createTileCanvas('mahjong:tile_6p', (ctx) => {
       // Top 2 Green (horizontal zero gap)
-      drawDot(ctx, cx - 4.7, cy - 11.0, 4.7, '#15803d');
-      drawDot(ctx, cx + 4.7, cy - 11.0, 4.7, '#15803d');
+      drawDot(ctx, cx - 4.7, cy - 11.0, 4.7, MAHJONG_COLORS.DRAGON_GREEN);
+      drawDot(ctx, cx + 4.7, cy - 11.0, 4.7, MAHJONG_COLORS.DRAGON_GREEN);
 
       // Bottom 4 Red (horizontal zero gap)
-      drawDot(ctx, cx - 4.7, cy + 2.5, 4.7, '#dc2626');
-      drawDot(ctx, cx + 4.7, cy + 2.5, 4.7, '#dc2626');
-      drawDot(ctx, cx - 4.7, cy + 11.9, 4.7, '#dc2626');
-      drawDot(ctx, cx + 4.7, cy + 11.9, 4.7, '#dc2626');
+      drawDot(ctx, cx - 4.7, cy + 2.5, 4.7, MAHJONG_COLORS.DRAGON_RED);
+      drawDot(ctx, cx + 4.7, cy + 2.5, 4.7, MAHJONG_COLORS.DRAGON_RED);
+      drawDot(ctx, cx - 4.7, cy + 11.9, 4.7, MAHJONG_COLORS.DRAGON_RED);
+      drawDot(ctx, cx + 4.7, cy + 11.9, 4.7, MAHJONG_COLORS.DRAGON_RED);
     });
 
     // 7p (Top 3 slanted ALL GREEN + Bottom 4 square RED - Tier 3 Uniform r=4.7, Touching Horizontally)
     createTileCanvas('mahjong:tile_7p', (ctx) => {
       // Top 3 slanted ALL GREEN (horizontal zero gap)
-      drawDot(ctx, cx - 9.4, cy - 12.0, 4.7, '#15803d');
-      drawDot(ctx, cx, cy - 9.0, 4.7, '#15803d');
-      drawDot(ctx, cx + 9.4, cy - 6.0, 4.7, '#15803d');
+      drawDot(ctx, cx - 9.4, cy - 12.0, 4.7, MAHJONG_COLORS.DRAGON_GREEN);
+      drawDot(ctx, cx, cy - 9.0, 4.7, MAHJONG_COLORS.DRAGON_GREEN);
+      drawDot(ctx, cx + 9.4, cy - 6.0, 4.7, MAHJONG_COLORS.DRAGON_GREEN);
 
       // Bottom 4 RED (horizontal zero gap)
-      drawDot(ctx, cx - 4.7, cy + 4.5, 4.7, '#dc2626');
-      drawDot(ctx, cx + 4.7, cy + 4.5, 4.7, '#dc2626');
-      drawDot(ctx, cx - 4.7, cy + 13.9, 4.7, '#dc2626');
-      drawDot(ctx, cx + 4.7, cy + 13.9, 4.7, '#dc2626');
+      drawDot(ctx, cx - 4.7, cy + 4.5, 4.7, MAHJONG_COLORS.DRAGON_RED);
+      drawDot(ctx, cx + 4.7, cy + 4.5, 4.7, MAHJONG_COLORS.DRAGON_RED);
+      drawDot(ctx, cx - 4.7, cy + 13.9, 4.7, MAHJONG_COLORS.DRAGON_RED);
+      drawDot(ctx, cx + 4.7, cy + 13.9, 4.7, MAHJONG_COLORS.DRAGON_RED);
     });
 
     // 8p (2 columns of 4 Blue dots - Tier 3 Uniform r=4.7, Touching Horizontally)
     createTileCanvas('mahjong:tile_8p', (ctx) => {
       const yOffsets = [-14.1, -4.7, 4.7, 14.1];
       for (const dy of yOffsets) {
-        drawDot(ctx, cx - 4.7, cy + dy, 4.7, '#0284c7');
-        drawDot(ctx, cx + 4.7, cy + dy, 4.7, '#0284c7');
+        drawDot(ctx, cx - 4.7, cy + dy, 4.7, MAHJONG_COLORS.DRAGON_BLUE);
+        drawDot(ctx, cx + 4.7, cy + dy, 4.7, MAHJONG_COLORS.DRAGON_BLUE);
       }
     });
 
@@ -451,15 +451,15 @@ export class PreloadScene extends Phaser.Scene {
       const xOffsets = [-9.4, 0, 9.4];
       // Row 1 (Top): Blue
       for (const dx of xOffsets) {
-        drawDot(ctx, cx + dx, cy - 11.0, 4.7, '#0284c7');
+        drawDot(ctx, cx + dx, cy - 11.0, 4.7, MAHJONG_COLORS.DRAGON_BLUE);
       }
       // Row 2 (Middle): Red
       for (const dx of xOffsets) {
-        drawDot(ctx, cx + dx, cy, 4.7, '#dc2626');
+        drawDot(ctx, cx + dx, cy, 4.7, MAHJONG_COLORS.DRAGON_RED);
       }
       // Row 3 (Bottom): Green
       for (const dx of xOffsets) {
-        drawDot(ctx, cx + dx, cy + 11.0, 4.7, '#15803d');
+        drawDot(ctx, cx + dx, cy + 11.0, 4.7, MAHJONG_COLORS.DRAGON_GREEN);
       }
     });
 
@@ -471,91 +471,91 @@ export class PreloadScene extends Phaser.Scene {
 
     // 2s (Top Green, Bottom Blue - 2-tier w=5.2, h=15.5)
     createTileCanvas('mahjong:tile_2s', (ctx) => {
-      drawHollowBambooStick(ctx, cx, cy - 9.0, 5.2, 15.5, '#15803d');
-      drawHollowBambooStick(ctx, cx, cy + 9.0, 5.2, 15.5, '#0284c7');
+      drawHollowBambooStick(ctx, cx, cy - 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_GREEN);
+      drawHollowBambooStick(ctx, cx, cy + 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_BLUE);
     });
 
     // 3s (Top Blue, Bottom 2 Green - 2-tier w=5.2, h=15.5)
     createTileCanvas('mahjong:tile_3s', (ctx) => {
-      drawHollowBambooStick(ctx, cx, cy - 9.0, 5.2, 15.5, '#0284c7');
-      drawHollowBambooStick(ctx, cx - 6.5, cy + 9.0, 5.2, 15.5, '#15803d');
-      drawHollowBambooStick(ctx, cx + 6.5, cy + 9.0, 5.2, 15.5, '#15803d');
+      drawHollowBambooStick(ctx, cx, cy - 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_BLUE);
+      drawHollowBambooStick(ctx, cx - 6.5, cy + 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_GREEN);
+      drawHollowBambooStick(ctx, cx + 6.5, cy + 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_GREEN);
     });
 
     // 4s (Top-Left Green, Top-Right Blue, Bottom-Left Blue, Bottom-Right Green - 2-tier w=5.2, h=15.5)
     createTileCanvas('mahjong:tile_4s', (ctx) => {
-      drawHollowBambooStick(ctx, cx - 6.5, cy - 9.0, 5.2, 15.5, '#15803d');
-      drawHollowBambooStick(ctx, cx + 6.5, cy - 9.0, 5.2, 15.5, '#0284c7');
-      drawHollowBambooStick(ctx, cx - 6.5, cy + 9.0, 5.2, 15.5, '#0284c7');
-      drawHollowBambooStick(ctx, cx + 6.5, cy + 9.0, 5.2, 15.5, '#15803d');
+      drawHollowBambooStick(ctx, cx - 6.5, cy - 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_GREEN);
+      drawHollowBambooStick(ctx, cx + 6.5, cy - 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_BLUE);
+      drawHollowBambooStick(ctx, cx - 6.5, cy + 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_BLUE);
+      drawHollowBambooStick(ctx, cx + 6.5, cy + 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_GREEN);
     });
 
     // 5s (4 Corners Green/Blue + Center Red - 2-tier w=5.2, h=15.5)
     createTileCanvas('mahjong:tile_5s', (ctx) => {
-      drawHollowBambooStick(ctx, cx - 7.5, cy - 9.0, 5.2, 15.5, '#15803d');
-      drawHollowBambooStick(ctx, cx + 7.5, cy - 9.0, 5.2, 15.5, '#0284c7');
-      drawHollowBambooStick(ctx, cx, cy, 5.2, 15.5, '#dc2626');
-      drawHollowBambooStick(ctx, cx - 7.5, cy + 9.0, 5.2, 15.5, '#0284c7');
-      drawHollowBambooStick(ctx, cx + 7.5, cy + 9.0, 5.2, 15.5, '#15803d');
+      drawHollowBambooStick(ctx, cx - 7.5, cy - 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_GREEN);
+      drawHollowBambooStick(ctx, cx + 7.5, cy - 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_BLUE);
+      drawHollowBambooStick(ctx, cx, cy, 5.2, 15.5, MAHJONG_COLORS.DRAGON_RED);
+      drawHollowBambooStick(ctx, cx - 7.5, cy + 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_BLUE);
+      drawHollowBambooStick(ctx, cx + 7.5, cy + 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_GREEN);
     });
 
     // 6s (Top 3 Blue, Bottom 3 Green - 上青下綠 2-tier w=5.2, h=15.5)
     createTileCanvas('mahjong:tile_6s', (ctx) => {
       // Top 3 Blue (上青)
-      drawHollowBambooStick(ctx, cx - 7.5, cy - 9.0, 5.2, 15.5, '#0284c7');
-      drawHollowBambooStick(ctx, cx, cy - 9.0, 5.2, 15.5, '#0284c7');
-      drawHollowBambooStick(ctx, cx + 7.5, cy - 9.0, 5.2, 15.5, '#0284c7');
+      drawHollowBambooStick(ctx, cx - 7.5, cy - 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_BLUE);
+      drawHollowBambooStick(ctx, cx, cy - 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_BLUE);
+      drawHollowBambooStick(ctx, cx + 7.5, cy - 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_BLUE);
 
       // Bottom 3 Green (下綠)
-      drawHollowBambooStick(ctx, cx - 7.5, cy + 9.0, 5.2, 15.5, '#15803d');
-      drawHollowBambooStick(ctx, cx, cy + 9.0, 5.2, 15.5, '#15803d');
-      drawHollowBambooStick(ctx, cx + 7.5, cy + 9.0, 5.2, 15.5, '#15803d');
+      drawHollowBambooStick(ctx, cx - 7.5, cy + 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_GREEN);
+      drawHollowBambooStick(ctx, cx, cy + 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_GREEN);
+      drawHollowBambooStick(ctx, cx + 7.5, cy + 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_GREEN);
     });
 
     // 7s (Top 1 Red, Middle & Bottom Center Blue, Sides Green - 3-tier w=5.0, h=10.5)
     createTileCanvas('mahjong:tile_7s', (ctx) => {
       // Top 1 Red (中央上為紅)
-      drawHollowBambooStick(ctx, cx, cy - 11.5, 5.0, 10.5, '#dc2626');
+      drawHollowBambooStick(ctx, cx, cy - 11.5, 5.0, 10.5, MAHJONG_COLORS.DRAGON_RED);
 
       // Middle 3 (兩側綠、中為青)
-      drawHollowBambooStick(ctx, cx - 7.5, cy, 5.0, 10.5, '#15803d');
-      drawHollowBambooStick(ctx, cx, cy, 5.0, 10.5, '#0284c7');
-      drawHollowBambooStick(ctx, cx + 7.5, cy, 5.0, 10.5, '#15803d');
+      drawHollowBambooStick(ctx, cx - 7.5, cy, 5.0, 10.5, MAHJONG_COLORS.DRAGON_GREEN);
+      drawHollowBambooStick(ctx, cx, cy, 5.0, 10.5, MAHJONG_COLORS.DRAGON_BLUE);
+      drawHollowBambooStick(ctx, cx + 7.5, cy, 5.0, 10.5, MAHJONG_COLORS.DRAGON_GREEN);
 
       // Bottom 3 (兩側綠、中為青)
-      drawHollowBambooStick(ctx, cx - 7.5, cy + 11.5, 5.0, 10.5, '#15803d');
-      drawHollowBambooStick(ctx, cx, cy + 11.5, 5.0, 10.5, '#0284c7');
-      drawHollowBambooStick(ctx, cx + 7.5, cy + 11.5, 5.0, 10.5, '#15803d');
+      drawHollowBambooStick(ctx, cx - 7.5, cy + 11.5, 5.0, 10.5, MAHJONG_COLORS.DRAGON_GREEN);
+      drawHollowBambooStick(ctx, cx, cy + 11.5, 5.0, 10.5, MAHJONG_COLORS.DRAGON_BLUE);
+      drawHollowBambooStick(ctx, cx + 7.5, cy + 11.5, 5.0, 10.5, MAHJONG_COLORS.DRAGON_GREEN);
     });
 
     // 8s (Top W Blue + Bottom M Green - 上青下綠 2-tier w=5.2, h=15.5 圖層覆蓋)
     createTileCanvas('mahjong:tile_8s', (ctx) => {
       // Top W Shape (Blue 上青 | \ / |)
       // Layer 1 (底層): 右斜條 (/)
-      drawHollowBambooStick(ctx, cx + 4.25, cy - 9.0, 5.2, 15.0, '#0284c7', -0.58);
+      drawHollowBambooStick(ctx, cx + 4.25, cy - 9.0, 5.2, 15.0, MAHJONG_COLORS.DRAGON_BLUE, -0.58);
       // Layer 2 (中層): 左斜條 (\，覆蓋中央谷底交會點)
-      drawHollowBambooStick(ctx, cx - 4.25, cy - 9.0, 5.2, 15.0, '#0284c7', 0.58);
+      drawHollowBambooStick(ctx, cx - 4.25, cy - 9.0, 5.2, 15.0, MAHJONG_COLORS.DRAGON_BLUE, 0.58);
       // Layer 3 (頂層): 左右直條 (覆蓋外側兩個頂角交會點)
-      drawHollowBambooStick(ctx, cx - 8.5, cy - 9.0, 5.2, 15.5, '#0284c7', 0);
-      drawHollowBambooStick(ctx, cx + 8.5, cy - 9.0, 5.2, 15.5, '#0284c7', 0);
+      drawHollowBambooStick(ctx, cx - 8.5, cy - 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_BLUE, 0);
+      drawHollowBambooStick(ctx, cx + 8.5, cy - 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_BLUE, 0);
 
       // Bottom M Shape (Green 下綠 | / \ |)
       // Layer 1 (底層): 右斜條 (\)
-      drawHollowBambooStick(ctx, cx + 4.25, cy + 9.0, 5.2, 15.0, '#15803d', 0.58);
+      drawHollowBambooStick(ctx, cx + 4.25, cy + 9.0, 5.2, 15.0, MAHJONG_COLORS.DRAGON_GREEN, 0.58);
       // Layer 2 (中層): 左斜條 (/，覆蓋中央峰頂交會點)
-      drawHollowBambooStick(ctx, cx - 4.25, cy + 9.0, 5.2, 15.0, '#15803d', -0.58);
+      drawHollowBambooStick(ctx, cx - 4.25, cy + 9.0, 5.2, 15.0, MAHJONG_COLORS.DRAGON_GREEN, -0.58);
       // Layer 3 (頂層): 左右直條 (覆蓋外側兩個底角交會點)
-      drawHollowBambooStick(ctx, cx - 8.5, cy + 9.0, 5.2, 15.5, '#15803d', 0);
-      drawHollowBambooStick(ctx, cx + 8.5, cy + 9.0, 5.2, 15.5, '#15803d', 0);
+      drawHollowBambooStick(ctx, cx - 8.5, cy + 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_GREEN, 0);
+      drawHollowBambooStick(ctx, cx + 8.5, cy + 9.0, 5.2, 15.5, MAHJONG_COLORS.DRAGON_GREEN, 0);
     });
 
     // 9s (3x3 grid: Left Green, Middle Red, Right Blue - 3-tier w=5.0, h=10.5)
     createTileCanvas('mahjong:tile_9s', (ctx) => {
       const yOffsets = [-11.5, 0, 11.5];
       for (const dy of yOffsets) {
-        drawHollowBambooStick(ctx, cx - 7.5, cy + dy, 5.0, 10.5, '#15803d');
-        drawHollowBambooStick(ctx, cx, cy + dy, 5.0, 10.5, '#dc2626');
-        drawHollowBambooStick(ctx, cx + 7.5, cy + dy, 5.0, 10.5, '#0284c7');
+        drawHollowBambooStick(ctx, cx - 7.5, cy + dy, 5.0, 10.5, MAHJONG_COLORS.DRAGON_GREEN);
+        drawHollowBambooStick(ctx, cx, cy + dy, 5.0, 10.5, MAHJONG_COLORS.DRAGON_RED);
+        drawHollowBambooStick(ctx, cx + 7.5, cy + dy, 5.0, 10.5, MAHJONG_COLORS.DRAGON_BLUE);
       }
     });
 
@@ -646,11 +646,11 @@ export class PreloadScene extends Phaser.Scene {
 
     // 9. Flower Rack Slot Cell Frame
     createProceduralTexture('mahjong:flower_cell', W, H, (ctx) => {
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+      ctx.fillStyle = MAHJONG_COLORS.FLOWER_CELL_BG;
       this.drawRoundedRect(ctx, 1, 1, W - 2, H - 2, 3);
       ctx.fill();
 
-      ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
+      ctx.strokeStyle = MAHJONG_COLORS.FLOWER_CELL_BORDER;
       ctx.lineWidth = 1;
       ctx.setLineDash?.([2, 2]);
       ctx.stroke?.();
@@ -660,23 +660,23 @@ export class PreloadScene extends Phaser.Scene {
     // 10. Central Square HUD Wind Compass (156 x 156)
     createProceduralTexture('mahjong:compass_dial', 156, 156, (ctx) => {
       // Outer dark slate bezel
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = MAHJONG_COLORS.COMPASS_BG;
       this.drawRoundedRect(ctx, 0, 0, 156, 156, 12);
       ctx.fill();
 
       // Golden outer rim
-      ctx.strokeStyle = '#d4af37';
+      ctx.strokeStyle = MAHJONG_COLORS.COMPASS_GOLD_RIM;
       ctx.lineWidth = 2.5;
       this.drawRoundedRect(ctx, 3, 3, 150, 150, 10);
       ctx.stroke();
 
       // Inner center core plate for round wind / tile count (Emerald core)
-      ctx.fillStyle = '#064e3b';
+      ctx.fillStyle = MAHJONG_COLORS.COMPASS_CORE_BG;
       ctx.beginPath();
       ctx.arc(78, 78, 30, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = '#10b981';
+      ctx.strokeStyle = MAHJONG_COLORS.COMPASS_CORE_RING;
       ctx.lineWidth = 2;
       ctx.stroke();
     });
@@ -685,15 +685,15 @@ export class PreloadScene extends Phaser.Scene {
     for (let i = 1; i <= 6; i++) {
       createProceduralTexture(`mahjong:dice_${i}`, 30, 30, (ctx) => {
         // Dice Body
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = MAHJONG_COLORS.DICE_BODY;
         this.drawRoundedRect(ctx, 1, 1, 28, 28, 4);
         ctx.fill();
-        ctx.strokeStyle = '#cbd5e1';
+        ctx.strokeStyle = MAHJONG_COLORS.DICE_BORDER;
         ctx.lineWidth = 1;
         ctx.stroke();
 
         // Dots
-        ctx.fillStyle = i === 1 || i === 4 ? '#dc2626' : '#0f172a';
+        ctx.fillStyle = i === 1 || i === 4 ? MAHJONG_COLORS.DICE_RED_DOT : MAHJONG_COLORS.DICE_BLACK_DOT;
         const p = [
           [],
           [[15, 15]],
@@ -714,13 +714,13 @@ export class PreloadScene extends Phaser.Scene {
 
     // 12. Action Buttons (Chow, Pong, Kong, Ting, Hu, Zimo, Pass)
     const actionBtns = [
-      { key: 'action_btn_chow', label: '吃', bg: '#2563eb' },
-      { key: 'action_btn_pong', label: '碰', bg: '#059669' },
-      { key: 'action_btn_kong', label: '槓', bg: '#d97706' },
-      { key: 'action_btn_ting', label: '聽', bg: '#7c3aed' },
-      { key: 'action_btn_hu', label: '胡', bg: '#dc2626' },
-      { key: 'action_btn_zimo', label: '自摸', bg: '#dc2626' },
-      { key: 'action_btn_pass', label: '過', bg: '#475569' },
+      { key: 'action_btn_chow', label: '吃', bg: MAHJONG_COLORS.ACTION_CHOW },
+      { key: 'action_btn_pong', label: '碰', bg: MAHJONG_COLORS.ACTION_PONG },
+      { key: 'action_btn_kong', label: '槓', bg: MAHJONG_COLORS.ACTION_KONG },
+      { key: 'action_btn_ting', label: '聽', bg: MAHJONG_COLORS.ACTION_TING },
+      { key: 'action_btn_hu', label: '胡', bg: MAHJONG_COLORS.ACTION_HU },
+      { key: 'action_btn_zimo', label: '自摸', bg: MAHJONG_COLORS.ACTION_ZIMO },
+      { key: 'action_btn_pass', label: '過', bg: MAHJONG_COLORS.ACTION_PASS },
     ];
     actionBtns.forEach(({ key, label, bg }) => {
       createProceduralTexture(`mahjong:${key}`, 64, 36, (ctx) => {
@@ -728,13 +728,13 @@ export class PreloadScene extends Phaser.Scene {
         this.drawRoundedRect(ctx, 0, 0, 64, 36, 6);
         ctx.fill();
 
-        ctx.strokeStyle = '#ffffff';
+        ctx.strokeStyle = MAHJONG_COLORS.CARVING_WHITE;
         ctx.lineWidth = 1.5;
         this.drawRoundedRect(ctx, 1.5, 1.5, 61, 33, 5);
         ctx.stroke();
 
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 16px "Microsoft JhengHei", sans-serif';
+        ctx.fillStyle = MAHJONG_COLORS.CARVING_WHITE;
+        ctx.font = `bold 16px ${MAHJONG_FONTS.SANS}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(label, 32, 18);
@@ -744,21 +744,21 @@ export class PreloadScene extends Phaser.Scene {
     // 13. 3D Wall Tile Blocks
     createProceduralTexture('mahjong:wall_tile_stack', 22, 30, (ctx) => {
       // Lower tile
-      ctx.fillStyle = '#0f5132';
+      ctx.fillStyle = MAHJONG_COLORS.WALL_TILE_LOWER_BG;
       this.drawRoundedRect(ctx, 1, 12, 20, 16, 2);
       ctx.fill();
-      ctx.strokeStyle = '#15803d';
+      ctx.strokeStyle = MAHJONG_COLORS.WALL_TILE_LOWER_BORDER;
       ctx.stroke();
 
       // Upper tile
-      ctx.fillStyle = '#15803d';
+      ctx.fillStyle = MAHJONG_COLORS.WALL_TILE_UPPER_BG;
       this.drawRoundedRect(ctx, 1, 1, 20, 16, 2);
       ctx.fill();
-      ctx.strokeStyle = '#4ade80';
+      ctx.strokeStyle = MAHJONG_COLORS.WALL_TILE_UPPER_BORDER;
       ctx.stroke();
 
       // Top ivory face rim
-      ctx.fillStyle = '#f8fafc';
+      ctx.fillStyle = MAHJONG_COLORS.WALL_TILE_FACE_RIM;
       this.drawRoundedRect(ctx, 3, 3, 16, 3, 1);
       ctx.fill();
     });
@@ -766,23 +766,23 @@ export class PreloadScene extends Phaser.Scene {
     // 13b. 3D Dead Wall (16 鐵牌) Metallic Dark Gold Tile Blocks
     createProceduralTexture('mahjong:wall_tile_stack_iron', 22, 30, (ctx) => {
       // Lower tile (Bronze metallic)
-      ctx.fillStyle = '#78350f';
+      ctx.fillStyle = MAHJONG_COLORS.IRON_WALL_LOWER_BG;
       this.drawRoundedRect(ctx, 1, 12, 20, 16, 2);
       ctx.fill();
-      ctx.strokeStyle = '#b45309';
+      ctx.strokeStyle = MAHJONG_COLORS.IRON_WALL_LOWER_BORDER;
       ctx.lineWidth = 1;
       ctx.stroke();
 
       // Upper tile (Dark Gold metallic)
-      ctx.fillStyle = '#92400e';
+      ctx.fillStyle = MAHJONG_COLORS.IRON_WALL_UPPER_BG;
       this.drawRoundedRect(ctx, 1, 1, 20, 16, 2);
       ctx.fill();
-      ctx.strokeStyle = '#f59e0b';
+      ctx.strokeStyle = MAHJONG_COLORS.IRON_WALL_UPPER_BORDER;
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
       // Top Gold Rim / Metallic lock
-      ctx.fillStyle = '#fef08a';
+      ctx.fillStyle = MAHJONG_COLORS.IRON_WALL_FACE_RIM;
       this.drawRoundedRect(ctx, 3, 3, 16, 3, 1);
       ctx.fill();
     });
@@ -790,17 +790,17 @@ export class PreloadScene extends Phaser.Scene {
     // 14. Casino Leather & Gold Dice Cup (骰盅)
     createProceduralTexture('mahjong:dice_cup', 110, 130, (ctx) => {
       // Drop shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      ctx.fillStyle = MAHJONG_COLORS.DICE_CUP_SHADOW;
       this.drawEllipse(ctx, 55, 120, 48, 10);
       ctx.fill();
 
       // Cup Body (Tapered Cylinder)
       const cupGrad = ctx.createLinearGradient(15, 0, 95, 0);
-      cupGrad.addColorStop(0, '#1c0b05');
-      cupGrad.addColorStop(0.2, '#451a03');
-      cupGrad.addColorStop(0.5, '#78350f');
-      cupGrad.addColorStop(0.8, '#451a03');
-      cupGrad.addColorStop(1, '#0f0502');
+      cupGrad.addColorStop(0, MAHJONG_COLORS.DICE_CUP_GRAD_0);
+      cupGrad.addColorStop(0.2, MAHJONG_COLORS.DICE_CUP_GRAD_20);
+      cupGrad.addColorStop(0.5, MAHJONG_COLORS.DICE_CUP_GRAD_50);
+      cupGrad.addColorStop(0.8, MAHJONG_COLORS.DICE_CUP_GRAD_80);
+      cupGrad.addColorStop(1, MAHJONG_COLORS.DICE_CUP_GRAD_100);
 
       ctx.beginPath();
       ctx.moveTo(28, 16);
@@ -815,11 +815,11 @@ export class PreloadScene extends Phaser.Scene {
       // Gold Trim Bands
       const drawGoldBand = (y: number, w: number, curvature: number) => {
         const goldGrad = ctx.createLinearGradient(55 - w / 2, y, 55 + w / 2, y);
-        goldGrad.addColorStop(0, '#92400e');
-        goldGrad.addColorStop(0.3, '#f59e0b');
-        goldGrad.addColorStop(0.5, '#fef08a');
-        goldGrad.addColorStop(0.7, '#fbbf24');
-        goldGrad.addColorStop(1, '#78350f');
+        goldGrad.addColorStop(0, MAHJONG_COLORS.GOLD_BAND_GRAD_0);
+        goldGrad.addColorStop(0.3, MAHJONG_COLORS.GOLD_BAND_GRAD_30);
+        goldGrad.addColorStop(0.5, MAHJONG_COLORS.GOLD_BAND_GRAD_50);
+        goldGrad.addColorStop(0.7, MAHJONG_COLORS.GOLD_BAND_GRAD_70);
+        goldGrad.addColorStop(1, MAHJONG_COLORS.GOLD_BAND_GRAD_100);
 
         ctx.fillStyle = goldGrad;
         this.drawEllipse(ctx, 55, y, w / 2, curvature);
@@ -851,21 +851,21 @@ export class PreloadScene extends Phaser.Scene {
     // 15. Casino Velvet Dice Tray Base (骰托)
     createProceduralTexture('mahjong:dice_tray', 240, 140, (ctx) => {
       // Outer Shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.fillStyle = MAHJONG_COLORS.DICE_TRAY_SHADOW;
       this.drawEllipse(ctx, 120, 75, 112, 58);
       ctx.fill();
 
       // Mahogany & Gold Outer Rim
       const rimGrad = ctx.createLinearGradient(0, 0, 240, 140);
-      rimGrad.addColorStop(0, '#b45309');
-      rimGrad.addColorStop(0.5, '#78350f');
-      rimGrad.addColorStop(1, '#451a03');
+      rimGrad.addColorStop(0, MAHJONG_COLORS.DICE_TRAY_RIM_GRAD_0);
+      rimGrad.addColorStop(0.5, MAHJONG_COLORS.DICE_TRAY_RIM_GRAD_50);
+      rimGrad.addColorStop(1, MAHJONG_COLORS.DICE_TRAY_RIM_GRAD_100);
 
       this.drawEllipse(ctx, 120, 70, 110, 55);
       ctx.fillStyle = rimGrad;
       ctx.fill();
       ctx.lineWidth = 3;
-      ctx.strokeStyle = '#fbbf24';
+      ctx.strokeStyle = MAHJONG_COLORS.DICE_TRAY_RIM_BORDER;
       ctx.stroke();
 
       // Inner Emerald Green Velvet Felt
@@ -873,15 +873,15 @@ export class PreloadScene extends Phaser.Scene {
         typeof ctx.createRadialGradient === 'function'
           ? ctx.createRadialGradient(120, 70, 10, 120, 70, 95)
           : ctx.createLinearGradient(0, 0, 240, 140);
-      feltGrad.addColorStop(0, '#065f46');
-      feltGrad.addColorStop(0.8, '#064e3b');
-      feltGrad.addColorStop(1, '#022c22');
+      feltGrad.addColorStop(0, MAHJONG_COLORS.DICE_TRAY_FELT_GRAD_0);
+      feltGrad.addColorStop(0.8, MAHJONG_COLORS.DICE_TRAY_FELT_GRAD_80);
+      feltGrad.addColorStop(1, MAHJONG_COLORS.DICE_TRAY_FELT_GRAD_100);
 
       this.drawEllipse(ctx, 120, 70, 96, 46);
       ctx.fillStyle = feltGrad;
       ctx.fill();
       ctx.lineWidth = 1.5;
-      ctx.strokeStyle = '#34d399';
+      ctx.strokeStyle = MAHJONG_COLORS.DICE_TRAY_FELT_BORDER;
       ctx.stroke();
     });
   }
