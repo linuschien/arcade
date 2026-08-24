@@ -852,4 +852,41 @@ describe('MahjongGameState Unit Tests', () => {
       expect(phaseChanges).toHaveLength(0);
     });
   });
+
+  describe('AI Turn and Discard Robustness', () => {
+    it('should fallback gracefully when discarding a non-existent tileId without throwing', () => {
+      const state = new MahjongGameState();
+      state.startDealing();
+
+      const p0 = state.players[0];
+      expect(p0.hand.length).toBeGreaterThan(0);
+
+      expect(() => {
+        state.discardTile(0, 'non_existent_tile_id_999');
+      }).not.toThrow();
+    });
+
+    it('should replace flower tile when executeAITurn is called with a drawn flower', () => {
+      const state = new MahjongGameState();
+      state.startDealing();
+
+      const p1 = state.players[1];
+      p1.drawnTile = {
+        id: 'f_autumn_0',
+        suit: 'FLOWERS',
+        value: 3,
+        name: '秋',
+        shortCode: 'f_autumn',
+        isFlower: true,
+      };
+
+      expect(() => {
+        state.stepAITurn(1);
+      }).not.toThrow();
+
+      // Flower should have been moved to player's flower rack
+      expect(p1.flowers.some((f) => f.id === 'f_autumn_0')).toBe(true);
+    });
+  });
 });
+

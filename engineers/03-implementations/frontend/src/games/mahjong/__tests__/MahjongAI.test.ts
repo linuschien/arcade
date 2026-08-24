@@ -713,4 +713,60 @@ describe('MahjongAI Unit Tests', () => {
       expect(decision).toBe('PASS');
     });
   });
+
+  describe('Flower Tile Discard Protection', () => {
+    it('should never select a flower tile as best discard when hand contains flower tiles', () => {
+      const normalTiles = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '7m', '8m', '9m',
+        '1p', '2p', '3p',
+        '5s', '5s', '5s',
+        '9s',
+      ].map((c, i) => createTile(c, `${i}`));
+
+      const flowerTile: Tile = {
+        id: 'f_spring_0',
+        suit: 'FLOWERS',
+        value: 1,
+        name: '春',
+        shortCode: 'f_spring',
+        isFlower: true,
+      };
+
+      const handWithFlower = [...normalTiles, flowerTile];
+      const best = MahjongAI.chooseBestDiscard(handWithFlower, [], [], [], 40);
+
+      expect(best.isFlower).toBeFalsy();
+      expect(best.id).not.toBe('f_spring_0');
+    });
+
+    it('should never select a flower tile in defense mode (chooseSafestDiscard)', () => {
+      const normalTiles = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '7m', '8m', '9m',
+        '1p', '2p', '3p',
+        '5s', '5s', '5s',
+        '9s',
+      ].map((c, i) => createTile(c, `${i}`));
+
+      const flowerTile: Tile = {
+        id: 'f_summer_0',
+        suit: 'FLOWERS',
+        value: 2,
+        name: '夏',
+        shortCode: 'f_summer',
+        isFlower: true,
+      };
+
+      const handWithFlower = [...normalTiles, flowerTile];
+      // Remaining walls = 0 forces defense mode
+      const safest = MahjongAI.chooseBestDiscard(handWithFlower, [], [], [], 0);
+
+      expect(safest.isFlower).toBeFalsy();
+      expect(safest.id).not.toBe('f_summer_0');
+    });
+  });
 });
+

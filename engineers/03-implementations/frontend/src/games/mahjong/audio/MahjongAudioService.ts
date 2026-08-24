@@ -211,7 +211,11 @@ class MahjongAudioServiceImpl {
    */
   public waitForVoiceComplete(): Promise<void> {
     if (!this.activeVoicePromise) return Promise.resolve();
-    return this.activeVoicePromise;
+    // Safety race: guaranteed maximum 800ms wait so turn flow never hangs or deadlocks
+    return Promise.race([
+      this.activeVoicePromise,
+      new Promise<void>((resolve) => setTimeout(resolve, 800)),
+    ]);
   }
 
   /**
@@ -237,6 +241,7 @@ class MahjongAudioServiceImpl {
       const done = () => {
         if (!resolved) {
           resolved = true;
+          this.activeVoicePromise = null;
           resolve();
         }
       };
@@ -263,12 +268,12 @@ class MahjongAudioServiceImpl {
           u.onerror = () => done();
           window.speechSynthesis.speak(u);
           // Safety timeout in case onend doesn't fire
-          setTimeout(done, 900);
+          setTimeout(done, 750);
         } catch {
-          setTimeout(done, 300);
+          setTimeout(done, 250);
         }
       } else {
-        setTimeout(done, 300);
+        setTimeout(done, 250);
       }
     });
 

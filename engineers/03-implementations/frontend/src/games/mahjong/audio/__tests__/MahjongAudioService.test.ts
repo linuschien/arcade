@@ -31,4 +31,14 @@ describe('MahjongAudioService Unit Tests', () => {
       MahjongAudioService.stopVoice();
     }).not.toThrow();
   });
+
+  it('should resolve waitForVoiceComplete cleanly and not hang', async () => {
+    // 1. When no voice is active
+    await expect(MahjongAudioService.waitForVoiceComplete()).resolves.toBeUndefined();
+
+    // 2. When voice is triggered
+    MahjongAudioService.playVoiceHu();
+    await expect(MahjongAudioService.waitForVoiceComplete()).resolves.toBeUndefined();
+  });
 });
+

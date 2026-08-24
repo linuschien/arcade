@@ -165,18 +165,22 @@ export class MahjongAI {
     if (hand.length === 0) {
       throw new Error('Hand is empty');
     }
-    if (hand.length === 1) {
-      return hand[0];
+    // Filter out flower tiles from discard candidates
+    const validHand = hand.filter((t) => !t.isFlower);
+    const candidateList = validHand.length > 0 ? validHand : hand;
+
+    if (candidateList.length === 1) {
+      return candidateList[0];
     }
 
-    const currentShanten = this.calculateShanten(hand, melds);
+    const currentShanten = this.calculateShanten(candidateList, melds);
     let isDeadWait = false;
 
     // 當處於聽牌（打一張即聽牌）狀態時：檢查是否存在能聽「活牌（W > 0）」的出牌方式
     if (currentShanten === 0) {
       let hasLiveTingDiscard = false;
-      for (let i = 0; i < hand.length; i++) {
-        const testHand = hand.filter((_, idx) => idx !== i);
+      for (let i = 0; i < candidateList.length; i++) {
+        const testHand = candidateList.filter((_, idx) => idx !== i);
         if (this.calculateShanten(testHand, melds) === 0) {
           if (this.countWinningTilesRemaining(testHand, melds, allKnownVisibleTiles) > 0) {
             hasLiveTingDiscard = true;
@@ -188,18 +192,18 @@ export class MahjongAI {
     }
 
     if (this.shouldDefend(currentShanten, remainingWallTiles, isDeadWait)) {
-      return this.chooseSafestDiscard(hand, opponents, allKnownVisibleTiles);
+      return this.chooseSafestDiscard(candidateList, opponents, allKnownVisibleTiles);
     }
 
-    let bestTile = hand[0];
+    let bestTile = candidateList[0];
     let bestScore = -999999;
 
     const handCounts = new Map<string, number>();
-    hand.forEach((t) => handCounts.set(t.shortCode, (handCounts.get(t.shortCode) || 0) + 1));
+    candidateList.forEach((t) => handCounts.set(t.shortCode, (handCounts.get(t.shortCode) || 0) + 1));
 
-    for (let i = 0; i < hand.length; i++) {
-      const candidate = hand[i];
-      const testHand = hand.filter((_, idx) => idx !== i);
+    for (let i = 0; i < candidateList.length; i++) {
+      const candidate = candidateList[i];
+      const testHand = candidateList.filter((_, idx) => idx !== i);
       const s = this.calculateShanten(testHand, melds);
       const acceptance = this.calculateTileAcceptance(testHand, melds, allKnownVisibleTiles);
 
@@ -240,6 +244,9 @@ export class MahjongAI {
     opponents: PlayerProfile[],
     allKnownVisibleTiles: Tile[]
   ): Tile {
+    const validHand = hand.filter((t) => !t.isFlower);
+    const candidateList = validHand.length > 0 ? validHand : hand;
+
     // Collect all opponent discards (Genbutsu 現物)
     const opponentDiscards = new Set<string>();
     opponents.forEach((op) => {
@@ -252,10 +259,10 @@ export class MahjongAI {
       visibleCounts.set(t.shortCode, (visibleCounts.get(t.shortCode) || 0) + 1);
     });
 
-    let safestTile = hand[0];
+    let safestTile = candidateList[0];
     let lowestDangerScore = 9999;
 
-    for (const tile of hand) {
+    for (const tile of candidateList) {
       let dangerScore = 50; // Base score for unknown tile
       const code = tile.shortCode;
 

@@ -617,7 +617,16 @@ export class MahjongGameState {
     }
 
     if (!discarded) {
-      throw new Error(`Tile ${tileId} not found in player ${seat}'s hand`);
+      // Safe fallback if tileId wasn't found (e.g. ID mismatch)
+      if (player.drawnTile) {
+        discarded = player.drawnTile;
+        player.drawnTile = null;
+      } else if (player.hand.length > 0) {
+        discarded = player.hand.pop()!;
+      } else {
+        console.warn(`[MahjongGameState] Player ${seat} has no tiles to discard`);
+        return;
+      }
     }
 
     // Add to discard river
@@ -1035,6 +1044,11 @@ export class MahjongGameState {
     }
 
     this.listeners.forEach((l) => l.onTurnStart?.(seat, p.drawnTile));
+
+    // If headless test mode and AI turn, continue AI turn execution
+    if (!p.isHuman && this.autoStepAI) {
+      this.executeAITurn(seat);
+    }
   }
 
   /**
@@ -1042,6 +1056,15 @@ export class MahjongGameState {
    */
   private executeAITurn(seat: PlayerSeat): void {
     const p = this.players[seat];
+
+    // If drawnTile is a flower, replace flower first
+    if (p.drawnTile && p.drawnTile.isFlower) {
+      this.replaceDrawnFlower(seat);
+      if (this.autoStepAI) {
+        this.executeAITurn(seat);
+      }
+      return;
+    }
 
     // Check Self Hu
     if (p.drawnTile && MahjongHandEvaluator.isWinningHand(p.hand, p.melds, p.drawnTile)) {
@@ -1060,12 +1083,12 @@ export class MahjongGameState {
     const chosenKong = MahjongAI.decideSelfKong(kongOpts, fullHandForKong, p.melds, allVisible);
     if (chosenKong) {
       this.performSelfKong(seat, chosenKong);
-      if (this.phase === 'ROUND_SETTLEMENT' || this.phase === 'MATCH_OVER' || this.phase === 'GAME_OVER') {
-        return;
-      }
+      // In UI mode (autoStepAI = false), performSelfKong emits onTurnStart which will schedule the replacement draw & discard turn.
+      // We MUST return here to prevent double execution / race conditions!
+      return;
     }
 
-    // Choose discard with fresh hand after potential self kong
+    // Choose discard with fresh hand
     const fullHand = p.drawnTile ? [...p.hand, p.drawnTile] : p.hand;
     const freshAllVisible = this.getAllVisibleTiles();
     const opponents = this.players.filter((_, i) => i !== seat);

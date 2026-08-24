@@ -1248,22 +1248,6 @@ export class MainGameScene extends BaseArcadeScene {
         this.gameState.isFirstTurnCycle = true;
         this.gameState.currentTurnCount = 0;
         this.gameState.startPlayerTurn(this.gameState.dealerSeat, false);
-
-        // If dealer is human (Seat 0), check self actions / ting
-        if (this.gameState.dealerSeat === 0) {
-          this.checkHumanSelfActions();
-          this.updateSmartTing();
-        } else {
-          // AI dealer discard turn
-          this.time.delayedCall(800, () => {
-            if (
-              this.gameState.currentTurnSeat === this.gameState.dealerSeat &&
-              this.gameState.phase === 'PLAYER_TURN'
-            ) {
-              this.gameState.stepAITurn(this.gameState.dealerSeat);
-            }
-          });
-        }
         return;
       }
 
@@ -1306,13 +1290,13 @@ export class MainGameScene extends BaseArcadeScene {
 
     this.time.delayedCall(550, () => {
       // Step 2: Move flower to flower rack & trigger "補花" voice + chime
-      const rep = this.gameState.replaceDrawnFlower(seat);
+      this.gameState.replaceDrawnFlower(seat);
       this.refreshAllSeats();
       this.updateCompass();
       this.updateTileWalls();
 
-      // If game settled (e.g. Draw / Flower Win) or rep is null (dead wall reached), stop sequence
-      if (this.gameState.phase === 'ROUND_SETTLEMENT' || this.gameState.phase === 'MATCH_OVER' || !rep) {
+      // If game settled (e.g. Draw / Flower Win), stop sequence
+      if (this.gameState.phase === 'ROUND_SETTLEMENT' || this.gameState.phase === 'MATCH_OVER') {
         return;
       }
 
@@ -1324,9 +1308,10 @@ export class MainGameScene extends BaseArcadeScene {
         this.updateTileWalls();
 
         // Step 4: If replacement tile is ANOTHER flower, repeat from Step 1!
-        if (rep && rep.isFlower) {
+        const currentP = this.gameState.players[seat];
+        if (currentP.drawnTile && currentP.drawnTile.isFlower) {
           this.handleInTurnFlowerSequence(seat);
-        } else {
+        } else if (currentP.drawnTile) {
           // Normal turn continuation with the valid replacement tile
           if (seat === 0) {
             this.checkHumanSelfActions();
