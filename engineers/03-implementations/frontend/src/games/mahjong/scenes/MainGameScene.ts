@@ -977,22 +977,22 @@ export class MainGameScene extends BaseArcadeScene {
     screenOverlay.fillRect(-640, -360, 1280, 720);
     this.diceContainer.add(screenOverlay);
 
-    // ── 2. Larger panel ───────────────────────────────────────────────────────
-    const PW = 480;
-    const PH = 200;
+    // ── 2. Larger panel with ample breathing room ───────────────────────────
+    const PW = 500;
+    const PH = 240;
     const bg = this.add.graphics();
     bg.fillStyle(0x020617, 1.0);
-    bg.fillRoundedRect(-PW / 2, -PH / 2, PW, PH, 14);
+    bg.fillRoundedRect(-PW / 2, -PH / 2, PW, PH, 16);
     bg.lineStyle(2, 0xd4af37, 1.0);
-    bg.strokeRoundedRect(-PW / 2, -PH / 2, PW, PH, 14);
+    bg.strokeRoundedRect(-PW / 2, -PH / 2, PW, PH, 16);
     bg.lineStyle(1, 0x334155, 0.8);
-    bg.strokeRoundedRect(-PW / 2 + 4, -PH / 2 + 4, PW - 8, PH - 8, 11);
+    bg.strokeRoundedRect(-PW / 2 + 4, -PH / 2 + 4, PW - 8, PH - 8, 13);
     this.diceContainer.add(bg);
 
-    // ── 3. Dice sprites (larger: 52px) ───────────────────────────────────────
+    // ── 3. Dice sprites (50px) ────────────────────────────────────────────────
     for (let i = 0; i < 3; i++) {
-      const sprite = this.add.sprite((i - 1) * 64, -58, `mahjong:dice_${d[i]}`);
-      sprite.setDisplaySize(52, 52);
+      const sprite = this.add.sprite((i - 1) * 60, -68, `mahjong:dice_${d[i]}`);
+      sprite.setDisplaySize(50, 50);
       this.diceContainer.add(sprite);
 
       if (this.tweens) {
@@ -1006,12 +1006,12 @@ export class MainGameScene extends BaseArcadeScene {
       }
     }
 
-    // ── 4. Larger text ───────────────────────────────────────────────────────
+    // ── 4. Title text ────────────────────────────────────────────────────────
     const titleText = this.add.text(
-      0, -4,
+      0, -18,
       `🎲 莊家【${dealerName}】擲出 ${d[0]} + ${d[1]} + ${d[2]} = ${diceSum} 點`,
       {
-        fontSize: '20px',
+        fontSize: '18px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#facc15',
         fontStyle: 'bold',
@@ -1019,21 +1019,64 @@ export class MainGameScene extends BaseArcadeScene {
     ).setOrigin(0.5);
     this.diceContainer.add(titleText);
 
-    // ── 5. Directional arrow (rotates while dice spin → settles on break wall) ─
-    // Arrow drawn pointing RIGHT (angle=0) using Graphics
-    const arrowContainer = this.add.container(0, 48);
+    // ── 5. Directional Compass (Dial + Dual-Faceted Magnetic Needle) ──────────
+    const compassY = 36;
 
-    const arrowGfx = this.add.graphics();
-    // Shaft
-    arrowGfx.fillStyle(0xf59e0b, 1.0);
-    arrowGfx.fillRect(-34, -7, 42, 14);
-    // Head (triangle)
-    arrowGfx.fillTriangle(36, 0, 4, -18, 4, 18);
-    // Bright highlight
-    arrowGfx.fillStyle(0xfef3c7, 0.6);
-    arrowGfx.fillRect(-32, -3, 38, 5);
+    // 5a. Circular Compass Base Dial
+    const compassBaseGfx = this.add.graphics();
+    // Obsidian inner dial
+    compassBaseGfx.fillStyle(0x090d16, 0.95);
+    compassBaseGfx.fillCircle(0, compassY, 28);
+    // Outer bronze/gold metal bezel
+    compassBaseGfx.lineStyle(2, 0xd4af37, 1.0);
+    compassBaseGfx.strokeCircle(0, compassY, 28);
+    // Inner fine ring
+    compassBaseGfx.lineStyle(1, 0x475569, 0.7);
+    compassBaseGfx.strokeCircle(0, compassY, 20);
+    // 4 Cardinal Direction Tick Marks (東南西北 4 方位刻度)
+    compassBaseGfx.fillStyle(0xfacc15, 0.9);
+    // East (0°)
+    compassBaseGfx.fillTriangle(26, compassY, 21, compassY - 3, 21, compassY + 3);
+    // South (90°)
+    compassBaseGfx.fillTriangle(0, compassY + 26, -3, compassY + 21, 3, compassY + 21);
+    // West (180°)
+    compassBaseGfx.fillTriangle(-26, compassY, -21, compassY - 3, -21, compassY + 3);
+    // North (270°)
+    compassBaseGfx.fillTriangle(0, compassY - 26, -3, compassY - 21, 3, compassY - 21);
+    this.diceContainer.add(compassBaseGfx);
 
-    arrowContainer.add(arrowGfx);
+    // 5b. Rotating Compass Magnetic Needle (points East/Right at angle=0)
+    const arrowContainer = this.add.container(0, compassY);
+
+    const needleGfx = this.add.graphics();
+    // Target Pointing Needle (Main / Crimson Faceted Diamond) - Right (X+)
+    // Upper Facet (Bright Crimson)
+    needleGfx.fillStyle(0xf87171, 1.0);
+    needleGfx.fillTriangle(30, 0, 0, 0, 0, -7);
+    // Lower Facet (Deep Ruby Red)
+    needleGfx.fillStyle(0xdc2626, 1.0);
+    needleGfx.fillTriangle(30, 0, 0, 0, 0, 7);
+    // Center Spine Highlight
+    needleGfx.lineStyle(1, 0xfef08a, 0.9);
+    needleGfx.lineBetween(0, 0, 29, 0);
+
+    // Tail Needle (Silver/Slate Faceted Diamond) - Left (X-)
+    // Upper Facet (Bright Silver)
+    needleGfx.fillStyle(0xe2e8f0, 0.9);
+    needleGfx.fillTriangle(-18, 0, 0, 0, 0, -5);
+    // Lower Facet (Slate Grey)
+    needleGfx.fillStyle(0x64748b, 0.9);
+    needleGfx.fillTriangle(-18, 0, 0, 0, 0, 5);
+
+    // Center Pivot Brass Pin (金屬轉軸蓋)
+    needleGfx.fillStyle(0xd4af37, 1.0);
+    needleGfx.fillCircle(0, 0, 5);
+    needleGfx.fillStyle(0xfef08a, 1.0);
+    needleGfx.fillCircle(0, 0, 3);
+    needleGfx.fillStyle(0xffffff, 1.0);
+    needleGfx.fillCircle(0, 0, 1.2);
+
+    arrowContainer.add(needleGfx);
     this.diceContainer.add(arrowContainer);
 
     // Wall direction: seat → rotation angle (pointing toward that wall)
@@ -1087,10 +1130,10 @@ export class MainGameScene extends BaseArcadeScene {
     const windChinese: Record<string, string> = { EAST: '東', SOUTH: '南', WEST: '西', NORTH: '北' };
     const breakWindCn = windChinese[this.gameState.getEffectiveWind(breakSeat as PlayerSeat)] ?? '?';
     const infoText = this.add.text(
-      0, 85,
+      0, 92,
       `【${breakPlayer.name}】${breakWindCn}風牆 第 ${diceSum} 墩開門`,
       {
-        fontSize: '18px',
+        fontSize: '17px',
         fontFamily: '"Microsoft JhengHei", sans-serif',
         color: '#38bdf8',
         fontStyle: 'bold',
