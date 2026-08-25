@@ -54,4 +54,11 @@ describe('SoundEngine', () => {
       ])
     ).not.toThrow();
   });
+
+  it('resets explicit pause state when stopAll is called', () => {
+    SoundEngine.suspend();
+    // After stopping all tones, explicit pause lock is cleared
+    SoundEngine.stopAll();
+    expect(() => SoundEngine.resume()).not.toThrow();
+  });
 });

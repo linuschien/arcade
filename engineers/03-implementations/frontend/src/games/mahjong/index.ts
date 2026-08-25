@@ -3,6 +3,8 @@ import { IArcadeGame } from '@/core/bridge/ArcadeBridge';
 import { PreloadScene } from './scenes/PreloadScene';
 import { MainGameScene } from './scenes/MainGameScene';
 
+import { MahjongAudioService } from './audio/MahjongAudioService';
+
 export class MahjongGame extends BaseArcadeGame {
   constructor(parentContainerId: string | HTMLElement) {
     super({
@@ -13,6 +15,11 @@ export class MahjongGame extends BaseArcadeGame {
       backgroundColor: '#061c13',
       scene: [PreloadScene, MainGameScene],
     });
+  }
+
+  protected override stopAudioServices(): void {
+    MahjongAudioService.stopBGM();
+    MahjongAudioService.stopVoice();
   }
 }
 

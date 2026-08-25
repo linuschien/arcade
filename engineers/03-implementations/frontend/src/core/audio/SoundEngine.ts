@@ -67,9 +67,11 @@ class SoundEngineImpl {
   }
 
   /**
-   * Immediately cancel and stop all playing and scheduled tones/sequences.
+   * Immediately cancel and stop all playing and scheduled tones/sequences,
+   * and reset any explicit pause lock.
    */
   public stopAll(): void {
+    this.isExplicitlyPaused = false;
     this.activeTimeouts.forEach((t) => clearTimeout(t));
     this.activeTimeouts.clear();
 
