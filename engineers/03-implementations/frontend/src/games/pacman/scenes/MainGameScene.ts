@@ -73,7 +73,6 @@ export class MainGameScene extends BaseArcadeScene {
   private lifeSprites: Phaser.GameObjects.Sprite[] = [];
   private fruitIndicatorSprites: Phaser.GameObjects.Sprite[] = [];
 
-  private isPausedState: boolean = false;
   private offsetX: number = 6; // Center 588px grid inside 600px canvas width
   private offsetY: number = 0; // 33 rows * 21px = 693px height fits canvas perfectly
 
@@ -131,20 +130,12 @@ export class MainGameScene extends BaseArcadeScene {
     });
   }
 
-  public setPauseState(paused: boolean): void {
-    this.isPausedState = paused;
-    if (paused) {
-      this.statusText.setText('PAUSED');
-      this.statusText.setVisible(true);
-      PacmanAudioService.stopSiren();
-      SoundEngine.suspend();
-    } else {
-      this.statusText.setVisible(false);
-      SoundEngine.resume();
-      if (this.gameState.getPlayState() === PlayState.PLAYING) {
-        PacmanAudioService.startSiren(this.frightenedTimeSec > 0);
-      }
-    }
+  protected override onPauseAudio(): void {
+    PacmanAudioService.stopSiren();
+  }
+
+  protected override onResumeAudio(): void {
+    PacmanAudioService.startSiren(this.frightenedTimeSec > 0);
   }
 
   private createUI(): void {

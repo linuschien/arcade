@@ -32,7 +32,6 @@ const BOARD_CENTER_Y = BOARD_Y + (GRID_ROWS * TILE_SIZE) / 2; // 96 + 259 = 355
 
 export class MainGameScene extends BaseArcadeScene {
   private gameState!: PipeManiaGameState;
-  private isPausedState: boolean = false;
 
   // Render Objects
   private boardFrameGfx!: Phaser.GameObjects.Graphics;
@@ -96,13 +95,12 @@ export class MainGameScene extends BaseArcadeScene {
     this.events.once(Phaser.Scenes.Events.DESTROY, this.cleanup, this);
   }
 
-  public setPauseState(paused: boolean): void {
-    this.isPausedState = paused;
-    if (paused) {
-      PipeManiaAudioService.stopBGM();
-    } else {
-      PipeManiaAudioService.playBGM();
-    }
+  protected override onPauseAudio(): void {
+    PipeManiaAudioService.stopBGM();
+  }
+
+  protected override onResumeAudio(): void {
+    PipeManiaAudioService.playBGM();
   }
 
   private createBoardFrame(): void {

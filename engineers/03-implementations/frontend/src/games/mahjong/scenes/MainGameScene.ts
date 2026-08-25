@@ -71,7 +71,6 @@ export class MainGameScene extends BaseArcadeScene {
   // Seating Draw Cinematic Sequence
   private seatingCinematicContainer!: Phaser.GameObjects.Container;
 
-  private isPausedState: boolean = false;
   private lastGameOverSummary: { score: number; cleared: boolean; reason: string } | null = null;
 
   constructor() {
@@ -2681,14 +2680,13 @@ export class MainGameScene extends BaseArcadeScene {
     });
   }
 
-  public setPauseState(paused: boolean): void {
-    this.isPausedState = paused;
-    if (paused) {
-      MahjongAudioService.stopBGM();
-      MahjongAudioService.stopVoice();
-    } else {
-      MahjongAudioService.playBGM();
-    }
+  protected override onPauseAudio(): void {
+    MahjongAudioService.stopBGM();
+    MahjongAudioService.stopVoice();
+  }
+
+  protected override onResumeAudio(): void {
+    MahjongAudioService.playBGM();
   }
 
   private handleShutdown(): void {

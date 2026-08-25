@@ -8,8 +8,11 @@
  */
 
 import Phaser from 'phaser';
+import { SoundEngine } from '@/core/audio/SoundEngine';
 
 export abstract class BaseArcadeScene extends Phaser.Scene {
+  protected isPausedState: boolean = false;
+
   /**
    * Initializes the High-DPI Camera for the Scene.
    * Maps logical game coordinates onto physical retina pixels seamlessly.
@@ -26,10 +29,28 @@ export abstract class BaseArcadeScene extends Phaser.Scene {
   }
 
   /**
-   * Pause state lifecycle hook.
-   * Can be overridden by subclasses to pause/resume game timers, audio, or animations.
+   * Universal pause state lifecycle management for all Arcade Stadium scenes.
+   * Enforces pipeline shutdown top-down (stop timers -> suspend audio hardware)
+   * and pipeline startup bottom-up (resume audio hardware -> resume timers).
    */
   public setPauseState(paused: boolean): void {
-    // Default no-op for base scene
+    this.isPausedState = paused;
+    if (paused) {
+      this.onPauseAudio();
+      SoundEngine.suspend();
+    } else {
+      SoundEngine.resume();
+      this.onResumeAudio();
+    }
   }
+
+  /**
+   * Hook for subclasses to stop game-specific audio services upon pause.
+   */
+  protected onPauseAudio(): void {}
+
+  /**
+   * Hook for subclasses to resume game-specific audio services upon resume.
+   */
+  protected onResumeAudio(): void {}
 }

@@ -47,4 +47,28 @@ describe('BaseArcadeScene Unit Tests', () => {
 
     expect(mockCamera.setZoom).not.toHaveBeenCalled();
   });
+
+  it('should manage pause lifecycle and audio pipeline ordering', () => {
+    class MockGameScene extends BaseArcadeScene {
+      public callOrder: string[] = [];
+
+      protected override onPauseAudio(): void {
+        this.callOrder.push('onPauseAudio');
+      }
+
+      protected override onResumeAudio(): void {
+        this.callOrder.push('onResumeAudio');
+      }
+    }
+
+    const scene = new MockGameScene({ key: 'mock:Scene' });
+
+    // 1. Pause: should call onPauseAudio
+    scene.setPauseState(true);
+    expect(scene.callOrder).toEqual(['onPauseAudio']);
+
+    // 2. Resume: should call onResumeAudio
+    scene.setPauseState(false);
+    expect(scene.callOrder).toEqual(['onPauseAudio', 'onResumeAudio']);
+  });
 });

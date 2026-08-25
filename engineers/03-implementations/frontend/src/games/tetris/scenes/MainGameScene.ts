@@ -42,7 +42,6 @@ export class MainGameScene extends BaseArcadeScene {
   private gameOverText!: Phaser.GameObjects.Text;
 
   private startTimeSeconds: number = 0;
-  private isPaused: boolean = false;
   private isModernMode: boolean = true;
   private isClearingLines: boolean = false;
 
@@ -57,7 +56,7 @@ export class MainGameScene extends BaseArcadeScene {
     this.dropTimerAccumulator = 0;
     this.lockTimerAccumulator = 0;
     this.startTimeSeconds = this.time.now / 1000;
-    this.isPaused = false;
+    this.isPausedState = false;
 
     this.gridGraphics = this.add.graphics();
     this.pieceGraphics = this.add.graphics();
@@ -158,7 +157,7 @@ export class MainGameScene extends BaseArcadeScene {
   }
 
   update(time: number, delta: number): void {
-    if (this.isPaused || this.board.isGameOver() || this.isClearingLines) return;
+    if (this.isPausedState || this.board.isGameOver() || this.isClearingLines) return;
 
     this.handleInput(delta);
     this.handleGravity(delta);
@@ -486,13 +485,12 @@ export class MainGameScene extends BaseArcadeScene {
     }
   }
 
-  public setPauseState(paused: boolean): void {
-    this.isPaused = paused;
-    if (paused) {
-      TetrisAudioService.stopBgm();
-    } else {
-      TetrisAudioService.startBgm(this.board.getScoreCalculator().getState().level);
-    }
+  protected override onPauseAudio(): void {
+    TetrisAudioService.stopBgm();
+  }
+
+  protected override onResumeAudio(): void {
+    TetrisAudioService.startBgm(this.board.getScoreCalculator().getState().level);
   }
 
   private onShutdown(): void {
