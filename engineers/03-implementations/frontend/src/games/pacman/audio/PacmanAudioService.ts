@@ -166,6 +166,7 @@ class PacmanAudioServiceImpl {
 
   /**
    * Background Siren Loop.
+   * Emulates the authentic 1980 arcade ascending pitch siren ladder (440Hz -> 640Hz).
    */
   public startSiren(isFrightened: boolean = false): void {
     this.stopSiren();
@@ -173,27 +174,27 @@ class PacmanAudioServiceImpl {
 
     this.sirenTimer = setInterval(() => {
       if (this.isFrightenedSiren) {
-        // Frightened siren: Low alternating pulse (150Hz / 120Hz)
-        const freq = this.sirenPitchOffset % 2 === 0 ? 150 : 120;
+        // Frightened siren: Low alternating pulse (280Hz / 220Hz)
+        const freq = this.sirenPitchOffset % 2 === 0 ? 280 : 220;
         this.sirenPitchOffset++;
         SoundEngine.playTone({
           type: 'sawtooth',
           frequency: freq,
-          durationSeconds: 0.18,
-          volume: 0.05,
+          durationSeconds: 0.14,
+          volume: 0.07,
         });
       } else {
-        // Normal siren: Rising pitch oscillation (200Hz -> 300Hz)
-        const freq = 200 + (this.sirenPitchOffset % 5) * 20;
+        // Normal siren: Authentic ascending pitch oscillation (440Hz -> 640Hz)
+        const freq = 440 + (this.sirenPitchOffset % 6) * 40;
         this.sirenPitchOffset++;
         SoundEngine.playTone({
           type: 'triangle',
           frequency: freq,
-          durationSeconds: 0.12,
-          volume: 0.04,
+          durationSeconds: 0.14,
+          volume: 0.06,
         });
       }
-    }, 200);
+    }, 160);
   }
 
   public setFrightenedSiren(isFrightened: boolean): void {
