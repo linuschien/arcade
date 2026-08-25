@@ -56,22 +56,14 @@ describe('PacmanGame Entry Point Unit Tests', () => {
     expect(gameInstance).toBeDefined();
   });
 
-  it('should handle onCoinInsert without errors', () => {
-    expect(() => gameInstance.onCoinInsert(2)).not.toThrow();
-  });
-
   it('should handle onPause and onResume without errors', () => {
     expect(() => gameInstance.onPause()).not.toThrow();
     expect(() => gameInstance.onResume()).not.toThrow();
   });
 
   it('should respond to ArcadeBridge events', () => {
-    const spyCoin = vi.spyOn(gameInstance, 'onCoinInsert');
     const spyPause = vi.spyOn(gameInstance, 'onPause');
     const spyResume = vi.spyOn(gameInstance, 'onResume');
-
-    ArcadeBridge.emit('COIN_INSERTED', 1);
-    expect(spyCoin).toHaveBeenCalledWith(1);
 
     ArcadeBridge.emit('PAUSE_REQUESTED');
     expect(spyPause).toHaveBeenCalled();

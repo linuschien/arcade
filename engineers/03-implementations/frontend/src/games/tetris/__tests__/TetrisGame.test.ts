@@ -1,10 +1,5 @@
-/**
- * MahjongGame.test.ts
- * Unit tests for Mahjong entry point and ArcadeBridge integration.
- */
-
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createMahjongGame, MahjongGame } from '../index';
+import { createTetrisGame, TetrisGame } from '../index';
 import { ArcadeBridge } from '@/core/bridge/ArcadeBridge';
 
 // Mock Phaser Game instance
@@ -28,41 +23,24 @@ vi.mock('phaser', () => {
         FIT: 'FIT',
         CENTER_BOTH: 'CENTER_BOTH',
       },
-      GameObjects: {
-        Container: class Container {
-          add() { return this; }
-          removeAll() { return this; }
-          setPosition() { return this; }
-          setAngle() { return this; }
-          setVisible() { return this; }
-        },
-      },
       Scene: class Scene {
         make = { graphics: vi.fn().mockReturnValue({ fillStyle: vi.fn(), fillCircle: vi.fn(), generateTexture: vi.fn(), destroy: vi.fn() }) };
         textures = { exists: vi.fn().mockReturnValue(false), removeKey: vi.fn() };
         scene = { start: vi.fn() };
-        add = {
-          container: vi.fn().mockReturnValue({ add: vi.fn(), removeAll: vi.fn(), setPosition: vi.fn(), setAngle: vi.fn(), setVisible: vi.fn() }),
-          graphics: vi.fn().mockReturnValue({ fillStyle: vi.fn(), fillRoundedRect: vi.fn(), lineStyle: vi.fn(), strokeRoundedRect: vi.fn() }),
-          text: vi.fn().mockReturnValue({ setText: vi.fn(), setVisible: vi.fn(), setOrigin: vi.fn() }),
-          sprite: vi.fn().mockReturnValue({ setDisplaySize: vi.fn(), setData: vi.fn(), setInteractive: vi.fn(), on: vi.fn() }),
-          existing: vi.fn(),
-        };
-        events = { on: vi.fn(), off: vi.fn() };
       },
     },
   };
 });
 
-describe('MahjongGame Entry Point Unit Tests', () => {
+describe('TetrisGame Entry Point Unit Tests', () => {
   let container: HTMLDivElement;
-  let gameInstance: MahjongGame;
+  let gameInstance: TetrisGame;
 
   beforeEach(() => {
     container = document.createElement('div');
     container.id = 'game-container';
     document.body.appendChild(container);
-    gameInstance = createMahjongGame(container) as MahjongGame;
+    gameInstance = createTetrisGame(container) as TetrisGame;
   });
 
   afterEach(() => {
@@ -74,7 +52,7 @@ describe('MahjongGame Entry Point Unit Tests', () => {
     }
   });
 
-  it('should instantiate MahjongGame successfully', () => {
+  it('should instantiate TetrisGame successfully', () => {
     expect(gameInstance).toBeDefined();
   });
 

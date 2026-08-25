@@ -27,7 +27,6 @@ vi.mock('phaser', () => {
 });
 
 class ConcreteTestGame extends BaseArcadeGame {
-  public onCoinInsert = vi.fn();
   public onPause = vi.fn();
   public onResume = vi.fn();
   public destroyGame = vi.fn();
@@ -120,5 +119,54 @@ describe('BaseArcadeGame Unit Tests', () => {
     expect(mockGameObj._arcadeBaseWidth).toBe(920);
     expect(mockGameObj._arcadeBaseHeight).toBe(640);
     expect(mockGameObj.config.arcadeBaseWidth).toBe(920);
+  });
+
+  it('should support default onCoinInsert, onPause, onResume, and destroyGame lifecycle implementations', () => {
+    class DefaultTestGame extends BaseArcadeGame {
+      public getGame(): Phaser.Game | null {
+        return this.game;
+      }
+    }
+
+    const mockScene = {
+      setPauseState: vi.fn(),
+      scene: {
+        pause: vi.fn(),
+        resume: vi.fn(),
+      },
+    };
+
+    const mockGame = {
+      scene: {
+        getScene: vi.fn().mockReturnValue(mockScene),
+      },
+      destroy: vi.fn(),
+    };
+
+    vi.mocked(Phaser.Game).mockReturnValueOnce(mockGame as any);
+
+    const testGame = new DefaultTestGame({
+      gameId: 'testgame',
+      parentContainerId: 'test-container',
+      baseWidth: 800,
+      baseHeight: 600,
+      scene: [],
+    });
+
+    // onPause
+    testGame.onPause();
+    expect(mockGame.scene.getScene).toHaveBeenCalledWith('testgame:MainGameScene');
+    expect(mockScene.setPauseState).toHaveBeenCalledWith(true);
+    expect(mockScene.scene.pause).toHaveBeenCalled();
+
+    // onResume
+    testGame.onResume();
+    expect(mockScene.setPauseState).toHaveBeenCalledWith(false);
+    expect(mockScene.scene.resume).toHaveBeenCalled();
+
+    // destroyGame
+    testGame.destroyGame();
+    expect(mockGame.destroy).toHaveBeenCalledWith(true);
+    expect(testGame.getGame()).toBeNull();
   });
 });

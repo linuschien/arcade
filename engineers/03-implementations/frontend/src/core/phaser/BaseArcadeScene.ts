@@ -24,4 +24,12 @@ export abstract class BaseArcadeScene extends Phaser.Scene {
       }
     }
   }
+
+  /**
+   * Pause state lifecycle hook.
+   * Can be overridden by subclasses to pause/resume game timers, audio, or animations.
+   */
+  public setPauseState(paused: boolean): void {
+    // Default no-op for base scene
+  }
 }

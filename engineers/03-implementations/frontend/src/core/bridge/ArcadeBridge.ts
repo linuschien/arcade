@@ -13,11 +13,6 @@ export interface GameSummary {
 
 export interface IArcadeGame {
   /**
-   * Triggered when a coin/credit is inserted via the React Host UI.
-   */
-  onCoinInsert(credits: number): void;
-
-  /**
    * Pause game loop and physics.
    */
   onPause(): void;
