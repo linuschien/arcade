@@ -563,8 +563,11 @@ export class MahjongAI {
 
       if (isHonor) {
         // Honor tile rule:
-        // Only reject if it has NO fan (guest wind) AND it's the sole eye/pair in hand.
-        if (!hasFan && isSoleEye) {
+        // Reject if AI already holds 3+ copies (already a complete concealed triplet, keep it instead of breaking into melded Pong + isolated tile).
+        const honorCountInHand = codeCounts.get(targetTile.shortCode) || 0;
+        if (honorCountInHand >= 3) {
+          // Keep concealed triplet, do not Pong
+        } else if (!hasFan && isSoleEye) {
           // Keep as eye, do not Pong
         } else {
           return 'PONG';

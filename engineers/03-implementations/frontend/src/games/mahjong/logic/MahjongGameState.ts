@@ -637,6 +637,7 @@ export class MahjongGameState {
     // Reset pass lockout on successful discard
     player.isPassLockout = false;
     player.passPongCodesInTurn.clear();
+    player.justClaimedPongTileCode = undefined;
 
     // Update real-time Ting state of the discarder
     this.updatePlayerTingState(seat);
@@ -780,6 +781,7 @@ export class MahjongGameState {
           relativeSourceIndex: (fromSeat - pongOrKong.seat + 4) % 4 === 3 ? 0 : (fromSeat - pongOrKong.seat + 4) % 4 === 2 ? 1 : 2,
         };
         this.isFirstTurnCycle = false;
+        claimant.justClaimedPongTileCode = tile.shortCode;
         claimant.melds.push(meld);
         this.listeners.forEach((l) => l.onMeldClaimed?.(pongOrKong.seat, meld));
 
@@ -1076,7 +1078,8 @@ export class MahjongGameState {
     const fullHandForKong = p.drawnTile ? [...p.hand, p.drawnTile] : p.hand;
     const kongOpts = MahjongHandEvaluator.getSelfKongOptions(
       fullHandForKong,
-      p.melds
+      p.melds,
+      p.justClaimedPongTileCode
     );
 
     const allVisible = this.getAllVisibleTiles();

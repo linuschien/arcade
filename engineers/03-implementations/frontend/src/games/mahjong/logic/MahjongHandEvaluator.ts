@@ -347,8 +347,13 @@ export class MahjongHandEvaluator {
 
   /**
    * Finds all available Kong options during player's own turn (Concealed or Added).
+   * Supports excluding newly claimed Pong tileCode on the immediate post-Pong discard turn.
    */
-  public static getSelfKongOptions(hand: Tile[], melds: Meld[]): KongOption[] {
+  public static getSelfKongOptions(
+    hand: Tile[],
+    melds: Meld[],
+    excludedAddedKongTileCode?: string
+  ): KongOption[] {
     const options: KongOption[] = [];
 
     // 1. Concealed Kongs (4 matching tiles in hand)
@@ -374,6 +379,9 @@ export class MahjongHandEvaluator {
     melds.forEach((meld, index) => {
       if (meld.type === 'PONG') {
         const meldCode = meld.tiles[0].shortCode;
+        if (excludedAddedKongTileCode && meldCode === excludedAddedKongTileCode) {
+          return; // Forbidden on the same turn the Pong was just claimed
+        }
         const matchingHandTile = hand.find((t) => t.shortCode === meldCode);
         if (matchingHandTile) {
           options.push({

@@ -478,6 +478,36 @@ describe('MahjongAI Unit Tests', () => {
       expect(decision).toBe('PONG');
     });
 
+    it('should PASS on Dragon tile if AI already holds 3 copies (concealed triplet)', () => {
+      // Hand with 3x 'red' (concealed triplet of Red Dragon)
+      const handCodes = ['1m', '2m', '3m', '4m', '5m', '6m', '7m', '8m', '9m', '1p', '2p', '3p', '1s', 'red', 'red', 'red'];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+      const actions: AvailableActions = {
+        canHu: false,
+        canKong: false,
+        kongOptions: [],
+        canPong: true,
+        canChow: false,
+        chowOptions: [],
+        canTing: false,
+        canPass: true,
+      };
+
+      const decision = MahjongAI.decideAction(
+        actions,
+        hand,
+        [],
+        'EAST',
+        'SOUTH',
+        [],
+        createTile('red', 'called')
+      );
+
+      // AI keeps the concealed triplet intact, does not Pong!
+      expect(decision).toBe('PASS');
+    });
+
     it('should PASS on Guest Wind (無台字牌) if it is the SOLE eye in hand', () => {
       // Hand with only 1 pair: 'west' (西風, Guest Wind for South player in East round -> 0 Fan)
       const handCodes = ['1m', '2m', '3m', '4m', '5m', '6m', '7m', '8m', '9m', '1p', '2p', '3p', '1s', '2s', 'west', 'west'];

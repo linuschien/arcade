@@ -1708,7 +1708,11 @@ export class MainGameScene extends BaseArcadeScene {
       p1.drawnTile !== null &&
       MahjongHandEvaluator.isWinningHand(p1.hand, p1.melds, p1.drawnTile);
 
-    const kongOptions = MahjongHandEvaluator.getSelfKongOptions(fullHand, p1.melds);
+    const kongOptions = MahjongHandEvaluator.getSelfKongOptions(
+      fullHand,
+      p1.melds,
+      p1.justClaimedPongTileCode
+    );
 
     // If player is in auto-play mode (託管模式):
     if (p1.isAutoPlay) {

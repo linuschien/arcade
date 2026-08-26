@@ -277,12 +277,19 @@ describe('MahjongGameState Unit Tests', () => {
     state.startNewMatch();
     state.startDealing();
 
-    // Setup player 0 with 2 of 5m
+    // Setup player 0 with 16 tiles including 2 of 5m
     const p0 = state.players[0];
+    const dummyTiles = Array.from({ length: 14 }, (_, i) => ({
+      id: `1s_${i}`,
+      suit: 'BAMBOO' as const,
+      value: 1,
+      name: '一條',
+      shortCode: '1s',
+    }));
     p0.hand = [
       { id: '5m_1', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' },
       { id: '5m_2', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' },
-      { id: '1s_0', suit: 'BAMBOO', value: 1, name: '一條', shortCode: '1s' },
+      ...dummyTiles,
     ];
     p0.drawnTile = null;
 
@@ -301,6 +308,11 @@ describe('MahjongGameState Unit Tests', () => {
     state.humanRespondAction('PONG');
     expect(p0.melds.length).toBe(1);
     expect(p0.melds[0].type).toBe('PONG');
+    expect(p0.justClaimedPongTileCode).toBe('5m');
+
+    // On discard, justClaimedPongTileCode is cleared
+    state.discardTile(0, p0.hand[0].id);
+    expect(p0.justClaimedPongTileCode).toBeUndefined();
   });
 
   it('should handle Chow claims and Pass lockout on win pass', () => {

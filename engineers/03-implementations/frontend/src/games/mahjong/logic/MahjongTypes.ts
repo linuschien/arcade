@@ -118,6 +118,7 @@ export interface PlayerProfile {
   isAutoPlay: boolean;
   isPassLockout: boolean; // 過水不胡鎖定
   passPongCodesInTurn: Set<string>; // 同巡過碰不得碰同名牌
+  justClaimedPongTileCode?: string; // 剛碰之牌牌碼（當巡禁止立刻加槓此牌）
 }
 
 export type GamePhase =

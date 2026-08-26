@@ -219,13 +219,45 @@ describe('MahjongHandEvaluator Unit Tests', () => {
     const hand = [createTile('5m', '1'), createTile('5m', '2'), createTile('9s')];
     const calledTile = createTile('5m', '3');
 
-    // Can pong normally
+    // Can pong normally (holding 2 matching tiles)
     const passPongEmpty = new Set<string>();
     expect(MahjongHandEvaluator.canPong(hand, calledTile, passPongEmpty)).toBe(true);
+
+    // Composite shapes (holding 3 matching tiles, e.g. 23444s) can also Pong (matching.length >= 2)
+    const handWithTriplet = [
+      createTile('5m', '1'),
+      createTile('5m', '2'),
+      createTile('5m', '3'),
+      createTile('9s'),
+    ];
+    expect(MahjongHandEvaluator.canPong(handWithTriplet, calledTile, passPongEmpty)).toBe(true);
 
     // Locked out in same turn
     const passPongLocked = new Set<string>(['5m']);
     expect(MahjongHandEvaluator.canPong(hand, calledTile, passPongLocked)).toBe(false);
+  });
+
+  it('should evaluate Self Kong options and exclude just-claimed Pong tileCode on the same turn', () => {
+    const hand = [createTile('5m', '4'), createTile('1s', '1'), createTile('1s', '2'), createTile('1s', '3'), createTile('1s', '4')];
+    const melds = [
+      {
+        type: 'PONG' as const,
+        tiles: [createTile('5m', '1'), createTile('5m', '2'), createTile('5m', '3')],
+        sourceSeat: 2 as const,
+      },
+    ];
+
+    // Normally (self-draw turn): both 5m Added Kong and 1s Concealed Kong are available
+    const normalOptions = MahjongHandEvaluator.getSelfKongOptions(hand, melds);
+    expect(normalOptions.length).toBe(2);
+    expect(normalOptions.some((k) => k.type === 'ADDED_KONG' && k.tileCode === '5m')).toBe(true);
+    expect(normalOptions.some((k) => k.type === 'CONCEALED_KONG' && k.tileCode === '1s')).toBe(true);
+
+    // On immediate post-Pong turn for 5m: 5m Added Kong is excluded, while 1s Concealed Kong remains available!
+    const postPongOptions = MahjongHandEvaluator.getSelfKongOptions(hand, melds, '5m');
+    expect(postPongOptions.length).toBe(1);
+    expect(postPongOptions[0].type).toBe('CONCEALED_KONG');
+    expect(postPongOptions[0].tileCode).toBe('1s');
   });
 
   it('should evaluate Melded Kong and forbid Melded Kong against Upper Player', () => {
