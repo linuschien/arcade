@@ -520,13 +520,18 @@ describe('MahjongGameState Unit Tests', () => {
     expect(gameOverFired).toBe(true);
   });
 
-  it('should execute stepAITurn and return all visible tiles', () => {
+  it('should execute stepAITurn and return public and player-specific visible tiles', () => {
     state.startNewMatch();
     state.startDealing();
 
     expect(() => state.stepAITurn(1)).not.toThrow();
-    const visible = state.getAllVisibleTiles();
-    expect(Array.isArray(visible)).toBe(true);
+    const publicVisible = state.getPublicVisibleTiles();
+    expect(Array.isArray(publicVisible)).toBe(true);
+
+    const p0Visible = state.getPlayerVisibleTiles(0);
+    expect(Array.isArray(p0Visible)).toBe(true);
+    // Player visible must contain public visible plus player 0's concealed hand
+    expect(p0Visible.length).toBeGreaterThan(publicVisible.length);
   });
 
   it('should dispatch onTurnStart for dealer Turn 1 and allow AI dealer to discard', () => {

@@ -225,7 +225,7 @@ export class MahjongAI {
         deadTingPenalty = -50000;
       }
 
-      const score = (10 - s) * 100000 + acceptance * 100 + discardBonus + deadTingPenalty;
+      const score = (10 - s) * 2500 + acceptance * 100 + discardBonus + deadTingPenalty;
 
       if (score > bestScore) {
         bestScore = score;
@@ -253,10 +253,17 @@ export class MahjongAI {
       op.discards.forEach((d) => opponentDiscards.add(d.shortCode));
     });
 
-    // Visible tile counts across table
+    // Visible tile counts across table (open discards + melds + own hand)
     const visibleCounts = new Map<string, number>();
-    allKnownVisibleTiles.forEach((t) => {
-      visibleCounts.set(t.shortCode, (visibleCounts.get(t.shortCode) || 0) + 1);
+    const sourceTiles =
+      allKnownVisibleTiles && allKnownVisibleTiles.length > 0
+        ? allKnownVisibleTiles
+        : hand;
+
+    sourceTiles.forEach((t) => {
+      if (!t.isFlower) {
+        visibleCounts.set(t.shortCode, (visibleCounts.get(t.shortCode) || 0) + 1);
+      }
     });
 
     let safestTile = candidateList[0];
@@ -321,8 +328,15 @@ export class MahjongAI {
     const sampleTiles = MahjongHandEvaluator.getAll34UniqueTiles();
 
     const visibleCounts = new Map<string, number>();
-    allKnownVisibleTiles.forEach((t) => {
-      visibleCounts.set(t.shortCode, (visibleCounts.get(t.shortCode) || 0) + 1);
+    const sourceTiles =
+      allKnownVisibleTiles && allKnownVisibleTiles.length > 0
+        ? allKnownVisibleTiles
+        : [...hand, ...melds.flatMap((m) => m.tiles)];
+
+    sourceTiles.forEach((t) => {
+      if (!t.isFlower) {
+        visibleCounts.set(t.shortCode, (visibleCounts.get(t.shortCode) || 0) + 1);
+      }
     });
 
     if (currentShanten === 0) {

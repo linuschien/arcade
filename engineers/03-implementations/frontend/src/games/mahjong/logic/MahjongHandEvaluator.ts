@@ -208,20 +208,16 @@ export class MahjongHandEvaluator {
     const sampleTiles = this.getAll34UniqueTiles();
 
     // Count how many copies of each tile are already visible to the player
-    const seenTileIds = new Set<string>();
     const visibleCounts = new Map<string, number>();
+    const sourceTiles =
+      allKnownVisibleTiles && allKnownVisibleTiles.length > 0
+        ? allKnownVisibleTiles
+        : [...hand, ...melds.flatMap((m) => m.tiles)];
 
-    const recordVisible = (t: Tile) => {
-      if (!seenTileIds.has(t.id)) {
-        seenTileIds.add(t.id);
+    for (const t of sourceTiles) {
+      if (!t.isFlower) {
         visibleCounts.set(t.shortCode, (visibleCounts.get(t.shortCode) || 0) + 1);
       }
-    };
-
-    for (const t of allKnownVisibleTiles) recordVisible(t);
-    for (const t of hand) recordVisible(t);
-    for (const m of melds) {
-      for (const t of m.tiles) recordVisible(t);
     }
 
     for (const candidate of sampleTiles) {

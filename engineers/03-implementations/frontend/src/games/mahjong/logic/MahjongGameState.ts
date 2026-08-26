@@ -714,7 +714,7 @@ export class MahjongGameState {
         }
       } else {
         // AI decision
-        const allVisible = this.getAllVisibleTiles();
+        const allVisible = this.getPlayerVisibleTiles(p.seat);
         const choice = MahjongAI.decideAction(
           actions,
           p.hand,
@@ -955,7 +955,7 @@ export class MahjongGameState {
         canPass: true,
       };
 
-      const allVisible = this.getAllVisibleTiles();
+      const allVisible = this.getPlayerVisibleTiles(p.seat);
       const choice = MahjongAI.decideAction(
         actions,
         p.hand,
@@ -1082,7 +1082,7 @@ export class MahjongGameState {
       p.justClaimedPongTileCode
     );
 
-    const allVisible = this.getAllVisibleTiles();
+    const allVisible = this.getPlayerVisibleTiles(seat);
     const chosenKong = MahjongAI.decideSelfKong(kongOpts, fullHandForKong, p.melds, allVisible);
     if (chosenKong) {
       this.performSelfKong(seat, chosenKong);
@@ -1093,7 +1093,7 @@ export class MahjongGameState {
 
     // Choose discard with fresh hand
     const fullHand = p.drawnTile ? [...p.hand, p.drawnTile] : p.hand;
-    const freshAllVisible = this.getAllVisibleTiles();
+    const freshAllVisible = this.getPlayerVisibleTiles(seat);
     const opponents = this.players.filter((_, i) => i !== seat);
 
     const bestDiscard = MahjongAI.chooseBestDiscard(
@@ -1133,20 +1133,51 @@ export class MahjongGameState {
 
   /**
    * Collects all publicly visible tiles across the table (open melds, flowers, discards).
-   * Other players' concealed hands and opponent concealed kongs are NEVER included.
+   * Parameterless: represents objective table state visible to all spectators.
    */
-  public getAllVisibleTiles(forSeat: PlayerSeat = 0): Tile[] {
+  public getPublicVisibleTiles(): Tile[] {
     const tiles: Tile[] = [];
-    this.players.forEach((p, seat) => {
+    this.players.forEach((p) => {
       tiles.push(...p.flowers);
       tiles.push(...p.discards);
       p.melds.forEach((m) => {
-        if (m.type !== 'CONCEALED_KONG' || seat === forSeat) {
+        if (m.type !== 'CONCEALED_KONG') {
           tiles.push(...m.tiles);
         }
       });
     });
     return tiles;
+  }
+
+  /**
+   * Collects all known visible tiles from a specific player's subjective perspective.
+   * Exactly equals: Public table visible tiles + Player's private hand (+ drawnTile) + Player's own concealed kongs.
+   */
+  public getPlayerVisibleTiles(seat: PlayerSeat): Tile[] {
+    const p = this.players[seat];
+    const tiles: Tile[] = [...this.getPublicVisibleTiles()];
+
+    p.hand.forEach((t) => {
+      if (!t.isFlower) tiles.push(t);
+    });
+    if (p.drawnTile && !p.drawnTile.isFlower) {
+      tiles.push(p.drawnTile);
+    }
+
+    p.melds.forEach((m) => {
+      if (m.type === 'CONCEALED_KONG') {
+        tiles.push(...m.tiles);
+      }
+    });
+
+    return tiles;
+  }
+
+  /**
+   * Legacy alias for getPlayerVisibleTiles.
+   */
+  public getAllVisibleTiles(forSeat: PlayerSeat = 0): Tile[] {
+    return this.getPlayerVisibleTiles(forSeat);
   }
 
   /**
@@ -1311,7 +1342,7 @@ export class MahjongGameState {
     const tingInfo = MahjongHandEvaluator.evaluateTing(
       player.hand,
       player.melds,
-      this.getAllVisibleTiles()
+      this.getPlayerVisibleTiles(seat)
     );
     player.tingInfo = tingInfo;
     player.isTing = tingInfo.winningTiles.length > 0;

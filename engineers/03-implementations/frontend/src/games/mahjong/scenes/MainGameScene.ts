@@ -1597,7 +1597,7 @@ export class MainGameScene extends BaseArcadeScene {
     const tingInfo = MahjongHandEvaluator.evaluateTing(
       p1.hand,
       p1.melds,
-      this.gameState.getAllVisibleTiles()
+      this.gameState.getPlayerVisibleTiles(0)
     );
     p1.tingInfo = tingInfo;
     p1.isTing = tingInfo.winningTiles.length > 0;

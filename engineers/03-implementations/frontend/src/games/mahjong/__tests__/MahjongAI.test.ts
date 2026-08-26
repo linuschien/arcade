@@ -159,6 +159,46 @@ describe('MahjongAI Unit Tests', () => {
       expect(safest.shortCode).toBe('white');
     });
 
+    it('should recognize dead honor when 2 copies are visible on table and 2 copies are held in hand', () => {
+      // Hand contains 2 copies of 'east' (東風) and 1 copy of dangerous '5p'
+      const hand = [
+        createTile('east', '1'),
+        createTile('east', '2'),
+        createTile('5p', '1'),
+        createTile('2m', '1'),
+        createTile('3m', '1'),
+        createTile('7s', '1'),
+      ];
+
+      const opponent: PlayerProfile = {
+        seat: 1,
+        name: '高進',
+        isHuman: false,
+        wind: 'SOUTH',
+        isDealer: false,
+        chips: 10000,
+        hand: [],
+        drawnTile: null,
+        melds: [{ type: 'PONG', tiles: [], sourceSeat: 2 }],
+        flowers: [],
+        discards: [createTile('3s', 'd1')],
+        isTing: true,
+        isAutoPlay: false,
+        isPassLockout: false,
+        passPongCodesInTurn: new Set(),
+      };
+
+      // 2 copies of 'east' are visible on table
+      const allVisible = [
+        createTile('east', 'v1'),
+        createTile('east', 'v2'),
+      ];
+
+      // Total 2 on table + 2 in hand = 4 copies accounted for -> 'east' is 100% Dead Honor!
+      const safest = MahjongAI.chooseBestDiscard(hand, [], allVisible, [opponent], 8);
+      expect(safest.shortCode).toBe('east');
+    });
+
     it('should prioritize Suji (筋牌) in defense mode when no Genbutsu or dead honors exist', () => {
       // Opponent discarded 4m in river -> 1m is Suji of 4m (danger score 30 - 20 = 10)
       // Hand contains 1m (Suji, danger 10) and 5p (dangerous middle tile, danger 70)
@@ -796,6 +836,38 @@ describe('MahjongAI Unit Tests', () => {
 
       expect(safest.isFlower).toBeFalsy();
       expect(safest.id).not.toBe('f_summer_0');
+    });
+
+    it('should trigger defense mode and discard safest tile when all Ting options are 0-tile dead waits', () => {
+      // 16-tile hand:
+      // 123m, 456m, 789m, 123p (4 melds = 12 tiles) + 55s (eye) + 8m (single) + 9s (single) = 16 tiles
+      // If discard 8m -> Ting on single 9s (0 live outs outside).
+      // If discard 9s -> Ting on single 8m (0 live outs outside).
+      // All Ting options have 0 outs -> triggers shouldDefend and selects safest dead tile (8m).
+      const handCodes = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '7m', '8m', '9m',
+        '1p', '2p', '3p',
+        '5s', '5s',
+        '8m',
+        '9s',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+      // 3 copies of 9s and 3 copies of 8m are visible on table (meaning 0 copies left outside)
+      const allVisible = [
+        createTile('9s', 'v1'),
+        createTile('9s', 'v2'),
+        createTile('9s', 'v3'),
+        createTile('8m', 'v1'),
+        createTile('8m', 'v2'),
+        createTile('8m', 'v3'),
+      ];
+
+      const best = MahjongAI.chooseBestDiscard(hand, [], allVisible, [], 40);
+      // AI must safely discard 8m (safe dead terminal) under dead Ting defense
+      expect(best.shortCode).toBe('8m');
     });
   });
 });
