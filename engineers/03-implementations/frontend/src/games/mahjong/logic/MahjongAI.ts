@@ -5,16 +5,35 @@
  * and aggressive Shanten-reduction Meld decisions.
  */
 
-import { Tile, Meld, AvailableActions, PlayerProfile, SeatWind, KongOption } from './MahjongTypes';
+import { Tile, Meld, AvailableActions, PlayerProfile, SeatWind, KongOption, ChowOption } from './MahjongTypes';
 import { MahjongHandEvaluator } from './MahjongHandEvaluator';
 
+export interface SuitPlan {
+  comp: number;            // Complete melds (triplets / sequences)
+  part: number;            // Partial tatsus (two-sided, border, gap, pair-tatsu)
+  hasEye: boolean;         // Uses one pair as 雀頭 (Eye)
+  meldedOuts: number[];    // Tile numbers (1..9) completing a meld
+  goodTatsuOuts: number[]; // Tile numbers (1..9) forming a two-sided tatsu
+  badTatsuOuts: number[];  // Tile numbers (1..9) forming gap/border tatsu or pair
+}
+
+export interface ShantenResult {
+  shanten: number;           // Minimum Shanten distance
+  meldedOuts: string[];      // Tile shortCodes completing melds (e.g. ['3m', '6m'])
+  goodTatsuOuts: string[];   // Tile shortCodes forming two-sided tatsus (e.g. ['2p', '5p'])
+  badTatsuOuts: string[];    // Tile shortCodes forming gap/border tatsus or pairs (e.g. ['1s', 'east'])
+}
+
 export class MahjongAI {
+  private static suitCache = new Map<string, SuitPlan[]>();
+
   /**
    * Calculates the Shanten (向聽數) of a hand (0 = Ting/Ready, 1 = 1-Shanten, etc.).
    */
   public static calculateShanten(hand: Tile[], melds: Meld[]): number {
     const activeTiles = hand.filter((t) => !t.isFlower);
-    const standardShanten = this.calculateStandardShanten(activeTiles, melds.length);
+    const shantenRes = this.calculateShantenWithOuts(activeTiles, melds.length);
+    const standardShanten = shantenRes.shanten;
 
     if (melds.length === 0 && activeTiles.length === 16) {
       const eightPairsShanten = this.calculateEightPairsShanten(activeTiles);
@@ -25,85 +44,319 @@ export class MahjongAI {
   }
 
   /**
-   * Calculates standard 5-meld + 1-pair shanten.
+   * Decomposes a single number suit (1..9) into all non-dominated SuitPlans.
+   * Supports up to 17 tiles per suit (Taiwanese Mahjong Pure One Suit / 清一色).
    */
-  private static calculateStandardShanten(tiles: Tile[], meldCount: number): number {
-    const codeCounts = new Map<string, number>();
-    for (const t of tiles) {
-      codeCounts.set(t.shortCode, (codeCounts.get(t.shortCode) || 0) + 1);
+  public static decomposeNumberSuit(counts: number[]): SuitPlan[] {
+    const key = counts.slice(1, 10).join(',');
+    const cached = this.suitCache.get(key);
+    if (cached) {
+      return cached;
     }
 
-    let completeMelds = meldCount;
-    let partialMelds = 0;
-    let pairs = 0;
+    const totalTiles = counts.slice(1, 10).reduce((a, b) => a + b, 0);
+    if (totalTiles === 0) {
+      const emptyPlan: SuitPlan[] = [
+        { comp: 0, part: 0, hasEye: false, meldedOuts: [], goodTatsuOuts: [], badTatsuOuts: [] },
+      ];
+      this.suitCache.set(key, emptyPlan);
+      return emptyPlan;
+    }
 
-    // Count triplets & pairs
-    for (const [code, count] of codeCounts.entries()) {
+    const rawPlans: SuitPlan[] = [];
+
+    const search = (
+      idx: number,
+      c: number[],
+      currentComp: number,
+      currentPart: number,
+      hasEye: boolean,
+      meldedOuts: Set<number>,
+      goodTatsuOuts: Set<number>,
+      badTatsuOuts: Set<number>
+    ) => {
+      while (idx <= 9 && c[idx] === 0) {
+        idx++;
+      }
+
+      if (idx > 9) {
+        rawPlans.push({
+          comp: currentComp,
+          part: currentPart,
+          hasEye,
+          meldedOuts: Array.from(meldedOuts),
+          goodTatsuOuts: Array.from(goodTatsuOuts),
+          badTatsuOuts: Array.from(badTatsuOuts),
+        });
+        return;
+      }
+
+      // 1. Triplet (AAA: 3 matching tiles)
+      if (c[idx] >= 3) {
+        c[idx] -= 3;
+        search(idx, c, currentComp + 1, currentPart, hasEye, meldedOuts, goodTatsuOuts, badTatsuOuts);
+        c[idx] += 3;
+      }
+
+      // 2. Sequence (ABC: n, n+1, n+2)
+      if (idx <= 7 && c[idx] >= 1 && c[idx + 1] >= 1 && c[idx + 2] >= 1) {
+        c[idx]--;
+        c[idx + 1]--;
+        c[idx + 2]--;
+        search(idx, c, currentComp + 1, currentPart, hasEye, meldedOuts, goodTatsuOuts, badTatsuOuts);
+        c[idx]++;
+        c[idx + 1]++;
+        c[idx + 2]++;
+      }
+
+      // 3. Two-Sided or Border Tatsu (AB: n, n+1)
+      if (idx <= 8 && c[idx] >= 1 && c[idx + 1] >= 1) {
+        c[idx]--;
+        c[idx + 1]--;
+        const nextMelded = new Set(meldedOuts);
+        if (idx > 1) nextMelded.add(idx - 1);
+        if (idx + 1 < 9) nextMelded.add(idx + 2);
+
+        search(idx, c, currentComp, currentPart + 1, hasEye, nextMelded, goodTatsuOuts, badTatsuOuts);
+        c[idx]++;
+        c[idx + 1]++;
+      }
+
+      // 4. Gap Tatsu (AC: n, n+2)
+      if (idx <= 7 && c[idx] >= 1 && c[idx + 2] >= 1) {
+        c[idx]--;
+        c[idx + 2]--;
+        const nextMelded = new Set(meldedOuts);
+        nextMelded.add(idx + 1);
+
+        search(idx, c, currentComp, currentPart + 1, hasEye, nextMelded, goodTatsuOuts, badTatsuOuts);
+        c[idx]++;
+        c[idx + 2]++;
+      }
+
+      // 5. Pair as Eye or Pair-Tatsu (AA: 2 matching tiles)
+      if (c[idx] >= 2) {
+        // 5a. As Eye (雀頭)
+        if (!hasEye) {
+          c[idx] -= 2;
+          search(idx, c, currentComp, currentPart, true, meldedOuts, goodTatsuOuts, badTatsuOuts);
+          c[idx] += 2;
+        }
+
+        // 5b. As Pair-Tatsu (雙碰搭子: waits on 3rd copy to become triplet)
+        c[idx] -= 2;
+        const nextMelded = new Set(meldedOuts);
+        nextMelded.add(idx);
+        search(idx, c, currentComp, currentPart + 1, hasEye, nextMelded, goodTatsuOuts, badTatsuOuts);
+        c[idx] += 2;
+      }
+
+      // 6. Single Tile (孤張)
+      const nextBad = new Set(badTatsuOuts);
+      const nextGood = new Set(goodTatsuOuts);
+
+      // Drawing self forms a pair
+      nextBad.add(idx);
+
+      // Adjacent connections
+      if (idx >= 3 && idx <= 7) {
+        nextGood.add(idx - 1);
+        nextGood.add(idx + 1);
+      } else if (idx === 2) {
+        nextBad.add(1);
+        nextGood.add(3);
+      } else if (idx === 8) {
+        nextGood.add(7);
+        nextBad.add(9);
+      } else if (idx === 1) {
+        nextBad.add(2);
+      } else if (idx === 9) {
+        nextBad.add(8);
+      }
+
+      // Gap connections
+      if (idx - 2 >= 1) nextBad.add(idx - 2);
+      if (idx + 2 <= 9) nextBad.add(idx + 2);
+
+      const oldVal = c[idx];
+      c[idx]--;
+      search(idx, c, currentComp, currentPart, hasEye, meldedOuts, nextGood, nextBad);
+      c[idx] = oldVal;
+    };
+
+    search(1, [...counts], 0, 0, false, new Set(), new Set(), new Set());
+
+    // Deduplicate & Prune dominated plans:
+    const plans: SuitPlan[] = [];
+    for (const p of rawPlans) {
+      // Check if p is strictly dominated by an existing plan
+      const isDominated = plans.some(
+        (existing) =>
+          existing.hasEye === p.hasEye &&
+          existing.comp >= p.comp &&
+          existing.part >= p.part &&
+          (existing.comp > p.comp || existing.part > p.part)
+      );
+      if (!isDominated) {
+        plans.push(p);
+      }
+    }
+
+    this.suitCache.set(key, plans.length > 0 ? plans : rawPlans);
+    return plans.length > 0 ? plans : rawPlans;
+  }
+
+  /**
+   * Fast O(1) Decomposition of Honor tiles (東南西北中發白).
+   */
+  public static decomposeHonors(honorCounts: Map<string, number>): SuitPlan[] {
+    const honors = ['east', 'south', 'west', 'north', 'red', 'green', 'white'];
+    let baseTriplets = 0;
+    const pairs: string[] = [];
+    const singles: string[] = [];
+
+    for (const h of honors) {
+      const count = honorCounts.get(h) || 0;
       if (count >= 3) {
-        completeMelds++;
-        codeCounts.set(code, count - 3);
+        baseTriplets += Math.floor(count / 3);
+        const rem = count % 3;
+        if (rem === 2) pairs.push(h);
+        else if (rem === 1) singles.push(h);
       } else if (count === 2) {
-        pairs++;
-        codeCounts.set(code, 0);
+        pairs.push(h);
+      } else if (count === 1) {
+        singles.push(h);
       }
     }
 
-    // Count sequences in number suits
-    const suits = ['m', 'p', 's'];
-    for (const suit of suits) {
-      for (let n = 1; n <= 7; n++) {
-        const c1 = `${n}${suit}`;
-        const c2 = `${n + 1}${suit}`;
-        const c3 = `${n + 2}${suit}`;
+    const plans: SuitPlan[] = [];
 
-        while (
-          (codeCounts.get(c1) || 0) > 0 &&
-          (codeCounts.get(c2) || 0) > 0 &&
-          (codeCounts.get(c3) || 0) > 0
-        ) {
-          completeMelds++;
-          codeCounts.set(c1, (codeCounts.get(c1) || 0) - 1);
-          codeCounts.set(c2, (codeCounts.get(c2) || 0) - 1);
-          codeCounts.set(c3, (codeCounts.get(c3) || 0) - 1);
-        }
+    // Plan A: No Honor used as Eye
+    plans.push({
+      comp: baseTriplets,
+      part: pairs.length,
+      hasEye: false,
+      meldedOuts: pairs.map((h) => honors.indexOf(h) + 1),
+      goodTatsuOuts: [],
+      badTatsuOuts: singles.map((h) => honors.indexOf(h) + 1),
+    });
+
+    // Plan B: Use one Honor pair as Eye
+    for (let i = 0; i < pairs.length; i++) {
+      const eyeHonor = pairs[i];
+      const otherPairs = pairs.filter((_, idx) => idx !== i);
+      plans.push({
+        comp: baseTriplets,
+        part: otherPairs.length,
+        hasEye: true,
+        meldedOuts: otherPairs.map((h) => honors.indexOf(h) + 1),
+        goodTatsuOuts: [],
+        badTatsuOuts: singles.map((h) => honors.indexOf(h) + 1),
+      });
+    }
+
+    return plans;
+  }
+
+  /**
+   * Combines the 4 suits (m, p, s, z) via Suit DP to calculate minimum Shanten and unified outs.
+   */
+  public static calculateShantenWithOuts(hand: Tile[], meldCount: number): ShantenResult {
+    const countsM = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const countsP = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const countsS = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const honorCounts = new Map<string, number>();
+
+    for (const t of hand) {
+      if (t.isFlower) continue;
+      if (t.suit === 'CHARACTERS' && t.value >= 1 && t.value <= 9) countsM[t.value]++;
+      else if (t.suit === 'DOTS' && t.value >= 1 && t.value <= 9) countsP[t.value]++;
+      else if (t.suit === 'BAMBOO' && t.value >= 1 && t.value <= 9) countsS[t.value]++;
+      else if (t.suit === 'WINDS' || t.suit === 'DRAGONS') {
+        honorCounts.set(t.shortCode, (honorCounts.get(t.shortCode) || 0) + 1);
       }
+    }
 
-      // Count partial sequences (two-sided or middle gap)
-      for (let n = 1; n <= 8; n++) {
-        const c1 = `${n}${suit}`;
-        const c2 = `${n + 1}${suit}`;
-        if ((codeCounts.get(c1) || 0) > 0 && (codeCounts.get(c2) || 0) > 0) {
-          partialMelds++;
-          codeCounts.set(c1, (codeCounts.get(c1) || 0) - 1);
-          codeCounts.set(c2, (codeCounts.get(c2) || 0) - 1);
-        }
-      }
+    const plansM = this.decomposeNumberSuit(countsM);
+    const plansP = this.decomposeNumberSuit(countsP);
+    const plansS = this.decomposeNumberSuit(countsS);
+    const plansZ = this.decomposeHonors(honorCounts);
 
-      for (let n = 1; n <= 7; n++) {
-        const c1 = `${n}${suit}`;
-        const c3 = `${n + 2}${suit}`;
-        if ((codeCounts.get(c1) || 0) > 0 && (codeCounts.get(c3) || 0) > 0) {
-          partialMelds++;
-          codeCounts.set(c1, (codeCounts.get(c1) || 0) - 1);
-          codeCounts.set(c3, (codeCounts.get(c3) || 0) - 1);
+    const requiredMelds = 5 - meldCount;
+    let minShanten = requiredMelds * 2;
+
+    const meldedSet = new Set<string>();
+    const goodTatsuSet = new Set<string>();
+    const badTatsuSet = new Set<string>();
+
+    const honorsList = ['east', 'south', 'west', 'north', 'red', 'green', 'white'];
+
+    for (const pm of plansM) {
+      for (const pp of plansP) {
+        for (const ps of plansS) {
+          for (const pz of plansZ) {
+            const eyeCount = (pm.hasEye ? 1 : 0) + (pp.hasEye ? 1 : 0) + (ps.hasEye ? 1 : 0) + (pz.hasEye ? 1 : 0);
+            if (eyeCount > 1) continue; // At most 1 global Eye across all 4 suits
+
+            const hasEye = eyeCount === 1;
+            const totalComp = pm.comp + pp.comp + ps.comp + pz.comp;
+            const totalPart = pm.part + pp.part + ps.part + pz.part;
+
+            const effComp = Math.min(requiredMelds, totalComp);
+            const maxPart = requiredMelds - effComp;
+            const effPart = Math.min(maxPart, totalPart);
+
+            const s = (requiredMelds - effComp) * 2 - effPart - (hasEye ? 1 : 0);
+            const currentS = Math.max(0, s);
+
+            if (currentS < minShanten) {
+              minShanten = currentS;
+              meldedSet.clear();
+              goodTatsuSet.clear();
+              badTatsuSet.clear();
+            }
+
+            if (currentS === minShanten) {
+              pm.meldedOuts.forEach((n) => meldedSet.add(`${n}m`));
+              pm.goodTatsuOuts.forEach((n) => goodTatsuSet.add(`${n}m`));
+              pm.badTatsuOuts.forEach((n) => badTatsuSet.add(`${n}m`));
+
+              pp.meldedOuts.forEach((n) => meldedSet.add(`${n}p`));
+              pp.goodTatsuOuts.forEach((n) => goodTatsuSet.add(`${n}p`));
+              pp.badTatsuOuts.forEach((n) => badTatsuSet.add(`${n}p`));
+
+              ps.meldedOuts.forEach((n) => meldedSet.add(`${n}s`));
+              ps.goodTatsuOuts.forEach((n) => goodTatsuSet.add(`${n}s`));
+              ps.badTatsuOuts.forEach((n) => badTatsuSet.add(`${n}s`));
+
+              pz.meldedOuts.forEach((idx) => meldedSet.add(honorsList[idx - 1]));
+              pz.badTatsuOuts.forEach((idx) => badTatsuSet.add(honorsList[idx - 1]));
+
+              // If hand is in 0-Shanten waiting on Eye (5 melds, no Eye):
+              // All singles forming a pair can complete the Eye and win the hand
+              if (minShanten === 0 && !hasEye) {
+                pm.badTatsuOuts.forEach((n) => meldedSet.add(`${n}m`));
+                pp.badTatsuOuts.forEach((n) => meldedSet.add(`${n}p`));
+                ps.badTatsuOuts.forEach((n) => meldedSet.add(`${n}s`));
+                pz.badTatsuOuts.forEach((idx) => meldedSet.add(honorsList[idx - 1]));
+              }
+            }
+          }
         }
       }
     }
 
-    // Standard Taiwanese 16-tile shanten formula:
-    // Need 5 melds + 1 pair. Base distance = 10 - 2 * completeMelds - partialMelds - (hasPair ? 1 : 0)
-    const requiredMelds = 5;
-    const effectiveComplete = Math.min(requiredMelds, completeMelds);
-    const maxPartial = requiredMelds - effectiveComplete;
-    const effectivePartial = Math.min(maxPartial, partialMelds);
-    const hasPair = pairs > 0;
-
-    let shanten = (requiredMelds - effectiveComplete) * 2 - effectivePartial - (hasPair ? 1 : 0);
-    return Math.max(0, shanten);
+    return {
+      shanten: minShanten,
+      meldedOuts: Array.from(meldedSet),
+      goodTatsuOuts: Array.from(goodTatsuSet),
+      badTatsuOuts: Array.from(badTatsuSet),
+    };
   }
 
   /**
    * Shanten for 嚦咕嚦咕 (Eight Pairs).
+   * Note: 4-of-a-kind (quad) counts as 2 pairs.
    */
   private static calculateEightPairsShanten(tiles: Tile[]): number {
     const codeCounts = new Map<string, number>();
@@ -112,9 +365,56 @@ export class MahjongAI {
     }
     let pairCount = 0;
     for (const count of codeCounts.values()) {
-      if (count >= 2) pairCount++;
+      if (count === 4) {
+        pairCount += 2;
+      } else if (count >= 2) {
+        pairCount += 1;
+      }
     }
     return Math.max(0, 8 - pairCount);
+  }
+
+  /**
+   * Evaluates dynamic Shanten for a (17 - 3K) tile hand (active turn with drawn tile).
+   * Returns -1 if hand is an immediate Winning Hand (Hu).
+   * Otherwise returns the minimum Shanten among all possible single-tile discards.
+   */
+  public static calculateDynamicShanten17(hand17: Tile[], melds: Meld[]): number {
+    const activeTiles = hand17.filter((t) => !t.isFlower);
+    if (MahjongHandEvaluator.isWinningHand(activeTiles, melds)) {
+      return -1;
+    }
+
+    let minShanten = 999;
+    for (let i = 0; i < activeTiles.length; i++) {
+      const testHand16 = activeTiles.filter((_, idx) => idx !== i);
+      const s = this.calculateShanten(testHand16, melds);
+      if (s < minShanten) {
+        minShanten = s;
+        if (minShanten === 0) break;
+      }
+    }
+    return minShanten;
+  }
+
+  /**
+   * Checks if a number tile is truly isolated (no duplicate, no adjacent +/-1 or +/-2 neighbors).
+   */
+  private static isTrueIsolated(tile: Tile, hand: Tile[]): boolean {
+    const num = tile.value;
+    const suit = tile.suit === 'CHARACTERS' ? 'm' : tile.suit === 'DOTS' ? 'p' : 's';
+
+    for (const t of hand) {
+      if (t.id === tile.id || t.isFlower) continue;
+      const otherSuit =
+        t.suit === 'CHARACTERS' ? 'm' : t.suit === 'DOTS' ? 'p' : t.suit === 'BAMBOO' ? 's' : '';
+      if (otherSuit === suit) {
+        if (Math.abs(t.value - num) <= 2) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   /**
@@ -200,32 +500,67 @@ export class MahjongAI {
 
     const handCounts = new Map<string, number>();
     candidateList.forEach((t) => handCounts.set(t.shortCode, (handCounts.get(t.shortCode) || 0) + 1));
+    const visibleCounts = new Map<string, number>();
+    allKnownVisibleTiles.forEach((t) => visibleCounts.set(t.shortCode, (visibleCounts.get(t.shortCode) || 0) + 1));
 
+    // Deduplicate candidate discards by unique shortCode
+    const uniqueCandidateMap = new Map<string, { tile: Tile; idx: number }>();
     for (let i = 0; i < candidateList.length; i++) {
-      const candidate = candidateList[i];
-      const testHand = candidateList.filter((_, idx) => idx !== i);
-      const s = this.calculateShanten(testHand, melds);
-      const acceptance = this.calculateTileAcceptance(testHand, melds, allKnownVisibleTiles);
+      const code = candidateList[i].shortCode;
+      if (!uniqueCandidateMap.has(code)) {
+        uniqueCandidateMap.set(code, { tile: candidateList[i], idx: i });
+      }
+    }
+
+    for (const item of uniqueCandidateMap.values()) {
+      const candidate = item.tile;
+      const testHand = candidateList.filter((_, idx) => idx !== item.idx);
+      const shantenRes = this.calculateShantenWithOuts(testHand, melds.length);
+
+      let s = shantenRes.shanten;
+      if (melds.length === 0 && testHand.length === 16) {
+        const eightPairsS = this.calculateEightPairsShanten(testHand);
+        s = Math.min(s, eightPairsS);
+      }
+
+      let acceptanceScore = 0;
+      if (s === 0) {
+        // When in Ting (0-Shanten), score is exactly the number of live winning tiles outside * 100
+        const liveWinningTiles = this.countWinningTilesRemaining(testHand, melds, allKnownVisibleTiles);
+        acceptanceScore = liveWinningTiles * 100;
+      } else {
+        acceptanceScore = this.calculateTileAcceptance(shantenRes, allKnownVisibleTiles);
+      }
 
       // Discard bias:
-      // Prefer discarding isolated honors (winds/dragons), then terminals (1,9), then middle numbers
       let discardBonus = 0;
       const countInHand = handCounts.get(candidate.shortCode) || 1;
-      if (countInHand === 1) {
-        if (candidate.suit === 'WINDS' || candidate.suit === 'DRAGONS') {
-          discardBonus += 50;
-        } else if (candidate.value === 1 || candidate.value === 9) {
-          discardBonus += 20;
+
+      if (candidate.suit === 'WINDS' || candidate.suit === 'DRAGONS') {
+        if (countInHand === 1) {
+          const usedCount = visibleCounts.get(candidate.shortCode) || 0;
+          const remaining = Math.max(0, 4 - usedCount);
+          if (remaining === 0) {
+            discardBonus += 80; // 絕張死字牌（外面殘張0）：最優先清理！
+          } else {
+            discardBonus += 50; // 客風/字牌真孤張
+          }
+        }
+      } else if (this.isTrueIsolated(candidate, candidateList)) {
+        if (candidate.value === 1 || candidate.value === 9) {
+          discardBonus += 20; // 真·孤張 1/9
+        } else if (candidate.value === 2 || candidate.value === 8) {
+          discardBonus += 10; // 真·孤張 2/8
         }
       }
 
       // Penalty for discarding into a 0-tile dead wait (never deliberately choose a dead Ting)
       let deadTingPenalty = 0;
-      if (s === 0 && acceptance === 0) {
+      if (s === 0 && acceptanceScore === 0) {
         deadTingPenalty = -50000;
       }
 
-      const score = (10 - s) * 2500 + acceptance * 100 + discardBonus + deadTingPenalty;
+      const score = (10 - s) * 2500 + acceptanceScore + discardBonus + deadTingPenalty;
 
       if (score > bestScore) {
         bestScore = score;
@@ -293,18 +628,46 @@ export class MahjongAI {
 
         if (num === 1 || num === 9) {
           dangerScore = 30; // Terminals are generally safer than middle
-        } else if (num === 2 || num === 8) {
-          dangerScore = 40;
-        } else {
-          // Middle tiles (3, 4, 5, 6, 7)
-          dangerScore = 70;
         }
 
-        // Suji check: If 4 is discarded, 1 and 7 are somewhat safer (Suji)
-        if (num === 1 && opponentDiscards.has(`4${suit}`)) dangerScore -= 20;
-        if (num === 9 && opponentDiscards.has(`6${suit}`)) dangerScore -= 20;
-        if (num === 7 && opponentDiscards.has(`4${suit}`)) dangerScore -= 15;
-        if (num === 3 && opponentDiscards.has(`6${suit}`)) dangerScore -= 15;
+        // 4. Wall / Dead tile check (壁牌 / 絕張牌): 4-visible or 3-visible tiles are extremely safe
+        const visible = visibleCounts.get(code) || 0;
+        if (visible >= 4) {
+          dangerScore = Math.min(dangerScore, 5); // 4 visible = 絕張牌
+        } else if (visible === 3) {
+          dangerScore = Math.min(dangerScore, 15); // 3 visible = 壁牌 (One-Chance)
+        }
+
+        // Suji check: if 4 is discarded, 1 and 7 are Suji-safe from two-sided waits
+        if (num === 1 && opponentDiscards.has(`4${suit}`)) {
+          dangerScore = Math.min(dangerScore, 15);
+        }
+        if (num === 9 && opponentDiscards.has(`6${suit}`)) {
+          dangerScore = Math.min(dangerScore, 15);
+        }
+        if (num === 2 && opponentDiscards.has(`5${suit}`)) {
+          dangerScore = Math.min(dangerScore, 20);
+        }
+        if (num === 8 && opponentDiscards.has(`5${suit}`)) {
+          dangerScore = Math.min(dangerScore, 20);
+        }
+        if (num === 3 && opponentDiscards.has(`6${suit}`)) {
+          dangerScore = Math.min(dangerScore, 25);
+        }
+        if (num === 7 && opponentDiscards.has(`4${suit}`)) {
+          dangerScore = Math.min(dangerScore, 25);
+        }
+
+        // Two-way Suji for middle numbers: 4 is safe only if BOTH 1 and 7 are discarded
+        if (num === 4 && opponentDiscards.has(`1${suit}`) && opponentDiscards.has(`7${suit}`)) {
+          dangerScore = Math.min(dangerScore, 20);
+        }
+        if (num === 5 && opponentDiscards.has(`2${suit}`) && opponentDiscards.has(`8${suit}`)) {
+          dangerScore = Math.min(dangerScore, 20);
+        }
+        if (num === 6 && opponentDiscards.has(`3${suit}`) && opponentDiscards.has(`9${suit}`)) {
+          dangerScore = Math.min(dangerScore, 20);
+        }
       }
 
       if (dangerScore < lowestDangerScore) {
@@ -317,46 +680,71 @@ export class MahjongAI {
   }
 
   /**
-   * Calculates effective tile acceptance count for a hand.
+   * Evaluates quality-weighted tile acceptance for a hand or pre-calculated ShantenResult.
+   * Melded Out: 100 pts
+   * Good Tatsu Out (two-sided): 50 pts
+   * Bad Tatsu Out (gap/border/pair): 20 pts
    */
-  private static calculateTileAcceptance(
-    hand: Tile[],
-    melds: Meld[],
-    allKnownVisibleTiles: Tile[]
+  public static calculateTileAcceptance(
+    target: ShantenResult | Tile[],
+    meldsOrVisible: Meld[] | Tile[] = [],
+    allKnownVisibleTiles: Tile[] = []
   ): number {
-    const currentShanten = this.calculateShanten(hand, melds);
-    const sampleTiles = MahjongHandEvaluator.getAll34UniqueTiles();
+    let shantenRes: ShantenResult;
+    let visibleSource: Tile[] = [];
+
+    if ('shanten' in target && Array.isArray(target.meldedOuts)) {
+      shantenRes = target;
+      visibleSource = (meldsOrVisible as Tile[]) || [];
+    } else {
+      const hand = target as Tile[];
+      const melds = (meldsOrVisible as Meld[]) || [];
+      shantenRes = this.calculateShantenWithOuts(hand, melds.length);
+      visibleSource = allKnownVisibleTiles;
+    }
 
     const visibleCounts = new Map<string, number>();
-    const sourceTiles =
-      allKnownVisibleTiles && allKnownVisibleTiles.length > 0
-        ? allKnownVisibleTiles
-        : [...hand, ...melds.flatMap((m) => m.tiles)];
-
-    sourceTiles.forEach((t) => {
+    visibleSource.forEach((t) => {
       if (!t.isFlower) {
         visibleCounts.set(t.shortCode, (visibleCounts.get(t.shortCode) || 0) + 1);
       }
     });
 
-    if (currentShanten === 0) {
-      return this.countWinningTilesRemaining(hand, melds, allKnownVisibleTiles);
+    if (shantenRes.shanten === 0) {
+      // Ting state: only Melded Outs (winning tiles) count
+      let totalWinningTiles = 0;
+      for (const code of shantenRes.meldedOuts) {
+        const used = visibleCounts.get(code) || 0;
+        totalWinningTiles += Math.max(0, 4 - used);
+      }
+      return totalWinningTiles * 100;
     }
 
-    let totalAcceptance = 0;
+    // 1-Shanten or higher: tier-weighted sum with de-duplication to highest tier
+    const tileBestTier = new Map<string, number>();
 
-    for (const testTile of sampleTiles) {
-      const testHand = [...hand, testTile];
-      const newShanten = this.calculateShanten(testHand, melds);
-
-      if (newShanten < currentShanten) {
-        const usedCount = visibleCounts.get(testTile.shortCode) || 0;
-        const remainingCount = Math.max(0, 4 - usedCount);
-        totalAcceptance += remainingCount;
+    for (const code of shantenRes.meldedOuts) {
+      tileBestTier.set(code, 100);
+    }
+    for (const code of shantenRes.goodTatsuOuts) {
+      if (!tileBestTier.has(code) || (tileBestTier.get(code) || 0) < 50) {
+        tileBestTier.set(code, 50);
+      }
+    }
+    for (const code of shantenRes.badTatsuOuts) {
+      if (!tileBestTier.has(code) || (tileBestTier.get(code) || 0) < 20) {
+        tileBestTier.set(code, 20);
       }
     }
 
-    return totalAcceptance;
+    let score = 0;
+    for (const [code, weight] of tileBestTier.entries()) {
+      const used = visibleCounts.get(code) || 0;
+      const rem = Math.max(0, 4 - used);
+      score += weight * rem;
+    }
+
+    return score;
   }
 
   /**
@@ -518,21 +906,24 @@ export class MahjongAI {
     playerWind: SeatWind,
     allKnownVisibleTiles: Tile[] = [],
     calledTile?: Tile
-  ): 'HU' | 'KONG' | 'PONG' | 'CHOW' | 'PASS' {
+  ): AIDecision {
     // 1. Always Hu if possible
     if (actions.canHu) {
-      return 'HU';
+      return { action: 'HU' };
     }
 
     // Representative called tile
     const targetTile = calledTile || actions.chowOptions[0]?.tiles[2] || hand[0];
-    const currentShanten = this.calculateShanten(hand, melds);
+    const currentShantenRes = this.calculateShantenWithOuts(hand, melds.length);
+    const currentShanten = currentShantenRes.shanten;
+    const currentAcceptance = this.calculateTileAcceptance(currentShantenRes, allKnownVisibleTiles);
+    const currentBaselineScore = (10 - currentShanten) * 2500 + currentAcceptance;
 
     // 2. Kong decision (Melded Kong)
     if (actions.canKong && actions.kongOptions.length > 0) {
       const kong = actions.kongOptions[0];
       if (this.isKongBeneficial(kong, hand, melds, allKnownVisibleTiles)) {
-        return 'KONG';
+        return { action: 'KONG' };
       }
     }
 
@@ -557,7 +948,7 @@ export class MahjongAI {
       }
       const isSoleEye = pairCount <= 1;
 
-      // Simulate Pong hand & Shanten:
+      // Simulate Pong hand & dynamic Shanten:
       let removed = 0;
       const postHand: Tile[] = [];
       const pongTiles: Tile[] = [];
@@ -573,30 +964,62 @@ export class MahjongAI {
         ...melds,
         { type: 'PONG', tiles: [...pongTiles, targetTile], sourceSeat: 1 },
       ];
-      const postShanten = this.calculateShanten(postHand, postMelds);
+
+      // Simulate best discard from postHand:
+      let maxPostScore = -999999;
+      let minPostShanten = 999;
+      let bestPostDiscard: Tile | null = null;
+      const testedPostCodes = new Set<string>();
+
+      for (let i = 0; i < postHand.length; i++) {
+        const cand = postHand[i];
+        if (testedPostCodes.has(cand.shortCode)) continue;
+        testedPostCodes.add(cand.shortCode);
+
+        const testHand13 = postHand.filter((_, idx) => idx !== i);
+        const res = this.calculateShantenWithOuts(testHand13, postMelds.length);
+        const acc = this.calculateTileAcceptance(res, allKnownVisibleTiles);
+        const score = (10 - res.shanten) * 2500 + acc;
+
+        if (res.shanten < minPostShanten) {
+          minPostShanten = res.shanten;
+        }
+        if (score > maxPostScore) {
+          maxPostScore = score;
+          bestPostDiscard = cand;
+        }
+      }
 
       if (isHonor) {
         // Honor tile rule:
-        // Reject if AI already holds 3+ copies (already a complete concealed triplet, keep it instead of breaking into melded Pong + isolated tile).
+        // Reject if AI already holds 3+ copies (already a complete concealed triplet)
         const honorCountInHand = codeCounts.get(targetTile.shortCode) || 0;
         if (honorCountInHand >= 3) {
           // Keep concealed triplet, do not Pong
         } else if (!hasFan && isSoleEye) {
           // Keep as eye, do not Pong
+        } else if (bestPostDiscard?.shortCode === targetTile.shortCode) {
+          // Reject Pong-then-Discard-same-tile
         } else {
-          return 'PONG';
+          return { action: 'PONG' };
         }
       } else {
         // Number tile rule:
-        // Pong if it strictly reduces Shanten
-        if (postShanten < currentShanten) {
-          return 'PONG';
+        // Must strictly improve hand score and not discard the called tile immediately
+        if (
+          bestPostDiscard?.shortCode !== targetTile.shortCode &&
+          (minPostShanten < currentShanten || maxPostScore > currentBaselineScore)
+        ) {
+          return { action: 'PONG' };
         }
       }
     }
 
-    // 4. Chow decision
+    // 4. Chow decision with combo optimization
     if (actions.canChow && actions.chowOptions.length > 0) {
+      let bestChowOption: ChowOption | null = null;
+      let bestChowScore = -999999;
+
       for (const opt of actions.chowOptions) {
         const removeIds = new Set(opt.discardTileIds);
         const postHand = hand.filter((t) => !removeIds.has(t.id));
@@ -604,14 +1027,54 @@ export class MahjongAI {
           ...melds,
           { type: 'CHOW', tiles: opt.tiles, sourceSeat: 3 },
         ];
-        const postShanten = this.calculateShanten(postHand, postMelds);
 
-        if (postShanten < currentShanten) {
-          return 'CHOW';
+        let minPostShanten = 999;
+        let maxOptionScore = -999999;
+        let bestOptionDiscard: Tile | null = null;
+        const testedCodes = new Set<string>();
+
+        for (let i = 0; i < postHand.length; i++) {
+          const cand = postHand[i];
+          if (testedCodes.has(cand.shortCode)) continue;
+          testedCodes.add(cand.shortCode);
+
+          const testHand13 = postHand.filter((_, idx) => idx !== i);
+          const res = this.calculateShantenWithOuts(testHand13, postMelds.length);
+          const acc = this.calculateTileAcceptance(res, allKnownVisibleTiles);
+          const chowScore = (10 - res.shanten) * 2500 + acc;
+
+          if (res.shanten < minPostShanten) {
+            minPostShanten = res.shanten;
+          }
+          if (chowScore > maxOptionScore) {
+            maxOptionScore = chowScore;
+            bestOptionDiscard = cand;
+          }
         }
+
+        // Reject self-defeating "吃什麼打什麼" (Eating a tile and immediately discarding the exact same tile)
+        if (bestOptionDiscard?.shortCode === targetTile.shortCode) {
+          continue;
+        }
+
+        // Chow MUST strictly reduce Shanten (Chow gives no fans by itself)
+        if (minPostShanten < currentShanten && maxOptionScore > bestChowScore) {
+          bestChowScore = maxOptionScore;
+          bestChowOption = opt;
+        }
+      }
+
+      if (bestChowOption) {
+        return { action: 'CHOW', chosenChowOption: bestChowOption };
       }
     }
 
-    return 'PASS';
+    return { action: 'PASS' };
   }
 }
+
+export interface AIDecision {
+  action: 'HU' | 'KONG' | 'PONG' | 'CHOW' | 'PASS';
+  chosenChowOption?: ChowOption;
+}
+

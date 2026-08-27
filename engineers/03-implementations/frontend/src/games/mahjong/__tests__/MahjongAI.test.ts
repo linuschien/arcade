@@ -286,10 +286,18 @@ describe('MahjongAI Unit Tests', () => {
 
   describe('Ting Selection and Avoid Dead Wait', () => {
     it('should prefer discard that leads to live Ting over dead Ting', () => {
-      // Hand: 123m, 456m, 789m, 123p, 55s, 9s, 8m
-      // If discard 8m -> waits on 9s
-      // If discard 9s -> waits on 8m (suppose all 8m are already dead)
-      const handCodes = ['1m', '2m', '3m', '4m', '5m', '6m', '7m', '8m', '9m', '1p', '2p', '3p', '5s', '5s', '9s', '8m'];
+      // Hand: 123m, 456m, 123p, 456p, 555s (5 complete melds = 15 tiles) + 9s (16th) + 8m (17th)
+      // If discard 8m -> waits on 9s (live)
+      // If discard 9s -> waits on 8m (dead)
+      const handCodes = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '1p', '2p', '3p',
+        '4p', '5p', '6p',
+        '5s', '5s', '5s',
+        '9s',
+        '8m',
+      ];
       const hand = handCodes.map((c, i) => createTile(c, `${i}`));
 
       // 4 copies of 8m are visible on the table (dead)
@@ -515,7 +523,7 @@ describe('MahjongAI Unit Tests', () => {
         createTile('red', 'called')
       );
 
-      expect(decision).toBe('PONG');
+      expect(decision.action).toBe('PONG');
     });
 
     it('should PASS on Dragon tile if AI already holds 3 copies (concealed triplet)', () => {
@@ -545,7 +553,7 @@ describe('MahjongAI Unit Tests', () => {
       );
 
       // AI keeps the concealed triplet intact, does not Pong!
-      expect(decision).toBe('PASS');
+      expect(decision.action).toBe('PASS');
     });
 
     it('should PASS on Guest Wind (無台字牌) if it is the SOLE eye in hand', () => {
@@ -574,7 +582,7 @@ describe('MahjongAI Unit Tests', () => {
         createTile('west', 'called')
       );
 
-      expect(decision).toBe('PASS'); // Preserves the only eye!
+      expect(decision.action).toBe('PASS'); // Preserves the only eye!
     });
 
     it('should PONG Guest Wind if hand has OTHER pairs (not sole eye)', () => {
@@ -603,7 +611,7 @@ describe('MahjongAI Unit Tests', () => {
         createTile('west', 'called')
       );
 
-      expect(decision).toBe('PONG'); // Reduces Shanten directly!
+      expect(decision.action).toBe('PONG'); // Reduces Shanten directly!
     });
 
     it('should PASS on Number Tile Pong if Shanten is not strictly reduced', () => {
@@ -647,7 +655,7 @@ describe('MahjongAI Unit Tests', () => {
         calledTile
       );
 
-      expect(decision).toBe('PASS'); // 1-Shanten to 1-Shanten -> PASS!
+      expect(decision.action).toBe('PASS'); // 1-Shanten to 1-Shanten -> PASS!
     });
 
     it('should CHOW when it strictly reduces Shanten', () => {
@@ -689,7 +697,7 @@ describe('MahjongAI Unit Tests', () => {
         calledTile
       );
 
-      expect(decision).toBe('CHOW'); // Advances hand from 2-Shanten to 1-Shanten!
+      expect(decision.action).toBe('CHOW'); // Advances hand from 2-Shanten to 1-Shanten!
     });
 
     it('should CHOW on 2345s shape when 1s is discarded to generate 45s partial and reduce Shanten', () => {
@@ -735,7 +743,7 @@ describe('MahjongAI Unit Tests', () => {
         calledTile
       );
 
-      expect(decision).toBe('CHOW'); // Advances hand from 2-Shanten to 1-Shanten!
+      expect(decision.action).toBe('CHOW'); // Advances hand from 2-Shanten to 1-Shanten!
     });
 
     it('should PASS on Chow if Shanten is not strictly reduced', () => {
@@ -780,7 +788,7 @@ describe('MahjongAI Unit Tests', () => {
         calledTile
       );
 
-      expect(decision).toBe('PASS');
+      expect(decision.action).toBe('PASS');
     });
   });
 
@@ -839,24 +847,25 @@ describe('MahjongAI Unit Tests', () => {
     });
 
     it('should trigger defense mode and discard safest tile when all Ting options are 0-tile dead waits', () => {
-      // 16-tile hand:
-      // 123m, 456m, 789m, 123p (4 melds = 12 tiles) + 55s (eye) + 8m (single) + 9s (single) = 16 tiles
+      // 17-tile hand:
+      // 123m, 456m, 789m, 123p, 555s (5 complete melds = 15 tiles) + 8m (16th) + 9s (17th) = 17 tiles
       // If discard 8m -> Ting on single 9s (0 live outs outside).
       // If discard 9s -> Ting on single 8m (0 live outs outside).
       // All Ting options have 0 outs -> triggers shouldDefend and selects safest dead tile (8m).
       const handCodes = [
         '1m', '2m', '3m',
         '4m', '5m', '6m',
-        '7m', '8m', '9m',
         '1p', '2p', '3p',
-        '5s', '5s',
+        '4p', '5p', '6p',
+        '5s', '5s', '5s',
         '8m',
         '9s',
       ];
       const hand = handCodes.map((c, i) => createTile(c, `${i}`));
 
-      // 3 copies of 9s and 3 copies of 8m are visible on table (meaning 0 copies left outside)
+      // 3 copies of 9s and 3 copies of 8m are visible on table (meaning 0 copies left outside for AI)
       const allVisible = [
+        ...hand,
         createTile('9s', 'v1'),
         createTile('9s', 'v2'),
         createTile('9s', 'v3'),
@@ -870,5 +879,259 @@ describe('MahjongAI Unit Tests', () => {
       expect(best.shortCode).toBe('8m');
     });
   });
+
+  describe('Backtracking Shanten, True Isolated Tatsu Protection & Optimal Decisions', () => {
+    it('should correctly calculate Shanten for composite shapes (3456777 Screwdriver shape)', () => {
+      // 16-tile hand: 123m (1), 456p (2), 789p (3), 3456777s (1 meld + 1 tatsu + 1 pair)
+      // 345s (meld) + 67s (tatsu) + 77s (pair) -> 4 complete melds + 1 tatsu + 1 pair = 0-Shanten (Ting)!
+      const handCodes = [
+        '1m', '2m', '3m',
+        '4p', '5p', '6p',
+        '7p', '8p', '9p',
+        '3s', '4s', '5s', '6s', '7s', '7s', '7s',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+      const shanten = MahjongAI.calculateShanten(hand, []);
+      expect(shanten).toBe(0); // 0-Shanten / Tenpai!
+    });
+
+    it('should correctly count 4-of-a-kind as 2 pairs in Eight Pairs (嚦咕嚦咕)', () => {
+      // 16-tile hand with 6 regular pairs + 1 quad (4 of a kind = 2 pairs) -> total 8 pairs -> 0-Shanten!
+      const handCodes = [
+        '1m', '1m',
+        '2m', '2m',
+        '3m', '3m',
+        '4p', '4p',
+        '5p', '5p',
+        '6s', '6s',
+        '9s', '9s', '9s', '9s', // Quad (4-of-a-kind)
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+      const shanten = MahjongAI.calculateShanten(hand, []);
+      expect(shanten).toBe(0); // 8 pairs achieved -> 0-Shanten!
+    });
+
+    it('should protect 1/9 tiles in tatsus (e.g. 12m, 89s) and discard true isolated tiles (e.g. single 5p or dead honor) instead', () => {
+      // Hand in 1-Shanten: 123m (1), 456m (2), 789m (3) = 9 tiles.
+      // 12p (border tatsu), 89s (border tatsu), 99p (pair), 5s (isolated middle), east (isolated honor) = 8 tiles.
+      // Total 17 tiles.
+      // AI should discard the isolated honor 'east' first, and NEVER break 12p or 89s!
+      const handCodes = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '7m', '8m', '9m',
+        '1p', '2p',
+        '8s', '9s',
+        '9p', '9p',
+        '5s',
+        'east',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+      const best = MahjongAI.chooseBestDiscard(hand, [], [], [], 40);
+
+      // AI should discard an isolated wind (east), NOT 1p or 9s!
+      expect(best.shortCode).toBe('east');
+    });
+
+    it('should prioritize discarding dead honor tiles (0 copies left outside) over live tiles', () => {
+      // Hand in 2-Shanten: 123m (1), 456m (2), 789m (3) = 9 tiles.
+      // 23p (tatsu), 78s (tatsu), green (single dragon, 0 copies outside), 5p (single 5p, 3 copies outside) = 7 tiles.
+      // Total 16 tiles + 1 extra = 17 tiles.
+      const handCodes = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '7m', '8m', '9m',
+        '2p', '3p',
+        '7s', '8s',
+        '5p',
+        'green',
+        'south',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+      // 3 copies of 'green' are visible on table (meaning 0 copies left outside for AI)
+      const allVisible = [
+        ...hand,
+        createTile('green', 'v1'),
+        createTile('green', 'v2'),
+        createTile('green', 'v3'),
+      ];
+
+      const best = MahjongAI.chooseBestDiscard(hand, [], allVisible, [], 40);
+      // AI must immediately discard dead green dragon (+80 bonus) and not keep it!
+      expect(best.shortCode).toBe('green');
+    });
+
+    it('should select optimal Chow combination (preferring 234 leaving 56 over 345 leaving 26)', () => {
+      // Hand has: 123m (1), 456m (2), 789m (3), 2356s (holding 23 and 56), 9p, 9p (pair)
+      // Discard is 4s.
+      // Option 1: [2, 3, 4]s -> leaves 56s (two-sided tatsu) -> 1-Shanten with 8 outs!
+      // Option 2: [3, 4, 5]s -> leaves 26s (crippled split singles) -> 2-Shanten!
+      const handCodes = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '7m', '8m', '9m',
+        '2s', '3s', '5s', '6s',
+        '9p', '9p', 'east',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+      const calledTile = createTile('4s', 'called');
+
+      const opt1 = {
+        tiles: [hand[9], hand[10], calledTile], // 2s, 3s, 4s
+        discardTileIds: [hand[9].id, hand[10].id],
+      };
+      const opt2 = {
+        tiles: [hand[10], calledTile, hand[11]], // 3s, 4s, 5s
+        discardTileIds: [hand[10].id, hand[11].id],
+      };
+
+      const actions: AvailableActions = {
+        canHu: false,
+        canKong: false,
+        kongOptions: [],
+        canPong: false,
+        canChow: true,
+        chowOptions: [opt2, opt1], // Notice: opt2 (the worse option) is first in array!
+        canTing: false,
+        canPass: true,
+      };
+
+      const decision = MahjongAI.decideAction(
+        actions,
+        hand,
+        [],
+        'EAST',
+        'SOUTH',
+        [],
+        calledTile
+      );
+
+      expect(decision.action).toBe('CHOW');
+      // AI must intelligently pick opt1 (234s leaving 56s), NOT blindly execute chowOptions[0]!
+      expect(decision.chosenChowOption).toEqual(opt1);
+    });
+  });
+
+  describe('Suit Decomposition DP & Quality-Weighted Acceptance Tests', () => {
+    it('should support up to 17 tiles in a single suit for Taiwanese Pure Suit (清一色)', () => {
+      // 17 Characters: 111m (meld), 234m (meld), 456m (meld), 789m (meld), 99m (eye), 23m (tatsu)
+      const countsM = [0, 3, 2, 2, 2, 1, 1, 1, 1, 2];
+      const plans = MahjongAI.decomposeNumberSuit(countsM);
+      expect(plans.length).toBeGreaterThan(0);
+
+      // Verify that the best plan recognizes 4 melds, 1 eye, 1 tatsu (or 5 melds)
+      const bestPlan = plans.find((p) => p.hasEye && p.comp >= 4);
+      expect(bestPlan).toBeDefined();
+
+      const handCodes = [
+        '1m', '1m', '1m',
+        '2m', '3m', '4m',
+        '4m', '5m', '6m',
+        '7m', '8m', '9m',
+        '9m', '9m',
+        '2m', '3m',
+      ]; // 16 standing tiles (Pure Suit)
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+      const shanten = MahjongAI.calculateShanten(hand, []);
+      // 16 tiles: 4 melds + 1 eye + 1 tatsu (23m) -> 0-Shanten (Ting waiting on 1m, 4m)!
+      expect(shanten).toBe(0);
+    });
+
+    it('should correctly score Melded (100), Good Tatsu (50), and Bad Tatsu (20) with de-duplication', () => {
+      const shantenRes = {
+        shanten: 1,
+        meldedOuts: ['3m'],        // 100 pts
+        goodTatsuOuts: ['3m', '6p'], // 3m is in meldedOuts -> should stay 100 pts; 6p -> 50 pts
+        badTatsuOuts: ['1s', '6p'],  // 6p is in goodTatsuOuts -> should stay 50 pts; 1s -> 20 pts
+      };
+
+      // Visible tiles: 0 copies visible (each has 4 remaining)
+      const score = MahjongAI.calculateTileAcceptance(shantenRes, []);
+      // 3m (100 * 4 = 400) + 6p (50 * 4 = 200) + 1s (20 * 4 = 80) = 680 pts
+      expect(score).toBe(680);
+    });
+
+    it('should reject self-defeating Pong when holding concealed triplet (e.g. 11123m called on 1m)', () => {
+      const handCodes = [
+        '1m', '1m', '1m', '2m', '3m',
+        '4p', '5p', '6p',
+        '7s', '8s', '9s',
+        '2s', '3s', '4s',
+        'east', 'east',
+      ]; // 16 tiles
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+      const calledTile = createTile('1m', 'called1m');
+
+      const actions: AvailableActions = {
+        canHu: false,
+        canKong: false,
+        kongOptions: [],
+        canPong: true,
+        canChow: false,
+        chowOptions: [],
+        canTing: false,
+        canPass: true,
+      };
+
+      const decision = MahjongAI.decideAction(
+        actions,
+        hand,
+        [],
+        'EAST',
+        'SOUTH',
+        [],
+        calledTile
+      );
+
+      // AI should PASS and not Pong-then-Discard 1m
+      expect(decision.action).toBe('PASS');
+    });
+
+    it('should reject self-defeating Chow when holding complete sequence (e.g. 234m called on 4m)', () => {
+      const handCodes = [
+        '2m', '3m', '4m',
+        '1p', '2p', '3p',
+        '7s', '8s', '9s',
+        '2s', '3s', '4s',
+        '5s', '6s',
+        'east', 'east',
+      ]; // 16 tiles
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+      const calledTile = createTile('4m', 'called4m');
+
+      const actions: AvailableActions = {
+        canHu: false,
+        canKong: false,
+        kongOptions: [],
+        canPong: false,
+        canChow: true,
+        chowOptions: [
+          {
+            tiles: [hand[0], hand[1], calledTile], // 2m, 3m, 4m
+            discardTileIds: [hand[0].id, hand[1].id],
+          },
+        ],
+        canTing: false,
+        canPass: true,
+      };
+
+      const decision = MahjongAI.decideAction(
+        actions,
+        hand,
+        [],
+        'EAST',
+        'SOUTH',
+        [],
+        calledTile
+      );
+
+      // AI should PASS because eating 4m with 23m leaves 4m as the single discard (eating 4m to discard 4m)
+      expect(decision.action).toBe('PASS');
+    });
+  });
 });
+
+
+
 

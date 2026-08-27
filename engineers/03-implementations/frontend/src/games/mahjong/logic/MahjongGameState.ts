@@ -715,7 +715,7 @@ export class MahjongGameState {
       } else {
         // AI decision
         const allVisible = this.getPlayerVisibleTiles(p.seat);
-        const choice = MahjongAI.decideAction(
+        const decision = MahjongAI.decideAction(
           actions,
           p.hand,
           p.melds,
@@ -726,8 +726,8 @@ export class MahjongGameState {
         );
         claims.push({
           seat: p.seat,
-          action: choice,
-          option: choice === 'CHOW' ? chowOptions[0] : undefined,
+          action: decision.action,
+          option: decision.chosenChowOption,
         });
       }
     }
@@ -956,7 +956,7 @@ export class MahjongGameState {
       };
 
       const allVisible = this.getPlayerVisibleTiles(p.seat);
-      const choice = MahjongAI.decideAction(
+      const decision = MahjongAI.decideAction(
         actions,
         p.hand,
         p.melds,
@@ -967,8 +967,8 @@ export class MahjongGameState {
       );
       claims.push({
         seat: p.seat,
-        action: choice,
-        option: choice === 'CHOW' ? chowOptions[0] : undefined,
+        action: decision.action,
+        option: decision.chosenChowOption,
       });
     }
 
