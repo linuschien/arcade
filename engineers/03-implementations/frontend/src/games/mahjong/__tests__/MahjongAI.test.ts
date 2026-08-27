@@ -1129,8 +1129,105 @@ describe('MahjongAI Unit Tests', () => {
       // AI should PASS because eating 4m with 23m leaves 4m as the single discard (eating 4m to discard 4m)
       expect(decision.action).toBe('PASS');
     });
+
+    it('should protect concealed Dragon triplet in pre-Ting turns and discard isolated tile instead', () => {
+      // 17-tile hand in 1-Shanten: 123m (1), 456m (2), 789m (3), 23p (tatsu 1), 56s (tatsu 2), white white white (Dragon Triplet), east (single)
+      const handCodes = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '7m', '8m', '9m',
+        '2p', '3p',
+        '5s', '6s',
+        'white', 'white', 'white',
+        'east',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+      const best = MahjongAI.chooseBestDiscard(hand, [], [], [], 50);
+
+      // AI must discard floating 'east', and NEVER discard 'white' to break the concealed Dragon triplet!
+      expect(best.shortCode).toBe('east');
+    });
+
+    it('should discard from 0-fan guest wind triplet to enter 2-sided Ting (聽雙頭) instead of single-wait Ting', () => {
+      // 17-tile hand: 123m (1), 456m (2), 789m (3), 123p (4), 45s (two-sided tatsu), north north north (3 Norths, Guest wind in EAST round / SOUTH player)
+      const handCodes = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '7m', '8m', '9m',
+        '1p', '2p', '3p',
+        '4s', '5s',
+        'north', 'north', 'north',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+      const best = MahjongAI.chooseBestDiscard(
+        hand,
+        [],
+        [],
+        [],
+        50,
+        'EAST',
+        'SOUTH'
+      );
+
+      // Discarding 1 'north' leaves 'north north' as Eye and 45s as tatsu -> Ting on 3s, 6s (8 outs)!
+      // Discarding 4s leaves north north north as meld and single 5s -> Single wait (3 outs)!
+      // AI must discard 'north' to get 8-out two-sided wait!
+      expect(best.shortCode).toBe('north');
+    });
+
+    it('should protect concealed Guest Wind triplet in pre-Ting turns and discard isolated tile instead (28 outs)', () => {
+      // 17-tile hand in 1-Shanten: 123m (1), 456m (2), 789m (3), 23p (tatsu 1), 56s (tatsu 2), north north north (3 Norths, Guest wind), east (single)
+      const handCodes = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '7m', '8m', '9m',
+        '2p', '3p',
+        '5s', '6s',
+        'north', 'north', 'north',
+        'east',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+      const best = MahjongAI.chooseBestDiscard(hand, [], [], [], 50, 'EAST', 'SOUTH');
+
+      // Discarding isolated 'east' gives 4 melds + 2 tatsus (28 total outs: 14p, 47s, 23p, 56s), easily beating breaking north!
+      expect(best.shortCode).toBe('east');
+    });
+
+    it('should discard from Dragon triplet to enter 2-sided Ting (聽雙頭) instead of single-wait Ting', () => {
+      // 17-tile hand: 123m (1), 456m (2), 789m (3), 123p (4), 45s (two-sided tatsu), white white white (3 Whites, Dragon)
+      const handCodes = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '7m', '8m', '9m',
+        '1p', '2p', '3p',
+        '4s', '5s',
+        'white', 'white', 'white',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+      const best = MahjongAI.chooseBestDiscard(
+        hand,
+        [],
+        [],
+        [],
+        50,
+        'EAST',
+        'SOUTH'
+      );
+
+      // Discarding 1 'white' leaves 'white white' as Eye and 45s as tatsu -> Ting on 3s, 6s (8 outs)!
+      // Discarding 4s leaves white white white as meld and single 5s -> Single wait (3 outs)!
+      // AI must discard 'white' to get 8-out two-sided wait!
+      expect(best.shortCode).toBe('white');
+    });
   });
 });
+
+
+
 
 
 

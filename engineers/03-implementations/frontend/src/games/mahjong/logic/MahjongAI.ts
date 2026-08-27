@@ -117,7 +117,11 @@ export class MahjongAI {
         if (idx > 1) nextMelded.add(idx - 1);
         if (idx + 1 < 9) nextMelded.add(idx + 2);
 
-        search(idx, c, currentComp, currentPart + 1, hasEye, nextMelded, goodTatsuOuts, badTatsuOuts);
+        const nextBadTatsu = new Set(badTatsuOuts);
+        nextBadTatsu.add(idx);
+        nextBadTatsu.add(idx + 1);
+
+        search(idx, c, currentComp, currentPart + 1, hasEye, nextMelded, goodTatsuOuts, nextBadTatsu);
         c[idx]++;
         c[idx + 1]++;
       }
@@ -129,7 +133,11 @@ export class MahjongAI {
         const nextMelded = new Set(meldedOuts);
         nextMelded.add(idx + 1);
 
-        search(idx, c, currentComp, currentPart + 1, hasEye, nextMelded, goodTatsuOuts, badTatsuOuts);
+        const nextBadTatsu = new Set(badTatsuOuts);
+        nextBadTatsu.add(idx);
+        nextBadTatsu.add(idx + 2);
+
+        search(idx, c, currentComp, currentPart + 1, hasEye, nextMelded, goodTatsuOuts, nextBadTatsu);
         c[idx]++;
         c[idx + 2]++;
       }
@@ -460,7 +468,9 @@ export class MahjongAI {
     melds: Meld[],
     allKnownVisibleTiles: Tile[],
     opponents: PlayerProfile[],
-    remainingWallTiles: number
+    remainingWallTiles: number,
+    roundWind?: SeatWind,
+    playerWind?: SeatWind
   ): Tile {
     if (hand.length === 0) {
       throw new Error('Hand is empty');
@@ -545,12 +555,29 @@ export class MahjongAI {
           } else {
             discardBonus += 50; // 客風/字牌真孤張
           }
+        } else if (countInHand >= 3 && s >= 1) {
+          // Triplet protection: in pre-Ting stages (s >= 1), protect Honor triplets
+          const isDragon = candidate.suit === 'DRAGONS';
+          const isRoundWind = Boolean(roundWind && candidate.suit === 'WINDS' && candidate.shortCode === roundWind.toLowerCase());
+          const isSeatWind = Boolean(playerWind && candidate.suit === 'WINDS' && candidate.shortCode === playerWind.toLowerCase());
+          const isFanHonor = isDragon || isRoundWind || isSeatWind;
+
+          if (isFanHonor) {
+            discardBonus -= 600; // 有台字牌暗刻（中發白/正風）
+          } else {
+            discardBonus -= 300; // 客風暗刻未聽牌前不應先於真孤張被打出
+          }
         }
-      } else if (this.isTrueIsolated(candidate, candidateList)) {
-        if (candidate.value === 1 || candidate.value === 9) {
-          discardBonus += 20; // 真·孤張 1/9
-        } else if (candidate.value === 2 || candidate.value === 8) {
-          discardBonus += 10; // 真·孤張 2/8
+      } else {
+        // 數牌（萬、筒、條）處理
+        if (countInHand >= 3 && s >= 1) {
+          discardBonus -= 300; // 數牌暗刻未聽牌前保護
+        } else if (this.isTrueIsolated(candidate, candidateList)) {
+          if (candidate.value === 1 || candidate.value === 9) {
+            discardBonus += 20; // 真·孤張 1/9
+          } else if (candidate.value === 2 || candidate.value === 8) {
+            discardBonus += 10; // 真·孤張 2/8
+          }
         }
       }
 

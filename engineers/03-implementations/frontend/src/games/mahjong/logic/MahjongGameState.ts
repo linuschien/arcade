@@ -1101,7 +1101,9 @@ export class MahjongGameState {
       p.melds,
       freshAllVisible,
       opponents,
-      this.deck.getRegularRemainingCount()
+      this.deck.getRegularRemainingCount(),
+      this.roundWind,
+      this.getEffectiveWind(seat)
     );
 
     this.discardTile(seat, bestDiscard.id);
