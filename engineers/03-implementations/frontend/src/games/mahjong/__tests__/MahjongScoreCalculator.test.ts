@@ -782,4 +782,75 @@ describe('MahjongScoreCalculator Unit Tests', () => {
     expect(result.fans.some((f) => f.name === '門清' && f.fan === 1)).toBe(true);
     expect(result.totalFans).toBe(6);
   });
+
+  it('should NOT award 三暗刻 when 3 matching tiles are decomposed into sequence + eye (e.g. 12223p -> 123p + 22p)', () => {
+    // Open meld: red red red (明刻)
+    // Hand: 666m, 777p, 12223p, 78s + winning 6s on Ron (completed 678s sequence)
+    const hand = [
+      createTile('6m', '1'), createTile('6m', '2'), createTile('6m', '3'),
+      createTile('7p', '1'), createTile('7p', '2'), createTile('7p', '3'),
+      createTile('1p', '1'), createTile('2p', '1'), createTile('2p', '2'), createTile('2p', '3'), createTile('3p', '1'),
+      createTile('7s', '1'), createTile('8s', '1'),
+    ];
+    const redMelds: Meld[] = [
+      {
+        type: 'PONG',
+        tiles: [createTile('red', '1'), createTile('red', '2'), createTile('red', '3')],
+        sourceSeat: 2,
+      },
+    ];
+    const winningTile = createTile('6s', 'win');
+
+    const result = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 1,
+      winnerHand: hand,
+      winnerMelds: redMelds,
+      winnerFlowers: [],
+      winningTile,
+      isSelfDrawn: false,
+      loserSeat: 2,
+      roundWind: 'EAST',
+      playerWind: 'SOUTH',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+
+    // Hand has only 2 concealed triplets (666m, 777p). 222p is 123p + 22p (Eye).
+    expect(result.fans.some((f) => f.name === '三暗刻')).toBe(false);
+    expect(result.fans.some((f) => f.name === '紅中刻子' && f.fan === 1)).toBe(true);
+  });
+
+  it('should NOT award 五暗刻 when 4 triplets + 5667s is completed by 6s (四暗刻 4 concealed triplets + 567s + 66s eye)', () => {
+    // 16 tiles in hand: 111m, 222m, 333m, 444m (12 tiles) + 5s, 6s, 6s, 7s (4 tiles)
+    // Winning tile: 6s (completes 567s sequence + 66s eye)
+    const hand = [
+      createTile('1m', '1'), createTile('1m', '2'), createTile('1m', '3'),
+      createTile('2m', '1'), createTile('2m', '2'), createTile('2m', '3'),
+      createTile('3m', '1'), createTile('3m', '2'), createTile('3m', '3'),
+      createTile('4m', '1'), createTile('4m', '2'), createTile('4m', '3'),
+      createTile('5s', '1'), createTile('6s', '1'), createTile('6s', '2'), createTile('7s', '1'),
+    ];
+    const winningTile = createTile('6s', 'win'); // Total three 6s in hand+win, but used as 567s + 66s eye!
+
+    const result = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 1,
+      winnerHand: hand,
+      winnerMelds: [],
+      winnerFlowers: [],
+      winningTile,
+      isSelfDrawn: false,
+      loserSeat: 2,
+      roundWind: 'EAST',
+      playerWind: 'SOUTH',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+
+    // Must be 四暗刻 (4 concealed triplets: 111m, 222m, 333m, 444m), NOT 五暗刻!
+    expect(result.fans.some((f) => f.name === '五暗刻')).toBe(false);
+    expect(result.fans.some((f) => f.name === '四暗刻' && f.fan === 5)).toBe(true);
+  });
 });
+

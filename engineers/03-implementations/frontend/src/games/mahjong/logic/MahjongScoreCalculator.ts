@@ -578,17 +578,8 @@ export class MahjongScoreCalculator {
     for (const m of melds) {
       if (m.type === 'CHOW') return false;
     }
-    const codeCounts = new Map<string, number>();
-    for (const t of tiles) {
-      codeCounts.set(t.shortCode, (codeCounts.get(t.shortCode) || 0) + 1);
-    }
-    let pairCount = 0;
-    for (const c of codeCounts.values()) {
-      if (c === 2) pairCount++;
-      else if (c === 3 || c === 4) continue;
-      else return false;
-    }
-    return pairCount === 1;
+    const decompositions = MahjongHandEvaluator.findWinningDecompositions(tiles, melds);
+    return decompositions.some((decomp) => decomp.melds.every((m) => m.type === 'PONG'));
   }
 
   private static countConcealedTriplets(
@@ -597,31 +588,46 @@ export class MahjongScoreCalculator {
     winningTile: Tile,
     isSelfDrawn: boolean
   ): number {
-    let concealedCount = 0;
-
-    // Concealed Kongs in melds
+    // Concealed Kongs in declared melds
+    let baseConcealedKongs = 0;
     melds.forEach((m) => {
       if (m.type === 'CONCEALED_KONG') {
-        concealedCount++;
+        baseConcealedKongs++;
       }
     });
 
-    const codeCounts = new Map<string, number>();
-    for (const t of tiles) {
-      codeCounts.set(t.shortCode, (codeCounts.get(t.shortCode) || 0) + 1);
+    const decompositions = MahjongHandEvaluator.findWinningDecompositions(tiles, melds);
+
+    if (decompositions.length === 0) {
+      return baseConcealedKongs;
     }
 
-    for (const [code, count] of codeCounts.entries()) {
-      if (count >= 3) {
-        // If ron and winningTile is this tile, and hand had 2 matching tiles (double-pair wait), it's melded (not concealed)
-        if (!isSelfDrawn && code === winningTile.shortCode) {
-          // If hand had exactly 3, winning tile made it 4 (or 2+1 on ron), ron triplet is considered open
-          continue;
+    // Evaluate each valid winning decomposition to find the maximum concealed triplets (高點法)
+    let maxConcealed = 0;
+
+    for (const decomp of decompositions) {
+      let count = baseConcealedKongs;
+
+      for (const m of decomp.melds) {
+        if (m.type === 'PONG') {
+          if (isSelfDrawn) {
+            // Self-drawn: all concealed Pongs count as concealed triplets
+            count++;
+          } else {
+            // On Ron (他家放槍): if winning tile completed this triplet (e.g. 雙碰聽牌放槍), it's open (明刻)
+            if (m.tiles[0] === winningTile.shortCode) {
+              continue;
+            }
+            count++;
+          }
         }
-        concealedCount++;
+      }
+
+      if (count > maxConcealed) {
+        maxConcealed = count;
       }
     }
 
-    return concealedCount;
+    return maxConcealed;
   }
 }

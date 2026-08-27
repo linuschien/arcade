@@ -6,6 +6,11 @@
 
 import { Tile, Meld, ChowOption, KongOption, TingInfo } from './MahjongTypes';
 
+export interface HandDecomposition {
+  melds: { type: 'PONG' | 'CHOW'; tiles: string[] }[];
+  eye: string;
+}
+
 export class MahjongHandEvaluator {
   /**
    * Sorts tiles into standard order:
@@ -93,51 +98,62 @@ export class MahjongHandEvaluator {
   }
 
   /**
-   * Standard 5 Melds + 1 Pair decomposition.
+   * Standard 5 Melds + 1 Pair decomposition check.
    */
   public static canFormMeldsAndPair(tiles: Tile[], requiredMelds: number): boolean {
-    // Sort tiles to ensure ascending numerical/suit order in codeCounts Map iteration
-    const sortedTiles = this.sortTiles(tiles);
+    const dummyMelds: Meld[] = Array(5 - requiredMelds).fill({ type: 'PONG', tiles: [] });
+    return this.findWinningDecompositions(tiles, dummyMelds).length > 0;
+  }
+
+  /**
+   * Finds all valid decompositions of a winning hand into concealed melds and eye.
+   */
+  public static findWinningDecompositions(
+    handTiles: Tile[],
+    melds: Meld[],
+    additionalTile?: Tile
+  ): HandDecomposition[] {
+    const allTiles = additionalTile ? [...handTiles, additionalTile] : [...handTiles];
+    const activeTiles = allTiles.filter((t) => !t.isFlower);
+    const sortedTiles = this.sortTiles(activeTiles);
+
     const codeCounts = new Map<string, number>();
     for (const tile of sortedTiles) {
       codeCounts.set(tile.shortCode, (codeCounts.get(tile.shortCode) || 0) + 1);
     }
 
+    const requiredMelds = 5 - melds.length;
+    const decompositions: HandDecomposition[] = [];
     const uniqueCodes = Array.from(codeCounts.keys());
 
-    // Try each possible pair (eye)
     for (const code of uniqueCodes) {
       const count = codeCounts.get(code)!;
       if (count >= 2) {
-        // Take pair
+        // Take pair as eye
         codeCounts.set(code, count - 2);
-
-        // Check if remaining tiles can form requiredMelds
-        if (this.canFormAllMelds(codeCounts, requiredMelds)) {
-          return true;
-        }
-
-        // Backtrack
+        this.collectMelds(codeCounts, requiredMelds, [], code, decompositions);
         codeCounts.set(code, count);
       }
     }
 
-    return false;
+    return decompositions;
   }
 
-  /**
-   * Helper recursive method to test if remaining tiles can form N melds (chows or pongs).
-   */
-  private static canFormAllMelds(counts: Map<string, number>, meldsRemaining: number): boolean {
+  private static collectMelds(
+    counts: Map<string, number>,
+    meldsRemaining: number,
+    currentMelds: { type: 'PONG' | 'CHOW'; tiles: string[] }[],
+    eye: string,
+    results: HandDecomposition[]
+  ): void {
     if (meldsRemaining === 0) {
-      // All tiles must be consumed
       for (const count of counts.values()) {
-        if (count > 0) return false;
+        if (count > 0) return;
       }
-      return true;
+      results.push({ melds: [...currentMelds], eye });
+      return;
     }
 
-    // Find the first tile with count > 0
     let firstCode: string | null = null;
     for (const [code, count] of counts.entries()) {
       if (count > 0) {
@@ -146,17 +162,19 @@ export class MahjongHandEvaluator {
       }
     }
 
-    if (!firstCode) return false;
-
+    if (!firstCode) return;
     const count = counts.get(firstCode)!;
 
     // 1. Try Pong (Triplet)
     if (count >= 3) {
       counts.set(firstCode, count - 3);
-      if (this.canFormAllMelds(counts, meldsRemaining - 1)) {
-        counts.set(firstCode, count);
-        return true;
-      }
+      this.collectMelds(
+        counts,
+        meldsRemaining - 1,
+        [...currentMelds, { type: 'PONG', tiles: [firstCode, firstCode, firstCode] }],
+        eye,
+        results
+      );
       counts.set(firstCode, count);
     }
 
@@ -167,7 +185,6 @@ export class MahjongHandEvaluator {
     if (!isNaN(num) && (suit === 'm' || suit === 'p' || suit === 's') && num <= 7) {
       const code2 = `${num + 1}${suit}`;
       const code3 = `${num + 2}${suit}`;
-
       const count2 = counts.get(code2) || 0;
       const count3 = counts.get(code3) || 0;
 
@@ -176,20 +193,19 @@ export class MahjongHandEvaluator {
         counts.set(code2, count2 - 1);
         counts.set(code3, count3 - 1);
 
-        if (this.canFormAllMelds(counts, meldsRemaining - 1)) {
-          counts.set(firstCode, count);
-          counts.set(code2, count2);
-          counts.set(code3, count3);
-          return true;
-        }
+        this.collectMelds(
+          counts,
+          meldsRemaining - 1,
+          [...currentMelds, { type: 'CHOW', tiles: [firstCode, code2, code3] }],
+          eye,
+          results
+        );
 
         counts.set(firstCode, count);
         counts.set(code2, count2);
         counts.set(code3, count3);
       }
     }
-
-    return false;
   }
 
   /**
