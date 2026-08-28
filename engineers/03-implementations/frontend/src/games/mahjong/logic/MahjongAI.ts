@@ -29,9 +29,15 @@ export class MahjongAI {
 
   /**
    * Calculates the Shanten (向聽數) of a hand (0 = Ting/Ready, 1 = 1-Shanten, etc.).
+   * Enforces 16-tile invariant: activeTiles.length + melds.length * 3 === 16.
    */
   public static calculateShanten(hand: Tile[], melds: Meld[]): number {
     const activeTiles = hand.filter((t) => !t.isFlower);
+    const expected = 16 - melds.length * 3;
+    if (activeTiles.length !== expected) {
+      return 99;
+    }
+
     const shantenRes = this.calculateShantenWithOuts(activeTiles, melds.length);
     const standardShanten = shantenRes.shanten;
 
@@ -268,15 +274,21 @@ export class MahjongAI {
 
   /**
    * Combines the 4 suits (m, p, s, z) via Suit DP to calculate minimum Shanten and unified outs.
+   * Enforces 16-tile invariant: activeTiles.length + meldCount * 3 === 16.
    */
   public static calculateShantenWithOuts(hand: Tile[], meldCount: number): ShantenResult {
+    const activeTiles = hand.filter((t) => !t.isFlower);
+    const expected = 16 - meldCount * 3;
+    if (activeTiles.length !== expected) {
+      return { shanten: 99, meldedOuts: [], goodTatsuOuts: [], badTatsuOuts: [] };
+    }
+
     const countsM = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     const countsP = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     const countsS = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     const honorCounts = new Map<string, number>();
 
-    for (const t of hand) {
-      if (t.isFlower) continue;
+    for (const t of activeTiles) {
       if (t.suit === 'CHARACTERS' && t.value >= 1 && t.value <= 9) countsM[t.value]++;
       else if (t.suit === 'DOTS' && t.value >= 1 && t.value <= 9) countsP[t.value]++;
       else if (t.suit === 'BAMBOO' && t.value >= 1 && t.value <= 9) countsS[t.value]++;
@@ -364,45 +376,41 @@ export class MahjongAI {
 
   /**
    * Shanten for 嚦咕嚦咕 (Eight Pairs).
+   * In 16-tile Taiwanese Mahjong:
+   * - 8 pairs (pairCount = 8) -> 0-Shanten Ting (waits on any of the 8 pairs to become triplet)
+   * - 6 pairs + 1 triplet + 1 single (pairCount = 7, tripletCount >= 1) -> 0-Shanten Ting (waits on single)
+   * - 7 pairs + 2 singles (pairCount = 7, tripletCount = 0) -> 1-Shanten
    * Note: 4-of-a-kind (quad) counts as 2 pairs.
+   * Enforces 16-tile invariant: activeTiles.length === 16.
    */
   private static calculateEightPairsShanten(tiles: Tile[]): number {
+    const activeTiles = tiles.filter((t) => !t.isFlower);
+    if (activeTiles.length !== 16) {
+      return 99;
+    }
+
     const codeCounts = new Map<string, number>();
-    for (const t of tiles) {
+    for (const t of activeTiles) {
       codeCounts.set(t.shortCode, (codeCounts.get(t.shortCode) || 0) + 1);
     }
     let pairCount = 0;
+    let tripletCount = 0;
+
     for (const count of codeCounts.values()) {
       if (count === 4) {
         pairCount += 2;
-      } else if (count >= 2) {
+      } else if (count === 3) {
+        tripletCount += 1;
+        pairCount += 1;
+      } else if (count === 2) {
         pairCount += 1;
       }
     }
-    return Math.max(0, 8 - pairCount);
-  }
 
-  /**
-   * Evaluates dynamic Shanten for a (17 - 3K) tile hand (active turn with drawn tile).
-   * Returns -1 if hand is an immediate Winning Hand (Hu).
-   * Otherwise returns the minimum Shanten among all possible single-tile discards.
-   */
-  public static calculateDynamicShanten17(hand17: Tile[], melds: Meld[]): number {
-    const activeTiles = hand17.filter((t) => !t.isFlower);
-    if (MahjongHandEvaluator.isWinningHand(activeTiles, melds)) {
-      return -1;
+    if (pairCount >= 8 || (pairCount >= 7 && tripletCount >= 1)) {
+      return 0;
     }
-
-    let minShanten = 999;
-    for (let i = 0; i < activeTiles.length; i++) {
-      const testHand16 = activeTiles.filter((_, idx) => idx !== i);
-      const s = this.calculateShanten(testHand16, melds);
-      if (s < minShanten) {
-        minShanten = s;
-        if (minShanten === 0) break;
-      }
-    }
-    return minShanten;
+    return Math.max(1, 8 - pairCount);
   }
 
   /**
@@ -461,47 +469,39 @@ export class MahjongAI {
   }
 
   /**
-   * Evaluates the best discard for the AI player.
+   * Discard recommendation engine with true Shanten, weighted acceptance,
+   * live-outs verification for Tenpai, and symmetric pre-Ting triplet protection.
    */
   public static chooseBestDiscard(
     hand: Tile[],
     melds: Meld[],
-    allKnownVisibleTiles: Tile[],
-    opponents: PlayerProfile[],
-    remainingWallTiles: number,
+    allKnownVisibleTiles: Tile[] = [],
+    opponents: PlayerProfile[] = [],
+    remainingWallTiles: number = 72,
     roundWind?: SeatWind,
     playerWind?: SeatWind
   ): Tile {
-    if (hand.length === 0) {
-      throw new Error('Hand is empty');
-    }
-    // Filter out flower tiles from discard candidates
-    const validHand = hand.filter((t) => !t.isFlower);
-    const candidateList = validHand.length > 0 ? validHand : hand;
+    const candidateList = hand.filter((t) => !t.isFlower);
+    if (candidateList.length === 0) return hand[0];
 
-    if (candidateList.length === 1) {
-      return candidateList[0];
-    }
+    // Evaluate true achievable minimum Shanten (minShanten) and check for Dead Wait (死聽)
+    let minShanten = 99;
+    let hasLiveTingDiscard = false;
 
-    const currentShanten = this.calculateShanten(candidateList, melds);
-    let isDeadWait = false;
-
-    // 當處於聽牌（打一張即聽牌）狀態時：檢查是否存在能聽「活牌（W > 0）」的出牌方式
-    if (currentShanten === 0) {
-      let hasLiveTingDiscard = false;
-      for (let i = 0; i < candidateList.length; i++) {
-        const testHand = candidateList.filter((_, idx) => idx !== i);
-        if (this.calculateShanten(testHand, melds) === 0) {
-          if (this.countWinningTilesRemaining(testHand, melds, allKnownVisibleTiles) > 0) {
-            hasLiveTingDiscard = true;
-            break;
-          }
-        }
+    for (let i = 0; i < candidateList.length; i++) {
+      const testHand = candidateList.filter((_, idx) => idx !== i);
+      const s = this.calculateShanten(testHand, melds);
+      if (s < minShanten) {
+        minShanten = s;
       }
-      isDeadWait = !hasLiveTingDiscard;
+      if (s === 0 && this.countWinningTilesRemaining(testHand, melds, allKnownVisibleTiles) > 0) {
+        hasLiveTingDiscard = true;
+      }
     }
 
-    if (this.shouldDefend(currentShanten, remainingWallTiles, isDeadWait)) {
+    const isDeadWait = minShanten === 0 && !hasLiveTingDiscard;
+
+    if (this.shouldDefend(minShanten, remainingWallTiles, isDeadWait)) {
       return this.chooseSafestDiscard(candidateList, opponents, allKnownVisibleTiles);
     }
 
@@ -862,7 +862,16 @@ export class MahjongAI {
       });
     }
 
-    const currentShanten = this.calculateShanten(hand, melds);
+    let currentShanten = 99;
+    if (kong.type === 'MELDED_KONG') {
+      currentShanten = this.calculateShanten(hand, melds);
+    } else {
+      for (let i = 0; i < hand.length; i++) {
+        const testHand = hand.filter((_, idx) => idx !== i);
+        const s = this.calculateShanten(testHand, melds);
+        if (s < currentShanten) currentShanten = s;
+      }
+    }
     const postKongShanten = this.calculateShanten(remainingHand, simulatedMelds);
 
     // Shanten must not regress (increase)

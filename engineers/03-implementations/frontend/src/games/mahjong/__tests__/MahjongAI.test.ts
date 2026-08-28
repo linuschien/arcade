@@ -235,22 +235,23 @@ describe('MahjongAI Unit Tests', () => {
     });
 
     it('should choose discard that advances Eight Pairs (嚦咕嚦咕 / 8對半) to 0-Shanten Ting', () => {
-      // 17-tile hand: 7 pairs (14 tiles) + 3 singles (8m, 1p, east)
+      // 17-tile hand: 1 triplet (111m) + 6 pairs (22m..77m) + 2 singles (1p, east) = 17 tiles
+      // Discarding 1p or east reaches 0-Shanten Eight Pairs Ting (6 pairs + 1 triplet + 1 single = 16 tiles)
       const handCodes = [
-        '1m', '1m',
+        '1m', '1m', '1m',
         '2m', '2m',
         '3m', '3m',
         '4m', '4m',
         '5m', '5m',
         '6m', '6m',
         '7m', '7m',
-        '8m', '1p', 'east',
+        '1p', 'east',
       ];
       const hand = handCodes.map((c, i) => createTile(c, `${i}`));
 
       const best = MahjongAI.chooseBestDiscard(hand, [], [], [], 40);
-      // Must discard one of the 3 single tiles (8m, 1p, east) to reach 0-Shanten Eight Pairs Ting
-      expect(['8m', '1p', 'east']).toContain(best.shortCode);
+      // Must discard one of the 2 single tiles (1p, east) to reach 0-Shanten Eight Pairs Ting
+      expect(['1p', 'east']).toContain(best.shortCode);
     });
   });
 
@@ -361,13 +362,13 @@ describe('MahjongAI Unit Tests', () => {
     });
 
     it('should ALLOW Concealed Kong when it does not reduce winning tiles count', () => {
-      // Hand in 0-Shanten: 123m, 456m, 789m, 123p, 99s (eyes) + 5555s (independent quad)
-      // Waits on 9s. If 5s is konged, it still waits on 9s (winning count unchanged).
+      // 17-tile hand in 0-Shanten: 123m (3), 456m (3), 789m (3), 12p (2), 99s (2, eye) + 5555s (4, independent quad) = 17 tiles
+      // Waits on 3p. If 5s is konged, it still waits on 3p (winning count unchanged).
       const handCodes = [
         '1m', '2m', '3m',
         '4m', '5m', '6m',
         '7m', '8m', '9m',
-        '1p', '2p', '3p',
+        '1p', '2p',
         '9s', '9s',
         '5s', '5s', '5s', '5s',
       ];
@@ -384,7 +385,15 @@ describe('MahjongAI Unit Tests', () => {
     });
 
     it('should REJECT Melded Kong (大明槓) when hand is Concealed (門清)', () => {
-      const handCodes = ['1m', '2m', '3m', '4m', '5m', '6m', '7m', '8m', '9m', '1p', '2p', '3p', '9s', '9s', '5s', '5s', '5s'];
+      // 16-tile hand on opponent discard: 123m (3), 456m (3), 789m (3), 12p (2), 99s (2), 555s (3) = 16 tiles
+      const handCodes = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '7m', '8m', '9m',
+        '1p', '2p',
+        '9s', '9s',
+        '5s', '5s', '5s',
+      ];
       const hand = handCodes.map((c, i) => createTile(c, `${i}`));
 
       const kong: KongOption = {
@@ -398,13 +407,13 @@ describe('MahjongAI Unit Tests', () => {
     });
 
     it('should REJECT Melded Kong when hand holds 3 or more Concealed Triplets (三暗刻)', () => {
-      // Hand has 3 concealed triplets (111m, 222m, 333m) + 555s + 99s
+      // 16-tile total: 1 open Chow (3 tiles) + 13 concealed tiles (111m, 222m, 333m, 555s, 9s = 13 tiles) = 16 tiles
       const handCodes = [
         '1m', '1m', '1m',
         '2m', '2m', '2m',
         '3m', '3m', '3m',
         '5s', '5s', '5s',
-        '9s', '9s',
+        '9s',
       ];
       const hand = handCodes.map((c, i) => createTile(c, `${i}`));
       const openMelds: Meld[] = [{ type: 'CHOW', tiles: [createTile('1p'), createTile('2p'), createTile('3p')], sourceSeat: 3 }];

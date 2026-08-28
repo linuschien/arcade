@@ -107,6 +107,7 @@ export class MahjongHandEvaluator {
 
   /**
    * Finds all valid decompositions of a winning hand into concealed melds and eye.
+   * Enforces 17-tile invariant: activeTiles.length + melds.length * 3 === 17.
    */
   public static findWinningDecompositions(
     handTiles: Tile[],
@@ -115,6 +116,11 @@ export class MahjongHandEvaluator {
   ): HandDecomposition[] {
     const allTiles = additionalTile ? [...handTiles, additionalTile] : [...handTiles];
     const activeTiles = allTiles.filter((t) => !t.isFlower);
+    const expected = 17 - melds.length * 3;
+    if (activeTiles.length !== expected) {
+      return [];
+    }
+
     const sortedTiles = this.sortTiles(activeTiles);
 
     const codeCounts = new Map<string, number>();
