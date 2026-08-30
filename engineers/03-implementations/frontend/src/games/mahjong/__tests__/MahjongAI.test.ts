@@ -855,37 +855,58 @@ describe('MahjongAI Unit Tests', () => {
       expect(safest.id).not.toBe('f_summer_0');
     });
 
-    it('should trigger defense mode and discard safest tile when all Ting options are 0-tile dead waits', () => {
-      // 17-tile hand:
-      // 123m, 456m, 789m, 123p, 555s (5 complete melds = 15 tiles) + 8m (16th) + 9s (17th) = 17 tiles
-      // If discard 8m -> Ting on single 9s (0 live outs outside).
-      // If discard 9s -> Ting on single 8m (0 live outs outside).
-      // All Ting options have 0 outs -> triggers shouldDefend and selects safest dead tile (8m).
+    it('should discard dead tile (5s) to Ting on live dragon tile (red) in attack mode', () => {
       const handCodes = [
         '1m', '2m', '3m',
         '4m', '5m', '6m',
         '1p', '2p', '3p',
         '4p', '5p', '6p',
-        '5s', '5s', '5s',
-        '8m',
-        '9s',
+        '1s', '2s', '3s',
+        '5s',
+        'red',
       ];
       const hand = handCodes.map((c, i) => createTile(c, `${i}`));
 
-      // 3 copies of 9s and 3 copies of 8m are visible on table (meaning 0 copies left outside for AI)
-      const allVisible = [
+      // 3 copies of 5s are visible on table (5s is dead outside, 0 outs)
+      // red dragon is live outside (3 live outs)
+      const visibleWithDead5s = [
         ...hand,
-        createTile('9s', 'v1'),
-        createTile('9s', 'v2'),
-        createTile('9s', 'v3'),
-        createTile('8m', 'v1'),
-        createTile('8m', 'v2'),
-        createTile('8m', 'v3'),
+        createTile('5s', 'v1'),
+        createTile('5s', 'v2'),
+        createTile('5s', 'v3'),
       ];
 
-      const best = MahjongAI.chooseBestDiscard(hand, [], allVisible, [], 40);
-      // AI must safely discard 8m (safe dead terminal) under dead Ting defense
-      expect(best.shortCode).toBe('8m');
+      const best = MahjongAI.chooseBestDiscard(hand, [], visibleWithDead5s, [], 40);
+      // In attack mode, AI discards dead 5s to Ting on live red dragon with fan
+      expect(best.shortCode).toBe('5s');
+    });
+
+    it('should trigger defense mode and discard safest tile (red) when all Ting options are 0-tile dead waits', () => {
+      const handCodes = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '1p', '2p', '3p',
+        '4p', '5p', '6p',
+        '1s', '2s', '3s',
+        '5s',
+        'red',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+      // 3 copies of 5s and 3 copies of red dragon are visible on table (both are dead outside)
+      const visibleWithAllDead = [
+        ...hand,
+        createTile('5s', 'v1'),
+        createTile('5s', 'v2'),
+        createTile('5s', 'v3'),
+        createTile('red', 'v1'),
+        createTile('red', 'v2'),
+        createTile('red', 'v3'),
+      ];
+
+      const best = MahjongAI.chooseBestDiscard(hand, [], visibleWithAllDead, [], 0);
+      // Under dead Ting defense, AI safely discards 100% dead honor (red) over dangerous middle tile (5s)
+      expect(best.shortCode).toBe('red');
     });
   });
 

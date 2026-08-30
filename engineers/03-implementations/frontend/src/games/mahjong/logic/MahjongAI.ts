@@ -18,6 +18,14 @@ export interface SuitPlan {
   singles: number[];       // Tile numbers (1..9) as isolated single tiles
 }
 
+export interface BestDiscardEvaluation {
+  bestDiscard: Tile;
+  minShanten: number;
+  maxScore: number;
+  isDeadWait: boolean;
+  bestShantenRes: ShantenResult;
+}
+
 export interface ShantenResult {
   shanten: number;           // Minimum Shanten distance (0 = Ting/Ready, 1 = 1-Shanten, etc.)
   score: number;             // Overall fitness score: (s === 0 && liveWinningCount === 0) ? 0 : (10 - s) * 2500 + acceptance
@@ -563,29 +571,52 @@ export class MahjongAI {
     const candidateList = hand.filter((t) => !t.isFlower);
     if (candidateList.length === 0) return hand[0];
 
-    // Evaluate true achievable minimum Shanten (minShanten) and check for Dead Wait (死聽)
-    let minShanten = 99;
-    let hasLiveTingDiscard = false;
+    const evalRes = this.evaluateBestDiscardCandidate(
+      candidateList,
+      melds,
+      allKnownVisibleTiles,
+      roundWind,
+      playerWind
+    );
 
-    for (let i = 0; i < candidateList.length; i++) {
-      const testHand = candidateList.filter((_, idx) => idx !== i);
-      const s = this.calculateShanten(testHand, melds);
-      if (s < minShanten) {
-        minShanten = s;
-      }
-      if (s === 0 && this.countWinningTilesRemaining(testHand, melds, allKnownVisibleTiles) > 0) {
-        hasLiveTingDiscard = true;
-      }
-    }
-
-    const isDeadWait = minShanten === 0 && !hasLiveTingDiscard;
-
-    if (this.shouldDefend(minShanten, remainingWallTiles, isDeadWait)) {
+    if (this.shouldDefend(evalRes.minShanten, remainingWallTiles, evalRes.isDeadWait)) {
       return this.chooseSafestDiscard(candidateList, opponents, allKnownVisibleTiles);
     }
 
-    let bestTile = candidateList[0];
-    let bestScore = -999999;
+    return evalRes.bestDiscard;
+  }
+
+  /**
+   * Tier 2: Evaluates all unique candidate discards from a 17-tile hand (17 - 3M).
+   * Reuses Tier 1 calculateShantenWithOuts and applies strategic discard biases.
+   */
+  public static evaluateBestDiscardCandidate(
+    activeHand: Tile[],
+    melds: Meld[],
+    allKnownVisibleTiles: Tile[] = [],
+    roundWind?: SeatWind,
+    playerWind?: SeatWind
+  ): BestDiscardEvaluation {
+    const candidateList = activeHand.filter((t) => !t.isFlower);
+    const expected = 17 - melds.length * 3;
+    if (candidateList.length !== expected) {
+      const fallbackTile = candidateList[0] || activeHand[0];
+      return {
+        bestDiscard: fallbackTile,
+        minShanten: 99,
+        maxScore: 0,
+        isDeadWait: true,
+        bestShantenRes: {
+          shanten: 99,
+          score: 0,
+          acceptance: 0,
+          liveWinningCount: 0,
+          meldedOuts: [],
+          goodTatsuOuts: [],
+          badTatsuOuts: [],
+        },
+      };
+    }
 
     const handCounts = new Map<string, number>();
     candidateList.forEach((t) => handCounts.set(t.shortCode, (handCounts.get(t.shortCode) || 0) + 1));
@@ -601,80 +632,116 @@ export class MahjongAI {
       }
     }
 
+    let bestTile = candidateList[0];
+    let maxScore = -999999;
+    let bestShantenRes: ShantenResult = {
+      shanten: 99,
+      score: 0,
+      acceptance: 0,
+      liveWinningCount: 0,
+      meldedOuts: [],
+      goodTatsuOuts: [],
+      badTatsuOuts: [],
+    };
+
     for (const item of uniqueCandidateMap.values()) {
       const candidate = item.tile;
       const testHand = candidateList.filter((_, idx) => idx !== item.idx);
-      const shantenRes = this.calculateShantenWithOuts(testHand, melds.length);
+      const shantenRes = this.calculateShantenWithOuts(testHand, melds.length, allKnownVisibleTiles);
 
-      let s = shantenRes.shanten;
-      if (melds.length === 0 && testHand.length === 16) {
-        const eightPairsS = this.calculateEightPairsShanten(testHand);
-        s = Math.min(s, eightPairsS);
-      }
-
-      let acceptanceScore = 0;
-      if (s === 0) {
-        // When in Ting (0-Shanten), score is exactly the number of live winning tiles outside * 100
-        const liveWinningTiles = this.countWinningTilesRemaining(testHand, melds, allKnownVisibleTiles);
-        acceptanceScore = liveWinningTiles * 100;
-      } else {
-        acceptanceScore = this.calculateTileAcceptance(shantenRes, allKnownVisibleTiles);
-      }
-
-      // Discard bias:
-      let discardBonus = 0;
       const countInHand = handCounts.get(candidate.shortCode) || 1;
+      const bonus = this.calculateDiscardBonus(
+        candidate,
+        candidateList,
+        countInHand,
+        shantenRes.shanten,
+        visibleCounts,
+        roundWind,
+        playerWind
+      );
 
-      if (candidate.suit === 'WINDS' || candidate.suit === 'DRAGONS') {
-        if (countInHand === 1) {
-          const usedCount = visibleCounts.get(candidate.shortCode) || 0;
-          const remaining = Math.max(0, 4 - usedCount);
-          if (remaining === 0) {
-            discardBonus += 80; // 絕張死字牌（外面殘張0）：最優先清理！
-          } else {
-            discardBonus += 50; // 客風/字牌真孤張
-          }
-        } else if (countInHand >= 3 && s >= 1) {
-          // Triplet protection: in pre-Ting stages (s >= 1), protect Honor triplets
-          const isDragon = candidate.suit === 'DRAGONS';
-          const isRoundWind = Boolean(roundWind && candidate.suit === 'WINDS' && candidate.shortCode === roundWind.toLowerCase());
-          const isSeatWind = Boolean(playerWind && candidate.suit === 'WINDS' && candidate.shortCode === playerWind.toLowerCase());
-          const isFanHonor = isDragon || isRoundWind || isSeatWind;
+      const totalCandidateScore = shantenRes.score + bonus;
 
-          if (isFanHonor) {
-            discardBonus -= 600; // 有台字牌暗刻（中發白/正風）
-          } else {
-            discardBonus -= 300; // 客風暗刻未聽牌前不應先於真孤張被打出
-          }
-        }
-      } else {
-        // 數牌（萬、筒、條）處理
-        if (countInHand >= 3 && s >= 1) {
-          discardBonus -= 300; // 數牌暗刻未聽牌前保護
-        } else if (this.isTrueIsolated(candidate, candidateList)) {
-          if (candidate.value === 1 || candidate.value === 9) {
-            discardBonus += 20; // 真·孤張 1/9
-          } else if (candidate.value === 2 || candidate.value === 8) {
-            discardBonus += 10; // 真·孤張 2/8
-          }
-        }
-      }
-
-      // Penalty for discarding into a 0-tile dead wait (never deliberately choose a dead Ting)
-      let deadTingPenalty = 0;
-      if (s === 0 && acceptanceScore === 0) {
-        deadTingPenalty = -50000;
-      }
-
-      const score = (10 - s) * 2500 + acceptanceScore + discardBonus + deadTingPenalty;
-
-      if (score > bestScore) {
-        bestScore = score;
+      if (totalCandidateScore > maxScore) {
+        maxScore = totalCandidateScore;
         bestTile = candidate;
+        bestShantenRes = shantenRes;
       }
     }
 
-    return bestTile;
+    const isDeadWait = bestShantenRes.score <= 0;
+
+    return {
+      bestDiscard: bestTile,
+      minShanten: bestShantenRes.shanten,
+      maxScore,
+      isDeadWait,
+      bestShantenRes,
+    };
+  }
+
+  /**
+   * Calculates strategic discard preference bonus / penalty.
+   */
+  private static calculateDiscardBonus(
+    candidate: Tile,
+    activeHand: Tile[],
+    countInHand: number,
+    s: number,
+    visibleCounts: Map<string, number>,
+    roundWind?: SeatWind,
+    playerWind?: SeatWind
+  ): number {
+    let discardBonus = 0;
+
+    if (candidate.suit === 'WINDS' || candidate.suit === 'DRAGONS') {
+      if (countInHand === 1) {
+        const usedCount = visibleCounts.get(candidate.shortCode) || 0;
+        const remaining = Math.max(0, 4 - usedCount);
+        if (remaining === 0) {
+          discardBonus += 80; // 絕張死字牌（外面殘張0）：最優先清理！
+        } else {
+          discardBonus += 50; // 客風/字牌真孤張
+        }
+      } else if (countInHand >= 3 && s >= 1) {
+        // Triplet protection: in pre-Ting stages (s >= 1), protect Honor triplets
+        if (this.isFanHonor(candidate, roundWind, playerWind)) {
+          discardBonus -= 600; // 有台字牌暗刻（中發白/正風）
+        } else {
+          discardBonus -= 300; // 客風暗刻未聽牌前不應先於真孤張被打出
+        }
+      }
+    } else {
+      // 數牌（萬、筒、條）處理
+      if (countInHand >= 3 && s >= 1) {
+        discardBonus -= 300; // 數牌暗刻未聽牌前保護
+      } else if (this.isTrueIsolated(candidate, activeHand)) {
+        if (candidate.value === 1 || candidate.value === 9) {
+          discardBonus += 20; // 真·孤張 1/9
+        } else if (candidate.value === 2 || candidate.value === 8) {
+          discardBonus += 10; // 真·孤張 2/8
+        }
+      }
+    }
+
+    return discardBonus;
+  }
+
+  /**
+   * Checks if an honor tile yields fan points (Dragon or Seat/Round Wind).
+   */
+  public static isFanHonor(
+    tile: Tile,
+    roundWind?: SeatWind,
+    playerWind?: SeatWind
+  ): boolean {
+    if (tile.suit === 'DRAGONS') return true;
+    if (tile.suit === 'WINDS') {
+      const code = tile.shortCode.toLowerCase();
+      if (roundWind && code === roundWind.toLowerCase()) return true;
+      if (playerWind && code === playerWind.toLowerCase()) return true;
+    }
+    return false;
   }
 
   /**
@@ -720,8 +787,10 @@ export class MahjongAI {
       } else if (tile.suit === 'WINDS' || tile.suit === 'DRAGONS') {
         // 2. Honors: Safe if dead (3 or 4 copies visible)
         const visible = visibleCounts.get(code) || 0;
-        if (visible >= 3) {
-          dangerScore = 5; // Dead honor
+        if (visible >= 4) {
+          dangerScore = 1; // 4-visible Dead honor is 100% completely safe (cannot form sequence)
+        } else if (visible === 3) {
+          dangerScore = 5; // 3-visible Dead honor
         } else if (visible === 2) {
           dangerScore = 20;
         } else {
