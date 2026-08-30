@@ -15,10 +15,14 @@ export interface SuitPlan {
   meldedOuts: number[];    // Tile numbers (1..9) completing a meld
   goodTatsuOuts: number[]; // Tile numbers (1..9) forming a two-sided tatsu
   badTatsuOuts: number[];  // Tile numbers (1..9) forming gap/border tatsu or pair
+  singles: number[];       // Tile numbers (1..9) as isolated single tiles
 }
 
 export interface ShantenResult {
-  shanten: number;           // Minimum Shanten distance
+  shanten: number;           // Minimum Shanten distance (0 = Ting/Ready, 1 = 1-Shanten, etc.)
+  score: number;             // Overall fitness score: (s === 0 && liveWinningCount === 0) ? 0 : (10 - s) * 2500 + acceptance
+  acceptance: number;        // Quality-weighted tile acceptance score
+  liveWinningCount: number;  // Real live outs outside when in Ting (0 if dead or not Ting)
   meldedOuts: string[];      // Tile shortCodes completing melds (e.g. ['3m', '6m'])
   goodTatsuOuts: string[];   // Tile shortCodes forming two-sided tatsus (e.g. ['2p', '5p'])
   badTatsuOuts: string[];    // Tile shortCodes forming gap/border tatsus or pairs (e.g. ['1s', 'east'])
@@ -63,7 +67,7 @@ export class MahjongAI {
     const totalTiles = counts.slice(1, 10).reduce((a, b) => a + b, 0);
     if (totalTiles === 0) {
       const emptyPlan: SuitPlan[] = [
-        { comp: 0, part: 0, hasEye: false, meldedOuts: [], goodTatsuOuts: [], badTatsuOuts: [] },
+        { comp: 0, part: 0, hasEye: false, meldedOuts: [], goodTatsuOuts: [], badTatsuOuts: [], singles: [] },
       ];
       this.suitCache.set(key, emptyPlan);
       return emptyPlan;
@@ -79,7 +83,8 @@ export class MahjongAI {
       hasEye: boolean,
       meldedOuts: Set<number>,
       goodTatsuOuts: Set<number>,
-      badTatsuOuts: Set<number>
+      badTatsuOuts: Set<number>,
+      singles: Set<number>
     ) => {
       while (idx <= 9 && c[idx] === 0) {
         idx++;
@@ -93,6 +98,7 @@ export class MahjongAI {
           meldedOuts: Array.from(meldedOuts),
           goodTatsuOuts: Array.from(goodTatsuOuts),
           badTatsuOuts: Array.from(badTatsuOuts),
+          singles: Array.from(singles),
         });
         return;
       }
@@ -100,7 +106,7 @@ export class MahjongAI {
       // 1. Triplet (AAA: 3 matching tiles)
       if (c[idx] >= 3) {
         c[idx] -= 3;
-        search(idx, c, currentComp + 1, currentPart, hasEye, meldedOuts, goodTatsuOuts, badTatsuOuts);
+        search(idx, c, currentComp + 1, currentPart, hasEye, meldedOuts, goodTatsuOuts, badTatsuOuts, singles);
         c[idx] += 3;
       }
 
@@ -109,7 +115,7 @@ export class MahjongAI {
         c[idx]--;
         c[idx + 1]--;
         c[idx + 2]--;
-        search(idx, c, currentComp + 1, currentPart, hasEye, meldedOuts, goodTatsuOuts, badTatsuOuts);
+        search(idx, c, currentComp + 1, currentPart, hasEye, meldedOuts, goodTatsuOuts, badTatsuOuts, singles);
         c[idx]++;
         c[idx + 1]++;
         c[idx + 2]++;
@@ -127,7 +133,7 @@ export class MahjongAI {
         nextBadTatsu.add(idx);
         nextBadTatsu.add(idx + 1);
 
-        search(idx, c, currentComp, currentPart + 1, hasEye, nextMelded, goodTatsuOuts, nextBadTatsu);
+        search(idx, c, currentComp, currentPart + 1, hasEye, nextMelded, goodTatsuOuts, nextBadTatsu, singles);
         c[idx]++;
         c[idx + 1]++;
       }
@@ -143,7 +149,7 @@ export class MahjongAI {
         nextBadTatsu.add(idx);
         nextBadTatsu.add(idx + 2);
 
-        search(idx, c, currentComp, currentPart + 1, hasEye, nextMelded, goodTatsuOuts, nextBadTatsu);
+        search(idx, c, currentComp, currentPart + 1, hasEye, nextMelded, goodTatsuOuts, nextBadTatsu, singles);
         c[idx]++;
         c[idx + 2]++;
       }
@@ -153,7 +159,7 @@ export class MahjongAI {
         // 5a. As Eye (雀頭)
         if (!hasEye) {
           c[idx] -= 2;
-          search(idx, c, currentComp, currentPart, true, meldedOuts, goodTatsuOuts, badTatsuOuts);
+          search(idx, c, currentComp, currentPart, true, meldedOuts, goodTatsuOuts, badTatsuOuts, singles);
           c[idx] += 2;
         }
 
@@ -161,13 +167,15 @@ export class MahjongAI {
         c[idx] -= 2;
         const nextMelded = new Set(meldedOuts);
         nextMelded.add(idx);
-        search(idx, c, currentComp, currentPart + 1, hasEye, nextMelded, goodTatsuOuts, badTatsuOuts);
+        search(idx, c, currentComp, currentPart + 1, hasEye, nextMelded, goodTatsuOuts, badTatsuOuts, singles);
         c[idx] += 2;
       }
 
       // 6. Single Tile (孤張)
       const nextBad = new Set(badTatsuOuts);
       const nextGood = new Set(goodTatsuOuts);
+      const nextSingles = new Set(singles);
+      nextSingles.add(idx);
 
       // Drawing self forms a pair
       nextBad.add(idx);
@@ -194,23 +202,31 @@ export class MahjongAI {
 
       const oldVal = c[idx];
       c[idx]--;
-      search(idx, c, currentComp, currentPart, hasEye, meldedOuts, nextGood, nextBad);
+      search(idx, c, currentComp, currentPart, hasEye, meldedOuts, nextGood, nextBad, nextSingles);
       c[idx] = oldVal;
     };
 
-    search(1, [...counts], 0, 0, false, new Set(), new Set(), new Set());
+    search(1, [...counts], 0, 0, false, new Set(), new Set(), new Set(), new Set());
 
     // Deduplicate & Prune dominated plans:
     const plans: SuitPlan[] = [];
     for (const p of rawPlans) {
-      // Check if p is strictly dominated by an existing plan
-      const isDominated = plans.some(
-        (existing) =>
-          existing.hasEye === p.hasEye &&
-          existing.comp >= p.comp &&
-          existing.part >= p.part &&
-          (existing.comp > p.comp || existing.part > p.part)
-      );
+      // Check if p is strictly dominated by an existing plan with equal or better meld progression power
+      const pPower = 2 * p.comp + p.part;
+      const isDominated = plans.some((existing) => {
+        if (existing.hasEye !== p.hasEye) return false;
+        const exPower = 2 * existing.comp + existing.part;
+        if (exPower > pPower && existing.comp >= p.comp) return true;
+        if (exPower === pPower && existing.comp >= p.comp && existing.part >= p.part) {
+          // Exactly same shape/composition: check if meldedOuts/tatsus are identical
+          return (
+            existing.meldedOuts.join(',') === p.meldedOuts.join(',') &&
+            existing.goodTatsuOuts.join(',') === p.goodTatsuOuts.join(',') &&
+            existing.badTatsuOuts.join(',') === p.badTatsuOuts.join(',')
+          );
+        }
+        return false;
+      });
       if (!isDominated) {
         plans.push(p);
       }
@@ -253,6 +269,7 @@ export class MahjongAI {
       meldedOuts: pairs.map((h) => honors.indexOf(h) + 1),
       goodTatsuOuts: [],
       badTatsuOuts: singles.map((h) => honors.indexOf(h) + 1),
+      singles: singles.map((h) => honors.indexOf(h) + 1),
     });
 
     // Plan B: Use one Honor pair as Eye
@@ -266,6 +283,7 @@ export class MahjongAI {
         meldedOuts: otherPairs.map((h) => honors.indexOf(h) + 1),
         goodTatsuOuts: [],
         badTatsuOuts: singles.map((h) => honors.indexOf(h) + 1),
+        singles: singles.map((h) => honors.indexOf(h) + 1),
       });
     }
 
@@ -275,27 +293,46 @@ export class MahjongAI {
   /**
    * Combines the 4 suits (m, p, s, z) via Suit DP to calculate minimum Shanten and unified outs.
    * Enforces 16-tile invariant: activeTiles.length + meldCount * 3 === 16.
+   * Dynamic DP aggregates outs across ALL optimal combinations grouped by Shanten level.
    */
-  public static calculateShantenWithOuts(hand: Tile[], meldCount: number): ShantenResult {
+  public static calculateShantenWithOuts(
+    hand: Tile[],
+    meldCount: number,
+    allKnownVisibleTiles: Tile[] = []
+  ): ShantenResult {
     const activeTiles = hand.filter((t) => !t.isFlower);
     const expected = 16 - meldCount * 3;
     if (activeTiles.length !== expected) {
-      return { shanten: 99, meldedOuts: [], goodTatsuOuts: [], badTatsuOuts: [] };
+      return {
+        shanten: 99,
+        score: 0,
+        acceptance: 0,
+        liveWinningCount: 0,
+        meldedOuts: [],
+        goodTatsuOuts: [],
+        badTatsuOuts: [],
+      };
     }
 
-    const countsM = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    const countsP = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    const countsS = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const countsM = new Array(10).fill(0);
+    const countsP = new Array(10).fill(0);
+    const countsS = new Array(10).fill(0);
     const honorCounts = new Map<string, number>();
 
     for (const t of activeTiles) {
-      if (t.suit === 'CHARACTERS' && t.value >= 1 && t.value <= 9) countsM[t.value]++;
-      else if (t.suit === 'DOTS' && t.value >= 1 && t.value <= 9) countsP[t.value]++;
-      else if (t.suit === 'BAMBOO' && t.value >= 1 && t.value <= 9) countsS[t.value]++;
-      else if (t.suit === 'WINDS' || t.suit === 'DRAGONS') {
+      if (t.suit === 'CHARACTERS') {
+        countsM[t.value]++;
+      } else if (t.suit === 'DOTS') {
+        countsP[t.value]++;
+      } else if (t.suit === 'BAMBOO') {
+        countsS[t.value]++;
+      } else {
         honorCounts.set(t.shortCode, (honorCounts.get(t.shortCode) || 0) + 1);
       }
     }
+
+    const visibleSource =
+      allKnownVisibleTiles && allKnownVisibleTiles.length > 0 ? allKnownVisibleTiles : activeTiles;
 
     const plansM = this.decomposeNumberSuit(countsM);
     const plansP = this.decomposeNumberSuit(countsP);
@@ -303,13 +340,13 @@ export class MahjongAI {
     const plansZ = this.decomposeHonors(honorCounts);
 
     const requiredMelds = 5 - meldCount;
-    let minShanten = requiredMelds * 2;
-
-    const meldedSet = new Set<string>();
-    const goodTatsuSet = new Set<string>();
-    const badTatsuSet = new Set<string>();
-
     const honorsList = ['east', 'south', 'west', 'north', 'red', 'green', 'white'];
+
+    // Group combinations by Shanten level
+    const shantenGroups = new Map<
+      number,
+      { meldedSet: Set<string>; goodTatsuSet: Set<string>; badTatsuSet: Set<string> }
+    >();
 
     for (const pm of plansM) {
       for (const pp of plansP) {
@@ -326,52 +363,94 @@ export class MahjongAI {
             const maxPart = requiredMelds - effComp;
             const effPart = Math.min(maxPart, totalPart);
 
-            const s = (requiredMelds - effComp) * 2 - effPart - (hasEye ? 1 : 0);
-            const currentS = Math.max(0, s);
+            const s = Math.max(0, (requiredMelds - effComp) * 2 - effPart - (hasEye ? 1 : 0));
 
-            if (currentS < minShanten) {
-              minShanten = currentS;
-              meldedSet.clear();
-              goodTatsuSet.clear();
-              badTatsuSet.clear();
+            let group = shantenGroups.get(s);
+            if (!group) {
+              group = {
+                meldedSet: new Set<string>(),
+                goodTatsuSet: new Set<string>(),
+                badTatsuSet: new Set<string>(),
+              };
+              shantenGroups.set(s, group);
             }
 
-            if (currentS === minShanten) {
-              pm.meldedOuts.forEach((n) => meldedSet.add(`${n}m`));
-              pm.goodTatsuOuts.forEach((n) => goodTatsuSet.add(`${n}m`));
-              pm.badTatsuOuts.forEach((n) => badTatsuSet.add(`${n}m`));
+            pm.meldedOuts.forEach((n) => group!.meldedSet.add(`${n}m`));
+            pm.goodTatsuOuts.forEach((n) => group!.goodTatsuSet.add(`${n}m`));
+            pm.badTatsuOuts.forEach((n) => group!.badTatsuSet.add(`${n}m`));
 
-              pp.meldedOuts.forEach((n) => meldedSet.add(`${n}p`));
-              pp.goodTatsuOuts.forEach((n) => goodTatsuSet.add(`${n}p`));
-              pp.badTatsuOuts.forEach((n) => badTatsuSet.add(`${n}p`));
+            pp.meldedOuts.forEach((n) => group!.meldedSet.add(`${n}p`));
+            pp.goodTatsuOuts.forEach((n) => group!.goodTatsuSet.add(`${n}p`));
+            pp.badTatsuOuts.forEach((n) => group!.badTatsuSet.add(`${n}p`));
 
-              ps.meldedOuts.forEach((n) => meldedSet.add(`${n}s`));
-              ps.goodTatsuOuts.forEach((n) => goodTatsuSet.add(`${n}s`));
-              ps.badTatsuOuts.forEach((n) => badTatsuSet.add(`${n}s`));
+            ps.meldedOuts.forEach((n) => group!.meldedSet.add(`${n}s`));
+            ps.goodTatsuOuts.forEach((n) => group!.goodTatsuSet.add(`${n}s`));
+            ps.badTatsuOuts.forEach((n) => group!.badTatsuSet.add(`${n}s`));
 
-              pz.meldedOuts.forEach((idx) => meldedSet.add(honorsList[idx - 1]));
-              pz.badTatsuOuts.forEach((idx) => badTatsuSet.add(honorsList[idx - 1]));
+            pz.meldedOuts.forEach((idx) => group!.meldedSet.add(honorsList[idx - 1]));
+            pz.badTatsuOuts.forEach((idx) => group!.badTatsuSet.add(honorsList[idx - 1]));
 
-              // If hand is in 0-Shanten waiting on Eye (5 melds, no Eye):
-              // All singles forming a pair can complete the Eye and win the hand
-              if (minShanten === 0 && !hasEye) {
-                pm.badTatsuOuts.forEach((n) => meldedSet.add(`${n}m`));
-                pp.badTatsuOuts.forEach((n) => meldedSet.add(`${n}p`));
-                ps.badTatsuOuts.forEach((n) => meldedSet.add(`${n}s`));
-                pz.badTatsuOuts.forEach((idx) => meldedSet.add(honorsList[idx - 1]));
-              }
+            // In 0-Shanten waiting on Eye (5 melds, no Eye):
+            // Only drawing the isolated single tile itself can complete the Eye!
+            if (s === 0 && !hasEye) {
+              pm.singles.forEach((n) => group!.meldedSet.add(`${n}m`));
+              pp.singles.forEach((n) => group!.meldedSet.add(`${n}p`));
+              ps.singles.forEach((n) => group!.meldedSet.add(`${n}s`));
+              pz.singles.forEach((idx) => group!.meldedSet.add(honorsList[idx - 1]));
             }
           }
         }
       }
     }
 
-    return {
-      shanten: minShanten,
-      meldedOuts: Array.from(meldedSet),
-      goodTatsuOuts: Array.from(goodTatsuSet),
-      badTatsuOuts: Array.from(badTatsuSet),
+    let bestScore = -999999;
+    let bestResult: ShantenResult = {
+      shanten: requiredMelds * 2,
+      score: 0,
+      acceptance: 0,
+      liveWinningCount: 0,
+      meldedOuts: [],
+      goodTatsuOuts: [],
+      badTatsuOuts: [],
     };
+
+    // Evaluate all Shanten groups and pick argmax(score)
+    for (const [s, group] of shantenGroups.entries()) {
+      const unifiedMelded = Array.from(group.meldedSet);
+      const unifiedGood = Array.from(group.goodTatsuSet);
+      const unifiedBad = Array.from(group.badTatsuSet);
+
+      const totalAcceptance = this.calculateTileAcceptance(
+        {
+          shanten: s,
+          score: 0,
+          acceptance: 0,
+          liveWinningCount: 0,
+          meldedOuts: unifiedMelded,
+          goodTatsuOuts: unifiedGood,
+          badTatsuOuts: unifiedBad,
+        },
+        visibleSource
+      );
+
+      const totalLiveWinning = s === 0 ? Math.floor(totalAcceptance / 100) : 0;
+      const finalScore = (s === 0 && totalLiveWinning === 0) ? 0 : (10 - s) * 2500 + totalAcceptance;
+
+      if (finalScore > bestScore || (finalScore === bestScore && s < bestResult.shanten)) {
+        bestScore = finalScore;
+        bestResult = {
+          shanten: s,
+          score: finalScore,
+          acceptance: totalAcceptance,
+          liveWinningCount: totalLiveWinning,
+          meldedOuts: unifiedMelded,
+          goodTatsuOuts: unifiedGood,
+          badTatsuOuts: unifiedBad,
+        };
+      }
+    }
+
+    return bestResult;
   }
 
   /**

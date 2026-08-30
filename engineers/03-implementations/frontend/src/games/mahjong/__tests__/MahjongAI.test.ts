@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { MahjongAI } from '../logic/MahjongAI';
+import { MahjongAI, ShantenResult } from '../logic/MahjongAI';
 import { Tile, Meld, PlayerProfile, AvailableActions, KongOption } from '../logic/MahjongTypes';
 
 describe('MahjongAI Unit Tests', () => {
@@ -1048,8 +1048,11 @@ describe('MahjongAI Unit Tests', () => {
     });
 
     it('should correctly score Melded (100), Good Tatsu (50), and Bad Tatsu (20) with de-duplication', () => {
-      const shantenRes = {
+      const shantenRes: ShantenResult = {
         shanten: 1,
+        score: 0,
+        acceptance: 0,
+        liveWinningCount: 0,
         meldedOuts: ['3m'],        // 100 pts
         goodTatsuOuts: ['3m', '6p'], // 3m is in meldedOuts -> should stay 100 pts; 6p -> 50 pts
         badTatsuOuts: ['1s', '6p'],  // 6p is in goodTatsuOuts -> should stay 50 pts; 1s -> 20 pts
@@ -1231,6 +1234,42 @@ describe('MahjongAI Unit Tests', () => {
       // Discarding 4s leaves white white white as meld and single 5s -> Single wait (3 outs)!
       // AI must discard 'white' to get 8-out two-sided wait!
       expect(best.shortCode).toBe('white');
+    });
+
+    it('should calculate exact 5-way wait score on 2345666s shape', () => {
+      // 16-tile hand in 0-Shanten 5-way wait (147s + 25s): 123m, 456m, 789m, 2345666s
+      const handCodes = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '7m', '8m', '9m',
+        '2s', '3s', '4s', '5s', '6s', '6s', '6s',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+      const result = MahjongAI.calculateShantenWithOuts(hand, 0, []);
+      expect(result.shanten).toBe(0);
+      expect(result.score).toBe(26700);
+      expect(result.acceptance).toBe(1700);
+      expect(result.liveWinningCount).toBe(17);
+      expect(result.meldedOuts.sort()).toEqual(['1s', '2s', '4s', '5s', '7s'].sort());
+    });
+
+    it('should calculate exact 9-way wait score on Nine Gates (1112345678999m + red red red)', () => {
+      // 16-tile hand in 0-Shanten 9-way wait (1m~9m): 1112345678999m, red red red
+      const handCodes = [
+        '1m', '1m', '1m',
+        '2m', '3m', '4m', '5m', '6m', '7m', '8m',
+        '9m', '9m', '9m',
+        'red', 'red', 'red',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+
+      const result = MahjongAI.calculateShantenWithOuts(hand, 0, []);
+      expect(result.shanten).toBe(0);
+      expect(result.score).toBe(27300);
+      expect(result.acceptance).toBe(2300);
+      expect(result.liveWinningCount).toBe(23);
+      expect(result.meldedOuts.sort()).toEqual(['1m', '2m', '3m', '4m', '5m', '6m', '7m', '8m', '9m'].sort());
     });
   });
 });
