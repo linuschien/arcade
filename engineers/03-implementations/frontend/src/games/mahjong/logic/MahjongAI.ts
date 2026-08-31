@@ -6,7 +6,6 @@
  */
 
 import { Tile, Meld, AvailableActions, PlayerProfile, SeatWind, KongOption, ChowOption } from './MahjongTypes';
-import { MahjongHandEvaluator } from './MahjongHandEvaluator';
 
 export interface SuitPlan {
   comp: number;            // Complete melds (triplets / sequences)
@@ -526,18 +525,6 @@ export class MahjongAI {
     return true;
   }
 
-  /**
-   * Counts the total remaining copies of winning tiles outside in visible information.
-   * Reuses the Single Source of Truth from MahjongHandEvaluator.evaluateTing.
-   */
-  public static countWinningTilesRemaining(
-    hand: Tile[],
-    melds: Meld[],
-    allKnownVisibleTiles: Tile[] = []
-  ): number {
-    const tingInfo = MahjongHandEvaluator.evaluateTing(hand, melds, allKnownVisibleTiles);
-    return tingInfo.winningTiles.reduce((sum, w) => sum + w.remainingCount, 0);
-  }
 
   /**
    * Evaluates whether the AI should switch to defense mode based on Shanten and remaining draws.
