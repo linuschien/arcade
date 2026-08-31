@@ -45,7 +45,10 @@ export class MahjongAI {
   private static suitCache = new Map<string, SuitPlan[]>();
 
   /**
+   * [TEST COMPATIBILITY DELEGATE]
    * Calculates the pure Shanten number of a hand.
+   * Preserved for backward compatibility with unit tests expecting a pure numeric return.
+   * Production runtime uses calculateShantenWithOuts (Tier 1) for score-first evaluation.
    * Enforces 16-tile invariant: activeTiles.length + melds.length * 3 === 16.
    */
   public static calculateShanten(hand: Tile[], melds: Meld[]): number {
@@ -960,7 +963,10 @@ export class MahjongAI {
   }
 
   /**
+   * [TEST COMPATIBILITY WRAPPER]
    * Boolean wrapper for evaluateKong.
+   * Preserved for backward compatibility with unit tests asserting boolean kong benefit.
+   * Production runtime uses evaluateKong / decideSelfKong for full Score-first auction.
    */
   public static isKongBeneficial(
     kong: KongOption,
