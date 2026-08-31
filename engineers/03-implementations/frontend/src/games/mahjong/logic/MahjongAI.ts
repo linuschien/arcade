@@ -1098,26 +1098,46 @@ export class MahjongAI {
 
     // Representative called tile
     const targetTile = calledTile || actions.chowOptions[0]?.tiles[2] || hand[0];
-    const currentShantenRes = this.calculateShantenWithOuts(hand, melds.length);
+    const currentShantenRes = this.calculateShantenWithOuts(hand, melds.length, allKnownVisibleTiles);
     const currentShanten = currentShantenRes.shanten;
-    const currentAcceptance = this.calculateTileAcceptance(currentShantenRes, allKnownVisibleTiles);
-    const currentBaselineScore = (10 - currentShanten) * 2500 + currentAcceptance;
+    const currentBaselineScore = currentShantenRes.score;
+
+    // Auction variables: Start with PASS as baseline champion
+    let maxActionScore = currentBaselineScore;
+    let minActionShanten = currentShanten;
+    let chosenDecision: AIDecision = { action: 'PASS' };
 
     // 2. Kong decision (Melded Kong)
     if (actions.canKong && actions.kongOptions.length > 0) {
       const kong = actions.kongOptions[0];
       if (this.isKongBeneficial(kong, hand, melds, allKnownVisibleTiles)) {
-        return { action: 'KONG' };
+        let removed = 0;
+        const postHand: Tile[] = [];
+        for (const t of hand) {
+          if (t.shortCode === kong.tileCode && removed < 3) {
+            removed++;
+          } else {
+            postHand.push(t);
+          }
+        }
+        const postMelds: Meld[] = [
+          ...melds,
+          { type: 'MELDED_KONG', tiles: [], sourceSeat: 1 },
+        ];
+        const postKongRes = this.calculateShantenWithOuts(postHand, postMelds.length, allKnownVisibleTiles);
+        const scoreKong = postKongRes.score + 500;
+        if (scoreKong > maxActionScore || (scoreKong === maxActionScore && postKongRes.shanten < minActionShanten)) {
+          maxActionScore = scoreKong;
+          minActionShanten = postKongRes.shanten;
+          chosenDecision = { action: 'KONG' };
+        }
       }
     }
 
     // 3. Pong decision
     if (actions.canPong) {
       const isHonor = targetTile.suit === 'WINDS' || targetTile.suit === 'DRAGONS';
-      const isDragon = targetTile.suit === 'DRAGONS';
-      const isRoundWind = targetTile.suit === 'WINDS' && targetTile.shortCode === roundWind.toLowerCase();
-      const isSeatWind = targetTile.suit === 'WINDS' && targetTile.shortCode === playerWind.toLowerCase();
-      const hasFan = isDragon || isRoundWind || isSeatWind;
+      const hasFan = this.isFanHonor(targetTile, roundWind, playerWind);
 
       // Count pairs in hand
       const codeCounts = new Map<string, number>();
@@ -1132,7 +1152,7 @@ export class MahjongAI {
       }
       const isSoleEye = pairCount <= 1;
 
-      // Simulate Pong hand & dynamic Shanten:
+      // Simulate Pong hand & melds:
       let removed = 0;
       const postHand: Tile[] = [];
       const pongTiles: Tile[] = [];
@@ -1149,30 +1169,17 @@ export class MahjongAI {
         { type: 'PONG', tiles: [...pongTiles, targetTile], sourceSeat: 1 },
       ];
 
-      // Simulate best discard from postHand:
-      let maxPostScore = -999999;
-      let minPostShanten = 999;
-      let bestPostDiscard: Tile | null = null;
-      const testedPostCodes = new Set<string>();
-
-      for (let i = 0; i < postHand.length; i++) {
-        const cand = postHand[i];
-        if (testedPostCodes.has(cand.shortCode)) continue;
-        testedPostCodes.add(cand.shortCode);
-
-        const testHand13 = postHand.filter((_, idx) => idx !== i);
-        const res = this.calculateShantenWithOuts(testHand13, postMelds.length);
-        const acc = this.calculateTileAcceptance(res, allKnownVisibleTiles);
-        const score = (10 - res.shanten) * 2500 + acc;
-
-        if (res.shanten < minPostShanten) {
-          minPostShanten = res.shanten;
-        }
-        if (score > maxPostScore) {
-          maxPostScore = score;
-          bestPostDiscard = cand;
-        }
-      }
+      // Evaluate best discard from postHand via Tier 2:
+      const pongEval = this.evaluateBestDiscardCandidate(
+        postHand,
+        postMelds,
+        allKnownVisibleTiles,
+        roundWind,
+        playerWind
+      );
+      const bestPostDiscard = pongEval.bestDiscard;
+      const minPostShanten = pongEval.minShanten;
+      const maxPostScore = pongEval.bestShantenRes.score;
 
       if (isHonor) {
         // Honor tile rule:
@@ -1182,19 +1189,25 @@ export class MahjongAI {
           // Keep concealed triplet, do not Pong
         } else if (!hasFan && isSoleEye) {
           // Keep as eye, do not Pong
-        } else if (bestPostDiscard?.shortCode === targetTile.shortCode) {
+        } else if (bestPostDiscard.shortCode === targetTile.shortCode) {
           // Reject Pong-then-Discard-same-tile
         } else {
-          return { action: 'PONG' };
+          const honorScore = hasFan ? maxPostScore + 1000 : maxPostScore;
+          if (honorScore > maxActionScore || (honorScore === maxActionScore && minPostShanten < minActionShanten)) {
+            maxActionScore = honorScore;
+            minActionShanten = minPostShanten;
+            chosenDecision = { action: 'PONG' };
+          }
         }
       } else {
         // Number tile rule:
         // Must strictly improve hand score and not discard the called tile immediately
-        if (
-          bestPostDiscard?.shortCode !== targetTile.shortCode &&
-          (minPostShanten < currentShanten || maxPostScore > currentBaselineScore)
-        ) {
-          return { action: 'PONG' };
+        if (bestPostDiscard.shortCode !== targetTile.shortCode) {
+          if (maxPostScore > maxActionScore || (maxPostScore === maxActionScore && minPostShanten < minActionShanten)) {
+            maxActionScore = maxPostScore;
+            minActionShanten = minPostShanten;
+            chosenDecision = { action: 'PONG' };
+          }
         }
       }
     }
@@ -1203,6 +1216,7 @@ export class MahjongAI {
     if (actions.canChow && actions.chowOptions.length > 0) {
       let bestChowOption: ChowOption | null = null;
       let bestChowScore = -999999;
+      let bestChowShanten = 99;
 
       for (const opt of actions.chowOptions) {
         const removeIds = new Set(opt.discardTileIds);
@@ -1212,48 +1226,45 @@ export class MahjongAI {
           { type: 'CHOW', tiles: opt.tiles, sourceSeat: 3 },
         ];
 
-        let minPostShanten = 999;
-        let maxOptionScore = -999999;
-        let bestOptionDiscard: Tile | null = null;
-        const testedCodes = new Set<string>();
+        // Evaluate best discard from postHand via Tier 2:
+        const chowEval = this.evaluateBestDiscardCandidate(
+          postHand,
+          postMelds,
+          allKnownVisibleTiles,
+          roundWind,
+          playerWind
+        );
+        const bestOptionDiscard = chowEval.bestDiscard;
+        const minPostShanten = chowEval.minShanten;
+        const maxOptionScore = chowEval.bestShantenRes.score;
 
-        for (let i = 0; i < postHand.length; i++) {
-          const cand = postHand[i];
-          if (testedCodes.has(cand.shortCode)) continue;
-          testedCodes.add(cand.shortCode);
-
-          const testHand13 = postHand.filter((_, idx) => idx !== i);
-          const res = this.calculateShantenWithOuts(testHand13, postMelds.length);
-          const acc = this.calculateTileAcceptance(res, allKnownVisibleTiles);
-          const chowScore = (10 - res.shanten) * 2500 + acc;
-
-          if (res.shanten < minPostShanten) {
-            minPostShanten = res.shanten;
-          }
-          if (chowScore > maxOptionScore) {
-            maxOptionScore = chowScore;
-            bestOptionDiscard = cand;
-          }
-        }
-
-        // Reject self-defeating "吃什麼打什麼" (Eating a tile and immediately discarding the exact same tile)
-        if (bestOptionDiscard?.shortCode === targetTile.shortCode) {
+        // Reject self-defeating "吃什麼打什麼"
+        if (bestOptionDiscard.shortCode === targetTile.shortCode) {
           continue;
         }
 
-        // Chow MUST strictly reduce Shanten (Chow gives no fans by itself)
-        if (minPostShanten < currentShanten && maxOptionScore > bestChowScore) {
+        if (
+          maxOptionScore > bestChowScore ||
+          (maxOptionScore === bestChowScore && minPostShanten < bestChowShanten)
+        ) {
           bestChowScore = maxOptionScore;
+          bestChowShanten = minPostShanten;
           bestChowOption = opt;
         }
       }
 
-      if (bestChowOption) {
-        return { action: 'CHOW', chosenChowOption: bestChowOption };
+      if (
+        bestChowOption &&
+        (bestChowScore > maxActionScore ||
+          (bestChowScore === maxActionScore && bestChowShanten < minActionShanten))
+      ) {
+        maxActionScore = bestChowScore;
+        minActionShanten = bestChowShanten;
+        chosenDecision = { action: 'CHOW', chosenChowOption: bestChowOption };
       }
     }
 
-    return { action: 'PASS' };
+    return chosenDecision;
   }
 }
 

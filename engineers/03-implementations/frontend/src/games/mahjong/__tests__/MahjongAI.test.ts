@@ -755,12 +755,12 @@ describe('MahjongAI Unit Tests', () => {
       expect(decision.action).toBe('CHOW'); // Advances hand from 2-Shanten to 1-Shanten!
     });
 
-    it('should PASS on Chow if Shanten is not strictly reduced', () => {
+    it('should CHOW to upgrade hand flexibility and shape quality (e.g. turning dead isolated tile into flexible 4p)', () => {
       // 16-tile hand in 2-Shanten: 123m (1), 456m (2), 789m (3), 234p (4), 9p, 5s, 8s, east (4 singles)
-      // Current Shanten = (5 - 4) * 2 - 0 - 0 = 2 (2-Shanten).
-      // Upper player discards 1p. Chow option is 123p (using 2p, 3p from hand, which breaks 234p and leaves 4p as single).
-      // If AI chows 1p -> Post-hand has 123m, 456m, 789m, 4p, 9p, 5s, 8s, east + open meld 123p (still 4 complete melds, still 2-Shanten!).
-      // Shanten does not decrease (2 is not < 2) -> AI PASSes!
+      // Upper player discards 1p. Chow option is 123p (using 2p, 3p from hand).
+      // If AI chows 1p -> Post-hand has 123m, 456m, 789m, 4p, 9p, 5s, 8s, east + open meld 123p.
+      // Discarding isolated 'east' leaves 4p (high connectivity middle tile with 2,3,5,6p outs).
+      // The hand quality and Acceptance score strictly improve -> AI executes CHOW!
       const handCodes = [
         '1m', '2m', '3m',
         '4m', '5m', '6m',
@@ -781,6 +781,51 @@ describe('MahjongAI Unit Tests', () => {
           {
             tiles: [calledTile, hand[9], hand[10]], // 1p, 2p, 3p
             discardTileIds: [hand[9].id, hand[10].id],
+          },
+        ],
+        canTing: false,
+        canPass: true,
+      };
+
+      const decision = MahjongAI.decideAction(
+        actions,
+        hand,
+        [],
+        'EAST',
+        'SOUTH',
+        [],
+        calledTile
+      );
+
+      expect(decision.action).toBe('CHOW');
+    });
+
+    it('should PASS on Chow if eating does not improve hand score over standing hand', () => {
+      // 16-tile hand in 0-Shanten Ting: 123m, 456m, 789m, 123p, 45s (two-sided tatsu waiting on 36s), 9s, 9s (eyes)
+      // Upper player discards 4p. Chow option: 234p (using 2p, 3p from hand).
+      // Eating 4p leaves 1p (which must be discarded) and still waits on 36s (score is identical 25,800).
+      // Because score and shanten are tied, AI PASSes to preserve concealed hand (門清)!
+      const handCodes = [
+        '1m', '2m', '3m',
+        '4m', '5m', '6m',
+        '7m', '8m', '9m',
+        '1p', '2p', '3p',
+        '4s', '5s',
+        '9s', '9s',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+      const calledTile = createTile('4p', 'called4p');
+
+      const actions: AvailableActions = {
+        canHu: false,
+        canKong: false,
+        kongOptions: [],
+        canPong: false,
+        canChow: true,
+        chowOptions: [
+          {
+            tiles: [hand[10], hand[11], calledTile], // 2p, 3p, 4p
+            discardTileIds: [hand[10].id, hand[11].id],
           },
         ],
         canTing: false,
