@@ -193,6 +193,40 @@ describe('MahjongHandEvaluator Unit Tests', () => {
     expect(ting.winningTiles.find((t) => t.tileCode === '9s')!.remainingCount).toBe(3); // 4 - 1 in hand
   });
 
+  it('should evaluate 4-way Ting (4p, 5p, 6s, 9s) spanning both standard shape and Eight Pairs', () => {
+    // 16-tile hand: 11m, 22m, 33m (two 123m sequences), 44p, 55p (dual pair wait in standard shape),
+    // 666s, 999s (two triplets -> dual wait to become quads in Eight Pairs)
+    const handCodes = [
+      '1m', '1m',
+      '2m', '2m',
+      '3m', '3m',
+      '4p', '4p',
+      '5p', '5p',
+      '6s', '6s', '6s',
+      '9s', '9s', '9s',
+    ];
+    const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+    const ting = MahjongHandEvaluator.evaluateTing(hand, []);
+
+    // Verify all 4 winning tiles exist:
+    const winningCodes = ting.winningTiles.map((t) => t.tileCode);
+    expect(winningCodes).toContain('4p');
+    expect(winningCodes).toContain('5p');
+    expect(winningCodes).toContain('6s');
+    expect(winningCodes).toContain('9s');
+    expect(winningCodes).toHaveLength(4);
+
+    // Remaining counts:
+    // 4p: 4 - 2 in hand = 2
+    // 5p: 4 - 2 in hand = 2
+    // 6s: 4 - 3 in hand = 1
+    // 9s: 4 - 3 in hand = 1
+    expect(ting.winningTiles.find((t) => t.tileCode === '4p')!.remainingCount).toBe(2);
+    expect(ting.winningTiles.find((t) => t.tileCode === '5p')!.remainingCount).toBe(2);
+    expect(ting.winningTiles.find((t) => t.tileCode === '6s')!.remainingCount).toBe(1);
+    expect(ting.winningTiles.find((t) => t.tileCode === '9s')!.remainingCount).toBe(1);
+  });
+
   it('should evaluate Chow options and enforce upper player (上家) rule', () => {
     const handCodes = ['1m', '2m', '4m', '5m', '9p'];
     const hand = handCodes.map((c, i) => createTile(c, `${i}`));

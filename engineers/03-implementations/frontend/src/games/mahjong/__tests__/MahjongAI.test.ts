@@ -984,6 +984,70 @@ describe('MahjongAI Unit Tests', () => {
       const hand = handCodes.map((c, i) => createTile(c, `${i}`));
       const shanten = MahjongAI.calculateShanten(hand, []);
       expect(shanten).toBe(0); // 8 pairs achieved -> 0-Shanten!
+
+      const res = MahjongAI.calculateShantenWithOuts(hand, 0);
+      expect(res.shanten).toBe(0);
+      // 6-way wait: all 6 regular pairs are meldedOuts, while 4-of-a-kind (9s) has 0 copies left outside
+      expect(res.meldedOuts).toContain('1m');
+      expect(res.meldedOuts).not.toContain('9s');
+      expect(res.liveWinningCount).toBeGreaterThan(0);
+    });
+
+    it('should correctly identify 6 pairs + 1 triplet + 1 single as Eight Pairs single wait Ting', () => {
+      // 16-tile hand: 6 pairs (11m, 22m, 33m, 44p, 55p, 66s) + 1 triplet (999s) + 1 single (east)
+      const handCodes = [
+        '1m', '1m',
+        '2m', '2m',
+        '3m', '3m',
+        '4p', '4p',
+        '5p', '5p',
+        '6s', '6s',
+        '9s', '9s', '9s',
+        'east',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+      const res = MahjongAI.calculateShantenWithOuts(hand, 0);
+      expect(res.shanten).toBe(0);
+      expect(res.meldedOuts).toEqual(['east']); // Single wait on east!
+    });
+
+    it('should correctly identify 5 pairs + 2 triplets as Eight Pairs dual wait Ting', () => {
+      // 16-tile hand: 5 pairs (11m, 22m, 33m, 44p, 55p) + 2 triplets (666s, 999s)
+      const handCodes = [
+        '1m', '1m',
+        '2m', '2m',
+        '3m', '3m',
+        '4p', '4p',
+        '5p', '5p',
+        '6s', '6s', '6s',
+        '9s', '9s', '9s',
+      ];
+      const hand = handCodes.map((c, i) => createTile(c, `${i}`));
+      // Directly evaluate Eight Pairs (passing hand so visible tile counts include hand tiles):
+      const eightPairsRes = MahjongAI.calculateEightPairsShanten(hand, hand);
+      expect(eightPairsRes.shanten).toBe(0);
+      expect(eightPairsRes.meldedOuts).toContain('6s');
+      expect(eightPairsRes.meldedOuts).toContain('9s');
+      expect(eightPairsRes.meldedOuts).toHaveLength(2);
+      expect(eightPairsRes.liveWinningCount).toBe(2); // 1 copy of 6s and 1 copy of 9s left outside (4 - 3 = 1 each)
+
+      // With non-sequential pairs where standard shape is not in 4-out Ting:
+      const isolatedHandCodes = [
+        '1m', '1m',
+        '3m', '3m',
+        '5m', '5m',
+        '7p', '7p',
+        '9p', '9p',
+        '6s', '6s', '6s',
+        '9s', '9s', '9s',
+      ];
+      const isolatedHand = isolatedHandCodes.map((c, i) => createTile(c, `${i}`));
+      const res = MahjongAI.calculateShantenWithOuts(isolatedHand, 0);
+      expect(res.shanten).toBe(0);
+      expect(res.meldedOuts).toContain('6s');
+      expect(res.meldedOuts).toContain('9s');
+      expect(res.meldedOuts).toHaveLength(2);
+      expect(res.liveWinningCount).toBe(2);
     });
 
     it('should protect 1/9 tiles in tatsus (e.g. 12m, 89s) and discard true isolated tiles (e.g. single 5p or dead honor) instead', () => {

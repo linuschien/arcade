@@ -45,7 +45,7 @@ export class MahjongAI {
   private static suitCache = new Map<string, SuitPlan[]>();
 
   /**
-   * Calculates the Shanten (向聽數) of a hand (0 = Ting/Ready, 1 = 1-Shanten, etc.).
+   * Calculates the pure Shanten number of a hand.
    * Enforces 16-tile invariant: activeTiles.length + melds.length * 3 === 16.
    */
   public static calculateShanten(hand: Tile[], melds: Meld[]): number {
@@ -55,15 +55,7 @@ export class MahjongAI {
       return 99;
     }
 
-    const shantenRes = this.calculateShantenWithOuts(activeTiles, melds.length);
-    const standardShanten = shantenRes.shanten;
-
-    if (melds.length === 0 && activeTiles.length === 16) {
-      const eightPairsShanten = this.calculateEightPairsShanten(activeTiles);
-      return Math.min(standardShanten, eightPairsShanten);
-    }
-
-    return standardShanten;
+    return this.calculateShantenWithOuts(activeTiles, melds.length).shanten;
   }
 
   /**
@@ -463,46 +455,112 @@ export class MahjongAI {
       }
     }
 
+    // Evaluate Eight Pairs (嚦咕嚦咕) when hand is 16-tile concealed (meldCount === 0)
+    if (meldCount === 0 && activeTiles.length === 16) {
+      const eightPairsRes = this.calculateEightPairsShanten(activeTiles, visibleSource);
+      if (
+        eightPairsRes.score > bestScore ||
+        (eightPairsRes.score === bestScore && eightPairsRes.shanten < bestResult.shanten)
+      ) {
+        bestResult = eightPairsRes;
+      }
+    }
+
     return bestResult;
   }
 
   /**
-   * Shanten for 嚦咕嚦咕 (Eight Pairs).
+   * Shanten, Outs, and Acceptance evaluation for 嚦咕嚦咕 (Eight Pairs).
    * In 16-tile Taiwanese Mahjong:
-   * - 8 pairs (pairCount = 8) -> 0-Shanten Ting (waits on any of the 8 pairs to become triplet)
-   * - 6 pairs + 1 triplet + 1 single (pairCount = 7, tripletCount >= 1) -> 0-Shanten Ting (waits on single)
+   * - 8 pairs (pairCount = 8) -> 0-Shanten Ting (8-way wait on any pair to become triplet)
+   * - 6 pairs + 1 triplet + 1 single (pairCount = 7, tripletCount >= 1) -> 0-Shanten Ting (single wait on isolated tile)
    * - 7 pairs + 2 singles (pairCount = 7, tripletCount = 0) -> 1-Shanten
    * Note: 4-of-a-kind (quad) counts as 2 pairs.
    * Enforces 16-tile invariant: activeTiles.length === 16.
    */
-  private static calculateEightPairsShanten(tiles: Tile[]): number {
+  public static calculateEightPairsShanten(
+    tiles: Tile[],
+    allKnownVisibleTiles: Tile[] = []
+  ): ShantenResult {
     const activeTiles = tiles.filter((t) => !t.isFlower);
     if (activeTiles.length !== 16) {
-      return 99;
+      return {
+        shanten: 99,
+        score: 0,
+        acceptance: 0,
+        liveWinningCount: 0,
+        meldedOuts: [],
+        goodTatsuOuts: [],
+        badTatsuOuts: [],
+      };
     }
 
     const codeCounts = new Map<string, number>();
     for (const t of activeTiles) {
       codeCounts.set(t.shortCode, (codeCounts.get(t.shortCode) || 0) + 1);
     }
-    let pairCount = 0;
-    let tripletCount = 0;
 
-    for (const count of codeCounts.values()) {
-      if (count === 4) {
-        pairCount += 2;
-      } else if (count === 3) {
-        tripletCount += 1;
-        pairCount += 1;
-      } else if (count === 2) {
-        pairCount += 1;
-      }
+    const singles: string[] = [];
+    const pairs: string[] = [];
+    const triplets: string[] = [];
+    let quadsCount = 0;
+
+    for (const [code, count] of codeCounts.entries()) {
+      if (count === 1) singles.push(code);
+      else if (count === 2) pairs.push(code);
+      else if (count === 3) triplets.push(code);
+      else if (count === 4) quadsCount++;
     }
 
-    if (pairCount >= 8 || (pairCount >= 7 && tripletCount >= 1)) {
-      return 0;
+    let shanten: number;
+    let meldedOuts: string[] = [];
+    let badTatsuOuts: string[] = [];
+
+    // The 3 exact closed-form 0-Shanten Ting states:
+    if (singles.length === 0 && triplets.length === 0) {
+      // Shape 1: 8 pairs -> wait on all 2-tile pairs to become triplets
+      shanten = 0;
+      meldedOuts = [...pairs];
+    } else if (singles.length === 1 && triplets.length === 1) {
+      // Shape 2: 6 pairs + 1 triplet + 1 single -> single wait on the single tile
+      shanten = 0;
+      meldedOuts = [...singles];
+    } else if (singles.length === 0 && triplets.length === 2) {
+      // Shape 3: 5 pairs + 2 triplets -> dual wait on both triplets to become quads (2 pairs)
+      shanten = 0;
+      meldedOuts = [...triplets];
+    } else {
+      // >= 1 Shanten: advance by pairing singles, making triplets, or making quads
+      const effectivePairs = 2 * quadsCount + pairs.length + triplets.length;
+      shanten = Math.max(1, 8 - effectivePairs);
+      badTatsuOuts = Array.from(new Set([...singles, ...pairs, ...triplets]));
     }
-    return Math.max(1, 8 - pairCount);
+
+    const totalAcceptance = this.calculateTileAcceptance(
+      {
+        shanten,
+        score: 0,
+        acceptance: 0,
+        liveWinningCount: 0,
+        meldedOuts,
+        goodTatsuOuts: [],
+        badTatsuOuts,
+      },
+      allKnownVisibleTiles
+    );
+
+    const totalLiveWinning = shanten === 0 ? Math.floor(totalAcceptance / 100) : 0;
+    const finalScore = (shanten === 0 && totalLiveWinning === 0) ? 0 : (10 - shanten) * 2500 + totalAcceptance;
+
+    return {
+      shanten,
+      score: finalScore,
+      acceptance: totalAcceptance,
+      liveWinningCount: totalLiveWinning,
+      meldedOuts,
+      goodTatsuOuts: [],
+      badTatsuOuts,
+    };
   }
 
   /**
