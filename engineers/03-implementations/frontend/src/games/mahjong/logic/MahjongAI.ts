@@ -26,6 +26,12 @@ export interface BestDiscardEvaluation {
   bestShantenRes: ShantenResult;
 }
 
+export interface KongEvaluation {
+  isBeneficial: boolean;
+  score: number;
+  shanten: number;
+}
+
 export interface ShantenResult {
   shanten: number;           // Minimum Shanten distance (0 = Ting/Ready, 1 = 1-Shanten, etc.)
   score: number;             // Overall fitness score: (s === 0 && liveWinningCount === 0) ? 0 : (10 - s) * 2500 + acceptance
@@ -923,9 +929,7 @@ export class MahjongAI {
   }
 
   /**
-   * Universal Kong Evaluation Engine.
-   * Evaluates whether executing a kongOption (CONCEALED_KONG, ADDED_KONG, MELDED_KONG)
-   * is beneficial and safe regarding Shanten, winning tiles count, and fan preservation.
+   * Boolean wrapper for evaluateKong.
    */
   public static isKongBeneficial(
     kong: KongOption,
@@ -933,37 +937,61 @@ export class MahjongAI {
     melds: Meld[],
     allKnownVisibleTiles: Tile[] = []
   ): boolean {
+    return this.evaluateKong(kong, hand, melds, allKnownVisibleTiles).isBeneficial;
+  }
+
+  /**
+   * Universal Kong Evaluation Engine.
+   * Evaluates whether executing a kongOption (CONCEALED_KONG, ADDED_KONG, MELDED_KONG)
+   * is beneficial based on Score-first and Shanten tie-breaker.
+   */
+  public static evaluateKong(
+    kong: KongOption,
+    hand: Tile[],
+    melds: Meld[],
+    allKnownVisibleTiles: Tile[] = []
+  ): KongEvaluation {
+    const validHand = hand.filter((t) => !t.isFlower);
+    const candidateList = validHand.length > 0 ? validHand : hand;
     const isConcealed = melds.length === 0;
 
-    // 1. Melded Kong (大明槓) Fan Checks:
+    // 1. Hand Count Invariant Guard:
+    // Melded Kong claims on opponent discard -> hand must have 16 - 3M tiles
+    // Concealed / Added Kong executed on self turn -> hand must have 17 - 3M tiles
+    const expectedCount = kong.type === 'MELDED_KONG' ? 16 - melds.length * 3 : 17 - melds.length * 3;
+    if (candidateList.length !== expectedCount) {
+      return { isBeneficial: false, score: -999999, shanten: 99 };
+    }
+
+    // 2. Melded Kong (大明槓) Fan Checks:
     if (kong.type === 'MELDED_KONG') {
       // Must preserve 門清
-      if (isConcealed) return false;
+      if (isConcealed) {
+        return { isBeneficial: false, score: -999999, shanten: 99 };
+      }
 
       // Must preserve 三暗刻 / 四暗刻
       const codeCounts = new Map<string, number>();
-      for (const t of hand) {
-        if (!t.isFlower) {
-          codeCounts.set(t.shortCode, (codeCounts.get(t.shortCode) || 0) + 1);
-        }
+      for (const t of candidateList) {
+        codeCounts.set(t.shortCode, (codeCounts.get(t.shortCode) || 0) + 1);
       }
       let concealedTriplets = 0;
       for (const count of codeCounts.values()) {
         if (count >= 3) concealedTriplets++;
       }
       if (concealedTriplets >= 3) {
-        return false; // Protect 三暗刻 / 四暗刻
+        return { isBeneficial: false, score: -999999, shanten: 99 };
       }
     }
 
-    // 2. Simulate Hand & Melds after Kong:
+    // 3. Simulate Hand & Melds after Kong:
     const remainingHand: Tile[] = [];
     const simulatedMelds: Meld[] = [...melds];
 
     if (kong.type === 'CONCEALED_KONG') {
       let removed = 0;
       const kongTiles: Tile[] = [];
-      for (const t of hand) {
+      for (const t of candidateList) {
         if (t.shortCode === kong.tileCode && removed < 4) {
           kongTiles.push(t);
           removed++;
@@ -978,7 +1006,7 @@ export class MahjongAI {
       });
     } else if (kong.type === 'ADDED_KONG') {
       let removed = 0;
-      for (const t of hand) {
+      for (const t of candidateList) {
         if (t.shortCode === kong.tileCode && removed < 1) {
           removed++;
         } else {
@@ -995,7 +1023,7 @@ export class MahjongAI {
     } else if (kong.type === 'MELDED_KONG') {
       let removed = 0;
       const kongTiles: Tile[] = [];
-      for (const t of hand) {
+      for (const t of candidateList) {
         if (t.shortCode === kong.tileCode && removed < 3) {
           kongTiles.push(t);
           removed++;
@@ -1010,60 +1038,41 @@ export class MahjongAI {
       });
     }
 
-    let currentShanten = 99;
+    // 4. Calculate Post-Kong State (Tier 1)
+    const postKongRes = this.calculateShantenWithOuts(remainingHand, simulatedMelds.length, allKnownVisibleTiles);
+    const postKongScore = postKongRes.score + 500;
+    const postKongShanten = postKongRes.shanten;
+
+    // 5. Calculate Pre-Kong Baseline State
+    let baselineScore = -999999;
+    let baselineShanten = 99;
+
     if (kong.type === 'MELDED_KONG') {
-      currentShanten = this.calculateShanten(hand, melds);
+      const baseRes = this.calculateShantenWithOuts(candidateList, melds.length, allKnownVisibleTiles);
+      baselineScore = baseRes.score;
+      baselineShanten = baseRes.shanten;
     } else {
-      for (let i = 0; i < hand.length; i++) {
-        const testHand = hand.filter((_, idx) => idx !== i);
-        const s = this.calculateShanten(testHand, melds);
-        if (s < currentShanten) currentShanten = s;
-      }
-    }
-    const postKongShanten = this.calculateShanten(remainingHand, simulatedMelds);
-
-    // Shanten must not regress (increase)
-    if (postKongShanten > currentShanten) {
-      return false;
+      // Concealed or Added Kong: 17 tiles -> call Tier 2 to get best discard baseline
+      const baseEval = this.evaluateBestDiscardCandidate(candidateList, melds, allKnownVisibleTiles);
+      baselineScore = baseEval.bestShantenRes.score;
+      baselineShanten = baseEval.minShanten;
     }
 
-    // If currently in Ting (currentShanten === 0):
-    // Kong must maintain Ting (postKongShanten === 0) AND must not reduce winning tiles count (protect multi-way Ting / Screwdriver)
-    if (currentShanten === 0) {
-      if (postKongShanten !== 0) return false;
+    // 6. Universal Comparison: Score-first, Shanten on ties
+    const isBeneficial =
+      postKongScore > baselineScore ||
+      (postKongScore === baselineScore && postKongShanten < baselineShanten);
 
-      // Calculate pre-kong winning tiles count
-      let currentWinningCount = 0;
-
-      if (kong.type === 'MELDED_KONG') {
-        // Claim on opponent discard: hand has 16 tiles
-        currentWinningCount = this.countWinningTilesRemaining(hand, melds, allKnownVisibleTiles);
-      } else {
-        // Self kong (Concealed or Added): hand has 17 tiles. Find max winning count among all 0-shanten discards
-        for (let i = 0; i < hand.length; i++) {
-          const testHand = hand.filter((_, idx) => idx !== i);
-          if (this.calculateShanten(testHand, melds) === 0) {
-            const count = this.countWinningTilesRemaining(testHand, melds, allKnownVisibleTiles);
-            if (count > currentWinningCount) {
-              currentWinningCount = count;
-            }
-          }
-        }
-      }
-
-      const postWinningCount = this.countWinningTilesRemaining(remainingHand, simulatedMelds, allKnownVisibleTiles);
-
-      // If winning tiles count strictly decreases (e.g. 5556 dropping from 3-way to 1-way wait), reject!
-      if (postWinningCount < currentWinningCount) {
-        return false;
-      }
-    }
-
-    return true;
+    return {
+      isBeneficial,
+      score: postKongScore,
+      shanten: postKongShanten,
+    };
   }
 
   /**
    * Decides which self kong (Concealed or Added) to execute during AI's turn, if beneficial.
+   * Compares all kong options on the Score auction to pick the best one.
    */
   public static decideSelfKong(
     kongOptions: KongOption[],
@@ -1071,12 +1080,24 @@ export class MahjongAI {
     melds: Meld[],
     allKnownVisibleTiles: Tile[] = []
   ): KongOption | null {
+    let bestKong: KongOption | null = null;
+    let bestScore = -999999;
+    let bestShanten = 99;
+
     for (const kong of kongOptions) {
-      if (this.isKongBeneficial(kong, hand, melds, allKnownVisibleTiles)) {
-        return kong;
+      const evalRes = this.evaluateKong(kong, hand, melds, allKnownVisibleTiles);
+      if (evalRes.isBeneficial) {
+        if (
+          evalRes.score > bestScore ||
+          (evalRes.score === bestScore && evalRes.shanten < bestShanten)
+        ) {
+          bestScore = evalRes.score;
+          bestShanten = evalRes.shanten;
+          bestKong = kong;
+        }
       }
     }
-    return null;
+    return bestKong;
   }
 
   /**
@@ -1110,25 +1131,14 @@ export class MahjongAI {
     // 2. Kong decision (Melded Kong)
     if (actions.canKong && actions.kongOptions.length > 0) {
       const kong = actions.kongOptions[0];
-      if (this.isKongBeneficial(kong, hand, melds, allKnownVisibleTiles)) {
-        let removed = 0;
-        const postHand: Tile[] = [];
-        for (const t of hand) {
-          if (t.shortCode === kong.tileCode && removed < 3) {
-            removed++;
-          } else {
-            postHand.push(t);
-          }
-        }
-        const postMelds: Meld[] = [
-          ...melds,
-          { type: 'MELDED_KONG', tiles: [], sourceSeat: 1 },
-        ];
-        const postKongRes = this.calculateShantenWithOuts(postHand, postMelds.length, allKnownVisibleTiles);
-        const scoreKong = postKongRes.score + 500;
-        if (scoreKong > maxActionScore || (scoreKong === maxActionScore && postKongRes.shanten < minActionShanten)) {
-          maxActionScore = scoreKong;
-          minActionShanten = postKongRes.shanten;
+      const kongEval = this.evaluateKong(kong, hand, melds, allKnownVisibleTiles);
+      if (kongEval.isBeneficial) {
+        if (
+          kongEval.score > maxActionScore ||
+          (kongEval.score === maxActionScore && kongEval.shanten < minActionShanten)
+        ) {
+          maxActionScore = kongEval.score;
+          minActionShanten = kongEval.shanten;
           chosenDecision = { action: 'KONG' };
         }
       }
