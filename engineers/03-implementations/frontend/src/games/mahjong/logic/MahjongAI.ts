@@ -848,31 +848,17 @@ export class MahjongAI {
   }
 
   /**
-   * Evaluates quality-weighted tile acceptance for a hand or pre-calculated ShantenResult.
+   * Evaluates quality-weighted tile acceptance for a pre-calculated ShantenResult.
    * Melded Out: 100 pts
    * Good Tatsu Out (two-sided): 50 pts
    * Bad Tatsu Out (gap/border/pair): 20 pts
    */
   public static calculateTileAcceptance(
-    target: ShantenResult | Tile[],
-    meldsOrVisible: Meld[] | Tile[] = [],
+    shantenRes: ShantenResult,
     allKnownVisibleTiles: Tile[] = []
   ): number {
-    let shantenRes: ShantenResult;
-    let visibleSource: Tile[] = [];
-
-    if ('shanten' in target && Array.isArray(target.meldedOuts)) {
-      shantenRes = target;
-      visibleSource = (meldsOrVisible as Tile[]) || [];
-    } else {
-      const hand = target as Tile[];
-      const melds = (meldsOrVisible as Meld[]) || [];
-      shantenRes = this.calculateShantenWithOuts(hand, melds.length);
-      visibleSource = allKnownVisibleTiles;
-    }
-
     const visibleCounts = new Map<string, number>();
-    visibleSource.forEach((t) => {
+    allKnownVisibleTiles.forEach((t) => {
       if (!t.isFlower) {
         visibleCounts.set(t.shortCode, (visibleCounts.get(t.shortCode) || 0) + 1);
       }
