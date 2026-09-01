@@ -1312,6 +1312,11 @@ export class MahjongGameState {
     this.phase = 'ROUND_SETTLEMENT';
     this.notifyPhase();
 
+    // Ensure all 4 players' Ting state is up to date for draw game reveal
+    for (let i = 0; i < 4; i++) {
+      this.updatePlayerTingState(i as PlayerSeat);
+    }
+
     // Dealer retains bankership: N = N + 1
     this.dealerStreak++;
 

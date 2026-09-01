@@ -518,6 +518,56 @@ describe('Mahjong MainGameScene Unit Tests', () => {
     expect(tingContainers[3].setVisible).toHaveBeenCalledWith(false);
   });
 
+  it('should maintain revealed hands and Smart Ting panels when refreshAllSeats() is called during ROUND_SETTLEMENT (prevent regression from async flower/draw callbacks)', () => {
+    scene.create();
+    const gameState = (scene as any).gameState;
+    gameState.startNewMatch();
+
+    // 1. Setup Seat 2 in Ting (111m, 222m, 333m, 444m, 55m, 23s waiting on 1s/4s)
+    const p2 = gameState.players[2];
+    p2.hand = [
+      { id: '1m_1', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      { id: '1m_2', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      { id: '1m_3', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' },
+      { id: '2m_1', suit: 'CHARACTERS', value: 2, name: '二萬', shortCode: '2m' },
+      { id: '2m_2', suit: 'CHARACTERS', value: 2, name: '二萬', shortCode: '2m' },
+      { id: '2m_3', suit: 'CHARACTERS', value: 2, name: '二萬', shortCode: '2m' },
+      { id: '3m_1', suit: 'CHARACTERS', value: 3, name: '三萬', shortCode: '3m' },
+      { id: '3m_2', suit: 'CHARACTERS', value: 3, name: '三萬', shortCode: '3m' },
+      { id: '3m_3', suit: 'CHARACTERS', value: 3, name: '三萬', shortCode: '3m' },
+      { id: '4m_1', suit: 'CHARACTERS', value: 4, name: '四萬', shortCode: '4m' },
+      { id: '4m_2', suit: 'CHARACTERS', value: 4, name: '四萬', shortCode: '4m' },
+      { id: '4m_3', suit: 'CHARACTERS', value: 4, name: '四萬', shortCode: '4m' },
+      { id: '5m_1', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' },
+      { id: '5m_2', suit: 'CHARACTERS', value: 5, name: '五萬', shortCode: '5m' },
+      { id: '2s_1', suit: 'BAMBOO', value: 2, name: '二條', shortCode: '2s' },
+      { id: '3s_1', suit: 'BAMBOO', value: 3, name: '三條', shortCode: '3s' },
+    ];
+    gameState.updatePlayerTingState(2);
+
+    // 2. Trigger Draw Settlement
+    gameState.settleDraw(); // enters phase = 'ROUND_SETTLEMENT' and calls showSettlementWindow -> refreshAllSeats(true)
+
+    const seat2RenderSpy = vi.spyOn((scene as any).seatContainers[2], 'renderPlayerState');
+    const tingContainer2 = (scene as any).tingContainers[2];
+
+    // 3. Now simulate the async delayed callback (e.g. from replaceDrawnFlower or delayedCall) calling refreshAllSeats() WITHOUT arguments:
+    (scene as any).refreshAllSeats();
+
+    // In bugged code: seat2RenderSpy is called with revealHand = false, and tingContainer2 is hidden (false)!
+    // With patch: seat2RenderSpy must be called with revealHand = true, and tingContainer2 must remain visible (true)!
+    expect(seat2RenderSpy).toHaveBeenLastCalledWith(
+      expect.anything(),
+      false, // isHuman
+      expect.anything(),
+      true, // revealHand MUST STILL BE TRUE!
+      expect.anything(),
+      expect.anything(),
+      expect.anything()
+    );
+    expect(tingContainer2.setVisible).toHaveBeenLastCalledWith(true);
+  });
+
   it('should highlight positive flowers with orange stroke in settlement window according to effectiveWind', () => {
     scene.create();
     const gameState = (scene as any).gameState;

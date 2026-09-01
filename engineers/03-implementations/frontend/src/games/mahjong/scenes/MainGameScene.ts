@@ -1479,6 +1479,10 @@ export class MainGameScene extends BaseArcadeScene {
   }
 
   private refreshAllSeats(revealAllHands: boolean = false): void {
+    const isSettlement =
+      this.gameState.phase === 'ROUND_SETTLEMENT' || this.gameState.phase === 'MATCH_OVER';
+    const shouldReveal = revealAllHands || isSettlement;
+
     const lastSeat = this.gameState.lastDiscard?.fromSeat;
     for (let i = 0; i < 4; i++) {
       const p = this.gameState.players[i];
@@ -1486,7 +1490,7 @@ export class MainGameScene extends BaseArcadeScene {
         p,
         p.isHuman,
         lastSeat === i,
-        revealAllHands,
+        shouldReveal,
         this.gameState.roundWind,
         this.gameState.diceResult,
         this.gameState.getEffectiveWind(i as PlayerSeat)
@@ -1494,7 +1498,7 @@ export class MainGameScene extends BaseArcadeScene {
 
       // Render Smart Ting panel for any player in Ting when revealed or for human
       const showTing =
-        (p.isHuman || revealAllHands) &&
+        (p.isHuman || shouldReveal) &&
         Boolean(p.isTing && p.tingInfo && p.tingInfo.winningTiles.length > 0);
       if (showTing && p.tingInfo && this.tingContainers[i]) {
         this.renderTingPanel(this.tingContainers[i], p.tingInfo);
