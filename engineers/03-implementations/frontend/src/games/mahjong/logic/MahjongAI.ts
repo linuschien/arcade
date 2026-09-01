@@ -1077,8 +1077,13 @@ export class MahjongAI {
 
     // 4. Calculate Post-Kong State (Tier 1)
     const postKongRes = this.calculateShantenWithOuts(remainingHand, simulatedMelds.length, allKnownVisibleTiles);
-    const postKongScore = postKongRes.score + 500;
+    const postKongScore = postKongRes.score;
     const postKongShanten = postKongRes.shanten;
+
+    // 4.1. Dead Wait Guard: Reject immediately if post-kong state is a dead wait (0 live winning outs)
+    if (postKongScore <= 0) {
+      return { isBeneficial: false, score: -999999, shanten: 99 };
+    }
 
     // 5. Calculate Pre-Kong Baseline State
     let baselineScore = -999999;
@@ -1095,10 +1100,10 @@ export class MahjongAI {
       baselineShanten = baseEval.minShanten;
     }
 
-    // 6. Universal Comparison: Score-first, Shanten on ties
+    // 6. Universal Comparison: Score-first, Shanten on ties (maintains Ting / score without regression)
     const isBeneficial =
       postKongScore > baselineScore ||
-      (postKongScore === baselineScore && postKongShanten < baselineShanten);
+      (postKongScore === baselineScore && postKongShanten <= baselineShanten);
 
     return {
       isBeneficial,
