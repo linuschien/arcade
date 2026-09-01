@@ -106,7 +106,7 @@ describe('MahjongAI Unit Tests', () => {
           { type: 'PONG', tiles: [], sourceSeat: 2 },
         ],
         flowers: [],
-        discards: [createTile('1p', 'd1'), createTile('9s', 'd2')], // 1p is Genbutsu!
+        discards: [createTile('9s', 'd1'), createTile('1p', 'd2')], // 1p is latest Genbutsu!
         isTing: true,
         isAutoPlay: false,
         isPassLockout: false,
@@ -232,6 +232,81 @@ describe('MahjongAI Unit Tests', () => {
 
       const safest = MahjongAI.chooseBestDiscard(hand, [], [], [opponent], 8);
       expect(safest.shortCode).toBe('1m'); // 1m (Suji danger 10) is much safer than 5p (danger 70)
+    });
+
+    it('should prioritize following immediate upper player discard (跟打上家同巡捨牌 100% 絕對安全)', () => {
+      // Upper player just discarded 5p (normally a dangerous middle tile)
+      // Hand has 5p, 8m, 2s. Even though 5p is a middle tile, following immediate discard is 0 danger!
+      const hand = [
+        createTile('5p', '1'),
+        createTile('8m', '1'),
+        createTile('2s', '1'),
+        createTile('3s', '1'),
+        createTile('7m', '1'),
+        createTile('9m', '1'),
+      ];
+
+      const upperOpponent: PlayerProfile = {
+        seat: 3,
+        name: '陳小刀',
+        isHuman: false,
+        wind: 'NORTH',
+        isDealer: false,
+        chips: 10000,
+        hand: [],
+        drawnTile: null,
+        melds: [],
+        flowers: [],
+        discards: [createTile('1m', 'd1'), createTile('5p', 'd2')], // 5p is latest turn 0 discard!
+        isTing: true,
+        isAutoPlay: false,
+        isPassLockout: false,
+        passPongCodesInTurn: new Set(),
+      };
+
+      const safest = MahjongAI.chooseBestDiscard(hand, [], [], [upperOpponent], 8);
+      expect(safest.shortCode).toBe('5p'); // Follow immediate discard is 0 danger!
+    });
+
+    it('should prioritize True Wall (真·壁牌: 3m 4張全見保護 1m 免疫兩面聽)', () => {
+      // 4 copies of 3m are visible on the table -> 3m is a Wall!
+      // Hand has 1m (protected by 3m wall) and 9s (unprotected raw terminal)
+      const hand = [
+        createTile('1m', '1'),
+        createTile('9s', '1'),
+        createTile('5p', '1'),
+        createTile('6p', '1'),
+        createTile('7p', '1'),
+        createTile('2s', '1'),
+      ];
+
+      const allVisible = [
+        createTile('3m', 'v1'),
+        createTile('3m', 'v2'),
+        createTile('3m', 'v3'),
+        createTile('3m', 'v4'),
+      ];
+
+      const opponent: PlayerProfile = {
+        seat: 1,
+        name: '賭神',
+        isHuman: false,
+        wind: 'EAST',
+        isDealer: true,
+        chips: 20000,
+        hand: [],
+        drawnTile: null,
+        melds: [],
+        flowers: [],
+        discards: [createTile('2p', 'd1')],
+        isTing: true,
+        isAutoPlay: false,
+        isPassLockout: false,
+        passPongCodesInTurn: new Set(),
+      };
+
+      const safest = MahjongAI.chooseBestDiscard(hand, [], allVisible, [opponent], 8);
+      expect(safest.shortCode).toBe('1m'); // 1m protected by 3m wall is much safer than 9s
     });
 
     it('should choose discard that advances Eight Pairs (嚦咕嚦咕 / 8對半) to 0-Shanten Ting', () => {

@@ -799,7 +799,26 @@ export class MahjongAI {
   }
 
   /**
-   * Defense Mode: Chooses the safest discard based on Genbutsu, Suji, and dead honors.
+   * Defense Mode: Chooses the safest discard using a unified continuous danger model:
+   * 1. Immediate Follow (跟打上家最新剛打的牌): 0 danger (Absolute override).
+   * 2. Recency Age Map (O(1) hash lookup): age in rounds since last discarded.
+   * 3. Base Potential Danger (D_base):
+   *    - Genbutsu (現物): 6 + 1.2 * age (capped at 38)
+   *    - Outer Suji (1, 9 via 4, 6): 13 + 0.8 * suji_age
+   *    - Outer Suji (2, 8 via 5): 16 + 0.8 * suji_age
+   *    - Inner Suji (4, 5, 6 via double-ended): 22 + 1.0 * suji_age
+   *    - True Wall Protection (真·壁牌): 3 is wall (>=4 visible) -> 1 is safe (10 pts), 2 is safer (18 pts)
+   *                                      7 is wall (>=4 visible) -> 9 is safe (10 pts), 8 is safer (18 pts)
+   *                                      2 is wall -> 1 is safe (16 pts); 8 is wall -> 9 is safe (16 pts)
+   *    - Unseen Live Tiles: escalates with totalDiscards (T):
+   *        Terminals (1, 9): 26 + 0.25 * T
+   *        Near-terminals (2, 8): 34 + 0.35 * T
+   *        Middle (3~7): 42 + 0.50 * T
+   *        Honors (Winds/Dragons): 48 + 0.60 * T
+   *    - Compound Evidence Discount: -3 pts if multiple independent safety proofs match.
+   * 4. Remaining Count Scaling (R = 4 - visible):
+   *    - Honors: Danger = D_base * (R / 3) (R=0 -> 0 absolute safe, R=1 -> /3)
+   *    - Numbers: Danger = D_base * (0.25 + 0.25 * R) (R=0 -> 25% wall discount)
    */
   private static chooseSafestDiscard(
     hand: Tile[],
@@ -809,13 +828,7 @@ export class MahjongAI {
     const validHand = hand.filter((t) => !t.isFlower);
     const candidateList = validHand.length > 0 ? validHand : hand;
 
-    // Collect all opponent discards (Genbutsu 現物)
-    const opponentDiscards = new Set<string>();
-    opponents.forEach((op) => {
-      op.discards.forEach((d) => opponentDiscards.add(d.shortCode));
-    });
-
-    // Visible tile counts across table (open discards + melds + own hand)
+    // 1. Visible tile counts across table (open discards + melds + own hand)
     const visibleCounts = new Map<string, number>();
     const sourceTiles =
       allKnownVisibleTiles && allKnownVisibleTiles.length > 0
@@ -828,75 +841,178 @@ export class MahjongAI {
       }
     });
 
+    // 2. Build Discard Recency Age Map (age in rounds from personal opponent rivers)
+    const discardAgeMap = new Map<string, number>();
+    let latestDiscardCode: string | null = null;
+    let totalDiscards = 0;
+
+    // Identify Upper Player (上家) accurately based on seating cycle: (mySeat + 3) % 4
+    if (opponents.length > 0) {
+      const occupiedSeats = new Set(opponents.map((o) => o.seat));
+      let mySeat = 0;
+      for (let s = 0; s < 4; s++) {
+        if (!occupiedSeats.has(s as any)) {
+          mySeat = s;
+          break;
+        }
+      }
+      const upperSeat = (mySeat + 3) % 4;
+      const upperOpponent = opponents.find((o) => o.seat === upperSeat) || opponents[opponents.length - 1];
+      const upperDiscards = upperOpponent.discards.filter((d) => !d.isFlower);
+      if (upperDiscards.length > 0) {
+        latestDiscardCode = upperDiscards[upperDiscards.length - 1].shortCode;
+      }
+    }
+
+    opponents.forEach((op) => {
+      const nonFlowers = op.discards.filter((d) => !d.isFlower);
+      const len = nonFlowers.length;
+      totalDiscards += len;
+      for (let i = 0; i < len; i++) {
+        const d = nonFlowers[i];
+        const roundAge = len - 1 - i; // Each opponent discards once per round
+        const currentMinAge = discardAgeMap.get(d.shortCode);
+        if (currentMinAge === undefined || roundAge < currentMinAge) {
+          discardAgeMap.set(d.shortCode, roundAge);
+        }
+      }
+    });
+
     let safestTile = candidateList[0];
     let lowestDangerScore = 9999;
 
     for (const tile of candidateList) {
-      let dangerScore = 50; // Base score for unknown tile
       const code = tile.shortCode;
+      const isHonor = tile.suit === 'WINDS' || tile.suit === 'DRAGONS';
+      const visible = visibleCounts.get(code) || 0;
+      const remaining = Math.max(0, 4 - visible);
 
-      // 1. Genbutsu (現物): 100% Safe against players who discarded it
-      if (opponentDiscards.has(code)) {
+      let dangerScore = 50;
+
+      // 1. Follow Immediate Upper Discard (跟打上家同巡捨牌): 100% Absolute Safe
+      if (latestDiscardCode && code === latestDiscardCode) {
         dangerScore = 0;
-      } else if (tile.suit === 'WINDS' || tile.suit === 'DRAGONS') {
-        // 2. Honors: Safe if dead (3 or 4 copies visible)
-        const visible = visibleCounts.get(code) || 0;
-        if (visible >= 4) {
-          dangerScore = 1; // 4-visible Dead honor is 100% completely safe (cannot form sequence)
-        } else if (visible === 3) {
-          dangerScore = 5; // 3-visible Dead honor
-        } else if (visible === 2) {
-          dangerScore = 20;
-        } else {
-          dangerScore = 60; // Live honor is risky
+      } else if (isHonor) {
+        // 2. Honor Tiles
+        // Base honor danger escalates with total game progress
+        let dBase = 48 + 0.6 * totalDiscards;
+
+        // Check if discarded previously (Genbutsu)
+        const discardAge = discardAgeMap.get(code);
+        if (discardAge !== undefined) {
+          dBase = Math.min(dBase, 6 + 1.2 * discardAge);
         }
+
+        // Scaled by remaining unseen copies (R / 3). R=0 automatically yields 0!
+        dangerScore = dBase * (remaining / 3);
       } else {
-        // 3. Suji (筋牌) and Terminals (1, 9)
+        // 3. Number Tiles
         const num = tile.value;
         const suit = code.slice(-1);
 
+        // (a) Base unseen danger based on tile shape and game progress
+        let dBase = 42 + 0.5 * totalDiscards; // default middle (3~7)
         if (num === 1 || num === 9) {
-          dangerScore = 30; // Terminals are generally safer than middle
+          dBase = 26 + 0.25 * totalDiscards; // terminal (1, 9)
+        } else if (num === 2 || num === 8) {
+          dBase = 34 + 0.35 * totalDiscards; // near-terminal (2, 8)
         }
 
-        // 4. Wall / Dead tile check (壁牌 / 絕張牌): 4-visible or 3-visible tiles are extremely safe
-        const visible = visibleCounts.get(code) || 0;
-        if (visible >= 4) {
-          dangerScore = Math.min(dangerScore, 5); // 4 visible = 絕張牌
-        } else if (visible === 3) {
-          dangerScore = Math.min(dangerScore, 15); // 3 visible = 壁牌 (One-Chance)
+        let safetyProofs = 0;
+
+        // (b) Genbutsu (現物): linear age decay
+        const discardAge = discardAgeMap.get(code);
+        if (discardAge !== undefined) {
+          const dDiscard = Math.min(38, 6 + 1.2 * discardAge);
+          if (dDiscard < dBase) {
+            dBase = dDiscard;
+            safetyProofs++;
+          }
         }
 
-        // Suji check: if 4 is discarded, 1 and 7 are Suji-safe from two-sided waits
-        if (num === 1 && opponentDiscards.has(`4${suit}`)) {
-          dangerScore = Math.min(dangerScore, 15);
-        }
-        if (num === 9 && opponentDiscards.has(`6${suit}`)) {
-          dangerScore = Math.min(dangerScore, 15);
-        }
-        if (num === 2 && opponentDiscards.has(`5${suit}`)) {
-          dangerScore = Math.min(dangerScore, 20);
-        }
-        if (num === 8 && opponentDiscards.has(`5${suit}`)) {
-          dangerScore = Math.min(dangerScore, 20);
-        }
-        if (num === 3 && opponentDiscards.has(`6${suit}`)) {
-          dangerScore = Math.min(dangerScore, 25);
-        }
-        if (num === 7 && opponentDiscards.has(`4${suit}`)) {
-          dangerScore = Math.min(dangerScore, 25);
+        // (c) Suji (筋牌): differentiated Outer Suji vs Inner Suji (中筋 vs 片筋)
+        let dSuji = 999;
+        if (num === 1) {
+          const a4 = discardAgeMap.get(`4${suit}`);
+          if (a4 !== undefined) dSuji = 13 + 0.8 * a4;
+        } else if (num === 9) {
+          const a6 = discardAgeMap.get(`6${suit}`);
+          if (a6 !== undefined) dSuji = 13 + 0.8 * a6;
+        } else if (num === 2) {
+          const a5 = discardAgeMap.get(`5${suit}`);
+          if (a5 !== undefined) dSuji = 16 + 0.8 * a5;
+        } else if (num === 8) {
+          const a5 = discardAgeMap.get(`5${suit}`);
+          if (a5 !== undefined) dSuji = 16 + 0.8 * a5;
+        } else if (num === 3) {
+          const a6 = discardAgeMap.get(`6${suit}`);
+          if (a6 !== undefined) dSuji = 18 + 0.9 * a6;
+        } else if (num === 7) {
+          const a4 = discardAgeMap.get(`4${suit}`);
+          if (a4 !== undefined) dSuji = 18 + 0.9 * a4;
+        } else if (num === 4) {
+          const a1 = discardAgeMap.get(`1${suit}`);
+          const a7 = discardAgeMap.get(`7${suit}`);
+          if (a1 !== undefined && a7 !== undefined) {
+            dSuji = 22 + 1.0 * Math.max(a1, a7); // 中筋 (兩端皆斷)
+          } else if (a1 !== undefined || a7 !== undefined) {
+            dSuji = 32 + 1.0 * (a1 ?? a7!); // 片筋 (單端斷)
+          }
+        } else if (num === 5) {
+          const a2 = discardAgeMap.get(`2${suit}`);
+          const a8 = discardAgeMap.get(`8${suit}`);
+          if (a2 !== undefined && a8 !== undefined) {
+            dSuji = 22 + 1.0 * Math.max(a2, a8); // 中筋
+          } else if (a2 !== undefined || a8 !== undefined) {
+            dSuji = 32 + 1.0 * (a2 ?? a8!); // 片筋
+          }
+        } else if (num === 6) {
+          const a3 = discardAgeMap.get(`3${suit}`);
+          const a9 = discardAgeMap.get(`9${suit}`);
+          if (a3 !== undefined && a9 !== undefined) {
+            dSuji = 22 + 1.0 * Math.max(a3, a9); // 中筋
+          } else if (a3 !== undefined || a9 !== undefined) {
+            dSuji = 32 + 1.0 * (a3 ?? a9!); // 片筋
+          }
         }
 
-        // Two-way Suji for middle numbers: 4 is safe only if BOTH 1 and 7 are discarded
-        if (num === 4 && opponentDiscards.has(`1${suit}`) && opponentDiscards.has(`7${suit}`)) {
-          dangerScore = Math.min(dangerScore, 20);
+        if (dSuji < dBase) {
+          dBase = dSuji;
+          safetyProofs++;
         }
-        if (num === 5 && opponentDiscards.has(`2${suit}`) && opponentDiscards.has(`8${suit}`)) {
-          dangerScore = Math.min(dangerScore, 20);
+
+        // (d) True Wall Protection (真·壁牌): neighbor 3/7/2/8 breaks sequences
+        let dWall = 999;
+        if (num === 1) {
+          const v3 = visibleCounts.get(`3${suit}`) || 0;
+          const v2 = visibleCounts.get(`2${suit}`) || 0;
+          // Both 3 and 2 completely break 1-2-3 sequence!
+          if (v3 >= 4 || v2 >= 4) dWall = Math.min(dWall, 10);
+          else if (v3 === 3 || v2 === 3) dWall = Math.min(dWall, 18);
+        } else if (num === 9) {
+          const v7 = visibleCounts.get(`7${suit}`) || 0;
+          const v8 = visibleCounts.get(`8${suit}`) || 0;
+          // Both 7 and 8 completely break 7-8-9 sequence!
+          if (v7 >= 4 || v8 >= 4) dWall = Math.min(dWall, 10);
+          else if (v7 === 3 || v8 === 3) dWall = Math.min(dWall, 18);
+        } else if (num === 2) {
+          const v3 = visibleCounts.get(`3${suit}`) || 0;
+          if (v3 >= 4) dWall = Math.min(dWall, 16);
+        } else if (num === 8) {
+          const v7 = visibleCounts.get(`7${suit}`) || 0;
+          if (v7 >= 4) dWall = Math.min(dWall, 16);
         }
-        if (num === 6 && opponentDiscards.has(`3${suit}`) && opponentDiscards.has(`9${suit}`)) {
-          dangerScore = Math.min(dangerScore, 20);
+
+        if (dWall < dBase) {
+          dBase = dWall;
+          safetyProofs++;
         }
+
+        // Compound Evidence Discount: Directly deduct safetyProofs for each independent safety evidence
+        dBase = Math.max(2, dBase - safetyProofs);
+
+        // Remaining Count Scaling: (0.25 + 0.25 * R)
+        dangerScore = dBase * (0.25 + 0.25 * remaining);
       }
 
       if (dangerScore < lowestDangerScore) {
