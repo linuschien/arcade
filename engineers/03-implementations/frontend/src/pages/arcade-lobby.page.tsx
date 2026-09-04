@@ -19,8 +19,14 @@ export interface ArcadeLobbyPageProps {
   handlers?: any;
 }
 
-const isCrtInitial = localStorage.getItem('arcade_crt_enabled') === 'true';
-const isAudioInitial = localStorage.getItem('arcade_audio_enabled') !== 'false';
+const isCrtInitial =
+  typeof window !== 'undefined' && typeof localStorage !== 'undefined'
+    ? localStorage.getItem('arcade_crt_enabled') === 'true'
+    : false;
+const isAudioInitial =
+  typeof window !== 'undefined' && typeof localStorage !== 'undefined'
+    ? localStorage.getItem('arcade_audio_enabled') !== 'false'
+    : true;
 
 const defaultStore = createStateStore({
   user: { email: '', id: '', isAdmin: false },
@@ -95,12 +101,16 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
 
     if (isPlaying) {
       const targetGameId = store.get('/activeGameId') || currentSelectedGameId;
-      const timer = setTimeout(() => {
-        if (!activeGameInstanceRef.current) {
+      let isCancelled = false;
+
+      const timer = setTimeout(async () => {
+        if (!activeGameInstanceRef.current && !isCancelled) {
           const container = document.getElementById('phaser-game-canvas-container');
           if (container && targetGameId) {
-            const game = createGameInstance(targetGameId, container);
-            if (game) {
+            const game = await createGameInstance(targetGameId, container);
+            if (isCancelled) {
+              game?.destroyGame();
+            } else if (game) {
               activeGameInstanceRef.current = game;
             }
           }
@@ -108,6 +118,7 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
       }, 50);
 
       return () => {
+        isCancelled = true;
         clearTimeout(timer);
       };
     } else {
@@ -255,10 +266,10 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
     store.set('/settings/crtLabel', isCrtEnabled ? '📺 CRT: ON' : '📺 CRT: OFF');
     store.set('/settings/muteLabel', isAudioEnabled ? '🔊 Audio: ON' : '🔇 Audio: OFF');
     store.set('/settings/masterMuted', !isAudioEnabled);
-    if (isCrtEnabled !== undefined) {
+    if (isCrtEnabled !== undefined && typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       localStorage.setItem('arcade_crt_enabled', String(!!isCrtEnabled));
     }
-    if (isAudioEnabled !== undefined) {
+    if (isAudioEnabled !== undefined && typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       localStorage.setItem('arcade_audio_enabled', String(!!isAudioEnabled));
     }
   }, [isCrtEnabled, isAudioEnabled, store]);
@@ -340,7 +351,9 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
       switch (ref) {
         case 'ToggleCRT': {
           const current = store.get('/settings/crtEnabled');
-          localStorage.setItem('arcade_crt_enabled', String(current));
+          if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+            localStorage.setItem('arcade_crt_enabled', String(current));
+          }
           break;
         }
 

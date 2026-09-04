@@ -4,28 +4,37 @@
  */
 
 import { IArcadeGame } from '@/core/bridge/ArcadeBridge';
-import { createTetrisGame } from './tetris';
-import { createPacmanGame } from './pacman';
-import { createPipeManiaGame } from './pipemania';
-import { createMahjongGame } from './mahjong';
 
-export type GameFactory = (container: HTMLElement) => IArcadeGame;
+export type GameFactory = (container: HTMLElement) => Promise<IArcadeGame> | IArcadeGame;
 
-export const gameRegistry: Record<string, GameFactory> = {
-  tetris: createTetrisGame,
-  pacman: createPacmanGame,
-  pipemania: createPipeManiaGame,
-  mahjong: createMahjongGame,
+export const gameLoaders: Record<string, () => Promise<{ [key: string]: any }>> = {
+  tetris: () => import('./tetris'),
+  pacman: () => import('./pacman'),
+  pipemania: () => import('./pipemania'),
+  mahjong: () => import('./mahjong'),
 };
 
 /**
- * Instantiate an Arcade Game instance by gameId slug.
+ * Instantiate an Arcade Game instance asynchronously by gameId slug.
  */
-export function createGameInstance(gameId: string, container: HTMLElement): IArcadeGame | null {
-  const factory = gameRegistry[gameId];
-  if (!factory) {
+export async function createGameInstance(gameId: string, container: HTMLElement): Promise<IArcadeGame | null> {
+  const loader = gameLoaders[gameId];
+  if (!loader) {
     console.warn(`[ArcadeRegistry] No game factory registered for gameId: "${gameId}"`);
     return null;
   }
-  return factory(container);
+
+  const module = await loader();
+  switch (gameId) {
+    case 'tetris':
+      return module.createTetrisGame(container);
+    case 'pacman':
+      return module.createPacmanGame(container);
+    case 'pipemania':
+      return module.createPipeManiaGame(container);
+    case 'mahjong':
+      return module.createMahjongGame(container);
+    default:
+      return null;
+  }
 }

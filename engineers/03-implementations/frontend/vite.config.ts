@@ -17,6 +17,31 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 2000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/phaser')) {
+            return 'phaser-vendor';
+          }
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'react-vendor';
+          }
+          if (
+            id.includes('node_modules/@tanstack') ||
+            id.includes('node_modules/graphql') ||
+            id.includes('node_modules/graphql-request')
+          ) {
+            return 'query-vendor';
+          }
+          if (id.includes('node_modules/@json-render') || id.includes('node_modules/lucide-react')) {
+            return 'ui-vendor';
+          }
+        },
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',
