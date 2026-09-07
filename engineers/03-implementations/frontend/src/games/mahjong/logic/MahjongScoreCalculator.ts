@@ -333,7 +333,7 @@ export class MahjongScoreCalculator {
     }
 
     // 2. Hand & melds must not contain honor tiles (winds, dragons)
-    if (allTiles.some((t) => t.suit === 'wind' || t.suit === 'dragon')) {
+    if (allTiles.some((t) => t.suit === 'WINDS' || t.suit === 'DRAGONS')) {
       return false;
     }
 
@@ -364,7 +364,7 @@ export class MahjongScoreCalculator {
       if (idx2 === -1) return false;
 
       const remainingHand = hand.filter((_, i) => i !== idx1 && i !== idx2);
-      const dummyMelds: Meld[] = [...melds, { type: 'CHOW', tiles: [] }];
+      const dummyMelds: Meld[] = [...melds, { type: 'CHOW', tiles: [], sourceSeat: 0 }];
       const decompositions = MahjongHandEvaluator.findWinningDecompositions(
         remainingHand,
         dummyMelds
