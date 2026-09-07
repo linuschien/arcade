@@ -672,6 +672,34 @@ describe('MahjongGameState Unit Tests', () => {
     expect(p0.drawnTile).not.toBeNull();
   });
 
+  it('should sort hand tiles after performSelfKong (暗槓 / 加槓) when drawnTile is absorbed into hand', () => {
+    state.startNewMatch();
+    state.startDealing();
+
+    const p0 = state.players[0];
+    p0.hand = [
+      { id: '5s_1', suit: 'BAMBOO', value: 5, name: '五條', shortCode: '5s' },
+      { id: '5s_2', suit: 'BAMBOO', value: 5, name: '五條', shortCode: '5s' },
+      { id: '5s_3', suit: 'BAMBOO', value: 5, name: '五條', shortCode: '5s' },
+      { id: '5s_4', suit: 'BAMBOO', value: 5, name: '五條', shortCode: '5s' },
+      { id: '9p_1', suit: 'DOTS', value: 9, name: '九筒', shortCode: '9p' },
+    ];
+    // Drawn tile is 1万 (CHARACTERS, value 1, should be sorted before 9筒)
+    p0.drawnTile = { id: '1m_1', suit: 'CHARACTERS', value: 1, name: '一萬', shortCode: '1m' };
+
+    state.performSelfKong(0, {
+      type: 'CONCEALED_KONG',
+      tileCode: '5s',
+      handTileIds: ['5s_1', '5s_2', '5s_3', '5s_4'],
+    });
+
+    expect(p0.melds.length).toBe(1);
+    expect(p0.melds[0].type).toBe('CONCEALED_KONG');
+    // Hand should now contain 1m and 9p, SORTED: 1m first, 9p second
+    expect(p0.hand.map((t) => t.shortCode)).toEqual(['1m', '9p']);
+    expect(p0.drawnTile).not.toBeNull();
+  });
+
   it('should trigger settleDraw and preserve 16 dead wall reserve tiles when drawing a flower on dead wall exhaustion', () => {
     state.startNewMatch();
     state.startDealing();

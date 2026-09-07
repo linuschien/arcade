@@ -119,11 +119,11 @@ describe('MahjongScoreCalculator Unit Tests', () => {
     expect(result.chipDeltas[0]).toBe(6300);
   });
 
-  it('should evaluate strict 平胡 (2 fans) + 門清 (1 fan) on Ron', () => {
-    // 5 sequences in number suits, number pair (9p), two-sided wait on 3m (with 1m, 2m), 0 flowers, Ron
+  it('should evaluate strict 平胡 (2 fans) + 門清 (1 fan) on Ron with genuine two-sided wait', () => {
+    // 5 sequences in number suits, number pair (9p), genuine two-sided wait on 3m (with 4m, 5m waiting on 3m/6m), 0 flowers, Ron
     const handCodes = [
-      '1m', '2m',
-      '4m', '5m', '6m',
+      '4m', '5m',
+      '1m', '2m', '3m',
       '7m', '8m', '9m',
       '1p', '2p', '3p',
       '4s', '5s', '6s',
@@ -150,6 +150,176 @@ describe('MahjongScoreCalculator Unit Tests', () => {
     expect(result.fans.some((f) => f.name === '平胡' && f.fan === 2)).toBe(true);
     expect(result.fans.some((f) => f.name === '門清' && f.fan === 1)).toBe(true);
     expect(result.totalFans).toBe(3);
+  });
+
+  it('should evaluate 平胡 on edge number tiles 1 and 9 when won on genuine two-sided wait', () => {
+    // Test 1: Hand has 2m, 3m (waiting on 1m, 4m), winningTile is 1m
+    const hand1Codes = [
+      '2m', '3m',
+      '4m', '5m', '6m',
+      '7m', '8m', '9m',
+      '1p', '2p', '3p',
+      '4s', '5s', '6s',
+      '9p', '9p',
+    ];
+    const hand1 = hand1Codes.map((c, i) => createTile(c, `${i}`));
+    const win1 = createTile('1m', 'win1');
+    const res1 = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 0,
+      winnerHand: hand1,
+      winnerMelds: [],
+      winnerFlowers: [],
+      winningTile: win1,
+      isSelfDrawn: false,
+      loserSeat: 1,
+      roundWind: 'EAST',
+      playerWind: 'EAST',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+    expect(res1.fans.some((f) => f.name === '平胡' && f.fan === 2)).toBe(true);
+
+    // Test 9: Hand has 7m, 8m (waiting on 6m, 9m), winningTile is 9m
+    const hand9Codes = [
+      '7m', '8m',
+      '1m', '2m', '3m',
+      '4m', '5m', '6m',
+      '1p', '2p', '3p',
+      '4s', '5s', '6s',
+      '9p', '9p',
+    ];
+    const hand9 = hand9Codes.map((c, i) => createTile(c, `${i}`));
+    const win9 = createTile('9m', 'win9');
+    const res9 = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 0,
+      winnerHand: hand9,
+      winnerMelds: [],
+      winnerFlowers: [],
+      winningTile: win9,
+      isSelfDrawn: false,
+      loserSeat: 1,
+      roundWind: 'EAST',
+      playerWind: 'EAST',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+    expect(res9.fans.some((f) => f.name === '平胡' && f.fan === 2)).toBe(true);
+  });
+
+  it('should strictly exclude 平胡 on 邊張 (12 waiting on 3, or 89 waiting on 7)', () => {
+    // 邊張 3: Hand holds 1m, 2m (waiting only on 3m) even with other sequences present
+    const handEdge3Codes = [
+      '1m', '2m',
+      '4m', '5m', '6m',
+      '7m', '8m', '9m',
+      '1p', '2p', '3p',
+      '4s', '5s', '6s',
+      '9p', '9p',
+    ];
+    const handEdge3 = handEdge3Codes.map((c, i) => createTile(c, `${i}`));
+    const win3 = createTile('3m', 'win3');
+    const resEdge3 = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 0,
+      winnerHand: handEdge3,
+      winnerMelds: [],
+      winnerFlowers: [],
+      winningTile: win3,
+      isSelfDrawn: false,
+      loserSeat: 2,
+      roundWind: 'EAST',
+      playerWind: 'EAST',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+    expect(resEdge3.fans.some((f) => f.name === '平胡')).toBe(false);
+
+    // 邊張 7: Hand holds 8m, 9m (waiting only on 7m)
+    const handEdge7Codes = [
+      '8m', '9m',
+      '1m', '2m', '3m',
+      '4m', '5m', '6m',
+      '1p', '2p', '3p',
+      '4s', '5s', '6s',
+      '9p', '9p',
+    ];
+    const handEdge7 = handEdge7Codes.map((c, i) => createTile(c, `${i}`));
+    const win7 = createTile('7m', 'win7');
+    const resEdge7 = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 0,
+      winnerHand: handEdge7,
+      winnerMelds: [],
+      winnerFlowers: [],
+      winningTile: win7,
+      isSelfDrawn: false,
+      loserSeat: 2,
+      roundWind: 'EAST',
+      playerWind: 'EAST',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+    expect(resEdge7.fans.some((f) => f.name === '平胡')).toBe(false);
+  });
+
+  it('should strictly exclude 平胡 on 中洞 (嵌張 / 卡張)', () => {
+    // 中洞 3: Hand holds 2m, 4m (waiting only on 3m), with unrelated 4m, 5m, 6m in hand
+    const handMid3Codes = [
+      '2m', '4m',
+      '4m', '5m', '6m',
+      '7m', '8m', '9m',
+      '1p', '2p', '3p',
+      '4s', '5s', '6s',
+      '9p', '9p',
+    ];
+    const handMid3 = handMid3Codes.map((c, i) => createTile(c, `${i}`));
+    const win3 = createTile('3m', 'win3');
+    const resMid3 = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 0,
+      winnerHand: handMid3,
+      winnerMelds: [],
+      winnerFlowers: [],
+      winningTile: win3,
+      isSelfDrawn: false,
+      loserSeat: 2,
+      roundWind: 'EAST',
+      playerWind: 'EAST',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+    expect(resMid3.fans.some((f) => f.name === '平胡')).toBe(false);
+  });
+
+  it('should strictly exclude 平胡 on 單吊 (single wait on eye)', () => {
+    // 單吊 9p: 5 completed chows, 1 single 9p waiting for another 9p to form eye
+    const handSingleCodes = [
+      '1m', '2m', '3m',
+      '4m', '5m', '6m',
+      '7m', '8m', '9m',
+      '1p', '2p', '3p',
+      '4s', '5s', '6s',
+      '9p',
+    ];
+    const handSingle = handSingleCodes.map((c, i) => createTile(c, `${i}`));
+    const win9p = createTile('9p', 'win9p');
+    const resSingle = MahjongScoreCalculator.evaluateSettlement({
+      winnerSeat: 0,
+      winnerHand: handSingle,
+      winnerMelds: [],
+      winnerFlowers: [],
+      winningTile: win9p,
+      isSelfDrawn: false,
+      loserSeat: 2,
+      roundWind: 'EAST',
+      playerWind: 'EAST',
+      dealerSeat: 0,
+      dealerStreak: 0,
+      currentChips: [10000, 10000, 10000, 10000],
+    });
+    expect(resSingle.fans.some((f) => f.name === '平胡')).toBe(false);
   });
 
   it('should evaluate 清一色 (8 fans) and exclude 混一色', () => {

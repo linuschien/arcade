@@ -325,129 +325,68 @@ export class MahjongScoreCalculator {
   ): boolean {
     if (ctx.isSelfDrawn) return false;
     if (ctx.winnerFlowers.length > 0) return false;
+    if (!ctx.winningTile) return false;
 
-    // Check that all melds are CHOWs
+    // 1. All open melds must be CHOWs
     for (const m of melds) {
       if (m.type !== 'CHOW') return false;
     }
 
-    // Decompose hand into all CHOWs and 1 Pair
-    const codeCounts = new Map<string, number>();
-    for (const t of allTiles) {
-      codeCounts.set(t.shortCode, (codeCounts.get(t.shortCode) || 0) + 1);
-    }
-
-    let foundPingHuStructure = false;
-
-    // Test each candidate pair
-    for (const [pairCode, count] of codeCounts.entries()) {
-      if (count >= 2) {
-        // Pair must be number suit (not wind or dragon)
-        const suit = pairCode.slice(-1);
-        if (suit !== 'm' && suit !== 'p' && suit !== 's') continue;
-
-        codeCounts.set(pairCode, count - 2);
-
-        // Can remaining form all sequences?
-        if (this.canFormOnlySequences(codeCounts, 5 - melds.length)) {
-          // Check two-sided wait for winning tile
-          if (this.isTwoSidedWait(ctx.winnerHand, melds, ctx.winningTile, pairCode)) {
-            foundPingHuStructure = true;
-            codeCounts.set(pairCode, count);
-            break;
-          }
-        }
-
-        codeCounts.set(pairCode, count);
-      }
-    }
-
-    return foundPingHuStructure;
-  }
-
-  private static canFormOnlySequences(counts: Map<string, number>, remaining: number): boolean {
-    if (remaining === 0) {
-      for (const count of counts.values()) {
-        if (count > 0) return false;
-      }
-      return true;
-    }
-
-    let firstCode: string | null = null;
-    for (const [code, count] of counts.entries()) {
-      if (count > 0) {
-        firstCode = code;
-        break;
-      }
-    }
-    if (!firstCode) return false;
-
-    const suit = firstCode.slice(-1);
-    const num = parseInt(firstCode.slice(0, -1), 10);
-    if (isNaN(num) || (suit !== 'm' && suit !== 'p' && suit !== 's') || num > 7) {
+    // 2. Hand & melds must not contain honor tiles (winds, dragons)
+    if (allTiles.some((t) => t.suit === 'wind' || t.suit === 'dragon')) {
       return false;
     }
 
-    const code2 = `${num + 1}${suit}`;
-    const code3 = `${num + 2}${suit}`;
-    const c1 = counts.get(firstCode) || 0;
-    const c2 = counts.get(code2) || 0;
-    const c3 = counts.get(code3) || 0;
-
-    if (c1 >= 1 && c2 >= 1 && c3 >= 1) {
-      counts.set(firstCode, c1 - 1);
-      counts.set(code2, c2 - 1);
-      counts.set(code3, c3 - 1);
-
-      if (this.canFormOnlySequences(counts, remaining - 1)) {
-        counts.set(firstCode, c1);
-        counts.set(code2, c2);
-        counts.set(code3, c3);
-        return true;
-      }
-
-      counts.set(firstCode, c1);
-      counts.set(code2, c2);
-      counts.set(code3, c3);
-    }
-
-    return false;
+    // 3. Winning tile and remaining hand must form a genuine two-sided wait Pinghu
+    return this.checkTwoSidedPingHuChow(ctx.winnerHand, melds, ctx.winningTile);
   }
 
-  private static isTwoSidedWait(
+  /**
+   * Checks if winningTile can form an open-ended Chow (兩面搭子) with 2 hand tiles,
+   * such that removing those 2 tiles leaves a hand that forms all CHOWs and a number-suit eye.
+   * Reuses MahjongHandEvaluator.findWinningDecompositions.
+   */
+  private static checkTwoSidedPingHuChow(
     hand: Tile[],
     melds: Meld[],
-    winningTile: Tile,
-    pairCode: string
+    winningTile: Tile
   ): boolean {
     const suit = winningTile.shortCode.slice(-1);
     const num = parseInt(winningTile.shortCode.slice(0, -1), 10);
-    if (isNaN(num) || (suit !== 'm' && suit !== 'p' && suit !== 's')) return false;
-
-    // Two-sided wait means either (num-2, num-1) waiting on num (where num <= 9 and num-2 >= 1)
-    // or (num+1, num+2) waiting on num (where num >= 1 and num+2 <= 9).
-    // Specifically:
-    // If waiting on 3 with (1, 2) -> Edge wait (邊張), NOT two-sided!
-    // If waiting on 7 with (8, 9) -> Edge wait (邊張), NOT two-sided!
-    // Two-sided must be e.g. waiting on 2 or 5 with (3, 4), or 3 or 6 with (4, 5).
-    if (winningTile.shortCode === pairCode) {
-      return false; // Single wait on pair
+    if (isNaN(num) || (suit !== 'm' && suit !== 'p' && suit !== 's')) {
+      return false;
     }
 
-    // Check if winningTile forms a two-sided sequence in hand
-    // Case 1: hand has (num+1, num+2), winningTile is num -> num cannot be 7 (since 789 is edge wait)
+    const testPattern = (c1: string, c2: string): boolean => {
+      const idx1 = hand.findIndex((t) => t.shortCode === c1);
+      if (idx1 === -1) return false;
+      const idx2 = hand.findIndex((t, i) => i !== idx1 && t.shortCode === c2);
+      if (idx2 === -1) return false;
+
+      const remainingHand = hand.filter((_, i) => i !== idx1 && i !== idx2);
+      const dummyMelds: Meld[] = [...melds, { type: 'CHOW', tiles: [] }];
+      const decompositions = MahjongHandEvaluator.findWinningDecompositions(
+        remainingHand,
+        dummyMelds
+      );
+
+      return decompositions.some(
+        (d) =>
+          d.melds.every((m) => m.type === 'CHOW') &&
+          (d.eye.endsWith('m') || d.eye.endsWith('p') || d.eye.endsWith('s'))
+      );
+    };
+
+    // Pattern A (Lower End): num <= 6, completing [num, num+1, num+2], open-ended with num & num+3
     if (num <= 6) {
-      const c2 = `${num + 1}${suit}`;
-      const c3 = `${num + 2}${suit}`;
-      if (hand.some((t) => t.shortCode === c2) && hand.some((t) => t.shortCode === c3)) {
+      if (testPattern(`${num + 1}${suit}`, `${num + 2}${suit}`)) {
         return true;
       }
     }
-    // Case 2: hand has (num-2, num-1), winningTile is num -> num cannot be 3 (since 123 is edge wait)
+
+    // Pattern B (Upper End): num >= 4, completing [num-2, num-1, num], open-ended with num-3 & num
     if (num >= 4) {
-      const c1 = `${num - 2}${suit}`;
-      const c2 = `${num - 1}${suit}`;
-      if (hand.some((t) => t.shortCode === c1) && hand.some((t) => t.shortCode === c2)) {
+      if (testPattern(`${num - 2}${suit}`, `${num - 1}${suit}`)) {
         return true;
       }
     }

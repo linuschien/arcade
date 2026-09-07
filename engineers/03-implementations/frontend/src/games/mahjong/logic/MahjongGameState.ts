@@ -1010,6 +1010,9 @@ export class MahjongGameState {
       }
     }
 
+    // Sort hand tiles after kong removes tiles and absorbs drawnTile into hand
+    p.hand = MahjongHandEvaluator.sortTiles(p.hand);
+
     // Replenishment draw from tail
     if (!this.deck.hasRegularTilesLeft()) {
       this.settleDraw();
