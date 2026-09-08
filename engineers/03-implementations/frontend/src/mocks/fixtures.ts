@@ -49,6 +49,14 @@ export const mockGameCards: any[] = [
     description: '正宗台灣16張麻將。開門擲骰、搬風抓位、智慧聽牌、莊家連拉2N+1！',
     totalPlayCount: 2350,
   },
+  {
+    id: '54321098-10fe-dcba-9876-543210fedcba',
+    gameId: 'rallyx',
+    title: 'New Rally-X Classic',
+    coverArtUrl: '/assets/covers/rallyx.png',
+    description: 'Classic 1981 arcade racing maze game. Collect 10 flags, deploy smoke screens to spin out red chasers, and watch your fuel gauge!',
+    totalPlayCount: 0,
+  },
 ];
 
 export const mockLeaderboardEntries: any[] = [
