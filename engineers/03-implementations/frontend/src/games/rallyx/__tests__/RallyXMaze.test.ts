@@ -15,6 +15,23 @@ import {
   isRallyXWall,
   innerToWorldTile,
   worldToInnerTile,
+  RALLYX_ARCADE_SCREEN_WIDTH,
+  RALLYX_ARCADE_SCREEN_HEIGHT,
+  RALLYX_PLAYFIELD_VIEWPORT_WIDTH,
+  RALLYX_PLAYFIELD_VIEWPORT_HEIGHT,
+  RALLYX_RADAR_PANEL_WIDTH,
+  RALLYX_RADAR_PANEL_HEIGHT,
+  RALLYX_VIEWPORT_TILES_X,
+  RALLYX_VIEWPORT_TILES_Y,
+  RALLYX_INTEGER_VIEWPORT_WIDTH,
+  RALLYX_INTEGER_VIEWPORT_HEIGHT,
+  RALLYX_INTEGER_RADAR_WIDTH,
+  RALLYX_INTEGER_SCREEN_WIDTH,
+  RALLYX_INTEGER_SCREEN_HEIGHT,
+  RELATIVE_CLOCKWISE_DIRECTIONS,
+  RELATIVE_COUNTER_CLOCKWISE_DIRECTIONS,
+  getRallyXNextDirection,
+  Direction,
 } from '../logic/RallyXMaze';
 
 describe('RallyXMaze Unit Tests', () => {
@@ -228,4 +245,125 @@ describe('RallyXMaze Unit Tests', () => {
       expect(isRallyXWall(fullMatrix, 18, 52)).toBe(false); // Player spawn
     });
   });
+
+  describe('Arcade Hardware Viewport Specifications', () => {
+    it('should define authentic 288x224 screen, 224x224 playfield, and 64x224 radar HUD panel', () => {
+      expect(RALLYX_ARCADE_SCREEN_WIDTH).toBe(288);
+      expect(RALLYX_ARCADE_SCREEN_HEIGHT).toBe(224);
+      expect(RALLYX_PLAYFIELD_VIEWPORT_WIDTH).toBe(224); // Square playfield viewport (~9.33 tiles)
+      expect(RALLYX_PLAYFIELD_VIEWPORT_HEIGHT).toBe(224);
+      expect(RALLYX_RADAR_PANEL_WIDTH).toBe(64);         // Right sidebar
+      expect(RALLYX_RADAR_PANEL_HEIGHT).toBe(224);
+      expect(RALLYX_PLAYFIELD_VIEWPORT_WIDTH + RALLYX_RADAR_PANEL_WIDTH).toBe(RALLYX_ARCADE_SCREEN_WIDTH);
+    });
+
+    it('should define integer 10x10 tiles viewport and 320x240 classic 4:3 QVGA screen', () => {
+      expect(RALLYX_VIEWPORT_TILES_X).toBe(10);
+      expect(RALLYX_VIEWPORT_TILES_Y).toBe(10);
+      expect(RALLYX_INTEGER_VIEWPORT_WIDTH).toBe(240);
+      expect(RALLYX_INTEGER_VIEWPORT_HEIGHT).toBe(240);
+      expect(RALLYX_INTEGER_RADAR_WIDTH).toBe(80);
+      expect(RALLYX_INTEGER_SCREEN_WIDTH).toBe(320);
+      expect(RALLYX_INTEGER_SCREEN_HEIGHT).toBe(240);
+      expect(RALLYX_INTEGER_SCREEN_WIDTH / RALLYX_INTEGER_SCREEN_HEIGHT).toBeCloseTo(4 / 3, 4);
+    });
+  });
+
+  describe('Continuous Cruise & Auto-Turn Mechanics', () => {
+    it('should continue in current direction when path ahead is clear', () => {
+      const matrix = buildRallyXTileMatrix(1, false);
+
+      // Player start at (15, 49) moving UP (path (15, 48) is open)
+      const nextDir = getRallyXNextDirection(matrix, 15, 49, Direction.UP, Direction.NONE);
+      expect(nextDir).toBe(Direction.UP);
+    });
+
+    it('should turn towards requested direction when requested direction is open', () => {
+      const matrix = buildRallyXTileMatrix(1, false);
+
+      // At intersection where LEFT is walkable
+      // If requestedDir is LEFT and open, should turn LEFT
+      const nextDir = getRallyXNextDirection(matrix, 15, 49, Direction.UP, Direction.UP);
+      expect(nextDir).toBe(Direction.UP);
+    });
+
+    it('should auto-turn at corners when forward is blocked', () => {
+      // (1, 1) has wall to LEFT, UP, DOWN; only RIGHT is open
+      const matrix: RallyXTileType[][] = [
+        [RallyXTileType.WALL, RallyXTileType.WALL, RallyXTileType.WALL],
+        [RallyXTileType.WALL, RallyXTileType.EMPTY, RallyXTileType.EMPTY],
+        [RallyXTileType.WALL, RallyXTileType.WALL, RallyXTileType.WALL],
+      ];
+
+      // Moving LEFT into wall: must auto-turn or U-turn to RIGHT
+      const nextDir = getRallyXNextDirection(matrix, 1, 1, Direction.LEFT, Direction.NONE);
+      expect(nextDir).toBe(Direction.RIGHT);
+    });
+
+    it('should prioritize relative clockwise direction (+90°) at T-junctions when hitting a wall', () => {
+      // T-junction: moving UP into wall, with LEFT and RIGHT both open
+      const tJunction: RallyXTileType[][] = [
+        [RallyXTileType.WALL, RallyXTileType.WALL, RallyXTileType.WALL],
+        [RallyXTileType.EMPTY, RallyXTileType.EMPTY, RallyXTileType.EMPTY],
+        [RallyXTileType.WALL, RallyXTileType.EMPTY, RallyXTileType.WALL],
+      ];
+      // Moving UP from (1, 1): ahead (1, 0) is wall, LEFT (0, 1) is open, RIGHT (2, 1) is open.
+      // Clockwise (+90°) from UP is RIGHT -> must turn RIGHT!
+      const nextDirUp = getRallyXNextDirection(tJunction, 1, 1, Direction.UP, Direction.NONE);
+      expect(nextDirUp).toBe(Direction.RIGHT);
+
+      // Moving RIGHT into wall at (1, 1), with UP and DOWN both open
+      const tJunctionVertical: RallyXTileType[][] = [
+        [RallyXTileType.WALL, RallyXTileType.EMPTY, RallyXTileType.WALL],
+        [RallyXTileType.EMPTY, RallyXTileType.EMPTY, RallyXTileType.WALL],
+        [RallyXTileType.WALL, RallyXTileType.EMPTY, RallyXTileType.WALL],
+      ];
+      // Moving RIGHT from (1, 1): ahead (2, 1) is wall. Clockwise (+90°) from RIGHT is DOWN -> must turn DOWN!
+      const nextDirRight = getRallyXNextDirection(tJunctionVertical, 1, 1, Direction.RIGHT, Direction.NONE);
+      expect(nextDirRight).toBe(Direction.DOWN);
+
+      // Moving DOWN into wall at (1, 1), with LEFT and RIGHT both open
+      const tJunctionDown: RallyXTileType[][] = [
+        [RallyXTileType.WALL, RallyXTileType.EMPTY, RallyXTileType.WALL],
+        [RallyXTileType.EMPTY, RallyXTileType.EMPTY, RallyXTileType.EMPTY],
+        [RallyXTileType.WALL, RallyXTileType.WALL, RallyXTileType.WALL],
+      ];
+      // Moving DOWN from (1, 1): ahead (1, 2) is wall. Clockwise (+90°) from DOWN is LEFT -> must turn LEFT!
+      const nextDirDown = getRallyXNextDirection(tJunctionDown, 1, 1, Direction.DOWN, Direction.NONE);
+      expect(nextDirDown).toBe(Direction.LEFT);
+
+      // Moving LEFT into wall at (1, 1), with UP and DOWN both open
+      const tJunctionLeft: RallyXTileType[][] = [
+        [RallyXTileType.WALL, RallyXTileType.EMPTY, RallyXTileType.WALL],
+        [RallyXTileType.WALL, RallyXTileType.EMPTY, RallyXTileType.EMPTY],
+        [RallyXTileType.WALL, RallyXTileType.EMPTY, RallyXTileType.WALL],
+      ];
+      // Moving LEFT from (1, 1): ahead (0, 1) is wall. Clockwise (+90°) from LEFT is UP -> must turn UP!
+      const nextDirLeft = getRallyXNextDirection(tJunctionLeft, 1, 1, Direction.LEFT, Direction.NONE);
+      expect(nextDirLeft).toBe(Direction.UP);
+    });
+
+    it('should turn counter-clockwise if clockwise is blocked (L-turn)', () => {
+      // Moving UP: ahead (1, 0) is wall, RIGHT (2, 1) is wall, LEFT (0, 1) is open
+      const lTurn: RallyXTileType[][] = [
+        [RallyXTileType.WALL, RallyXTileType.WALL, RallyXTileType.WALL],
+        [RallyXTileType.EMPTY, RallyXTileType.EMPTY, RallyXTileType.WALL],
+        [RallyXTileType.WALL, RallyXTileType.EMPTY, RallyXTileType.WALL],
+      ];
+      const nextDir = getRallyXNextDirection(lTurn, 1, 1, Direction.UP, Direction.NONE);
+      expect(nextDir).toBe(Direction.LEFT);
+    });
+
+    it('should automatically execute 180° U-turn in dead ends', () => {
+      // At (1, 1), moving UP: UP is wall, LEFT is wall, RIGHT is wall. Only DOWN is open.
+      const verticalDeadEnd: RallyXTileType[][] = [
+        [RallyXTileType.WALL, RallyXTileType.WALL, RallyXTileType.WALL],
+        [RallyXTileType.WALL, RallyXTileType.EMPTY, RallyXTileType.WALL],
+        [RallyXTileType.WALL, RallyXTileType.EMPTY, RallyXTileType.WALL],
+      ];
+      const uTurnDir = getRallyXNextDirection(verticalDeadEnd, 1, 1, Direction.UP, Direction.NONE);
+      expect(uTurnDir).toBe(Direction.DOWN); // Auto 180° U-Turn!
+    });
+  });
 });
+

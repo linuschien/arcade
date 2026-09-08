@@ -47,6 +47,23 @@ export const OPPOSITE_DIRECTIONS: Record<Direction, Direction> = {
   [Direction.RIGHT]: Direction.LEFT,
 };
 
+// Relative turning directions from vehicle's heading
+export const RELATIVE_CLOCKWISE_DIRECTIONS: Record<Direction, Direction> = {
+  [Direction.NONE]: Direction.NONE,
+  [Direction.UP]: Direction.RIGHT,
+  [Direction.RIGHT]: Direction.DOWN,
+  [Direction.DOWN]: Direction.LEFT,
+  [Direction.LEFT]: Direction.UP,
+};
+
+export const RELATIVE_COUNTER_CLOCKWISE_DIRECTIONS: Record<Direction, Direction> = {
+  [Direction.NONE]: Direction.NONE,
+  [Direction.UP]: Direction.LEFT,
+  [Direction.LEFT]: Direction.DOWN,
+  [Direction.DOWN]: Direction.RIGHT,
+  [Direction.RIGHT]: Direction.UP,
+};
+
 // Inner playable maze dimensions (authentic arcade grid)
 export const RALLYX_INNER_MAZE_COLS = 32;
 export const RALLYX_INNER_MAZE_ROWS = 56;
@@ -60,6 +77,23 @@ export const RALLYX_TILE_SIZE = 24;
 // Standard maze dimensions alias
 export const RALLYX_MAZE_COLS = RALLYX_INNER_MAZE_COLS;
 export const RALLYX_MAZE_ROWS = RALLYX_INNER_MAZE_ROWS;
+
+// Native arcade resolution and viewport partitioning (1980/1981 Namco hardware: 288x224)
+export const RALLYX_ARCADE_SCREEN_WIDTH = 288;         // Total screen width in pixels (36 chars @ 8px)
+export const RALLYX_ARCADE_SCREEN_HEIGHT = 224;        // Total screen height in pixels (28 chars @ 8px)
+export const RALLYX_PLAYFIELD_VIEWPORT_WIDTH = 224;    // Square scrolling playfield (28 chars @ 8px, ~9.33 tiles)
+export const RALLYX_PLAYFIELD_VIEWPORT_HEIGHT = 224;   // Square scrolling playfield (28 chars @ 8px, ~9.33 tiles)
+export const RALLYX_RADAR_PANEL_WIDTH = 64;            // Right sidebar radar & HUD (8 chars @ 8px)
+export const RALLYX_RADAR_PANEL_HEIGHT = 224;          // Full height right sidebar HUD
+
+// Clean integer tile viewport configuration (10x10 tiles @ 24px = 240x240 px, paired with 80px radar for 320x240 4:3 QVGA)
+export const RALLYX_VIEWPORT_TILES_X = 10;
+export const RALLYX_VIEWPORT_TILES_Y = 10;
+export const RALLYX_INTEGER_VIEWPORT_WIDTH = RALLYX_VIEWPORT_TILES_X * RALLYX_TILE_SIZE; // 240 px
+export const RALLYX_INTEGER_VIEWPORT_HEIGHT = RALLYX_VIEWPORT_TILES_Y * RALLYX_TILE_SIZE; // 240 px
+export const RALLYX_INTEGER_RADAR_WIDTH = 80; // 80 px (1/3 of playfield)
+export const RALLYX_INTEGER_SCREEN_WIDTH = RALLYX_INTEGER_VIEWPORT_WIDTH + RALLYX_INTEGER_RADAR_WIDTH; // 320 px (Classic 4:3)
+export const RALLYX_INTEGER_SCREEN_HEIGHT = 240; // 240 px
 
 export type FlagType = "REGULAR" | "SPECIAL" | "LUCKY";
 
@@ -815,3 +849,59 @@ export function isRallyXWall(matrix: RallyXTileType[][], col: number, row: numbe
   const tile = matrix[row][col];
   return tile === RallyXTileType.WALL || tile === RallyXTileType.BORDER_DECORATIVE;
 }
+
+/**
+ * Resolves the next moving direction for continuous cruise.
+ * The car never stops:
+ * 1. If requestedDir is non-NONE and walkable, take requestedDir.
+ * 2. If currentDir is walkable, continue straight.
+ * 3. If hitting an obstacle at a corner or intersection:
+ *    - Search clockwise relative to current heading (+90° right turn first).
+ *    - If blocked, search counter-clockwise (-90° left turn).
+ * 4. If hitting a dead end (ahead, right, and left are all walls):
+ *    - The remaining available path is 180° reverse, executing an automatic 180° U-turn!
+ */
+export function getRallyXNextDirection(
+  matrix: RallyXTileType[][],
+  col: number,
+  row: number,
+  currentDir: Direction,
+  requestedDir: Direction = Direction.NONE
+): Direction {
+  const isWalkable = (dir: Direction) => {
+    if (dir === Direction.NONE) return false;
+    const vec = DIRECTION_VECTORS[dir];
+    return !isRallyXWall(matrix, col + vec.col, row + vec.row);
+  };
+
+  // 1. Requested direction (if valid and walkable)
+  if (requestedDir !== Direction.NONE && isWalkable(requestedDir)) {
+    return requestedDir;
+  }
+
+  // 2. Continue current direction if walkable
+  if (currentDir !== Direction.NONE && isWalkable(currentDir)) {
+    return currentDir;
+  }
+
+  // 3. Auto-turn: Clockwise priority (+90° relative to vehicle heading)
+  const cwDir = RELATIVE_CLOCKWISE_DIRECTIONS[currentDir];
+  if (isWalkable(cwDir)) {
+    return cwDir;
+  }
+
+  // 4. Auto-turn: Counter-clockwise (-90° relative to vehicle heading)
+  const ccwDir = RELATIVE_COUNTER_CLOCKWISE_DIRECTIONS[currentDir];
+  if (isWalkable(ccwDir)) {
+    return ccwDir;
+  }
+
+  // 5. Dead end: auto 180° U-turn (the only open exit behind the car)
+  const opposite = OPPOSITE_DIRECTIONS[currentDir];
+  if (isWalkable(opposite)) {
+    return opposite;
+  }
+
+  return currentDir;
+}
+
