@@ -18,7 +18,9 @@
     - **Maze 3 (Waterway/Elevated)**：通道結構多為狹長長廊與雙向窄道，對避車操作要求提高。
     - **Maze 4 (Broken/Ruins)**：死巷、T字路口與盲彎大幅增加，極考驗路線規劃。
 - **世界規格與視角**：
-  - 迷宮物理尺寸遠大於可見視窗（約 $56 \times 60$ Tiles，每格 $16 \times 16$ 像素或等比例縮放）。
+  - **內部活動跑道 (Inner Playable Maze)**：$32 \text{ 欄 (Cols)} \times 56 \text{ 列 (Rows)}$（共 1,792 格，每格 $24 \times 24$ 像素）。
+  - **外圍裝飾邊框 (Outer Decorative Border Frame)**：寬度為 **3 格 (3 tiles / 72 像素)**，圍繞內部跑道四周（上 3 列、下 3 列、左 3 行、右 3 行）。
+  - **含外圍裝飾之完整世界尺寸 (Total World Dimensions)**：$38 \text{ 欄} \times 62 \text{ 列}$（$912 \times 1,488$ 像素）。
   - 主畫面鏡頭以藍車為中心平滑滾動（Camera Centering），到達地圖極限外緣時自動 Clamp 邊界。
 
 ### 2.2 玩家車輛動力學 (Player Car Dynamics)
@@ -131,23 +133,23 @@
 
 | 關卡 (Round) | 母迷宮 (Maze) | 對應圖檔座標 | 關卡類型 (Stage Type) | 紅車總數 (Red Cars) | 紅車出發位置 | 岩石數 (Rocks) | 關卡節奏定位 |
 |:---:|:---:|:---:|:---:|:---:|:---|:---:|:---|
-| **Round 1** | Maze 1 (綠) | Row 1, Col 1 | 普通關 | 1 輛 | 底部車庫 `(15, 52)` | 2 顆 | 熟悉基本巡航與轉向緩衝 |
-| **Round 2** | Maze 1 (綠) | Row 1, Col 2 | 普通關 | 2 輛 | 底部車庫 2 輛 | 2 顆 | 引入雙車夾擊與急掉頭 |
-| **Round 3** | Maze 1 (綠) | Row 1, Col 3 | **Challenging Stage** | **7 輛 (休眠)** | 頂部 2 輛 + 底部 5 輛 | 2 顆 | 🌟 零自然油耗，吃旗獎勵關 |
-| **Round 4** | Maze 1 (綠) | Row 1, Col 4 | 普通關 | 3 輛 | 底部車庫 3 輛 | 2 顆 | Maze 1 終關決戰 |
-| **Round 5** | Maze 2 (紅) | Row 2, Col 1 | 普通關 | 3 輛 | 底部車庫 3 輛 | 2 顆 | 迷宮切換！長直道與泥地花園 |
-| **Round 6** | Maze 2 (紅) | Row 2, Col 2 | 普通關 | 4 輛 | 底部車庫 4 輛 | 2 顆 | 4 車分流包抄 |
-| **Round 7** | Maze 2 (紅) | Row 2, Col 3 | **Challenging Stage** | **7 輛 (休眠)** | 頂部 2 輛 + 底部 5 輛 | 2 顆 | 🌟 Maze 2 挑戰關 |
-| **Round 8** | Maze 2 (紅) | Row 2, Col 4 | 普通關 | 4 輛 | 底部車庫 4 輛 | 2 顆 | Maze 2 終關決戰 |
-| **Round 9** | Maze 3 (青) | Row 3, Col 1 | 普通關 | 5 輛 | 底部車庫 5 輛 | 2 顆 | 迷宮切換！水路窄道考驗 |
-| **Round 10** | Maze 3 (青) | Row 3, Col 2 | 普通關 | 5 輛 | 底部車庫 5 輛 | 2 顆 | 盲彎增加，防追撞反應 |
-| **Round 11** | Maze 3 (青) | Row 3, Col 3 | **Challenging Stage** | **7 輛 (休眠)** | 頂部 2 輛 + 底部 5 輛 | 2 顆 | 🌟 Maze 3 挑戰關 |
-| **Round 12** | Maze 3 (青) | Row 3, Col 4 | 普通關 | 6 輛 | 頂部 1 輛 + 底部 5 輛 | 2 顆 | Maze 3 終關決戰 |
-| **Round 13** | Maze 4 (灰) | Row 4, Col 1 | 普通關 | 6 輛 | 頂部 1 輛 + 底部 5 輛 | 4 顆 | 迷宮切換！暗黑破碎神殿，石塊增至 4 顆 |
-| **Round 14** | Maze 4 (灰) | Row 4, Col 2 | 普通關 | 7 輛 | 頂部 2 輛 + 底部 5 輛 | 4 顆 | 7 車極速高壓包夾 |
-| **Round 15** | Maze 4 (灰) | Row 4, Col 3 | **Challenging Stage** | **7 輛 (休眠)** | 頂部 2 輛 + 底部 5 輛 | 4 顆 | 🌟 Maze 4 終極挑戰關 |
-| **Round 16** | Maze 4 (灰) | Row 4, Col 4 | 普通關 (主線終關) | **7 輛 (滿編活動)** | 頂部 2 輛 + 底部 5 輛 | 4 顆 | 🏆 主線大滿貫最終決戰！通關播放賀詞 |
-| **Round 17+** | Maze 1 (循環) | 循環抽取 | 普通關 / 挑戰關 | **7 輛 (極限封頂)** | 頂部 2 輛 + 底部 5 輛 | 4 顆 | 🚀 **Hardcore Mode / Endless Loop**（每 4 關循環母迷宮） |
+| **Round 1** | Maze 1 (綠) | Row 1, Col 1 | 普通關 | 1 輛 | 底部車庫 `(15, 52)` | 4 顆 | 熟悉基本巡航與轉向緩衝 |
+| **Round 2** | Maze 1 (綠) | Row 1, Col 2 | 普通關 | 2 輛 | 底部車庫 2 輛 | 4 顆 | 引入雙車夾擊與急掉頭 |
+| **Round 3** | Maze 1 (綠) | Row 1, Col 3 | **Challenging Stage** | **7 輛 (休眠)** | 頂部 2 輛 + 底部 5 輛 | 5 顆 | 🌟 零自然油耗，吃旗獎勵關 |
+| **Round 4** | Maze 1 (綠) | Row 1, Col 4 | 普通關 | 3 輛 | 底部車庫 3 輛 | 5 顆 | Maze 1 終關決戰 |
+| **Round 5** | Maze 2 (紅) | Row 2, Col 1 | 普通關 | 3 輛 | 底部車庫 3 輛 | 6 顆 | 迷宮切換！長直道與泥地花園 |
+| **Round 6** | Maze 2 (紅) | Row 2, Col 2 | 普通關 | 4 輛 | 底部車庫 4 輛 | 6 顆 | 4 車分流包抄 |
+| **Round 7** | Maze 2 (紅) | Row 2, Col 3 | **Challenging Stage** | **7 輛 (休眠)** | 頂部 2 輛 + 底部 5 輛 | 7 顆 | 🌟 Maze 2 挑戰關 |
+| **Round 8** | Maze 2 (紅) | Row 2, Col 4 | 普通關 | 4 輛 | 底部車庫 4 輛 | 7 顆 | Maze 2 終關決戰 |
+| **Round 9** | Maze 3 (青) | Row 3, Col 1 | 普通關 | 5 輛 | 底部車庫 5 輛 | 8 顆 | 迷宮切換！水路窄道考驗 |
+| **Round 10** | Maze 3 (青) | Row 3, Col 2 | 普通關 | 5 輛 | 底部車庫 5 輛 | 9 顆 | 盲彎增加，防追撞反應 |
+| **Round 11** | Maze 3 (青) | Row 3, Col 3 | **Challenging Stage** | **7 輛 (休眠)** | 頂部 2 輛 + 底部 5 輛 | 10 顆 | 🌟 Maze 3 挑戰關 |
+| **Round 12** | Maze 3 (青) | Row 3, Col 4 | 普通關 | 6 輛 | 頂部 1 輛 + 底部 5 輛 | 10 顆 | Maze 3 終關決戰 |
+| **Round 13** | Maze 4 (灰) | Row 4, Col 1 | 普通關 | 6 輛 | 頂部 1 輛 + 底部 5 輛 | 10 顆 | 迷宮切換！暗黑破碎神殿，石塊增至 10 顆 |
+| **Round 14** | Maze 4 (灰) | Row 4, Col 2 | 普通關 | 7 輛 | 頂部 2 輛 + 底部 5 輛 | 10 顆 | 7 車極速高壓包夾 |
+| **Round 15** | Maze 4 (灰) | Row 4, Col 3 | **Challenging Stage** | **7 輛 (休眠)** | 頂部 2 輛 + 底部 5 輛 | 10 顆 | 🌟 Maze 4 終極挑戰關 |
+| **Round 16** | Maze 4 (灰) | Row 4, Col 4 | 普通關 (主線終關) | **7 輛 (滿編活動)** | 頂部 2 輛 + 底部 5 輛 | 11 顆 | 🏆 主線大滿貫最終決戰！通關播放賀詞 |
+| **Round 17+** | Maze 1 (循環) | 循環抽取 | 普通關 / 挑戰關 | **7 輛 (極限封頂)** | 頂部 2 輛 + 底部 5 輛 | 11 顆 | 🚀 **Hardcore Mode / Endless Loop**（每 4 關循環母迷宮） |
 
 
 ### 2.10 生命、加命與遊戲結束 (Lives, Extends & Game Over)

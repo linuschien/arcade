@@ -145,12 +145,14 @@
 > **So that** 提供層次分明、循序漸進的街機挑戰體驗。
 
 ### 驗收條件 (Acceptance Criteria)
-- **AC1 (4 Master Mazes Assets)**：內建 4 款經典母迷宮網格矩陣（Maze 1: 幾何旋渦、Maze 2: 泥地花園、Maze 3: 水路窄道、Maze 4: 暗黑破碎）。
+- **AC1 (4 Master Mazes & Decorative Border Frame)**：
+  - 內建 4 款經典母迷宮內部網格矩陣（尺寸 $32 \times 56$ Tiles，Maze 1: 幾何旋渦、Maze 2: 泥地花園、Maze 3: 水路窄道、Maze 4: 暗黑破碎）。
+  - 外圍環繞 3 格（3-Tile）寬度的全向裝飾外框（Decorative Border Frame），總地圖物理尺寸為 $38 \times 62$ Tiles。
 - **AC2 (4×4 Matrix 16-Round Schedule Table)**：嚴格遵循 PRD-05 方案 B 規格表分配關卡，每套母迷宮固定運行 4 個關卡（$\text{mazeIndex} = \lfloor(\text{round}-1)/4\rfloor \pmod 4$）：
-  - Round 1~4 使用 Maze 1（紅車 1、2、7、3 輛；岩石各 2 顆）。
-  - Round 5~8 使用 Maze 2（紅車 3、4、7、4 輛；岩石各 2 顆）。
-  - Round 9~12 使用 Maze 3（紅車 5、5、7、6 輛；岩石各 2 顆）。
-  - Round 13~16 使用 Maze 4（紅車 6、7、7、7 輛；岩石各 4 顆）。
+  - Round 1~4 使用 Maze 1（紅車 1、2、7、3 輛；岩石 4、4、5、5 顆）。
+  - Round 5~8 使用 Maze 2（紅車 3、4、7、4 輛；岩石 6、6、7、7 顆）。
+  - Round 9~12 使用 Maze 3（紅車 5、5、7、6 輛；岩石 8、9、10、10 顆）。
+  - Round 13~16 使用 Maze 4（紅車 6、7、7、7 輛；岩石 10、10、10、11 顆）。
   - 16 張關卡之旗幟與岩石座標 1:1 精確映射 `MazeDeathRallyX.png` 之 4 行 $\times$ 4 列矩陣。
 - **AC3 (Endless Loop & Hardcore Mode)**：通關 Round 16（主線終關）後，觸發主線大滿貫祝賀畫面，隨後自 Round 17+ 進入 Endless Loop / Hardcore Mode（每 4 關循環母迷宮，紅車數永久鎖定為 7 輛極限滿員）。
 - **AC4 (Red Car Speed Dynamic)**：紅車直道極速為藍車之 $108\%$；但在交叉路口轉向時紅車具備轉向延遲幀，玩家可利用頻繁變向拉開距離。
