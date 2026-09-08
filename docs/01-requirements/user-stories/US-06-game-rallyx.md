@@ -35,9 +35,10 @@
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (Camera Centering)**：主遊戲視窗之攝影機焦點隨時錨定於藍車中心點座標 $(x, y)$。
 - **AC2 (Edge Clamping)**：當藍車行駛接近迷宮外圍邊界時，攝影機視角平滑停在世界極限邊界（Clamping），禁止露出地圖外之空白區域。
-- **AC3 (224x224 / 10x10 Square Playfield & Radar Panel)**：
-  - 主遊戲視窗原生為經典街機的 **$224 \times 224$ 正方形視野（約 $9.33 \times 9.33$ 格 Tiles）**；支援現代標準 **$10 \times 10$ 整數格視窗（$240 \times 240$ px）**，藍車前方視野約 4~4.5 格，維持高度壓迫的盲彎前瞻距離。
-  - 右側獨立渲染 $64 \times 224$（或 4:3 整數模式之 $80 \times 240$）全高雷達 HUD 面板（整合分數、關卡、全域縮小雷達、油量表與生命）。
+- **AC3 (640x480 Standard Canvas & Layout)**：
+  - 遊戲採用現代 **$640 \times 480$ 像素（4:3 比例，2x 縮放）** 基準畫布。
+  - 左側主遊戲視窗為 **$480 \times 480$ 像素正方形視野（$10 \times 10$ 格，每格 48px）**，藍車前方視野嚴格保持為對稱的 4.5 格，維持原汁原味的高壓盲彎前瞻感。
+  - 右側獨立渲染 **$160 \times 480$ 像素** 全高雷達 HUD 面板（整合分數、關卡、全域縮小雷達、油量表與生命）。
 
 ---
 
@@ -127,15 +128,11 @@
 > **So that** 規劃最佳搜集路徑並在路口提前防範圍捕。
 
 ### 驗收條件 (Acceptance Criteria)
-- **AC1 (Radar Entities Mapping)**：
+- **AC1 (Radar Entities Mapping - 原版純盲測規格)**：
   - 藍車：以黃色/白色高亮方點即時映射於雷達相對座標。
   - 紅車：以亮紅色方點即時映射。
-  - 普通旗幟：以黃色點標記。
-  - S 旗與 L 旗：以獨立閃爍圖元或字母標記。
-- **AC2 (Radar Fog of War - 迷霧盲區)**：
-  - 雷達**嚴格不顯示迷宮牆壁**。
-  - 雷達**嚴格不顯示煙幕彈**。
-  - 雷達**嚴格不顯示岩石 (Rocks)**！岩石成為完全隱匿於主螢幕視野的突發危險障礙。
+  - 全部 10 面旗幟：**全部顯示為完全一致的單純黃點**。特殊 S 旗與 L 旗在雷達上嚴格不具備特殊標記或相異頻率閃爍，保留原版盲測驚喜感。
+  - 迷霧遮蔽：雷達嚴格禁止顯示迷宮牆面、岩石與煙幕。
 - **AC3 (Flag Clearance on Radar)**：旗幟被吃掉時，雷達對應光點立即消除。
 
 ---
@@ -205,7 +202,30 @@
 
 ---
 
-## US-06-11：平台事件契約整合與 Game Over 結算 (Platform Contracts & Game Over)
+## US-06-11：合成復古音效與 New Rally-X 輕快背景音樂 (Web Audio BGM & Retro SFX)
+
+**身份**： Rally-X 音效引擎 (Audio Service)
+
+> **As a** 玩家，  
+> **I want to** 聆聽經典的輕快旋律背景音樂與即時合成的吃旗、噴煙、打滑音效，  
+> **So that** 享受高度沉浸且原汁原味的 1981 街機聽覺體驗。
+
+### 驗收條件 (Acceptance Criteria)
+- **AC1 (Procedural Web Audio Synthesis)**：完全基於 Web Audio API (`SoundEngine`) 即時波形合成，無需載入任何外部音檔。
+- **AC2 (Catchy BGM Loop)**：藍車於關卡巡航時，持續循環播放《New Rally-X》經典 130 BPM 輕快主題曲；通關、死亡或暫停時即時停止或暫停。
+- **AC3 (Flag SFX Suite)**：
+  - 吃下普通旗幟播放頻率遞增的短升調嗶聲。
+  - 吃下 "S" 旗播放激昂短號角（Fanfare）。
+  - 吃下 "L" 旗播放充能琶音。
+- **AC4 (Action & Danger SFX)**：
+  - 噴煙時播放白噪聲噴氣爆破音。
+  - 紅車打轉時播放高頻輪胎打滑摩擦音。
+  - 藍車碰撞時播放低頻爆炸噪聲。
+  - 燃油歸零時循環觸發雙音警報蜂鳴。
+
+---
+
+## US-06-12：平台事件契約整合與 Game Over 結算 (Platform Contracts & Game Over)
 
 **身份**： Arcade Stadium 平台與 React Host Shell
 
@@ -215,7 +235,7 @@
 
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (IArcadeGame Implementation)**：遊戲實作標準 `IArcadeGame` 介面，涵蓋 `init()`, `start()`, `pause()`, `resume()`, `destroyGame()`。
-- **AC2 (InputService Integration)**：完整註冊實體鍵盤（方向鍵、`WASD`、`Space`、`ESC`/`P`）與觸控虛擬控制器，支援單按鍵動作與長按連續判定。
+- **AC2 (InputService Integration)**：完整註冊實體鍵盤（方向鍵、`WASD`、`Space`、`ESC`/`P`）與 Gamepad，支援單按鍵動作與長按連續判定。
 - **AC3 (Real-Time State Broadcast)**：
   - 燃油變動廣播：`ArcadeBridge.emit('FUEL_UPDATED', { fuel, maxFuel: 1000 })`。
   - 分數變動廣播：`ArcadeBridge.emit('SCORE_UPDATED', { score })`。
