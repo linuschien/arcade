@@ -146,12 +146,13 @@
 
 ### 驗收條件 (Acceptance Criteria)
 - **AC1 (4 Master Mazes Assets)**：內建 4 款經典母迷宮網格矩陣（Maze 1: 幾何旋渦、Maze 2: 泥地花園、Maze 3: 水路窄道、Maze 4: 暗黑破碎）。
-- **AC2 (16-Round Schedule Table)**：嚴格遵循 PRD-05 規格表分配關卡難度：
-  - Round 1~3 使用 Maze 1（紅車 1、2、7 輛）。
-  - Round 4~7 使用 Maze 2（紅車 3、3、4、7 輛）。
-  - Round 8~11 使用 Maze 3（紅車 4、5、5、7 輛）。
-  - Round 12~15 使用 Maze 4（紅車 6、6、7、7 輛）。
-- **AC3 (Endless Loop)**：Round 16+ 循環回 Maze 1，紅車數鎖定為 7 輛極限滿員，岩石數 24 顆。
+- **AC2 (4×4 Matrix 16-Round Schedule Table)**：嚴格遵循 PRD-05 方案 B 規格表分配關卡，每套母迷宮固定運行 4 個關卡（$\text{mazeIndex} = \lfloor(\text{round}-1)/4\rfloor \pmod 4$）：
+  - Round 1~4 使用 Maze 1（紅車 1、2、7、3 輛；岩石各 2 顆）。
+  - Round 5~8 使用 Maze 2（紅車 3、4、7、4 輛；岩石各 2 顆）。
+  - Round 9~12 使用 Maze 3（紅車 5、5、7、6 輛；岩石各 2 顆）。
+  - Round 13~16 使用 Maze 4（紅車 6、7、7、7 輛；岩石各 4 顆）。
+  - 16 張關卡之旗幟與岩石座標 1:1 精確映射 `MazeDeathRallyX.png` 之 4 行 $\times$ 4 列矩陣。
+- **AC3 (Endless Loop & Hardcore Mode)**：通關 Round 16（主線終關）後，觸發主線大滿貫祝賀畫面，隨後自 Round 17+ 進入 Endless Loop / Hardcore Mode（每 4 關循環母迷宮，紅車數永久鎖定為 7 輛極限滿員）。
 - **AC4 (Red Car Speed Dynamic)**：紅車直道極速為藍車之 $108\%$；但在交叉路口轉向時紅車具備轉向延遲幀，玩家可利用頻繁變向拉開距離。
 
 ---
@@ -165,7 +166,7 @@
 > **So that** 專心規劃吃旗路線並爭取高額燃油折算積分。
 
 ### 驗收條件 (Acceptance Criteria)
-- **AC1 (Trigger Rounds)**：系統於第 3、7、11、15 關自動啟動「Challenging Stage」模式，畫面顯示專屬轉場字樣與音效。
+- **AC1 (Trigger Rounds)**：系統於第 3、7、11、15 關（嚴格對應 `round % 4 === 3`，即每套母迷宮的第 3 關）自動啟動「Challenging Stage」模式，畫面顯示專屬轉場字樣與音效。
 - **AC2 (Dormant Enemies)**：挑戰關中所有紅車（共 7 輛）停留在原地休眠不動，輪胎不旋轉、不主動尋路、不追逐藍車。
 - **AC3 (Zero Passive Fuel Drain)**：在挑戰關中，藍車正常巡航行駛與怠速時，**燃油自然損耗率降為 0**。只有當玩家主動按下噴煙時才扣除 30 點燃油。
 - **AC4 (Lethal Touch Maintained)**：藍車若自行撞擊靜止紅車或岩石，依然會發生碰撞爆炸並扣除 1 條生命。
