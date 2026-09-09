@@ -42,7 +42,7 @@ import { RallyXAudioService } from '../audio/RallyXAudioService';
 import { getDynamicResolution } from '@/core/phaser/init-high-dpi';
 
 const PLAYER_BASE_SPEED = 240; // 240 pixels per second (5 tiles / sec @ 48px/tile)
-const RADAR_SCALE = 4; // 32 cols * 4 = 128px, 56 rows * 4 = 224px
+const RADAR_SCALE = 5; // 32 cols * 5 = 160px (full HUD width), 56 rows * 5 = 280px
 
 export class MainGameScene extends BaseArcadeScene {
   private gameState!: RallyXGameState;
@@ -74,11 +74,9 @@ export class MainGameScene extends BaseArcadeScene {
 
   // HUD Game Objects
   private hudBg!: Phaser.GameObjects.Graphics;
-  private hiLabel!: Phaser.GameObjects.Text;
   private scLabel!: Phaser.GameObjects.Text;
   private rndLabel!: Phaser.GameObjects.Text;
   private fuelLabel!: Phaser.GameObjects.Text;
-  private highScoreText!: Phaser.GameObjects.Text;
   private scoreText!: Phaser.GameObjects.Text;
   private roundText!: Phaser.GameObjects.Text;
   private statusBannerText!: Phaser.GameObjects.Text;
@@ -197,65 +195,63 @@ export class MainGameScene extends BaseArcadeScene {
     this.hudBg.setScrollFactor(0);
     this.hudBg.setDepth(100);
 
-    // 2. Score & Round Headers (Centered at x: 560)
+    // 2. Score on single line at y: 10 (no line break between SCORE and score value)
     const labelStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-      fontSize: '11px',
+      fontSize: '14px',
       fontFamily: 'monospace',
       color: '#f59e0b',
       fontStyle: 'bold',
     };
     const valStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-      fontSize: '16px',
+      fontSize: '15px',
       fontFamily: 'monospace',
       color: '#ffffff',
       fontStyle: 'bold',
     };
 
-    this.hiLabel = this.add.text(560, 10, 'HIGH SCORE', labelStyle).setOrigin(0.5, 0).setScrollFactor(0).setDepth(102);
-    this.highScoreText = this.add.text(560, 24, '0', valStyle).setOrigin(0.5, 0).setScrollFactor(0).setDepth(102);
+    this.scLabel = this.add.text(484, 10, 'SCORE', labelStyle).setOrigin(0, 0).setScrollFactor(0).setDepth(102);
+    this.scoreText = this.add.text(544, 10, '0', valStyle).setOrigin(0, 0).setScrollFactor(0).setDepth(102);
 
-    this.scLabel = this.add.text(560, 42, '1UP SCORE', labelStyle).setOrigin(0.5, 0).setScrollFactor(0).setDepth(102);
-    this.scoreText = this.add.text(560, 56, '0', valStyle).setOrigin(0.5, 0).setScrollFactor(0).setDepth(102);
-
-    this.rndLabel = this.add.text(560, 74, 'ROUND', labelStyle).setOrigin(0.5, 0).setScrollFactor(0).setDepth(102);
-    this.roundText = this.add.text(560, 88, '1', valStyle).setOrigin(0.5, 0).setScrollFactor(0).setDepth(102);
-
-    // 3. Radar Minimap Graphics (128x224 at x: 496, y: 115)
-    this.radarGraphics = this.add.graphics();
-    this.radarGraphics.setScrollFactor(0);
-    this.radarGraphics.setDepth(101);
-
-    // 4. Fuel Gauge (x: 496, y: 348)
-    this.fuelLabel = this.add.text(496, 348, 'FUEL', {
-      fontSize: '12px',
+    // 3. Fuel Gauge Header & Bar (Centered at x: 560, y: 32)
+    this.fuelLabel = this.add.text(560, 32, 'FUEL', {
+      fontSize: '13px',
       fontFamily: 'monospace',
-      color: '#ffffff',
+      color: '#22c55e',
       fontStyle: 'bold',
-    }).setScrollFactor(0).setDepth(102);
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(102);
 
     this.fuelBarGraphics = this.add.graphics();
     this.fuelBarGraphics.setScrollFactor(0);
     this.fuelBarGraphics.setDepth(101);
 
-    // 5. Reserve Lives Icons (x: 508, y: 405)
+    // 4. Radar Minimap Graphics (160x280 at x: 480, y: 73 - zero left/right margin)
+    this.radarGraphics = this.add.graphics();
+    this.radarGraphics.setScrollFactor(0);
+    this.radarGraphics.setDepth(101);
+
+    // 5. Reserve Lives Icons (x: 498 + i * 28, y: 368)
     for (let i = 0; i < 4; i++) {
-      const icon = this.add.sprite(508 + i * 26, 405, 'rallyx:hud_life');
+      const icon = this.add.sprite(498 + i * 28, 368, 'rallyx:hud_life');
       icon.setVisible(false);
       icon.setScrollFactor(0);
       icon.setDepth(101);
       this.lifeIcons.push(icon);
     }
 
-    // 6. Centered Status Banner (x: 560, y: 432)
-    this.statusBannerText = this.add.text(560, 432, 'READY!', {
+    // 6. Round on single line at y: 398 (no line break between ROUND and number)
+    this.rndLabel = this.add.text(484, 398, 'ROUND', labelStyle).setOrigin(0, 0).setScrollFactor(0).setDepth(102);
+    this.roundText = this.add.text(544, 398, '1', { ...valStyle, color: '#ffff00' }).setOrigin(0, 0).setScrollFactor(0).setDepth(102);
+
+    // 7. Centered Status Banner (x: 560, y: 430)
+    this.statusBannerText = this.add.text(560, 430, 'READY!', {
       fontSize: '20px',
       fontFamily: 'monospace',
       color: '#facc15',
       fontStyle: 'bold',
     }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(102);
 
-    // 7. Lucky Refill Overlay Banner (x: 560, y: 458)
-    this.luckyBannerText = this.add.text(560, 458, '★ LUCKY! ★', {
+    // 8. Lucky Refill Overlay Banner (x: 560, y: 456)
+    this.luckyBannerText = this.add.text(560, 456, '★ LUCKY! ★', {
       fontSize: '14px',
       fontFamily: 'monospace',
       color: '#22c55e',
@@ -805,7 +801,6 @@ export class MainGameScene extends BaseArcadeScene {
 
   private updateHUD(): void {
     this.scoreText.setText(`${this.gameState.getScore()}`);
-    this.highScoreText.setText(`${this.gameState.getHighScore()}`);
     this.roundText.setText(`${this.gameState.getRound()}`);
 
     // Update Reserve Lives Icons (lives - 1)
@@ -814,76 +809,105 @@ export class MainGameScene extends BaseArcadeScene {
       this.lifeIcons[i].setVisible(i < reserveLives);
     }
 
-    // Update Fuel Bar (128x12 px at x: 496, y: 368)
-    this.fuelBarGraphics.clear();
-    const barWidth = 128;
-    const barHeight = 12;
-    const barX = 496;
-    const barY = 368;
+    // Update Fuel Bar & Ticks (Full 160px HUD width, zero left/right margin)
+    this.renderFuelGauge();
 
-    // Fuel Border & Background
-    this.fuelBarGraphics.fillStyle(0x0f172a, 1);
+    // Update Minimap Radar (160x280 at x: 480, y: 73 with authentic blue background)
+    this.renderRadar();
+  }
+
+  private renderFuelGauge(): void {
+    this.fuelBarGraphics.clear();
+    const barX = 480;
+    const barWidth = 160;
+    const tickY = 48;
+    const barY = 55;
+    const barHeight = 14;
+
+    // 1. Tick Marks (刻度) - 10 divisions spanning full 160px HUD width (0 left/right margin)
+    // Horizontal ruler baseline
+    this.fuelBarGraphics.lineStyle(1, 0x475569, 0.9);
+    this.fuelBarGraphics.lineBetween(barX, tickY + 5, barX + barWidth, tickY + 5);
+
+    // Divisions at 0%, 10%, 20%, 30%, 40%, 50%, 60%, 70%, 80%, 90%, 100%
+    for (let i = 0; i <= 10; i++) {
+      const tx = barX + Math.round(i * (barWidth / 10));
+      const isMajor = i === 0 || i === 5 || i === 10;
+
+      if (isMajor) {
+        // Major Red Tick Pins (Empty, Half, Full)
+        this.fuelBarGraphics.lineStyle(2, 0xef4444, 1);
+        this.fuelBarGraphics.lineBetween(tx, tickY, tx, tickY + 6);
+      } else {
+        // Minor Yellow Tick Marks
+        this.fuelBarGraphics.lineStyle(1, 0xfacc15, 1);
+        this.fuelBarGraphics.lineBetween(tx, tickY + 2, tx, tickY + 6);
+      }
+    }
+
+    // 2. Fuel Bar Background & Border
+    this.fuelBarGraphics.fillStyle(0x090d16, 1);
     this.fuelBarGraphics.fillRect(barX, barY, barWidth, barHeight);
-    this.fuelBarGraphics.lineStyle(1, 0x334155, 1);
+    this.fuelBarGraphics.lineStyle(1, 0x1e293b, 1);
     this.fuelBarGraphics.strokeRect(barX, barY, barWidth, barHeight);
 
+    // 3. Fuel Bar Dynamic Fill
     const fuelRatio = Math.max(0, Math.min(1.0, this.gameState.getFuel() / MAX_FUEL));
     const fillWidth = Math.floor(barWidth * fuelRatio);
 
     if (fillWidth > 0) {
-      let fillColor = 0x22c55e; // Green
+      let fillColor = 0xfacc15; // Authentic Arcade Yellow
       if (fuelRatio <= 0.2) {
         fillColor = this.isRadarPlayerDotVisible ? 0xef4444 : 0x7f1d1d; // Flashing Red
-      } else if (fuelRatio <= 0.5) {
-        fillColor = 0xeab308; // Yellow
+      } else if (fuelRatio <= 0.4) {
+        fillColor = 0xf97316; // Warning Orange
       }
       this.fuelBarGraphics.fillStyle(fillColor, 1);
-      this.fuelBarGraphics.fillRect(barX + 1, barY + 1, fillWidth - 2, barHeight - 2);
+      this.fuelBarGraphics.fillRect(barX + 1, barY + 1, Math.max(0, fillWidth - 2), barHeight - 2);
     }
-
-    // Update Minimap Radar (128x224 at x: 496, y: 115)
-    this.renderRadar();
   }
 
   private renderRadar(): void {
     this.radarGraphics.clear();
-    const radarX = 496;
-    const radarY = 115;
-    const radarW = 32 * RADAR_SCALE; // 128px
-    const radarH = 56 * RADAR_SCALE; // 224px
+    const radarX = 480;
+    const radarY = 73;
+    const radarW = 32 * RADAR_SCALE; // 32 * 5 = 160px (full HUD width)
+    const radarH = 56 * RADAR_SCALE; // 56 * 5 = 280px
 
-    // Radar Base Background & Grid Boundary
-    this.radarGraphics.fillStyle(0x020617, 1);
+    // Radar Base Background: Authentic Arcade Namco Blue (0x214797)
+    this.radarGraphics.fillStyle(0x214797, 1);
     this.radarGraphics.fillRect(radarX, radarY, radarW, radarH);
-    this.radarGraphics.lineStyle(1, 0x1e293b, 1);
-    this.radarGraphics.strokeRect(radarX, radarY, radarW, radarH);
+    // Top & Bottom border divider lines
+    this.radarGraphics.lineStyle(1, 0x3b82f6, 0.8);
+    this.radarGraphics.lineBetween(radarX, radarY, radarX + radarW, radarY);
+    this.radarGraphics.lineBetween(radarX, radarY + radarH, radarX + radarW, radarY + radarH);
 
-    // 1. Uncollected Flags: ALL rendered as identical yellow dots (Blind-test specification!)
+    // 1. Uncollected Flags: yellow dots centered in 5x5 cells
     const config = this.gameState.getCurrentLevelConfig();
-    this.radarGraphics.fillStyle(0xfde047, 1);
+    this.radarGraphics.fillStyle(0xffff00, 1);
     config.flags.forEach((flag) => {
       const key = `flag_${flag.col}_${flag.row}`;
       const sp = this.flagSprites.get(key);
       if (sp && sp.visible) {
         const rx = radarX + flag.col * RADAR_SCALE;
         const ry = radarY + flag.row * RADAR_SCALE;
-        this.radarGraphics.fillRect(rx, ry, 3, 3);
+        this.radarGraphics.fillRect(rx + 1, ry + 1, 3, 3);
       }
     });
 
-    // 2. Red Enemy Cars
-    this.radarGraphics.fillStyle(0xef4444, 1);
+    // 2. Red Enemy Cars: 5x5 px bright red dots
+    this.radarGraphics.fillStyle(0xff2222, 1);
     this.enemies.forEach((enemy) => {
       const innerCol = enemy.col - RALLYX_BORDER_WIDTH;
       const innerRow = enemy.row - RALLYX_BORDER_WIDTH;
       if (innerCol >= 0 && innerCol < 32 && innerRow >= 0 && innerRow < 56) {
         const rx = radarX + innerCol * RADAR_SCALE;
         const ry = radarY + innerRow * RADAR_SCALE;
-        this.radarGraphics.fillRect(rx, ry, 4, 4);
+        this.radarGraphics.fillRect(rx, ry, 5, 5);
       }
     });
 
-    // 3. Blue Player Car: Blinking white/yellow square dot
+    // 3. Blue Player Car: Blinking white square dot (5x5 px)
     if (this.isRadarPlayerDotVisible) {
       const innerPlayerCol = this.playerCol - RALLYX_BORDER_WIDTH;
       const innerPlayerRow = this.playerRow - RALLYX_BORDER_WIDTH;
@@ -891,7 +915,7 @@ export class MainGameScene extends BaseArcadeScene {
         this.radarGraphics.fillStyle(0xffffff, 1);
         const rx = radarX + innerPlayerCol * RADAR_SCALE;
         const ry = radarY + innerPlayerRow * RADAR_SCALE;
-        this.radarGraphics.fillRect(rx, ry, 4, 4);
+        this.radarGraphics.fillRect(rx, ry, 5, 5);
       }
     }
   }
@@ -916,8 +940,6 @@ export class MainGameScene extends BaseArcadeScene {
     if (this.radarGraphics) this.radarGraphics.destroy();
     if (this.fuelBarGraphics) this.fuelBarGraphics.destroy();
     if (this.hudBg) this.hudBg.destroy();
-    if (this.hiLabel) this.hiLabel.destroy();
-    if (this.highScoreText) this.highScoreText.destroy();
     if (this.scLabel) this.scLabel.destroy();
     if (this.scoreText) this.scoreText.destroy();
     if (this.rndLabel) this.rndLabel.destroy();
