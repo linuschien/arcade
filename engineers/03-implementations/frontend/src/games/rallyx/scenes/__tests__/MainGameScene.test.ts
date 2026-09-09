@@ -8,7 +8,6 @@ describe('MainGameScene Unit Tests', () => {
   let mockGraphics: any;
   let mockSprite: any;
   let mockText: any;
-  let mockContainer: any;
   let mockEvents: any;
   let mockTextures: any;
   let mockTime: any;
@@ -27,6 +26,8 @@ describe('MainGameScene Unit Tests', () => {
       lineStyle: vi.fn(),
       strokeRect: vi.fn(),
       lineBetween: vi.fn(),
+      setScrollFactor: vi.fn().mockReturnThis(),
+      setDepth: vi.fn().mockReturnThis(),
       destroy: vi.fn(),
     };
 
@@ -37,6 +38,8 @@ describe('MainGameScene Unit Tests', () => {
       setOrigin: vi.fn().mockReturnThis(),
       setAlpha: vi.fn(),
       setAngle: vi.fn(),
+      setScrollFactor: vi.fn().mockReturnThis(),
+      setDepth: vi.fn().mockReturnThis(),
       destroy: vi.fn(),
     };
 
@@ -44,12 +47,6 @@ describe('MainGameScene Unit Tests', () => {
       setText: vi.fn(),
       setVisible: vi.fn(),
       setOrigin: vi.fn().mockReturnThis(),
-      destroy: vi.fn(),
-    };
-
-    mockContainer = {
-      add: vi.fn(),
-      setPosition: vi.fn().mockReturnThis(),
       setScrollFactor: vi.fn().mockReturnThis(),
       setDepth: vi.fn().mockReturnThis(),
       destroy: vi.fn(),
@@ -84,7 +81,6 @@ describe('MainGameScene Unit Tests', () => {
       graphics: vi.fn().mockReturnValue(mockGraphics),
       sprite: vi.fn().mockReturnValue(mockSprite),
       text: vi.fn().mockReturnValue(mockText),
-      container: vi.fn().mockReturnValue(mockContainer),
     };
     (scene as any).events = mockEvents;
     (scene as any).textures = mockTextures;
@@ -98,7 +94,7 @@ describe('MainGameScene Unit Tests', () => {
     InputService.reset();
   });
 
-  it('should initialize single camera, containers, graphics, and HUD on create', () => {
+  it('should initialize single camera, graphics, and HUD on create', () => {
     scene.create();
 
     expect(mockCameras.main.startFollow).toHaveBeenCalledWith(
@@ -109,9 +105,8 @@ describe('MainGameScene Unit Tests', () => {
       240,
       240
     );
-    expect(mockContainer.setPosition).toHaveBeenCalledWith(480, 0);
-    expect(mockContainer.setScrollFactor).toHaveBeenCalledWith(0, 0, true);
-    expect(mockContainer.setDepth).toHaveBeenCalledWith(1000);
+    expect(mockGraphics.setScrollFactor).toHaveBeenCalledWith(0);
+    expect(mockText.setScrollFactor).toHaveBeenCalledWith(0);
     expect((scene as any).add.graphics).toHaveBeenCalled();
     expect((scene as any).add.sprite).toHaveBeenCalled();
     expect((scene as any).add.text).toHaveBeenCalled();
