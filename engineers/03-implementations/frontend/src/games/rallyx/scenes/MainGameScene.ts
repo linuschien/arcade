@@ -374,41 +374,89 @@ export class MainGameScene extends BaseArcadeScene {
       this.mazeGraphics.fillRect(worldWidth - borderPx, borderPx, borderPx, worldHeight - 2 * borderPx);
     }
 
-    // Render inner maze walls and road corridors (32x56 inner grid)
+    // 1. Fill entire road background across inner playable maze
+    const innerX = RALLYX_BORDER_WIDTH * RALLYX_TILE_SIZE;
+    const innerY = RALLYX_BORDER_WIDTH * RALLYX_TILE_SIZE;
+    const innerW = (RALLYX_TOTAL_COLS - 2 * RALLYX_BORDER_WIDTH) * RALLYX_TILE_SIZE;
+    const innerH = (RALLYX_TOTAL_ROWS - 2 * RALLYX_BORDER_WIDTH) * RALLYX_TILE_SIZE;
+    this.mazeGraphics.fillStyle(ROAD_COLOR, 1);
+    this.mazeGraphics.fillRect(innerX, innerY, innerW, innerH);
+
+    // 2. Render inner maze walls with rounded corners (32x56 inner grid)
+    const cornerR = 12;
     for (let r = RALLYX_BORDER_WIDTH; r < RALLYX_TOTAL_ROWS - RALLYX_BORDER_WIDTH; r++) {
       for (let c = RALLYX_BORDER_WIDTH; c < RALLYX_TOTAL_COLS - RALLYX_BORDER_WIDTH; c++) {
         const tile = this.tileMatrix[r][c];
+        if (tile !== RallyXTileType.WALL) continue;
+
         const x = c * RALLYX_TILE_SIZE;
         const y = r * RALLYX_TILE_SIZE;
 
-        if (tile === RallyXTileType.WALL) {
-          // 1. Inside solid fill (內部填滿)
-          this.mazeGraphics.fillStyle(wallColor, 1);
-          this.mazeGraphics.fillRect(x, y, RALLYX_TILE_SIZE, RALLYX_TILE_SIZE);
+        const isTopWall = r > 0 && this.tileMatrix[r - 1][c] === RallyXTileType.WALL;
+        const isBottomWall = r < RALLYX_TOTAL_ROWS - 1 && this.tileMatrix[r + 1][c] === RallyXTileType.WALL;
+        const isLeftWall = c > 0 && this.tileMatrix[r][c - 1] === RallyXTileType.WALL;
+        const isRightWall = c < RALLYX_TOTAL_COLS - 1 && this.tileMatrix[r][c + 1] === RallyXTileType.WALL;
 
-          // 2. Outer perimeter outline (外圍有框線) - only stroke edges bordering non-walls
-          const isTopWall = r > 0 && this.tileMatrix[r - 1][c] === RallyXTileType.WALL;
-          const isBottomWall = r < RALLYX_TOTAL_ROWS - 1 && this.tileMatrix[r + 1][c] === RallyXTileType.WALL;
-          const isLeftWall = c > 0 && this.tileMatrix[r][c - 1] === RallyXTileType.WALL;
-          const isRightWall = c < RALLYX_TOTAL_COLS - 1 && this.tileMatrix[r][c + 1] === RallyXTileType.WALL;
+        // Exterior corner radii
+        const tl = !isTopWall && !isLeftWall ? cornerR : 0;
+        const tr = !isTopWall && !isRightWall ? cornerR : 0;
+        const bl = !isBottomWall && !isLeftWall ? cornerR : 0;
+        const br = !isBottomWall && !isRightWall ? cornerR : 0;
 
-          this.mazeGraphics.lineStyle(4, outlineColor, 1);
-          if (!isTopWall) {
-            this.mazeGraphics.lineBetween(x, y + 2, x + RALLYX_TILE_SIZE, y + 2);
-          }
-          if (!isBottomWall) {
-            this.mazeGraphics.lineBetween(x, y + RALLYX_TILE_SIZE - 2, x + RALLYX_TILE_SIZE, y + RALLYX_TILE_SIZE - 2);
-          }
-          if (!isLeftWall) {
-            this.mazeGraphics.lineBetween(x + 2, y, x + 2, y + RALLYX_TILE_SIZE);
-          }
-          if (!isRightWall) {
-            this.mazeGraphics.lineBetween(x + RALLYX_TILE_SIZE - 2, y, x + RALLYX_TILE_SIZE - 2, y + RALLYX_TILE_SIZE);
-          }
+        // Inside solid fill with rounded corners
+        this.mazeGraphics.fillStyle(wallColor, 1);
+        if (typeof (this.mazeGraphics as any).fillRoundedRect === 'function') {
+          (this.mazeGraphics as any).fillRoundedRect(x, y, RALLYX_TILE_SIZE, RALLYX_TILE_SIZE, { tl, tr, bl, br });
         } else {
-          // Road corridor: authentic golden yellow road!
-          this.mazeGraphics.fillStyle(ROAD_COLOR, 1);
           this.mazeGraphics.fillRect(x, y, RALLYX_TILE_SIZE, RALLYX_TILE_SIZE);
+        }
+
+        // Outer perimeter outline with rounded corners
+        this.mazeGraphics.lineStyle(4, outlineColor, 1);
+
+        // Straight segments
+        if (!isTopWall) {
+          this.mazeGraphics.lineBetween(x + tl, y + 2, x + RALLYX_TILE_SIZE - tr, y + 2);
+        }
+        if (!isBottomWall) {
+          this.mazeGraphics.lineBetween(x + bl, y + RALLYX_TILE_SIZE - 2, x + RALLYX_TILE_SIZE - br, y + RALLYX_TILE_SIZE - 2);
+        }
+        if (!isLeftWall) {
+          this.mazeGraphics.lineBetween(x + 2, y + tl, x + 2, y + RALLYX_TILE_SIZE - bl);
+        }
+        if (!isRightWall) {
+          this.mazeGraphics.lineBetween(x + RALLYX_TILE_SIZE - 2, y + tr, x + RALLYX_TILE_SIZE - 2, y + RALLYX_TILE_SIZE - br);
+        }
+
+        // Rounded corner arcs
+        const arcR = cornerR - 2;
+        if (tl && typeof (this.mazeGraphics as any).beginPath === 'function' && typeof (this.mazeGraphics as any).arc === 'function') {
+          (this.mazeGraphics as any).beginPath();
+          (this.mazeGraphics as any).arc(x + cornerR, y + cornerR, arcR, Math.PI, Math.PI * 1.5);
+          if (typeof (this.mazeGraphics as any).strokePath === 'function') {
+            (this.mazeGraphics as any).strokePath();
+          }
+        }
+        if (tr && typeof (this.mazeGraphics as any).beginPath === 'function' && typeof (this.mazeGraphics as any).arc === 'function') {
+          (this.mazeGraphics as any).beginPath();
+          (this.mazeGraphics as any).arc(x + RALLYX_TILE_SIZE - cornerR, y + cornerR, arcR, Math.PI * 1.5, Math.PI * 2);
+          if (typeof (this.mazeGraphics as any).strokePath === 'function') {
+            (this.mazeGraphics as any).strokePath();
+          }
+        }
+        if (br && typeof (this.mazeGraphics as any).beginPath === 'function' && typeof (this.mazeGraphics as any).arc === 'function') {
+          (this.mazeGraphics as any).beginPath();
+          (this.mazeGraphics as any).arc(x + RALLYX_TILE_SIZE - cornerR, y + RALLYX_TILE_SIZE - cornerR, arcR, 0, Math.PI * 0.5);
+          if (typeof (this.mazeGraphics as any).strokePath === 'function') {
+            (this.mazeGraphics as any).strokePath();
+          }
+        }
+        if (bl && typeof (this.mazeGraphics as any).beginPath === 'function' && typeof (this.mazeGraphics as any).arc === 'function') {
+          (this.mazeGraphics as any).beginPath();
+          (this.mazeGraphics as any).arc(x + cornerR, y + RALLYX_TILE_SIZE - cornerR, arcR, Math.PI * 0.5, Math.PI);
+          if (typeof (this.mazeGraphics as any).strokePath === 'function') {
+            (this.mazeGraphics as any).strokePath();
+          }
         }
       }
     }
@@ -907,16 +955,18 @@ export class MainGameScene extends BaseArcadeScene {
       }
     });
 
-    // 3. Blue Player Car: Blinking white square dot (5x5 px)
-    if (this.isRadarPlayerDotVisible) {
-      const innerPlayerCol = this.playerCol - RALLYX_BORDER_WIDTH;
-      const innerPlayerRow = this.playerRow - RALLYX_BORDER_WIDTH;
-      if (innerPlayerCol >= 0 && innerPlayerCol < 32 && innerPlayerRow >= 0 && innerPlayerRow < 56) {
-        this.radarGraphics.fillStyle(0xffffff, 1);
-        const rx = radarX + innerPlayerCol * RADAR_SCALE;
-        const ry = radarY + innerPlayerRow * RADAR_SCALE;
-        this.radarGraphics.fillRect(rx, ry, 5, 5);
-      }
+    // 3. Blue Player Car: Solid electric blue dot matching car color (No blinking, eye-friendly)
+    const innerPlayerCol = this.playerCol - RALLYX_BORDER_WIDTH;
+    const innerPlayerRow = this.playerRow - RALLYX_BORDER_WIDTH;
+    if (innerPlayerCol >= 0 && innerPlayerCol < 32 && innerPlayerRow >= 0 && innerPlayerRow < 56) {
+      const rx = radarX + innerPlayerCol * RADAR_SCALE;
+      const ry = radarY + innerPlayerRow * RADAR_SCALE;
+      // Vibrant Player Blue (0x38bdf8 - Electric Azure matching Formula 1 body)
+      this.radarGraphics.fillStyle(0x38bdf8, 1);
+      this.radarGraphics.fillRect(rx, ry, 5, 5);
+      // Crisp subtle white core to ensure distinct visibility against the dark blue radar
+      this.radarGraphics.fillStyle(0xffffff, 1);
+      this.radarGraphics.fillRect(rx + 1, ry + 1, 3, 3);
     }
   }
 
