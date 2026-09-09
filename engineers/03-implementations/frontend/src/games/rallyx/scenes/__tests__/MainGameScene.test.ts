@@ -21,6 +21,7 @@ describe('MainGameScene Unit Tests', () => {
       clear: vi.fn(),
       fillStyle: vi.fn(),
       fillRect: vi.fn(),
+      fillCircle: vi.fn(),
       lineStyle: vi.fn(),
       strokeRect: vi.fn(),
       lineBetween: vi.fn(),
@@ -65,19 +66,19 @@ describe('MainGameScene Unit Tests', () => {
 
     mockCameras = {
       main: {
-        setViewport: vi.fn(),
-        setBounds: vi.fn(),
-        setZoom: vi.fn(),
-        setOrigin: vi.fn(),
-        centerOn: vi.fn(),
-        startFollow: vi.fn(),
-        ignore: vi.fn(),
+        setViewport: vi.fn().mockReturnThis(),
+        setBounds: vi.fn().mockReturnThis(),
+        setZoom: vi.fn().mockReturnThis(),
+        setOrigin: vi.fn().mockReturnThis(),
+        centerOn: vi.fn().mockReturnThis(),
+        startFollow: vi.fn().mockReturnThis(),
+        ignore: vi.fn().mockReturnThis(),
       },
       add: vi.fn().mockReturnValue({
-        setScroll: vi.fn(),
-        setOrigin: vi.fn(),
-        setZoom: vi.fn(),
-        ignore: vi.fn(),
+        setScroll: vi.fn().mockReturnThis(),
+        setOrigin: vi.fn().mockReturnThis(),
+        setZoom: vi.fn().mockReturnThis(),
+        ignore: vi.fn().mockReturnThis(),
       }),
     };
 
@@ -151,6 +152,27 @@ describe('MainGameScene Unit Tests', () => {
     gameState.collectFlag('LUCKY'); // puts state into LUCKY_REFILL
 
     scene.update(200, 16.6);
+    expect(mockGraphics.fillRect).toHaveBeenCalled();
+  });
+
+  it('should render all 4 maze decorative border themes and perimeter walls cleanly', () => {
+    scene.create();
+
+    // Theme 0: Forest (Green)
+    (scene as any).renderMazeGraphics(0);
+    expect(mockGraphics.fillCircle).toHaveBeenCalled();
+    expect(mockGraphics.lineBetween).toHaveBeenCalled();
+
+    // Theme 1: Garden (Red)
+    (scene as any).renderMazeGraphics(1);
+    expect(mockGraphics.fillRect).toHaveBeenCalled();
+
+    // Theme 2: Waterway (Cyan)
+    (scene as any).renderMazeGraphics(2);
+    expect(mockGraphics.lineStyle).toHaveBeenCalled();
+
+    // Theme 3: Ruins (Grey)
+    (scene as any).renderMazeGraphics(3);
     expect(mockGraphics.fillRect).toHaveBeenCalled();
   });
 

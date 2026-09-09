@@ -184,17 +184,46 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // 4. Rock Boulder (rallyx:rock)
+    // 4. Dirt Mound Obstacle (rallyx:rock) - Authentic arcade 土堆
     if (!this.textures.exists('rallyx:rock')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
-      gfx.fillStyle(0x64748b, 1); // Slate boulder
-      gfx.fillCircle(16, 16, 11);
-      gfx.fillRect(8, 8, 16, 16);
-      // Boulder highlight & shadow
-      gfx.fillStyle(0x94a3b8, 1);
-      gfx.fillCircle(13, 12, 5);
-      gfx.fillStyle(0x334155, 1);
-      gfx.fillRect(15, 19, 8, 4);
+
+      // Base soil contact line
+      gfx.fillStyle(0x3f1d0b, 1); // Deep earth shadow
+      gfx.fillRect(6, 23, 20, 4);
+
+      // Main dirt mound layers (tapered dome)
+      gfx.fillStyle(0x78350f, 1); // Dark soil base layer
+      gfx.fillCircle(16, 21, 9);
+      gfx.fillCircle(10, 22, 5);
+      gfx.fillCircle(22, 22, 5);
+
+      gfx.fillStyle(0x92400e, 1); // Rich earth brown body
+      gfx.fillCircle(16, 17, 7.5);
+      gfx.fillCircle(12, 19, 4.5);
+      gfx.fillCircle(20, 19, 4.5);
+
+      gfx.fillStyle(0xb45309, 1); // Warm clay upper dome
+      gfx.fillCircle(16, 13, 5.5);
+
+      gfx.fillStyle(0xd97706, 1); // Sunlit sandy mound crest
+      gfx.fillCircle(15, 10, 3.5);
+
+      gfx.fillStyle(0xf59e0b, 1); // Peak dirt highlight
+      gfx.fillCircle(15, 9, 1.8);
+
+      // Dirt granules & pebbles
+      gfx.fillStyle(0x451a03, 1); // Dark soil pebbles
+      gfx.fillRect(9, 21, 2, 2);
+      gfx.fillRect(21, 20, 2, 2);
+      gfx.fillRect(13, 16, 2, 2);
+      gfx.fillRect(18, 14, 2, 2);
+
+      gfx.fillStyle(0xfde68a, 1); // Light sand specks
+      gfx.fillRect(14, 11, 1.5, 1.5);
+      gfx.fillRect(17, 16, 1.5, 1.5);
+      gfx.fillRect(10, 18, 1.5, 1.5);
+
       gfx.generateTexture('rallyx:rock', size, size);
       gfx.destroy();
     }
