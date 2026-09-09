@@ -68,11 +68,15 @@ describe('MainGameScene Unit Tests', () => {
         setViewport: vi.fn(),
         setBounds: vi.fn(),
         setZoom: vi.fn(),
+        setOrigin: vi.fn(),
+        centerOn: vi.fn(),
         startFollow: vi.fn(),
         ignore: vi.fn(),
       },
       add: vi.fn().mockReturnValue({
         setScroll: vi.fn(),
+        setOrigin: vi.fn(),
+        setZoom: vi.fn(),
         ignore: vi.fn(),
       }),
     };
@@ -99,11 +103,22 @@ describe('MainGameScene Unit Tests', () => {
     scene.create();
 
     expect(mockCameras.main.setViewport).toHaveBeenCalledWith(0, 0, 480, 480);
+    expect(mockCameras.main.setOrigin).toHaveBeenCalledWith(0.5, 0.5);
+    expect(mockCameras.main.setZoom).toHaveBeenCalledWith(2.0);
     expect(mockCameras.add).toHaveBeenCalledWith(480, 0, 160, 480);
     expect((scene as any).add.graphics).toHaveBeenCalled();
     expect((scene as any).add.sprite).toHaveBeenCalled();
     expect((scene as any).add.text).toHaveBeenCalled();
     expect(mockEvents.once).toHaveBeenCalledTimes(2);
+  });
+
+  it('should scale dual camera viewports and zoom for High-DPI canvas (DPR = 2)', () => {
+    (scene as any).scale = { width: 1280, height: 960 };
+    scene.create();
+
+    expect(mockCameras.main.setViewport).toHaveBeenCalledWith(0, 0, 960, 960);
+    expect(mockCameras.main.setZoom).toHaveBeenCalledWith(4.0);
+    expect(mockCameras.add).toHaveBeenCalledWith(960, 0, 320, 960);
   });
 
   it('should handle pause and resume states', () => {

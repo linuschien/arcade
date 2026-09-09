@@ -94,8 +94,6 @@ export class MainGameScene extends BaseArcadeScene {
   }
 
   public create(): void {
-    this.initHighDpiCamera(640);
-
     this.gameState = new RallyXGameState(1);
     this.tileMatrix = buildRallyXTileMatrix(this.gameState.getRound(), true);
 
@@ -133,18 +131,36 @@ export class MainGameScene extends BaseArcadeScene {
     this.events.once(Phaser.Scenes.Events.DESTROY, this.handleTeardown, this);
   }
 
+  protected override onPauseAudio(): void {
+    RallyXAudioService.pauseBGM();
+    RallyXAudioService.stopLowFuelAlarm();
+  }
+
+  protected override onResumeAudio(): void {
+    if (this.gameState?.getPlayState() === RallyXPlayState.PLAYING) {
+      RallyXAudioService.resumeBGM();
+      if (this.gameState.isFuelEmpty()) {
+        RallyXAudioService.startLowFuelAlarm();
+      }
+    }
+  }
+
   private setupCameras(): void {
+    const dpr = (this.scale?.width ? this.scale.width / 640 : 1) || 1;
     const worldWidth = RALLYX_TOTAL_COLS * RALLYX_TILE_SIZE;
     const worldHeight = RALLYX_TOTAL_ROWS * RALLYX_TILE_SIZE;
 
-    // Main Camera: 480x480 square playfield with 2x zoom (10x10 tiles view)
-    this.cameras.main.setViewport(0, 0, 480, 480);
+    // Main Camera: 480x480 square playfield with 2x zoom (centered on player)
+    this.cameras.main.setViewport(0, 0, 480 * dpr, 480 * dpr);
     this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
-    this.cameras.main.setZoom(2.0);
+    this.cameras.main.setOrigin(0.5, 0.5);
+    this.cameras.main.setZoom(2.0 * dpr);
 
     // HUD Camera: 160x480 right sidebar
-    this.hudCamera = this.cameras.add(480, 0, 160, 480);
+    this.hudCamera = this.cameras.add(480 * dpr, 0, 160 * dpr, 480 * dpr);
+    this.hudCamera.setOrigin(0, 0);
     this.hudCamera.setScroll(0, 0);
+    this.hudCamera.setZoom(dpr);
 
     // Ensure camera isolation
     this.cameras.main.ignore(this.hudContainer);
@@ -284,6 +300,9 @@ export class MainGameScene extends BaseArcadeScene {
     this.playerSprite.setPosition(this.playerX, this.playerY);
     this.playerSprite.setTexture('rallyx:player_up');
     this.playerSprite.setVisible(true);
+    if (this.cameras?.main && typeof this.cameras.main.centerOn === 'function') {
+      this.cameras.main.centerOn(this.playerX, this.playerY);
+    }
 
     // Reset Enemies
     this.enemySprites.forEach((sp) => sp.destroy());
@@ -349,7 +368,10 @@ export class MainGameScene extends BaseArcadeScene {
     this.statusBannerText.setText(isChallenging ? 'CHALLENGE!' : 'READY!');
     this.statusBannerText.setVisible(true);
 
-    this.time.delayedCall(1500, () => {
+    RallyXAudioService.playGameStart();
+
+    // Game Start Fanfare duration is ~4.2s (160 BPM)
+    this.time.delayedCall(4200, () => {
       this.statusBannerText.setVisible(false);
       this.gameState.setPlayState(RallyXPlayState.PLAYING);
       RallyXAudioService.startBGM();

@@ -7,6 +7,7 @@ describe('RallyXAudioService Unit Tests', () => {
     vi.useFakeTimers();
     vi.spyOn(SoundEngine, 'playTone').mockImplementation(() => {});
     vi.spyOn(SoundEngine, 'playSequence').mockImplementation(() => {});
+    vi.spyOn(SoundEngine, 'stopAll').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -18,20 +19,25 @@ describe('RallyXAudioService Unit Tests', () => {
   it('should start, tick, and stop BGM loop without errors', () => {
     RallyXAudioService.startBGM();
 
-    // Advance 115ms timer twice
-    vi.advanceTimersByTime(230);
+    // Advance 100ms timer twice
+    vi.advanceTimersByTime(200);
     expect(SoundEngine.playTone).toHaveBeenCalled();
 
     RallyXAudioService.pauseBGM();
     const callsBefore = (SoundEngine.playTone as any).mock.calls.length;
-    vi.advanceTimersByTime(230);
+    vi.advanceTimersByTime(200);
     expect((SoundEngine.playTone as any).mock.calls.length).toBe(callsBefore);
 
     RallyXAudioService.resumeBGM();
-    vi.advanceTimersByTime(115);
+    vi.advanceTimersByTime(100);
     expect((SoundEngine.playTone as any).mock.calls.length).toBeGreaterThan(callsBefore);
 
     RallyXAudioService.stopBGM();
+  });
+
+  it('should play game start fanfare', () => {
+    RallyXAudioService.playGameStart();
+    expect(SoundEngine.playSequence).toHaveBeenCalled();
   });
 
   it('should trigger SFX methods cleanly', () => {
