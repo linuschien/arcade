@@ -12,6 +12,7 @@ export const gameLoaders: Record<string, () => Promise<{ [key: string]: any }>> 
   pacman: () => import('./pacman'),
   pipemania: () => import('./pipemania'),
   mahjong: () => import('./mahjong'),
+  rallyx: () => import('./rallyx'),
 };
 
 /**
@@ -34,6 +35,8 @@ export async function createGameInstance(gameId: string, container: HTMLElement)
       return module.createPipeManiaGame(container);
     case 'mahjong':
       return module.createMahjongGame(container);
+    case 'rallyx':
+      return module.createRallyXGame(container);
     default:
       return null;
   }
