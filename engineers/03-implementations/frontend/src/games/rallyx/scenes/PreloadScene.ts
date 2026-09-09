@@ -78,38 +78,33 @@ export class PreloadScene extends Phaser.Scene {
 
     // Master Formula 1 Car Rendering (Centered at 0, 0, facing UP towards negative Y)
     const renderFormulaCarUp = (ctx: CanvasRenderingContext2D, isPlayer: boolean) => {
-      // 1. Road drop shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-      this.drawRoundedRect(ctx, -12, -18, 24, 37, 4);
-      ctx.fill();
-
-      // 2. Front Aerodynamic Wing & Endplates (Positioned ahead of the front wheels)
-      const wingGrad = ctx.createLinearGradient(0, -18, 0, -14);
+      // 1. Front Aerodynamic Splitter / Nose Canards (Width: 16px - Golden Ratio to 26px rear wing)
+      const wingGrad = ctx.createLinearGradient(0, -17.5, 0, -15);
       wingGrad.addColorStop(0, isPlayer ? '#2563eb' : '#dc2626');
       wingGrad.addColorStop(1, isPlayer ? '#1d4ed8' : '#991b1b');
       ctx.fillStyle = wingGrad;
-      this.drawRoundedRect(ctx, -15, -18, 30, 3.5, 1);
+      this.drawRoundedRect(ctx, -8, -17.2, 16, 2.5, 1.0);
       ctx.fill();
 
-      // Carbon front wing endplates
+      // Front wing endplate fins
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-16, -19.5, 2, 6);
-      ctx.fillRect(14, -19.5, 2, 6);
+      ctx.fillRect(-8.8, -18, 1.4, 3.8);
+      ctx.fillRect(7.4, -18, 1.4, 3.8);
 
-      // 3. Suspension Double Wishbones (Front & Rear Axles)
+      // 2. Suspension Double Wishbones (Front & Rear Axles)
       ctx.strokeStyle = '#0f172a';
       ctx.lineWidth = 1.2;
       ctx.beginPath();
-      // Front Left Wishbones
-      ctx.moveTo(-4, -10);
-      ctx.lineTo(-10, -10);
-      ctx.moveTo(-3, -12.5);
-      ctx.lineTo(-10, -11);
-      // Front Right Wishbones
-      ctx.moveTo(4, -10);
-      ctx.lineTo(10, -10);
-      ctx.moveTo(3, -12.5);
-      ctx.lineTo(10, -11);
+      // Front Left Wishbones (Tucked inward connecting to wheel at x = -8)
+      ctx.moveTo(-3.8, -10);
+      ctx.lineTo(-8, -10);
+      ctx.moveTo(-3, -12);
+      ctx.lineTo(-8, -10.5);
+      // Front Right Wishbones (Connecting to wheel at x = 8)
+      ctx.moveTo(3.8, -10);
+      ctx.lineTo(8, -10);
+      ctx.moveTo(3, -12);
+      ctx.lineTo(8, -10.5);
       // Rear Wishbones
       ctx.moveTo(-4, 10);
       ctx.lineTo(-10, 10);
@@ -117,36 +112,45 @@ export class PreloadScene extends Phaser.Scene {
       ctx.lineTo(10, 10);
       ctx.stroke();
 
-      // 4. 4 Tires (F1 Rubber Slicks with Alloy Rims)
-      const tireGradLeft = ctx.createLinearGradient(-18, 0, -10, 0);
-      tireGradLeft.addColorStop(0, '#334155');
-      tireGradLeft.addColorStop(1, '#0f172a');
-      const tireGradRight = ctx.createLinearGradient(10, 0, 18, 0);
-      tireGradRight.addColorStop(0, '#0f172a');
-      tireGradRight.addColorStop(1, '#334155');
+      // 3. 4 Tires (F1 Rubber Slicks with Alloy Rims)
+      const tireGradLeftFront = ctx.createLinearGradient(-14, 0, -8, 0);
+      tireGradLeftFront.addColorStop(0, '#334155');
+      tireGradLeftFront.addColorStop(1, '#0f172a');
+      const tireGradRightFront = ctx.createLinearGradient(8, 0, 14, 0);
+      tireGradRightFront.addColorStop(0, '#0f172a');
+      tireGradRightFront.addColorStop(1, '#334155');
 
-      // Front Wheels (Centered cleanly on front axle at y = -10, behind front wing)
-      ctx.fillStyle = tireGradLeft;
-      this.drawRoundedRect(ctx, -17, -14, 7, 8, 2);
+      const tireGradLeftRear = ctx.createLinearGradient(-18, 0, -10, 0);
+      tireGradLeftRear.addColorStop(0, '#334155');
+      tireGradLeftRear.addColorStop(1, '#0f172a');
+      const tireGradRightRear = ctx.createLinearGradient(10, 0, 18, 0);
+      tireGradRightRear.addColorStop(0, '#0f172a');
+      tireGradRightRear.addColorStop(1, '#334155');
+
+      // Front Wheels (Tucked inward at x = [-14, -8] & [8, 14], width 6px, agile aerodynamic track)
+      ctx.fillStyle = tireGradLeftFront;
+      this.drawRoundedRect(ctx, -14, -14, 6, 8, 2);
       ctx.fill();
-      ctx.fillStyle = tireGradRight;
-      this.drawRoundedRect(ctx, 10, -14, 7, 8, 2);
+      ctx.fillStyle = tireGradRightFront;
+      this.drawRoundedRect(ctx, 8, -14, 6, 8, 2);
       ctx.fill();
 
       // Rear Wheels (Centered on rear axle at y = 10, wider racing slicks)
-      ctx.fillStyle = tireGradLeft;
+      ctx.fillStyle = tireGradLeftRear;
       this.drawRoundedRect(ctx, -18, 5, 8, 10, 2);
       ctx.fill();
-      ctx.fillStyle = tireGradRight;
+      ctx.fillStyle = tireGradRightRear;
       this.drawRoundedRect(ctx, 10, 5, 8, 10, 2);
       ctx.fill();
 
       // Wheel Alloy Rims (Silver with metallic luster)
       ctx.fillStyle = '#94a3b8';
-      this.drawRoundedRect(ctx, -15, -12.5, 3.5, 5, 1);
+      // Front rims (centered at x = ±11)
+      this.drawRoundedRect(ctx, -12.5, -12.5, 3, 5, 1);
       ctx.fill();
-      this.drawRoundedRect(ctx, 11.5, -12.5, 3.5, 5, 1);
+      this.drawRoundedRect(ctx, 9.5, -12.5, 3, 5, 1);
       ctx.fill();
+      // Rear rims (centered at x = ±14)
       this.drawRoundedRect(ctx, -16, 7, 4, 6, 1);
       ctx.fill();
       this.drawRoundedRect(ctx, 12, 7, 4, 6, 1);
@@ -154,24 +158,24 @@ export class PreloadScene extends Phaser.Scene {
 
       // Hub nuts
       ctx.fillStyle = isPlayer ? '#facc15' : '#ef4444';
-      ctx.fillRect(-14, -11, 2, 2);
-      ctx.fillRect(12.5, -11, 2, 2);
+      ctx.fillRect(-12, -11, 2, 2);
+      ctx.fillRect(10, -11, 2, 2);
       ctx.fillRect(-15, 9, 2, 2);
       ctx.fillRect(13, 9, 2, 2);
 
-      // 5. Aerodynamic Chassis Body (Streamlined Monocoque)
+      // 4. Aerodynamic Chassis Body (Streamlined Monocoque)
       ctx.beginPath();
-      ctx.moveTo(0, -19);      // Sharp nosecone tip
-      ctx.lineTo(3.5, -14);    // Front nose cone
+      ctx.moveTo(0, -18.5);    // Sharp nosecone tip
+      ctx.lineTo(3.5, -13.5);  // Front nose cone
       ctx.lineTo(4.5, -5);     // Narrow waist ahead of sidepods
       ctx.lineTo(8.5, 0);      // Sidepod intake flare
       ctx.lineTo(8.5, 9);      // Sidepod radiator body
-      ctx.lineTo(4, 16);       // Engine cover taper
-      ctx.lineTo(-4, 16);
+      ctx.lineTo(4, 15.5);     // Engine cover taper
+      ctx.lineTo(-4, 15.5);
       ctx.lineTo(-8.5, 9);
       ctx.lineTo(-8.5, 0);     // Left sidepod intake flare
       ctx.lineTo(-4.5, -5);
-      ctx.lineTo(-3.5, -14);
+      ctx.lineTo(-3.5, -13.5);
       ctx.closePath();
 
       const bodyGrad = ctx.createLinearGradient(-9, 0, 9, 0);
@@ -194,25 +198,25 @@ export class PreloadScene extends Phaser.Scene {
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      // 6. Racing Stripe (Centered longitudinal livery)
+      // 5. Racing Stripe (Centered longitudinal livery)
       ctx.fillStyle = isPlayer ? '#ffffff' : '#facc15';
-      ctx.fillRect(-1.25, -18, 2.5, 33);
+      ctx.fillRect(-1.25, -17.5, 2.5, 32);
 
-      // 7. Rear Wing & Spoiler
+      // 6. Rear Wing & Spoiler (Commanding 26px Wide High-Downforce Aerofoil!)
       // Struts
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-3, 14, 1.5, 3);
-      ctx.fillRect(1.5, 14, 1.5, 3);
-      // Wing plane
+      ctx.fillRect(-3, 13.5, 1.5, 2.5);
+      ctx.fillRect(1.5, 13.5, 1.5, 2.5);
+      // Wing plane (Wide 26px span, prominent racing spoiler)
       ctx.fillStyle = isPlayer ? '#1e40af' : '#b91c1c';
-      this.drawRoundedRect(ctx, -16, 16, 32, 4, 1);
+      this.drawRoundedRect(ctx, -13, 15.5, 26, 3.2, 1);
       ctx.fill();
       // Endplates
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-17, 14.5, 2, 7);
-      ctx.fillRect(15, 14.5, 2, 7);
+      ctx.fillRect(-14, 14.5, 2, 5.5);
+      ctx.fillRect(12, 14.5, 2, 5.5);
 
-      // 8. Cockpit & Driver Helmet
+      // 7. Cockpit & Driver Helmet
       // Dark cockpit aperture
       ctx.fillStyle = '#020617';
       this.drawRoundedRect(ctx, -3.5, -4, 7, 8.5, 3);
