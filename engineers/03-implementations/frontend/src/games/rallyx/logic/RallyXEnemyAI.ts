@@ -270,10 +270,18 @@ export class RallyXEnemyAI {
     const centerTileX = (enemy.col + 0.5) * RALLYX_TILE_SIZE;
     const centerTileY = (enemy.row + 0.5) * RALLYX_TILE_SIZE;
 
-    // Check if close to tile center to make a pathfinding decision
-    const distToCenter = Math.hypot(enemy.x - centerTileX, enemy.y - centerTileY);
+    const curVec = DIRECTION_VECTORS[enemy.direction];
+    const newX = enemy.x + curVec.col * moveDist;
+    const newY = enemy.y + curVec.row * moveDist;
 
-    if (distToCenter <= moveDist) {
+    // Check if enemy reaches or passes through tile center in its movement direction
+    const crossedCenter =
+      (enemy.direction === Direction.UP && enemy.y >= centerTileY && newY <= centerTileY) ||
+      (enemy.direction === Direction.DOWN && enemy.y <= centerTileY && newY >= centerTileY) ||
+      (enemy.direction === Direction.LEFT && enemy.x >= centerTileX && newX <= centerTileX) ||
+      (enemy.direction === Direction.RIGHT && enemy.x <= centerTileX && newX >= centerTileX);
+
+    if (crossedCenter) {
       // Snap to tile center
       enemy.x = centerTileX;
       enemy.y = centerTileY;
@@ -299,21 +307,26 @@ export class RallyXEnemyAI {
 
       if (nextDir !== Direction.NONE) {
         if (nextDir !== enemy.direction) {
-          // Incur micro corner delay when turning
+          // Incur micro corner delay when turning (stays at center during corner delay)
           enemy.cornerDelayTimerSec = ENEMY_CORNER_DELAY_SEC;
+          enemy.direction = nextDir;
+        } else {
+          enemy.direction = nextDir;
+          // Continue moving remaining distance along current straight direction
+          const remDist = (enemy.direction === Direction.UP || enemy.direction === Direction.DOWN)
+            ? Math.abs(newY - centerTileY)
+            : Math.abs(newX - centerTileX);
+          const nextVec = DIRECTION_VECTORS[enemy.direction];
+          enemy.x += nextVec.col * remDist;
+          enemy.y += nextVec.row * remDist;
         }
-        enemy.direction = nextDir;
       }
+    } else {
+      enemy.x = newX;
+      enemy.y = newY;
     }
 
-    // Move in current direction
-    const vec = DIRECTION_VECTORS[enemy.direction];
-    const newX = enemy.x + vec.col * moveDist;
-    const newY = enemy.y + vec.row * moveDist;
-
     // Update coordinates and grid position
-    enemy.x = newX;
-    enemy.y = newY;
     enemy.col = Math.floor(enemy.x / RALLYX_TILE_SIZE);
     enemy.row = Math.floor(enemy.y / RALLYX_TILE_SIZE);
   }

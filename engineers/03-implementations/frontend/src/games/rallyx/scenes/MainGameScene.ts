@@ -56,6 +56,8 @@ export class MainGameScene extends BaseArcadeScene {
   private rockSprites: Phaser.GameObjects.Sprite[] = [];
   private smokeSprites: Map<string, Phaser.GameObjects.Sprite> = new Map();
 
+  private borderTileSprites: Phaser.GameObjects.TileSprite[] = [];
+
   // Player Car Kinematics
   private playerX: number = 0;
   private playerY: number = 0;
@@ -144,8 +146,33 @@ export class MainGameScene extends BaseArcadeScene {
   }
 
   private createWorldElements(): void {
+    const worldWidth = RALLYX_TOTAL_COLS * RALLYX_TILE_SIZE;
+    const worldHeight = RALLYX_TOTAL_ROWS * RALLYX_TILE_SIZE;
+    const borderPx = RALLYX_BORDER_WIDTH * RALLYX_TILE_SIZE;
+    const innerHeight = worldHeight - 2 * borderPx;
+
+    if (typeof (this.add as any).tileSprite === 'function') {
+      const topBorder = (this.add as any).tileSprite(0, 0, worldWidth, borderPx, 'rallyx:border_theme_0');
+      topBorder.setOrigin(0, 0);
+      topBorder.setDepth(0);
+
+      const botBorder = (this.add as any).tileSprite(0, worldHeight - borderPx, worldWidth, borderPx, 'rallyx:border_theme_0');
+      botBorder.setOrigin(0, 0);
+      botBorder.setDepth(0);
+
+      const leftBorder = (this.add as any).tileSprite(0, borderPx, borderPx, innerHeight, 'rallyx:border_theme_0');
+      leftBorder.setOrigin(0, 0);
+      leftBorder.setDepth(0);
+
+      const rightBorder = (this.add as any).tileSprite(worldWidth - borderPx, borderPx, borderPx, innerHeight, 'rallyx:border_theme_0');
+      rightBorder.setOrigin(0, 0);
+      rightBorder.setDepth(0);
+
+      this.borderTileSprites = [topBorder, botBorder, leftBorder, rightBorder];
+    }
+
     this.mazeGraphics = this.add.graphics();
-    this.mazeGraphics.setDepth(0);
+    this.mazeGraphics.setDepth(1);
 
     this.playerSprite = this.add.sprite(0, 0, 'rallyx:player_up');
     this.playerSprite.setOrigin(0.5, 0.5);
@@ -331,15 +358,34 @@ export class MainGameScene extends BaseArcadeScene {
     const outlineColor = wallOutlineColors[mazeIndex % 4] ?? 0xdc2626;
     const mazeTheme = mazeIndex % 4;
 
-    for (let r = 0; r < RALLYX_TOTAL_ROWS; r++) {
-      for (let c = 0; c < RALLYX_TOTAL_COLS; c++) {
+    // Update outer border tile sprites with theme texture (zero GPU vertex overhead)
+    const borderKey = `rallyx:border_theme_${mazeTheme}`;
+    this.borderTileSprites.forEach((ts) => {
+      if (typeof ts.setTexture === 'function') {
+        ts.setTexture(borderKey);
+      }
+    });
+
+    // Fallback border fill if tile sprites are not available in test/headless environment
+    if (this.borderTileSprites.length === 0) {
+      const worldWidth = RALLYX_TOTAL_COLS * RALLYX_TILE_SIZE;
+      const worldHeight = RALLYX_TOTAL_ROWS * RALLYX_TILE_SIZE;
+      const borderPx = RALLYX_BORDER_WIDTH * RALLYX_TILE_SIZE;
+      this.mazeGraphics.fillStyle(0x002800, 1);
+      this.mazeGraphics.fillRect(0, 0, worldWidth, borderPx);
+      this.mazeGraphics.fillRect(0, worldHeight - borderPx, worldWidth, borderPx);
+      this.mazeGraphics.fillRect(0, borderPx, borderPx, worldHeight - 2 * borderPx);
+      this.mazeGraphics.fillRect(worldWidth - borderPx, borderPx, borderPx, worldHeight - 2 * borderPx);
+    }
+
+    // Render inner maze walls and road corridors (32x56 inner grid)
+    for (let r = RALLYX_BORDER_WIDTH; r < RALLYX_TOTAL_ROWS - RALLYX_BORDER_WIDTH; r++) {
+      for (let c = RALLYX_BORDER_WIDTH; c < RALLYX_TOTAL_COLS - RALLYX_BORDER_WIDTH; c++) {
         const tile = this.tileMatrix[r][c];
         const x = c * RALLYX_TILE_SIZE;
         const y = r * RALLYX_TILE_SIZE;
 
-        if (tile === RallyXTileType.BORDER_DECORATIVE) {
-          this.renderDecorativeBorderTile(x, y, r, c, mazeTheme);
-        } else if (tile === RallyXTileType.WALL) {
+        if (tile === RallyXTileType.WALL) {
           // 1. Inside solid fill (內部填滿)
           this.mazeGraphics.fillStyle(wallColor, 1);
           this.mazeGraphics.fillRect(x, y, RALLYX_TILE_SIZE, RALLYX_TILE_SIZE);
@@ -372,135 +418,6 @@ export class MainGameScene extends BaseArcadeScene {
     }
   }
 
-  /**
-   * Renders the outer 3-tile decorative border frame with distinct graphic motifs per maze theme:
-   * Theme 0 (Maze 1): Lush green forest with 8-lobed scalloped bumpy tree canopies & black outline on dark dither
-   * Theme 1 (Maze 2): Diagonal light grey stone cobblestones on green lawn
-   * Theme 2 (Maze 3): Deep blue waterway with concentric turquoise water ripple rings & cross pattern
-   * Theme 3 (Maze 4): Pointed pine/fir trees with black trunks on dark green forest floor
-   */
-  private renderDecorativeBorderTile(x: number, y: number, r: number, c: number, theme: number): void {
-    const s = RALLYX_TILE_SIZE / 24;
-
-    if (theme === 0) {
-      // Maze 1: Forest / Green Trees (Authentic 8-lobed bumpy scalloped canopy with black outline on dark dither)
-      this.mazeGraphics.fillStyle(0x002800, 1);
-      this.mazeGraphics.fillRect(x, y, RALLYX_TILE_SIZE, RALLYX_TILE_SIZE);
-      this.mazeGraphics.fillStyle(0x001400, 1);
-      this.mazeGraphics.fillRect(x + 2 * s, y + 2 * s, 4, 4);
-      this.mazeGraphics.fillRect(x + 14 * s, y + 2 * s, 4, 4);
-      this.mazeGraphics.fillRect(x + 2 * s, y + 14 * s, 4, 4);
-      this.mazeGraphics.fillRect(x + 14 * s, y + 14 * s, 4, 4);
-
-      const cx = x + 12 * s;
-      const cy = y + 12 * s;
-      const lobeAngles = [0, 45, 90, 135, 180, 225, 270, 315];
-
-      // 1. Black scalloped outline of the tree canopy
-      this.mazeGraphics.fillStyle(0x000000, 1);
-      this.mazeGraphics.fillCircle(cx, cy, 8.5 * s);
-      for (const deg of lobeAngles) {
-        const rad = Phaser.Math.DegToRad(deg);
-        this.mazeGraphics.fillCircle(cx + Math.cos(rad) * 6 * s, cy + Math.sin(rad) * 6 * s, 5.5 * s);
-      }
-
-      // 2. Bright green foliage body
-      this.mazeGraphics.fillStyle(0x00d800, 1);
-      this.mazeGraphics.fillCircle(cx, cy, 7.5 * s);
-      for (const deg of lobeAngles) {
-        const rad = Phaser.Math.DegToRad(deg);
-        this.mazeGraphics.fillCircle(cx + Math.cos(rad) * 6 * s, cy + Math.sin(rad) * 6 * s, 4.5 * s);
-      }
-
-      // 3. Inner shadow branch/leaf curves
-      this.mazeGraphics.lineStyle(2 * s, 0x004d00, 1);
-      this.mazeGraphics.lineBetween(cx - 3 * s, cy - 1 * s, cx + 3 * s, cy - 1 * s);
-      this.mazeGraphics.lineBetween(cx - 2 * s, cy + 3 * s, cx + 4 * s, cy + 3 * s);
-
-      // 4. Sunlight highlights on upper lobes
-      this.mazeGraphics.fillStyle(0x76ff03, 1);
-      this.mazeGraphics.fillCircle(cx - 3 * s, cy - 4 * s, 2 * s);
-      this.mazeGraphics.fillCircle(cx + 3 * s, cy - 4 * s, 1.8 * s);
-    } else if (theme === 1) {
-      // Maze 2: Garden / Diagonal Grey Cobblestones on green lawn
-      this.mazeGraphics.fillStyle(0x005500, 1);
-      this.mazeGraphics.fillRect(x, y, RALLYX_TILE_SIZE, RALLYX_TILE_SIZE);
-
-      // Diagonal stone pavers
-      this.mazeGraphics.fillStyle(0x000000, 1);
-      this.mazeGraphics.fillRect(x + 2 * s, y + 2 * s, 9 * s, 9 * s);
-      this.mazeGraphics.fillRect(x + 13 * s, y + 13 * s, 9 * s, 9 * s);
-      this.mazeGraphics.fillStyle(0xd1d5db, 1);
-      this.mazeGraphics.fillRect(x + 3 * s, y + 3 * s, 7 * s, 7 * s);
-      this.mazeGraphics.fillRect(x + 14 * s, y + 14 * s, 7 * s, 7 * s);
-
-      // Stone highlight
-      this.mazeGraphics.fillStyle(0xf3f4f6, 1);
-      this.mazeGraphics.fillRect(x + 3 * s, y + 3 * s, 7 * s, 2 * s);
-      this.mazeGraphics.fillRect(x + 14 * s, y + 14 * s, 7 * s, 2 * s);
-    } else if (theme === 2) {
-      // Maze 3: Waterway / Circular ripple rings on deep marine water
-      this.mazeGraphics.fillStyle(0x075985, 1);
-      this.mazeGraphics.fillRect(x, y, RALLYX_TILE_SIZE, RALLYX_TILE_SIZE);
-
-      const cx = x + 12 * s;
-      const cy = y + 12 * s;
-      // Outer water ripple ring
-      this.mazeGraphics.lineStyle(2 * s, 0x00d8f0, 1);
-      this.mazeGraphics.strokeCircle(cx, cy, 9 * s);
-      // Inner water ripple ring
-      this.mazeGraphics.lineStyle(1.5 * s, 0x38bdf8, 1);
-      this.mazeGraphics.strokeCircle(cx, cy, 5 * s);
-      // Water cross ripple
-      this.mazeGraphics.lineStyle(1 * s, 0x7dd3fc, 0.9);
-      this.mazeGraphics.lineBetween(cx - 3 * s, cy, cx + 3 * s, cy);
-      this.mazeGraphics.lineBetween(cx - 3 * s, cy, cx + 3 * s, cy);
-      this.mazeGraphics.lineBetween(cx, cy - 3 * s, cx, cy + 3 * s);
-    } else {
-      // Maze 4: Pine Trees / Ruins
-      this.mazeGraphics.fillStyle(0x003300, 1);
-      this.mazeGraphics.fillRect(x, y, RALLYX_TILE_SIZE, RALLYX_TILE_SIZE);
-
-      // Pine tree trunk
-      this.mazeGraphics.fillStyle(0x000000, 1);
-      this.mazeGraphics.fillRect(x + 11 * s, y + 16 * s, 3 * s, 6 * s);
-
-      // Pointed pine canopy layers
-      if (typeof (this.mazeGraphics as any).fillTriangle === 'function') {
-        // Base pine layer
-        this.mazeGraphics.fillStyle(0x000000, 1);
-        (this.mazeGraphics as any).fillTriangle(
-          x + 4 * s, y + 18 * s,
-          x + 20 * s, y + 18 * s,
-          x + 12 * s, y + 10 * s
-        );
-        this.mazeGraphics.fillStyle(0x00a800, 1);
-        (this.mazeGraphics as any).fillTriangle(
-          x + 5 * s, y + 17 * s,
-          x + 19 * s, y + 17 * s,
-          x + 12 * s, y + 11 * s
-        );
-
-        // Top pine layer
-        this.mazeGraphics.fillStyle(0x000000, 1);
-        (this.mazeGraphics as any).fillTriangle(
-          x + 6 * s, y + 12 * s,
-          x + 18 * s, y + 12 * s,
-          x + 12 * s, y + 3 * s
-        );
-        this.mazeGraphics.fillStyle(0x00e000, 1);
-        (this.mazeGraphics as any).fillTriangle(
-          x + 7 * s, y + 11 * s,
-          x + 17 * s, y + 11 * s,
-          x + 12 * s, y + 4 * s
-        );
-      } else {
-        this.mazeGraphics.fillStyle(0x00e000, 1);
-        this.mazeGraphics.fillRect(x + 6 * s, y + 4 * s, 12 * s, 14 * s);
-      }
-    }
-  }
-
   private startRoundIntro(): void {
     this.gameState.setPlayState(RallyXPlayState.READY);
     const isChallenging = this.gameState.isChallengingStage();
@@ -509,8 +426,8 @@ export class MainGameScene extends BaseArcadeScene {
 
     RallyXAudioService.playGameStart();
 
-    // Game Start Fanfare duration is ~4.2s (160 BPM)
-    this.time.delayedCall(4200, () => {
+    // Game Start Fanfare duration is ~4.5s (160 BPM) - perfectly synchronized to hardware audio
+    this.time.delayedCall(4500, () => {
       this.statusBannerText.setVisible(false);
       this.gameState.setPlayState(RallyXPlayState.PLAYING);
       RallyXAudioService.startBGM();
@@ -1009,5 +926,7 @@ export class MainGameScene extends BaseArcadeScene {
     if (this.statusBannerText) this.statusBannerText.destroy();
     if (this.luckyBannerText) this.luckyBannerText.destroy();
     this.clearSprites(this.lifeIcons);
+    this.borderTileSprites.forEach((ts) => ts.destroy());
+    this.borderTileSprites.length = 0;
   }
 }

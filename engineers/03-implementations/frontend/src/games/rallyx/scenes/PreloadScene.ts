@@ -379,6 +379,137 @@ export class PreloadScene extends Phaser.Scene {
       gfx.generateTexture('rallyx:hud_life', 24, 24);
       gfx.destroy();
     }
+
+    // 10. Decorative Border Themes 0..3 (rallyx:border_theme_0..3) - Pre-rendered native 48x48 tiles
+    // Theme 0: Forest / Green Trees (Authentic 8-lobed bumpy scalloped canopy with black outline on dark dither)
+    if (!this.textures.exists('rallyx:border_theme_0')) {
+      const gfx = this.make.graphics({ x: 0, y: 0 });
+      gfx.fillStyle(0x002800, 1);
+      gfx.fillRect(0, 0, size, size);
+      gfx.fillStyle(0x001400, 1);
+      gfx.fillRect(4, 4, 4, 4);
+      gfx.fillRect(28, 4, 4, 4);
+      gfx.fillRect(4, 28, 4, 4);
+      gfx.fillRect(28, 28, 4, 4);
+
+      const cx = 24;
+      const cy = 24;
+      const lobeAngles = [0, 45, 90, 135, 180, 225, 270, 315];
+
+      // Black scalloped outline
+      gfx.fillStyle(0x000000, 1);
+      gfx.fillCircle(cx, cy, 17);
+      for (const deg of lobeAngles) {
+        const rad = Phaser.Math.DegToRad(deg);
+        gfx.fillCircle(cx + Math.cos(rad) * 12, cy + Math.sin(rad) * 12, 11);
+      }
+
+      // Bright green foliage body
+      gfx.fillStyle(0x00d800, 1);
+      gfx.fillCircle(cx, cy, 15);
+      for (const deg of lobeAngles) {
+        const rad = Phaser.Math.DegToRad(deg);
+        gfx.fillCircle(cx + Math.cos(rad) * 12, cy + Math.sin(rad) * 12, 9);
+      }
+
+      // Inner shadow branch/leaf curves
+      if (typeof gfx.lineStyle === 'function') {
+        gfx.lineStyle(4, 0x004d00, 1);
+        if (typeof (gfx as any).lineBetween === 'function') {
+          (gfx as any).lineBetween(cx - 6, cy - 2, cx + 6, cy - 2);
+          (gfx as any).lineBetween(cx - 4, cy + 6, cx + 8, cy + 6);
+        }
+      }
+
+      // Sunlight highlights on upper lobes
+      gfx.fillStyle(0x76ff03, 1);
+      gfx.fillCircle(cx - 6, cy - 8, 4);
+      gfx.fillCircle(cx + 6, cy - 8, 3.6);
+
+      gfx.generateTexture('rallyx:border_theme_0', size, size);
+      gfx.destroy();
+    }
+
+    // Theme 1: Garden / Diagonal Grey Cobblestones on green lawn
+    if (!this.textures.exists('rallyx:border_theme_1')) {
+      const gfx = this.make.graphics({ x: 0, y: 0 });
+      gfx.fillStyle(0x005500, 1);
+      gfx.fillRect(0, 0, size, size);
+
+      // Diagonal stone pavers
+      gfx.fillStyle(0x000000, 1);
+      gfx.fillRect(4, 4, 18, 18);
+      gfx.fillRect(26, 26, 18, 18);
+      gfx.fillStyle(0xd1d5db, 1);
+      gfx.fillRect(6, 6, 14, 14);
+      gfx.fillRect(28, 28, 14, 14);
+
+      // Stone highlight
+      gfx.fillStyle(0xf3f4f6, 1);
+      gfx.fillRect(6, 6, 14, 4);
+      gfx.fillRect(28, 28, 14, 4);
+
+      gfx.generateTexture('rallyx:border_theme_1', size, size);
+      gfx.destroy();
+    }
+
+    // Theme 2: Waterway / Circular ripple rings on deep marine water
+    if (!this.textures.exists('rallyx:border_theme_2')) {
+      const gfx = this.make.graphics({ x: 0, y: 0 });
+      gfx.fillStyle(0x075985, 1);
+      gfx.fillRect(0, 0, size, size);
+
+      const cx = 24;
+      const cy = 24;
+      if (typeof gfx.lineStyle === 'function') {
+        gfx.lineStyle(4, 0x00d8f0, 1);
+        if (typeof (gfx as any).strokeCircle === 'function') {
+          (gfx as any).strokeCircle(cx, cy, 18);
+        }
+        gfx.lineStyle(3, 0x38bdf8, 1);
+        if (typeof (gfx as any).strokeCircle === 'function') {
+          (gfx as any).strokeCircle(cx, cy, 10);
+        }
+        gfx.lineStyle(2, 0x7dd3fc, 0.9);
+        if (typeof (gfx as any).lineBetween === 'function') {
+          (gfx as any).lineBetween(cx - 6, cy, cx + 6, cy);
+          (gfx as any).lineBetween(cx, cy - 6, cx, cy + 6);
+        }
+      }
+
+      gfx.generateTexture('rallyx:border_theme_2', size, size);
+      gfx.destroy();
+    }
+
+    // Theme 3: Pine Trees / Ruins
+    if (!this.textures.exists('rallyx:border_theme_3')) {
+      const gfx = this.make.graphics({ x: 0, y: 0 });
+      gfx.fillStyle(0x003300, 1);
+      gfx.fillRect(0, 0, size, size);
+
+      // Pine tree trunk
+      gfx.fillStyle(0x000000, 1);
+      gfx.fillRect(22, 32, 6, 12);
+
+      // Pointed pine canopy layers
+      if (typeof (gfx as any).fillTriangle === 'function') {
+        gfx.fillStyle(0x000000, 1);
+        (gfx as any).fillTriangle(8, 36, 40, 36, 24, 20);
+        gfx.fillStyle(0x00a800, 1);
+        (gfx as any).fillTriangle(10, 34, 38, 34, 24, 22);
+
+        gfx.fillStyle(0x000000, 1);
+        (gfx as any).fillTriangle(12, 24, 36, 24, 24, 6);
+        gfx.fillStyle(0x00e000, 1);
+        (gfx as any).fillTriangle(14, 22, 34, 22, 24, 8);
+      } else {
+        gfx.fillStyle(0x00e000, 1);
+        gfx.fillRect(12, 8, 24, 28);
+      }
+
+      gfx.generateTexture('rallyx:border_theme_3', size, size);
+      gfx.destroy();
+    }
   }
 }
 

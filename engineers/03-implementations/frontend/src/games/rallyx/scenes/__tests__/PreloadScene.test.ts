@@ -15,6 +15,9 @@ describe('PreloadScene Unit Tests', () => {
       fillRect: vi.fn(),
       fillCircle: vi.fn(),
       fillTriangle: vi.fn(),
+      lineStyle: vi.fn(),
+      lineBetween: vi.fn(),
+      strokeCircle: vi.fn(),
       generateTexture: vi.fn(),
       destroy: vi.fn(),
     };
@@ -56,6 +59,10 @@ describe('PreloadScene Unit Tests', () => {
     expect(generatedKeys).toContain('rallyx:flag_special');
     expect(generatedKeys).toContain('rallyx:flag_lucky');
     expect(generatedKeys).toContain('rallyx:hud_life');
+    expect(generatedKeys).toContain('rallyx:border_theme_0');
+    expect(generatedKeys).toContain('rallyx:border_theme_1');
+    expect(generatedKeys).toContain('rallyx:border_theme_2');
+    expect(generatedKeys).toContain('rallyx:border_theme_3');
   });
 
   it('should transition to MainGameScene on create', () => {

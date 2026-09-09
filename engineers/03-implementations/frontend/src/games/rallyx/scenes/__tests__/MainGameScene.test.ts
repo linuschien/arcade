@@ -81,6 +81,7 @@ describe('MainGameScene Unit Tests', () => {
       graphics: vi.fn().mockReturnValue(mockGraphics),
       sprite: vi.fn().mockReturnValue(mockSprite),
       text: vi.fn().mockReturnValue(mockText),
+      tileSprite: vi.fn().mockReturnValue(mockSprite),
     };
     (scene as any).events = mockEvents;
     (scene as any).textures = mockTextures;
@@ -166,19 +167,22 @@ describe('MainGameScene Unit Tests', () => {
 
     // Theme 0: Forest (Green)
     (scene as any).renderMazeGraphics(0);
-    expect(mockGraphics.fillCircle).toHaveBeenCalled();
+    expect(mockSprite.setTexture).toHaveBeenCalledWith('rallyx:border_theme_0');
     expect(mockGraphics.lineBetween).toHaveBeenCalled();
 
     // Theme 1: Garden (Red)
     (scene as any).renderMazeGraphics(1);
+    expect(mockSprite.setTexture).toHaveBeenCalledWith('rallyx:border_theme_1');
     expect(mockGraphics.fillRect).toHaveBeenCalled();
 
     // Theme 2: Waterway (Cyan)
     (scene as any).renderMazeGraphics(2);
+    expect(mockSprite.setTexture).toHaveBeenCalledWith('rallyx:border_theme_2');
     expect(mockGraphics.lineStyle).toHaveBeenCalled();
 
     // Theme 3: Ruins (Grey)
     (scene as any).renderMazeGraphics(3);
+    expect(mockSprite.setTexture).toHaveBeenCalledWith('rallyx:border_theme_3');
     expect(mockGraphics.fillRect).toHaveBeenCalled();
   });
 
