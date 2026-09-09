@@ -137,17 +137,23 @@ describe('MainGameScene Unit Tests', () => {
 
     // Trigger UP direction
     InputService.setActionState(PlayerIndex.P1, ArcadeAction.UP, true);
-    scene.update(100, 16.6);
+    const startY = (scene as any).playerY;
+    for (let i = 0; i < 5; i++) {
+      scene.update(100 + i * 16.6, 16.6);
+    }
+    const endY = (scene as any).playerY;
+    expect(endY).toBeLessThan(startY);
 
     InputService.reset();
     // Trigger DOWN direction (instant 180° turn)
     InputService.setActionState(PlayerIndex.P1, ArcadeAction.DOWN, true);
-    scene.update(116, 16.6);
+    scene.update(2000, 16.6);
+    expect((scene as any).currentDirection).toBe('DOWN');
 
     InputService.reset();
     // Trigger BUTTON_A (smoke screen)
     InputService.setActionState(PlayerIndex.P1, ArcadeAction.BUTTON_A, true);
-    scene.update(132, 16.6);
+    scene.update(2016, 16.6);
   });
 
   it('should handle Lucky "L" flag freeze refill animation in update', () => {

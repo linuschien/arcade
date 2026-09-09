@@ -164,7 +164,7 @@ export class MainGameScene extends BaseArcadeScene {
     this.hudCamera.setOrigin(0, 0);
     this.hudCamera.setScroll(0, 0);
     this.hudCamera.setZoom(dpr);
-    this.hudCamera.setRoundPixels(true);
+    this.hudCamera.setRoundPixels(false);
 
     // Ensure camera isolation
     this.cameras.main.ignore(this.hudContainer);
@@ -192,15 +192,16 @@ export class MainGameScene extends BaseArcadeScene {
     this.hudContainer.add(hudBg);
 
     // 2. Score & Round Headers
+    const fontStack = '"Press Start 2P", "Courier New", Courier, monospace, sans-serif';
     const labelStyle: Phaser.Types.GameObjects.Text.TextStyle = {
       fontSize: '11px',
-      fontFamily: 'monospace',
+      fontFamily: fontStack,
       color: '#f59e0b',
       fontStyle: 'bold',
     };
     const valStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-      fontSize: '14px',
-      fontFamily: 'monospace',
+      fontSize: '15px',
+      fontFamily: fontStack,
       color: '#ffffff',
       fontStyle: 'bold',
     };
@@ -223,7 +224,7 @@ export class MainGameScene extends BaseArcadeScene {
     // 4. Fuel Gauge
     const fuelLabel = this.add.text(16, 350, 'FUEL', {
       fontSize: '11px',
-      fontFamily: 'monospace',
+      fontFamily: fontStack,
       color: '#ffffff',
       fontStyle: 'bold',
     });
@@ -240,8 +241,8 @@ export class MainGameScene extends BaseArcadeScene {
 
     // 6. Centered Status Banner (e.g. READY! / GAME OVER / CLEAR)
     this.statusBannerText = this.add.text(80, 430, 'READY!', {
-      fontSize: '16px',
-      fontFamily: 'monospace',
+      fontSize: '18px',
+      fontFamily: fontStack,
       color: '#facc15',
       fontStyle: 'bold',
     }).setOrigin(0.5, 0.5);
@@ -250,7 +251,7 @@ export class MainGameScene extends BaseArcadeScene {
     // 7. Lucky Refill Overlay Banner
     this.luckyBannerText = this.add.text(80, 455, '★ LUCKY! ★', {
       fontSize: '14px',
-      fontFamily: 'monospace',
+      fontFamily: fontStack,
       color: '#22c55e',
       fontStyle: 'bold',
     }).setOrigin(0.5, 0.5);
@@ -538,6 +539,11 @@ export class MainGameScene extends BaseArcadeScene {
       return;
     }
 
+    // Allow pre-buffering direction during round intro
+    if (playState === RallyXPlayState.READY) {
+      this.handlePlayerInput();
+    }
+
     // 2. Normal Playing State
     if (playState === RallyXPlayState.PLAYING) {
       this.handlePlayerInput();
@@ -593,6 +599,11 @@ export class MainGameScene extends BaseArcadeScene {
   }
 
   private setRequestedDirection(dir: Direction): void {
+    if (dir === this.currentDirection) {
+      this.bufferedDirection = Direction.NONE;
+      return;
+    }
+
     // US-06-01 AC3: Instant 180° U-turn on opposite input
     if (OPPOSITE_DIRECTIONS[this.currentDirection] === dir) {
       this.currentDirection = dir;
@@ -619,18 +630,20 @@ export class MainGameScene extends BaseArcadeScene {
     const distToCenter = Math.hypot(this.playerX - centerTileX, this.playerY - centerTileY);
 
     // Check if within snap radius to execute buffered 90° turn
-    if (distToCenter <= moveDist + 1.5) {
-      if (this.bufferedDirection !== Direction.NONE) {
-        const v = DIRECTION_VECTORS[this.bufferedDirection];
-        const nextC = this.playerCol + v.col;
-        const nextR = this.playerRow + v.row;
-        if (!isRallyXWall(this.tileMatrix, nextC, nextR)) {
-          this.playerX = centerTileX;
-          this.playerY = centerTileY;
-          this.currentDirection = this.bufferedDirection;
-          this.bufferedDirection = Direction.NONE;
-          this.updatePlayerSpriteTexture();
-        }
+    if (
+      this.bufferedDirection !== Direction.NONE &&
+      this.bufferedDirection !== this.currentDirection &&
+      distToCenter <= moveDist + 2.0
+    ) {
+      const v = DIRECTION_VECTORS[this.bufferedDirection];
+      const nextC = this.playerCol + v.col;
+      const nextR = this.playerRow + v.row;
+      if (!isRallyXWall(this.tileMatrix, nextC, nextR)) {
+        this.playerX = centerTileX;
+        this.playerY = centerTileY;
+        this.currentDirection = this.bufferedDirection;
+        this.bufferedDirection = Direction.NONE;
+        this.updatePlayerSpriteTexture();
       }
     }
 
@@ -640,25 +653,33 @@ export class MainGameScene extends BaseArcadeScene {
     const forwardR = this.playerRow + curV.row;
 
     if (isRallyXWall(this.tileMatrix, forwardC, forwardR)) {
-      // Approaching wall: clamp at tile center and auto-turn (Clockwise Priority)
-      this.playerX = centerTileX;
-      this.playerY = centerTileY;
+      // Only clamp and auto-turn when reaching or passing tile center
+      const reachedCenter =
+        (this.currentDirection === Direction.UP && this.playerY <= centerTileY) ||
+        (this.currentDirection === Direction.DOWN && this.playerY >= centerTileY) ||
+        (this.currentDirection === Direction.LEFT && this.playerX <= centerTileX) ||
+        (this.currentDirection === Direction.RIGHT && this.playerX >= centerTileX);
 
-      const cw = RELATIVE_CLOCKWISE_DIRECTIONS[this.currentDirection];
-      const cwV = DIRECTION_VECTORS[cw];
-      const ccw = RELATIVE_COUNTER_CLOCKWISE_DIRECTIONS[this.currentDirection];
-      const ccwV = DIRECTION_VECTORS[ccw];
-      const opp = OPPOSITE_DIRECTIONS[this.currentDirection];
+      if (reachedCenter) {
+        this.playerX = centerTileX;
+        this.playerY = centerTileY;
 
-      if (!isRallyXWall(this.tileMatrix, this.playerCol + cwV.col, this.playerRow + cwV.row)) {
-        this.currentDirection = cw;
-      } else if (!isRallyXWall(this.tileMatrix, this.playerCol + ccwV.col, this.playerRow + ccwV.row)) {
-        this.currentDirection = ccw;
-      } else {
-        // Dead end: automatic 180° U-turn!
-        this.currentDirection = opp;
+        const cw = RELATIVE_CLOCKWISE_DIRECTIONS[this.currentDirection];
+        const cwV = DIRECTION_VECTORS[cw];
+        const ccw = RELATIVE_COUNTER_CLOCKWISE_DIRECTIONS[this.currentDirection];
+        const ccwV = DIRECTION_VECTORS[ccw];
+        const opp = OPPOSITE_DIRECTIONS[this.currentDirection];
+
+        if (!isRallyXWall(this.tileMatrix, this.playerCol + cwV.col, this.playerRow + cwV.row)) {
+          this.currentDirection = cw;
+        } else if (!isRallyXWall(this.tileMatrix, this.playerCol + ccwV.col, this.playerRow + ccwV.row)) {
+          this.currentDirection = ccw;
+        } else {
+          // Dead end: automatic 180° U-turn!
+          this.currentDirection = opp;
+        }
+        this.updatePlayerSpriteTexture();
       }
-      this.updatePlayerSpriteTexture();
     }
 
     // Advance position

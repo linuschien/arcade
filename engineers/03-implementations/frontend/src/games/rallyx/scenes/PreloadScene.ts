@@ -25,7 +25,7 @@ export class PreloadScene extends Phaser.Scene {
     keys.forEach((k) => {
       const tex = this.textures.get(k);
       if (tex && typeof tex.setFilter === 'function') {
-        tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
       }
     });
 
