@@ -49,6 +49,9 @@ describe('MainGameScene Unit Tests', () => {
 
     mockContainer = {
       add: vi.fn(),
+      setPosition: vi.fn().mockReturnThis(),
+      setScrollFactor: vi.fn().mockReturnThis(),
+      setDepth: vi.fn().mockReturnThis(),
       destroy: vi.fn(),
     };
 
@@ -68,22 +71,13 @@ describe('MainGameScene Unit Tests', () => {
 
     mockCameras = {
       main: {
-        setViewport: vi.fn().mockReturnThis(),
-        setBounds: vi.fn().mockReturnThis(),
-        setZoom: vi.fn().mockReturnThis(),
         setOrigin: vi.fn().mockReturnThis(),
-        centerOn: vi.fn().mockReturnThis(),
+        setZoom: vi.fn().mockReturnThis(),
         startFollow: vi.fn().mockReturnThis(),
-        ignore: vi.fn().mockReturnThis(),
         setRoundPixels: vi.fn().mockReturnThis(),
+        scrollX: 0,
+        scrollY: 0,
       },
-      add: vi.fn().mockReturnValue({
-        setScroll: vi.fn().mockReturnThis(),
-        setOrigin: vi.fn().mockReturnThis(),
-        setZoom: vi.fn().mockReturnThis(),
-        ignore: vi.fn().mockReturnThis(),
-        setRoundPixels: vi.fn().mockReturnThis(),
-      }),
     };
 
     (scene as any).add = {
@@ -104,26 +98,33 @@ describe('MainGameScene Unit Tests', () => {
     InputService.reset();
   });
 
-  it('should initialize dual cameras, containers, graphics, and HUD on create', () => {
+  it('should initialize single camera, containers, graphics, and HUD on create', () => {
     scene.create();
 
-    expect(mockCameras.main.setViewport).toHaveBeenCalledWith(0, 0, 480, 480);
-    expect(mockCameras.main.setOrigin).toHaveBeenCalledWith(0.5, 0.5);
-    expect(mockCameras.main.setZoom).toHaveBeenCalledWith(2.0);
-    expect(mockCameras.add).toHaveBeenCalledWith(480, 0, 160, 480);
+    expect(mockCameras.main.startFollow).toHaveBeenCalledWith(
+      expect.anything(),
+      true,
+      1,
+      1,
+      240,
+      240
+    );
+    expect(mockContainer.setPosition).toHaveBeenCalledWith(480, 0);
+    expect(mockContainer.setScrollFactor).toHaveBeenCalledWith(0, 0, true);
+    expect(mockContainer.setDepth).toHaveBeenCalledWith(1000);
     expect((scene as any).add.graphics).toHaveBeenCalled();
     expect((scene as any).add.sprite).toHaveBeenCalled();
     expect((scene as any).add.text).toHaveBeenCalled();
     expect(mockEvents.once).toHaveBeenCalledTimes(2);
   });
 
-  it('should scale dual camera viewports and zoom for High-DPI canvas (DPR = 2)', () => {
+  it('should scale camera zoom cleanly for High-DPI canvas (DPR = 2) without 2x digital stretch', () => {
     (scene as any).scale = { width: 1280, height: 960 };
     scene.create();
 
-    expect(mockCameras.main.setViewport).toHaveBeenCalledWith(0, 0, 960, 960);
-    expect(mockCameras.main.setZoom).toHaveBeenCalledWith(4.0);
-    expect(mockCameras.add).toHaveBeenCalledWith(960, 0, 320, 960);
+    // With 1280 width and baseWidth 640, zoomFactor is exactly 2.0 (Retina DPR), NOT 4.0!
+    expect(mockCameras.main.setZoom).toHaveBeenCalledWith(2.0);
+    expect(mockCameras.main.setOrigin).toHaveBeenCalledWith(0, 0);
   });
 
   it('should handle pause and resume states', () => {

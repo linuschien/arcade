@@ -47,10 +47,9 @@ export class MainGameScene extends BaseArcadeScene {
   private gameState!: RallyXGameState;
   private tileMatrix!: RallyXTileType[][];
 
-  // Containers for dual camera separation
+  // Containers for World elements vs fixed HUD sidebar
   private worldContainer!: Phaser.GameObjects.Container;
   private hudContainer!: Phaser.GameObjects.Container;
-  private hudCamera!: Phaser.Cameras.Scene2D.Camera;
 
   // World Game Objects
   private mazeGraphics!: Phaser.GameObjects.Graphics;
@@ -99,11 +98,10 @@ export class MainGameScene extends BaseArcadeScene {
     this.gameState = new RallyXGameState(1);
     this.tileMatrix = buildRallyXTileMatrix(this.gameState.getRound(), true);
 
-    // Containers for Main vs HUD cameras
+    // Containers for World elements vs fixed HUD sidebar
     this.worldContainer = this.add.container(0, 0);
     this.hudContainer = this.add.container(0, 0);
 
-    this.setupCameras();
     this.createWorldElements();
     this.createHUDElements();
     this.resetLevelEntities();
@@ -147,30 +145,6 @@ export class MainGameScene extends BaseArcadeScene {
     }
   }
 
-  private setupCameras(): void {
-    const dpr = (this.scale?.width ? this.scale.width / 640 : 1) || 1;
-    const worldWidth = RALLYX_TOTAL_COLS * RALLYX_TILE_SIZE;
-    const worldHeight = RALLYX_TOTAL_ROWS * RALLYX_TILE_SIZE;
-
-    // Main Camera: 480x480 square playfield with 2x zoom (centered on player)
-    this.cameras.main.setViewport(0, 0, 480 * dpr, 480 * dpr);
-    this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
-    this.cameras.main.setOrigin(0.5, 0.5);
-    this.cameras.main.setZoom(2.0 * dpr);
-    this.cameras.main.setRoundPixels(true);
-
-    // HUD Camera: 160x480 right sidebar
-    this.hudCamera = this.cameras.add(480 * dpr, 0, 160 * dpr, 480 * dpr);
-    this.hudCamera.setOrigin(0, 0);
-    this.hudCamera.setScroll(0, 0);
-    this.hudCamera.setZoom(dpr);
-    this.hudCamera.setRoundPixels(false);
-
-    // Ensure camera isolation
-    this.cameras.main.ignore(this.hudContainer);
-    this.hudCamera.ignore(this.worldContainer);
-  }
-
   private createWorldElements(): void {
     this.mazeGraphics = this.add.graphics();
     this.worldContainer.add(this.mazeGraphics);
@@ -179,10 +153,20 @@ export class MainGameScene extends BaseArcadeScene {
     this.playerSprite.setOrigin(0.5, 0.5);
     this.worldContainer.add(this.playerSprite);
 
-    this.cameras.main.startFollow(this.playerSprite, true, 1, 1);
+    // Single High-DPI Camera: centers player at (240, 240) in 480x480 playfield
+    if (this.cameras?.main && typeof this.cameras.main.startFollow === 'function') {
+      this.cameras.main.startFollow(this.playerSprite, true, 1, 1, 240, 240);
+      if (typeof this.cameras.main.setRoundPixels === 'function') {
+        this.cameras.main.setRoundPixels(true);
+      }
+    }
   }
 
   private createHUDElements(): void {
+    // Fixed Right Sidebar: 160x480 at (480, 0)
+    this.hudContainer.setPosition(480, 0);
+    this.hudContainer.setDepth(1000);
+
     // 1. Sidebar Background
     const hudBg = this.add.graphics();
     hudBg.fillStyle(0x090d16, 1);
@@ -257,6 +241,11 @@ export class MainGameScene extends BaseArcadeScene {
     }).setOrigin(0.5, 0.5);
     this.luckyBannerText.setVisible(false);
     this.hudContainer.add(this.luckyBannerText);
+
+    // Pin HUD so it never scrolls with world camera
+    if (typeof this.hudContainer.setScrollFactor === 'function') {
+      this.hudContainer.setScrollFactor(0, 0, true);
+    }
   }
 
   private resetLevelEntities(): void {
@@ -305,8 +294,9 @@ export class MainGameScene extends BaseArcadeScene {
     this.playerSprite.setPosition(this.playerX, this.playerY);
     this.playerSprite.setTexture('rallyx:player_up');
     this.playerSprite.setVisible(true);
-    if (this.cameras?.main && typeof this.cameras.main.centerOn === 'function') {
-      this.cameras.main.centerOn(this.playerX, this.playerY);
+    if (this.cameras?.main) {
+      this.cameras.main.scrollX = this.playerX - 240;
+      this.cameras.main.scrollY = this.playerY - 240;
     }
 
     // Reset Enemies
@@ -1000,5 +990,7 @@ export class MainGameScene extends BaseArcadeScene {
     if (this.mazeGraphics) this.mazeGraphics.destroy();
     if (this.radarGraphics) this.radarGraphics.destroy();
     if (this.fuelBarGraphics) this.fuelBarGraphics.destroy();
+    if (this.hudContainer) this.hudContainer.destroy();
+    if (this.worldContainer) this.worldContainer.destroy();
   }
 }
