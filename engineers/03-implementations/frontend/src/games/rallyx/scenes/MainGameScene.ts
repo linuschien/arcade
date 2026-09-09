@@ -812,7 +812,22 @@ export class MainGameScene extends BaseArcadeScene {
 
     const isGameOver = this.gameState.handlePlayerDeath();
 
-    this.playerSprite.setTexture('rallyx:crash_0');
+    // Multi-stage animated arcade explosion (Starburst -> Fireball & Shrapnel -> Smoke & Fire -> Dissipating Embers)
+    const crashFrames = ['rallyx:crash_0', 'rallyx:crash_1', 'rallyx:crash_2', 'rallyx:crash_3'];
+    crashFrames.forEach((frameKey, idx) => {
+      this.time.delayedCall(idx * 140, () => {
+        if (this.playerSprite && this.playerSprite.active) {
+          this.playerSprite.setTexture(frameKey);
+          this.playerSprite.setVisible(true);
+        }
+      });
+    });
+
+    this.time.delayedCall(crashFrames.length * 140 + 60, () => {
+      if (this.playerSprite && this.playerSprite.active && !isGameOver) {
+        this.playerSprite.setVisible(false);
+      }
+    });
 
     if (isGameOver) {
       this.statusBannerText.setText('GAME OVER');

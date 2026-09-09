@@ -345,155 +345,142 @@ export class PreloadScene extends Phaser.Scene {
       ctx.fill();
     });
 
-    // 4. Granite Boulder Obstacle (rallyx:rock) - Full 48x48 tile rugged 3D stone barrier
+    // 4. Natural Granite Boulder Obstacle (rallyx:rock) - Rugged 3D organic boulder (No square iron plate!)
     createProceduralTexture('rallyx:rock', size, size, (ctx) => {
-      // 1. Fill entire 48x48 tile base with dark bedrock granite (no exposed road)
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(0, 0, 48, 48);
-
-      // 2. 3D Beveled outer stone rim (Sunlit top-left, shaded bottom-right)
-      // Top Edge Bevel
-      const topBevel = ctx.createLinearGradient(0, 0, 0, 5);
-      topBevel.addColorStop(0, '#94a3b8');
-      topBevel.addColorStop(1, '#64748b');
-      ctx.fillStyle = topBevel;
+      // 1. Soft road contact shadow beneath the boulder
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
       ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(48, 0);
-      ctx.lineTo(44, 4);
-      ctx.lineTo(4, 4);
-      ctx.closePath();
+      ctx.ellipse(24, 42, 19, 5, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Left Edge Bevel
-      const leftBevel = ctx.createLinearGradient(0, 0, 5, 0);
-      leftBevel.addColorStop(0, '#94a3b8');
-      leftBevel.addColorStop(1, '#475569');
-      ctx.fillStyle = leftBevel;
+      // 2. Natural Rugged Boulder Silhouette (Spans x: 3..45, y: 3..43 - organic jagged contours)
       ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(4, 4);
-      ctx.lineTo(4, 44);
-      ctx.lineTo(0, 48);
+      ctx.moveTo(17, 4);
+      ctx.lineTo(29, 3);
+      ctx.lineTo(40, 8);
+      ctx.lineTo(45, 18);
+      ctx.lineTo(44, 30);
+      ctx.lineTo(38, 41);
+      ctx.lineTo(25, 43);
+      ctx.lineTo(12, 42);
+      ctx.lineTo(5, 33);
+      ctx.lineTo(3, 20);
+      ctx.lineTo(8, 9);
       ctx.closePath();
-      ctx.fill();
 
-      // Right Edge Bevel (Shadow)
-      ctx.fillStyle = '#0f172a';
-      ctx.beginPath();
-      ctx.moveTo(48, 0);
-      ctx.lineTo(48, 48);
-      ctx.lineTo(44, 44);
-      ctx.lineTo(44, 4);
-      ctx.closePath();
+      const baseGrad = ctx.createLinearGradient(12, 3, 38, 43);
+      baseGrad.addColorStop(0, '#94a3b8'); // Sunlit slate
+      baseGrad.addColorStop(0.35, '#64748b');
+      baseGrad.addColorStop(0.7, '#475569');
+      baseGrad.addColorStop(1, '#1e293b'); // Deep shadow base
+      ctx.fillStyle = baseGrad;
       ctx.fill();
+      ctx.strokeStyle = '#020617';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
 
-      // Bottom Edge Bevel (Deep Shadow)
-      ctx.fillStyle = '#020617';
+      // 3. Facet 1: Upper-Left Sunlit Stone Plateau
       ctx.beginPath();
-      ctx.moveTo(0, 48);
-      ctx.lineTo(4, 44);
-      ctx.lineTo(44, 44);
-      ctx.lineTo(48, 48);
+      ctx.moveTo(17, 4);
+      ctx.lineTo(29, 3);
+      ctx.lineTo(24, 21);
+      ctx.lineTo(8, 17);
+      ctx.lineTo(8, 9);
       ctx.closePath();
-      ctx.fill();
-
-      // 3. Facet 1: Top-Left Upper Sunlit Stone Shelf
-      ctx.beginPath();
-      ctx.moveTo(4, 4);
-      ctx.lineTo(28, 4);
-      ctx.lineTo(22, 24);
-      ctx.lineTo(4, 20);
-      ctx.closePath();
-      const grad1 = ctx.createLinearGradient(4, 4, 28, 24);
+      const grad1 = ctx.createLinearGradient(8, 3, 29, 21);
       grad1.addColorStop(0, '#cbd5e1');
-      grad1.addColorStop(0.6, '#94a3b8');
+      grad1.addColorStop(0.7, '#94a3b8');
       grad1.addColorStop(1, '#64748b');
       ctx.fillStyle = grad1;
       ctx.fill();
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1;
+      ctx.stroke();
 
-      // 4. Facet 2: Top-Right Apex Rock Face
+      // 4. Facet 2: Upper-Right Apex Rock Face
       ctx.beginPath();
-      ctx.moveTo(28, 4);
-      ctx.lineTo(44, 4);
-      ctx.lineTo(44, 26);
-      ctx.lineTo(29, 28);
-      ctx.lineTo(22, 24);
+      ctx.moveTo(29, 3);
+      ctx.lineTo(40, 8);
+      ctx.lineTo(45, 18);
+      ctx.lineTo(32, 25);
+      ctx.lineTo(24, 21);
       ctx.closePath();
-      const grad2 = ctx.createLinearGradient(28, 4, 44, 28);
+      const grad2 = ctx.createLinearGradient(24, 3, 45, 25);
       grad2.addColorStop(0, '#94a3b8');
       grad2.addColorStop(1, '#475569');
       ctx.fillStyle = grad2;
       ctx.fill();
+      ctx.stroke();
 
-      // 5. Facet 3: Lower-Left Granite Terraces
+      // 5. Facet 3: Lower-Right Deep Shadow Crag
       ctx.beginPath();
-      ctx.moveTo(4, 20);
-      ctx.lineTo(22, 24);
-      ctx.lineTo(19, 44);
-      ctx.lineTo(4, 44);
+      ctx.moveTo(45, 18);
+      ctx.lineTo(44, 30);
+      ctx.lineTo(38, 41);
+      ctx.lineTo(25, 43);
+      ctx.lineTo(27, 32);
+      ctx.lineTo(32, 25);
       ctx.closePath();
-      const grad3 = ctx.createLinearGradient(4, 20, 22, 44);
-      grad3.addColorStop(0, '#64748b');
-      grad3.addColorStop(1, '#334155');
+      const grad3 = ctx.createLinearGradient(25, 18, 45, 43);
+      grad3.addColorStop(0, '#334155');
+      grad3.addColorStop(1, '#0f172a');
       ctx.fillStyle = grad3;
       ctx.fill();
+      ctx.stroke();
 
-      // 6. Facet 4: Lower-Right Deep Shadow Abyss
+      // 6. Facet 4: Lower-Left Granite Terrace
       ctx.beginPath();
-      ctx.moveTo(22, 24);
-      ctx.lineTo(29, 28);
-      ctx.lineTo(44, 26);
-      ctx.lineTo(44, 44);
-      ctx.lineTo(19, 44);
+      ctx.moveTo(8, 17);
+      ctx.lineTo(24, 21);
+      ctx.lineTo(27, 32);
+      ctx.lineTo(25, 43);
+      ctx.lineTo(12, 42);
+      ctx.lineTo(5, 33);
+      ctx.lineTo(3, 20);
       ctx.closePath();
-      const grad4 = ctx.createLinearGradient(22, 24, 44, 44);
-      grad4.addColorStop(0, '#334155');
-      grad4.addColorStop(1, '#0f172a');
+      const grad4 = ctx.createLinearGradient(3, 17, 27, 43);
+      grad4.addColorStop(0, '#64748b');
+      grad4.addColorStop(1, '#1e293b');
       ctx.fillStyle = grad4;
       ctx.fill();
+      ctx.stroke();
 
-      // 7. Deep Geological Faults & Fissure Cracks
+      // 7. Deep Jagged Cleavage Fractures
       ctx.strokeStyle = '#020617';
       ctx.lineWidth = 1.6;
       ctx.beginPath();
-      // Main jagged cleavage fracture
-      ctx.moveTo(28, 4);
-      ctx.lineTo(22, 24);
-      ctx.lineTo(29, 28);
-      ctx.lineTo(36, 44);
+      // Main central fracture
+      ctx.moveTo(29, 3);
+      ctx.lineTo(24, 21);
+      ctx.lineTo(27, 32);
+      ctx.lineTo(34, 42);
       ctx.stroke();
 
-      // Secondary fault line
+      // Secondary lateral crack
       ctx.beginPath();
-      ctx.moveTo(22, 24);
-      ctx.lineTo(12, 33);
-      ctx.lineTo(19, 44);
+      ctx.moveTo(24, 21);
+      ctx.lineTo(13, 28);
+      ctx.lineTo(12, 42);
       ctx.stroke();
 
-      // Highlight line on sunlit crack lip
-      ctx.strokeStyle = '#e2e8f0';
+      // Sunlit fracture lip highlight
+      ctx.strokeStyle = '#f1f5f9';
       ctx.lineWidth = 0.8;
       ctx.beginPath();
-      ctx.moveTo(27, 4);
-      ctx.lineTo(21, 23);
+      ctx.moveTo(28, 4);
+      ctx.lineTo(23, 20);
       ctx.stroke();
 
-      // 8. Natural Granite Mineral Flecks
+      // 8. Natural Mineral Quartz Flecks
       ctx.fillStyle = '#f8fafc';
-      ctx.fillRect(10, 10, 2, 2);
-      ctx.fillRect(18, 14, 2, 1.5);
-      ctx.fillRect(35, 12, 1.5, 1.5);
-      ctx.fillRect(14, 38, 2, 1.5);
+      ctx.fillRect(14, 11, 2, 1.5);
+      ctx.fillRect(20, 15, 1.5, 1.5);
+      ctx.fillRect(35, 14, 2, 2);
+      ctx.fillRect(17, 36, 1.5, 1.5);
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(28, 16, 2, 2);
-      ctx.fillRect(38, 34, 2, 2);
-      ctx.fillRect(8, 25, 2, 1.5);
-
-      // Outer bounding border
-      ctx.strokeStyle = '#020617';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(0.5, 0.5, 47, 47);
+      ctx.fillRect(30, 18, 2, 2);
+      ctx.fillRect(37, 32, 2, 2);
+      ctx.fillRect(10, 24, 2, 1.5);
     });
 
     // Base Flag Pole & Triangular Racing Pennant Helper
@@ -528,11 +515,11 @@ export class PreloadScene extends Phaser.Scene {
       ctx.fillRect(10.5, 27, 2, 2);
     };
 
-    // 5. Regular Flag (rallyx:flag_regular) - Vivid Crimson Triangular Racing Pennant
+    // 5. Regular Flag (rallyx:flag_regular) - Vivid Golden-Yellow Racing Pennant (Matches Radar Yellow Dots!)
     createProceduralTexture('rallyx:flag_regular', size, size, (ctx) => {
       drawBaseFlagPole(ctx);
 
-      // Triangular waving cloth pennant
+      // Triangular waving cloth pennant from (12, 10) to (41, 19) to (12, 28)
       ctx.beginPath();
       ctx.moveTo(12, 10);
       ctx.quadraticCurveTo(26, 8, 41, 19);
@@ -540,10 +527,10 @@ export class PreloadScene extends Phaser.Scene {
       ctx.closePath();
 
       const pennantGrad = ctx.createLinearGradient(12, 10, 41, 28);
-      pennantGrad.addColorStop(0, '#f87171');
-      pennantGrad.addColorStop(0.35, '#ef4444');
-      pennantGrad.addColorStop(0.7, '#dc2626');
-      pennantGrad.addColorStop(1, '#991b1b');
+      pennantGrad.addColorStop(0, '#fef08a'); // Sunlit bright yellow
+      pennantGrad.addColorStop(0.35, '#facc15'); // Vivid arcade yellow (matches radar dot!)
+      pennantGrad.addColorStop(0.7, '#eab308'); // Rich golden yellow
+      pennantGrad.addColorStop(1, '#ca8a04'); // Deep golden shadow
       ctx.fillStyle = pennantGrad;
       ctx.fill();
 
@@ -551,11 +538,11 @@ export class PreloadScene extends Phaser.Scene {
       ctx.beginPath();
       ctx.moveTo(22, 9);
       ctx.quadraticCurveTo(27, 18, 23, 27);
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
+      ctx.strokeStyle = 'rgba(161, 98, 7, 0.35)';
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
-      ctx.strokeStyle = '#7f1d1d';
+      ctx.strokeStyle = '#a16207';
       ctx.lineWidth = 1;
       ctx.stroke();
     });
@@ -626,25 +613,250 @@ export class PreloadScene extends Phaser.Scene {
       ctx.fillText('L', 23.5, 18.5);
     });
 
-    // 8. Player Crash Particles (rallyx:crash_0..3)
-    [12, 9, 6, 3].forEach((radius, idx) => {
-      const key = `rallyx:crash_${idx}`;
-      createProceduralTexture(key, size, size, (ctx) => {
-        const grad = ctx.createRadialGradient(24, 24, 1, 24, 24, radius);
-        if (idx % 2 === 0) {
-          grad.addColorStop(0, '#fef08a');
-          grad.addColorStop(0.7, '#ef4444');
-          grad.addColorStop(1, 'rgba(220, 38, 38, 0)');
-        } else {
-          grad.addColorStop(0, '#ffffff');
-          grad.addColorStop(0.7, '#facc15');
-          grad.addColorStop(1, 'rgba(234, 179, 8, 0)');
-        }
-        ctx.fillStyle = grad;
+    // Starburst helper for sharp explosion flame points
+    const drawBlastStarburst = (
+      ctx: CanvasRenderingContext2D,
+      cx: number,
+      cy: number,
+      points: number,
+      outerR: number,
+      innerR: number
+    ) => {
+      ctx.beginPath();
+      for (let i = 0; i < points * 2; i++) {
+        const r = i % 2 === 0 ? outerR : innerR;
+        const angle = (i * Math.PI) / points - Math.PI / 2;
+        const x = cx + Math.cos(angle) * r;
+        const y = cy + Math.sin(angle) * r;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+    };
+
+    // 8. Player Crash Explosion Animation (rallyx:crash_0..3)
+    // Frame 0: Initial Impact Flash & Violent Starburst Fireball
+    createProceduralTexture('rallyx:crash_0', size, size, (ctx) => {
+      // 1. Outer 10-point jagged flame starburst
+      drawBlastStarburst(ctx, 24, 24, 10, 22, 11);
+      const starGrad = ctx.createRadialGradient(24, 24, 2, 24, 24, 22);
+      starGrad.addColorStop(0, '#ffffff');
+      starGrad.addColorStop(0.3, '#fef08a');
+      starGrad.addColorStop(0.65, '#f97316');
+      starGrad.addColorStop(1, '#dc2626');
+      ctx.fillStyle = starGrad;
+      ctx.fill();
+
+      // 2. Inner intense flame core starburst (8-point)
+      drawBlastStarburst(ctx, 24, 24, 8, 15, 7);
+      const innerGrad = ctx.createRadialGradient(24, 24, 1, 24, 24, 15);
+      innerGrad.addColorStop(0, '#ffffff');
+      innerGrad.addColorStop(0.5, '#fde047');
+      innerGrad.addColorStop(1, '#f97316');
+      ctx.fillStyle = innerGrad;
+      ctx.fill();
+
+      // 3. Incandescent white-hot center
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(24, 24, 6.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 4. Initial sharp flying sparks
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(7, 8, 2.5, 2.5);
+      ctx.fillRect(39, 10, 2.5, 2.5);
+      ctx.fillRect(6, 38, 2, 2);
+      ctx.fillRect(40, 37, 2, 2);
+    });
+
+    // Frame 1: Peak Combustion Fireball & Flying Metal Shrapnel
+    createProceduralTexture('rallyx:crash_1', size, size, (ctx) => {
+      // 1. Shockwave glow ring
+      ctx.fillStyle = 'rgba(251, 146, 60, 0.3)';
+      ctx.beginPath();
+      ctx.arc(24, 24, 22, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Expanding multi-lobed fiery blast puffs
+      const fireLobes = [
+        { cx: 24, cy: 22, r: 13 },
+        { cx: 16, cy: 20, r: 11 },
+        { cx: 32, cy: 20, r: 11 },
+        { cx: 18, cy: 29, r: 11 },
+        { cx: 29, cy: 29, r: 11 },
+        { cx: 24, cy: 14, r: 9 },
+      ];
+
+      for (const lobe of fireLobes) {
         ctx.beginPath();
-        ctx.arc(24, 24, radius, 0, Math.PI * 2);
+        ctx.arc(lobe.cx, lobe.cy, lobe.r, 0, Math.PI * 2);
+        const grad = ctx.createRadialGradient(
+          lobe.cx - 2,
+          lobe.cy - 2,
+          1,
+          lobe.cx,
+          lobe.cy,
+          lobe.r
+        );
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.35, '#fde047');
+        grad.addColorStop(0.7, '#f97316');
+        grad.addColorStop(1, '#dc2626');
+        ctx.fillStyle = grad;
         ctx.fill();
-      });
+      }
+
+      // 3. Molten core highlight
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.beginPath();
+      ctx.arc(23, 21, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 4. Flying Sharp Dark Metal Shrapnel Chunks (Car chassis fragments!)
+      ctx.fillStyle = '#0f172a';
+      // Shrapnel 1 (Top left)
+      ctx.beginPath();
+      ctx.moveTo(9, 6);
+      ctx.lineTo(13, 9);
+      ctx.lineTo(7, 12);
+      ctx.closePath();
+      ctx.fill();
+      // Shrapnel 2 (Top right)
+      ctx.beginPath();
+      ctx.moveTo(38, 6);
+      ctx.lineTo(42, 10);
+      ctx.lineTo(36, 13);
+      ctx.closePath();
+      ctx.fill();
+      // Shrapnel 3 (Bottom left)
+      ctx.beginPath();
+      ctx.moveTo(5, 34);
+      ctx.lineTo(10, 37);
+      ctx.lineTo(6, 40);
+      ctx.closePath();
+      ctx.fill();
+      // Shrapnel 4 (Bottom right)
+      ctx.beginPath();
+      ctx.moveTo(39, 35);
+      ctx.lineTo(44, 38);
+      ctx.lineTo(41, 42);
+      ctx.closePath();
+      ctx.fill();
+
+      // 5. High-velocity sparks
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(4, 20, 2, 2);
+      ctx.fillRect(43, 22, 2, 2);
+      ctx.fillRect(23, 4, 2, 2);
+      ctx.fillRect(25, 43, 2, 2);
+    });
+
+    // Frame 2: Billowing Fire & Thick Smoke Plumes
+    createProceduralTexture('rallyx:crash_2', size, size, (ctx) => {
+      // 1. Churning soot/smoke cloud billows
+      const smokeLobes = [
+        { cx: 24, cy: 23, r: 15 },
+        { cx: 15, cy: 19, r: 12 },
+        { cx: 33, cy: 19, r: 12 },
+        { cx: 16, cy: 30, r: 12 },
+        { cx: 31, cy: 30, r: 12 },
+        { cx: 24, cy: 12, r: 10 },
+      ];
+
+      for (const lobe of smokeLobes) {
+        ctx.beginPath();
+        ctx.arc(lobe.cx, lobe.cy, lobe.r, 0, Math.PI * 2);
+        const grad = ctx.createRadialGradient(
+          lobe.cx - 2,
+          lobe.cy - 2,
+          1,
+          lobe.cx,
+          lobe.cy,
+          lobe.r
+        );
+        grad.addColorStop(0, '#475569');
+        grad.addColorStop(0.5, '#334155');
+        grad.addColorStop(1, '#1e293b');
+        ctx.fillStyle = grad;
+        ctx.fill();
+      }
+
+      // 2. Burning fire pockets bursting through the smoke
+      const firePockets = [
+        { cx: 23, cy: 21, r: 8 },
+        { cx: 18, cy: 24, r: 6 },
+        { cx: 28, cy: 25, r: 6 },
+      ];
+      for (const fp of firePockets) {
+        ctx.beginPath();
+        ctx.arc(fp.cx, fp.cy, fp.r, 0, Math.PI * 2);
+        const grad = ctx.createRadialGradient(fp.cx, fp.cy, 1, fp.cx, fp.cy, fp.r);
+        grad.addColorStop(0, '#fef08a');
+        grad.addColorStop(0.5, '#f97316');
+        grad.addColorStop(1, 'rgba(220, 38, 38, 0)');
+        ctx.fillStyle = grad;
+        ctx.fill();
+      }
+
+      // 3. Ejected debris shards further away
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(4, 9, 3, 3);
+      ctx.fillRect(41, 7, 3, 2);
+      ctx.fillRect(3, 39, 2, 3);
+      ctx.fillRect(42, 40, 3, 3);
+
+      // 4. Glowing red/orange embers
+      ctx.fillStyle = '#f97316';
+      ctx.fillRect(10, 16, 2, 2);
+      ctx.fillRect(36, 14, 2, 2);
+      ctx.fillRect(14, 38, 2, 2);
+      ctx.fillRect(34, 37, 2, 2);
+    });
+
+    // Frame 3: Dissipating Smoke Cloud & Glowing Embers
+    createProceduralTexture('rallyx:crash_3', size, size, (ctx) => {
+      // 1. Soft dissipating volumetric smoke puffs
+      const faintLobes = [
+        { cx: 24, cy: 22, r: 16 },
+        { cx: 14, cy: 19, r: 12 },
+        { cx: 34, cy: 19, r: 12 },
+        { cx: 17, cy: 30, r: 11 },
+        { cx: 30, cy: 30, r: 11 },
+        { cx: 24, cy: 11, r: 9 },
+      ];
+
+      for (const lobe of faintLobes) {
+        ctx.beginPath();
+        ctx.arc(lobe.cx, lobe.cy, lobe.r, 0, Math.PI * 2);
+        const grad = ctx.createRadialGradient(
+          lobe.cx,
+          lobe.cy,
+          2,
+          lobe.cx,
+          lobe.cy,
+          lobe.r
+        );
+        grad.addColorStop(0, 'rgba(100, 116, 139, 0.65)');
+        grad.addColorStop(0.6, 'rgba(71, 85, 105, 0.45)');
+        grad.addColorStop(1, 'rgba(51, 65, 85, 0)');
+        ctx.fillStyle = grad;
+        ctx.fill();
+      }
+
+      // 2. Fading glowing ember sparks
+      ctx.fillStyle = '#f97316';
+      ctx.beginPath();
+      ctx.arc(22, 21, 1.5, 0, Math.PI * 2);
+      ctx.arc(27, 24, 1.5, 0, Math.PI * 2);
+      ctx.arc(18, 26, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 3. Dark scorch marks at impact center
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+      ctx.beginPath();
+      ctx.ellipse(24, 25, 8, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
     });
 
     // 9. HUD Life Mini Car Icon (rallyx:hud_life) - Reuses Blue F1 Player Car scaled down (no more oil barrel!)
