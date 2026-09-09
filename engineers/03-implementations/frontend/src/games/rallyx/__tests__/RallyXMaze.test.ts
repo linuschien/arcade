@@ -257,14 +257,14 @@ describe('RallyXMaze Unit Tests', () => {
       expect(RALLYX_PLAYFIELD_VIEWPORT_WIDTH + RALLYX_RADAR_PANEL_WIDTH).toBe(RALLYX_ARCADE_SCREEN_WIDTH);
     });
 
-    it('should define integer 10x10 tiles viewport and 320x240 classic 4:3 QVGA screen', () => {
+    it('should define integer 10x10 tiles viewport and 640x480 classic 4:3 screen', () => {
       expect(RALLYX_VIEWPORT_TILES_X).toBe(10);
       expect(RALLYX_VIEWPORT_TILES_Y).toBe(10);
-      expect(RALLYX_INTEGER_VIEWPORT_WIDTH).toBe(240);
-      expect(RALLYX_INTEGER_VIEWPORT_HEIGHT).toBe(240);
-      expect(RALLYX_INTEGER_RADAR_WIDTH).toBe(80);
-      expect(RALLYX_INTEGER_SCREEN_WIDTH).toBe(320);
-      expect(RALLYX_INTEGER_SCREEN_HEIGHT).toBe(240);
+      expect(RALLYX_INTEGER_VIEWPORT_WIDTH).toBe(480);
+      expect(RALLYX_INTEGER_VIEWPORT_HEIGHT).toBe(480);
+      expect(RALLYX_INTEGER_RADAR_WIDTH).toBe(160);
+      expect(RALLYX_INTEGER_SCREEN_WIDTH).toBe(640);
+      expect(RALLYX_INTEGER_SCREEN_HEIGHT).toBe(480);
       expect(RALLYX_INTEGER_SCREEN_WIDTH / RALLYX_INTEGER_SCREEN_HEIGHT).toBeCloseTo(4 / 3, 4);
     });
   });

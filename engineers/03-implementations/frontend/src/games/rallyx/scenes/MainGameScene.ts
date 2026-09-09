@@ -39,8 +39,9 @@ import {
   EnemyState,
 } from '../logic/RallyXEnemyAI';
 import { RallyXAudioService } from '../audio/RallyXAudioService';
+import { getDynamicResolution } from '@/core/phaser/init-high-dpi';
 
-const PLAYER_BASE_SPEED = 120; // 120 pixels per second (5 tiles / sec)
+const PLAYER_BASE_SPEED = 240; // 240 pixels per second (5 tiles / sec @ 48px/tile)
 const RADAR_SCALE = 4; // 32 cols * 4 = 128px, 56 rows * 4 = 224px
 
 export class MainGameScene extends BaseArcadeScene {
@@ -176,18 +177,21 @@ export class MainGameScene extends BaseArcadeScene {
     this.hudContainer.add(hudBg);
 
     // 2. Score & Round Headers
-    const fontStack = '"Press Start 2P", "Courier New", Courier, monospace, sans-serif';
+    const fontStack = 'monospace, "Courier New", Courier, sans-serif';
+    const resolution = getDynamicResolution();
     const labelStyle: Phaser.Types.GameObjects.Text.TextStyle = {
       fontSize: '11px',
       fontFamily: fontStack,
       color: '#f59e0b',
       fontStyle: 'bold',
+      resolution,
     };
     const valStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-      fontSize: '15px',
+      fontSize: '16px',
       fontFamily: fontStack,
       color: '#ffffff',
       fontStyle: 'bold',
+      resolution,
     };
 
     const hiLabel = this.add.text(80, 10, 'HIGH SCORE', labelStyle).setOrigin(0.5, 0);
@@ -206,38 +210,41 @@ export class MainGameScene extends BaseArcadeScene {
     this.hudContainer.add(this.radarGraphics);
 
     // 4. Fuel Gauge
-    const fuelLabel = this.add.text(16, 350, 'FUEL', {
-      fontSize: '11px',
+    const fuelLabel = this.add.text(16, 348, 'FUEL', {
+      fontSize: '12px',
       fontFamily: fontStack,
       color: '#ffffff',
       fontStyle: 'bold',
+      resolution,
     });
     this.fuelBarGraphics = this.add.graphics();
     this.hudContainer.add([fuelLabel, this.fuelBarGraphics]);
 
     // 5. Reserve Lives Icons (x:16, y:395)
     for (let i = 0; i < 4; i++) {
-      const icon = this.add.sprite(26 + i * 22, 405, 'rallyx:hud_life');
+      const icon = this.add.sprite(28 + i * 26, 405, 'rallyx:hud_life');
       icon.setVisible(false);
       this.lifeIcons.push(icon);
       this.hudContainer.add(icon);
     }
 
     // 6. Centered Status Banner (e.g. READY! / GAME OVER / CLEAR)
-    this.statusBannerText = this.add.text(80, 430, 'READY!', {
-      fontSize: '18px',
+    this.statusBannerText = this.add.text(80, 432, 'READY!', {
+      fontSize: '20px',
       fontFamily: fontStack,
       color: '#facc15',
       fontStyle: 'bold',
+      resolution,
     }).setOrigin(0.5, 0.5);
     this.hudContainer.add(this.statusBannerText);
 
     // 7. Lucky Refill Overlay Banner
-    this.luckyBannerText = this.add.text(80, 455, '★ LUCKY! ★', {
+    this.luckyBannerText = this.add.text(80, 458, '★ LUCKY! ★', {
       fontSize: '14px',
       fontFamily: fontStack,
       color: '#22c55e',
       fontStyle: 'bold',
+      resolution,
     }).setOrigin(0.5, 0.5);
     this.luckyBannerText.setVisible(false);
     this.hudContainer.add(this.luckyBannerText);
@@ -361,18 +368,18 @@ export class MainGameScene extends BaseArcadeScene {
           const isLeftWall = c > 0 && this.tileMatrix[r][c - 1] === RallyXTileType.WALL;
           const isRightWall = c < RALLYX_TOTAL_COLS - 1 && this.tileMatrix[r][c + 1] === RallyXTileType.WALL;
 
-          this.mazeGraphics.lineStyle(2.5, outlineColor, 1);
+          this.mazeGraphics.lineStyle(4, outlineColor, 1);
           if (!isTopWall) {
-            this.mazeGraphics.lineBetween(x, y + 1, x + RALLYX_TILE_SIZE, y + 1);
+            this.mazeGraphics.lineBetween(x, y + 2, x + RALLYX_TILE_SIZE, y + 2);
           }
           if (!isBottomWall) {
-            this.mazeGraphics.lineBetween(x, y + RALLYX_TILE_SIZE - 1, x + RALLYX_TILE_SIZE, y + RALLYX_TILE_SIZE - 1);
+            this.mazeGraphics.lineBetween(x, y + RALLYX_TILE_SIZE - 2, x + RALLYX_TILE_SIZE, y + RALLYX_TILE_SIZE - 2);
           }
           if (!isLeftWall) {
-            this.mazeGraphics.lineBetween(x + 1, y, x + 1, y + RALLYX_TILE_SIZE);
+            this.mazeGraphics.lineBetween(x + 2, y, x + 2, y + RALLYX_TILE_SIZE);
           }
           if (!isRightWall) {
-            this.mazeGraphics.lineBetween(x + RALLYX_TILE_SIZE - 1, y, x + RALLYX_TILE_SIZE - 1, y + RALLYX_TILE_SIZE);
+            this.mazeGraphics.lineBetween(x + RALLYX_TILE_SIZE - 2, y, x + RALLYX_TILE_SIZE - 2, y + RALLYX_TILE_SIZE);
           }
         } else {
           // Road corridor: authentic golden yellow road!
@@ -391,45 +398,47 @@ export class MainGameScene extends BaseArcadeScene {
    * Theme 3 (Maze 4): Pointed pine/fir trees with black trunks on dark green forest floor
    */
   private renderDecorativeBorderTile(x: number, y: number, r: number, c: number, theme: number): void {
+    const s = RALLYX_TILE_SIZE / 24;
+
     if (theme === 0) {
       // Maze 1: Forest / Green Trees (Authentic 8-lobed bumpy scalloped canopy with black outline on dark dither)
       this.mazeGraphics.fillStyle(0x002800, 1);
       this.mazeGraphics.fillRect(x, y, RALLYX_TILE_SIZE, RALLYX_TILE_SIZE);
       this.mazeGraphics.fillStyle(0x001400, 1);
-      this.mazeGraphics.fillRect(x + 1, y + 1, 2, 2);
-      this.mazeGraphics.fillRect(x + 13, y + 1, 2, 2);
-      this.mazeGraphics.fillRect(x + 1, y + 13, 2, 2);
-      this.mazeGraphics.fillRect(x + 13, y + 13, 2, 2);
+      this.mazeGraphics.fillRect(x + 2 * s, y + 2 * s, 4, 4);
+      this.mazeGraphics.fillRect(x + 14 * s, y + 2 * s, 4, 4);
+      this.mazeGraphics.fillRect(x + 2 * s, y + 14 * s, 4, 4);
+      this.mazeGraphics.fillRect(x + 14 * s, y + 14 * s, 4, 4);
 
-      const cx = x + 12;
-      const cy = y + 12;
+      const cx = x + 12 * s;
+      const cy = y + 12 * s;
       const lobeAngles = [0, 45, 90, 135, 180, 225, 270, 315];
 
       // 1. Black scalloped outline of the tree canopy
       this.mazeGraphics.fillStyle(0x000000, 1);
-      this.mazeGraphics.fillCircle(cx, cy, 8.5);
+      this.mazeGraphics.fillCircle(cx, cy, 8.5 * s);
       for (const deg of lobeAngles) {
         const rad = Phaser.Math.DegToRad(deg);
-        this.mazeGraphics.fillCircle(cx + Math.cos(rad) * 6, cy + Math.sin(rad) * 6, 5.5);
+        this.mazeGraphics.fillCircle(cx + Math.cos(rad) * 6 * s, cy + Math.sin(rad) * 6 * s, 5.5 * s);
       }
 
       // 2. Bright green foliage body
       this.mazeGraphics.fillStyle(0x00d800, 1);
-      this.mazeGraphics.fillCircle(cx, cy, 7.5);
+      this.mazeGraphics.fillCircle(cx, cy, 7.5 * s);
       for (const deg of lobeAngles) {
         const rad = Phaser.Math.DegToRad(deg);
-        this.mazeGraphics.fillCircle(cx + Math.cos(rad) * 6, cy + Math.sin(rad) * 6, 4.5);
+        this.mazeGraphics.fillCircle(cx + Math.cos(rad) * 6 * s, cy + Math.sin(rad) * 6 * s, 4.5 * s);
       }
 
       // 3. Inner shadow branch/leaf curves
-      this.mazeGraphics.lineStyle(1.5, 0x004d00, 1);
-      this.mazeGraphics.lineBetween(cx - 3, cy - 1, cx + 3, cy - 1);
-      this.mazeGraphics.lineBetween(cx - 2, cy + 3, cx + 4, cy + 3);
+      this.mazeGraphics.lineStyle(2 * s, 0x004d00, 1);
+      this.mazeGraphics.lineBetween(cx - 3 * s, cy - 1 * s, cx + 3 * s, cy - 1 * s);
+      this.mazeGraphics.lineBetween(cx - 2 * s, cy + 3 * s, cx + 4 * s, cy + 3 * s);
 
       // 4. Sunlight highlights on upper lobes
       this.mazeGraphics.fillStyle(0x76ff03, 1);
-      this.mazeGraphics.fillCircle(cx - 3, cy - 4, 2);
-      this.mazeGraphics.fillCircle(cx + 3, cy - 4, 1.8);
+      this.mazeGraphics.fillCircle(cx - 3 * s, cy - 4 * s, 2 * s);
+      this.mazeGraphics.fillCircle(cx + 3 * s, cy - 4 * s, 1.8 * s);
     } else if (theme === 1) {
       // Maze 2: Garden / Diagonal Grey Cobblestones on green lawn
       this.mazeGraphics.fillStyle(0x005500, 1);
@@ -437,33 +446,34 @@ export class MainGameScene extends BaseArcadeScene {
 
       // Diagonal stone pavers
       this.mazeGraphics.fillStyle(0x000000, 1);
-      this.mazeGraphics.fillRect(x + 2, y + 2, 9, 9);
-      this.mazeGraphics.fillRect(x + 13, y + 13, 9, 9);
+      this.mazeGraphics.fillRect(x + 2 * s, y + 2 * s, 9 * s, 9 * s);
+      this.mazeGraphics.fillRect(x + 13 * s, y + 13 * s, 9 * s, 9 * s);
       this.mazeGraphics.fillStyle(0xd1d5db, 1);
-      this.mazeGraphics.fillRect(x + 3, y + 3, 7, 7);
-      this.mazeGraphics.fillRect(x + 14, y + 14, 7, 7);
+      this.mazeGraphics.fillRect(x + 3 * s, y + 3 * s, 7 * s, 7 * s);
+      this.mazeGraphics.fillRect(x + 14 * s, y + 14 * s, 7 * s, 7 * s);
 
       // Stone highlight
       this.mazeGraphics.fillStyle(0xf3f4f6, 1);
-      this.mazeGraphics.fillRect(x + 3, y + 3, 7, 2);
-      this.mazeGraphics.fillRect(x + 14, y + 14, 7, 2);
+      this.mazeGraphics.fillRect(x + 3 * s, y + 3 * s, 7 * s, 2 * s);
+      this.mazeGraphics.fillRect(x + 14 * s, y + 14 * s, 7 * s, 2 * s);
     } else if (theme === 2) {
       // Maze 3: Waterway / Circular ripple rings on deep marine water
       this.mazeGraphics.fillStyle(0x075985, 1);
       this.mazeGraphics.fillRect(x, y, RALLYX_TILE_SIZE, RALLYX_TILE_SIZE);
 
-      const cx = x + 12;
-      const cy = y + 12;
+      const cx = x + 12 * s;
+      const cy = y + 12 * s;
       // Outer water ripple ring
-      this.mazeGraphics.lineStyle(2, 0x00d8f0, 1);
-      this.mazeGraphics.strokeCircle(cx, cy, 9);
+      this.mazeGraphics.lineStyle(2 * s, 0x00d8f0, 1);
+      this.mazeGraphics.strokeCircle(cx, cy, 9 * s);
       // Inner water ripple ring
-      this.mazeGraphics.lineStyle(1.5, 0x38bdf8, 1);
-      this.mazeGraphics.strokeCircle(cx, cy, 5);
+      this.mazeGraphics.lineStyle(1.5 * s, 0x38bdf8, 1);
+      this.mazeGraphics.strokeCircle(cx, cy, 5 * s);
       // Water cross ripple
-      this.mazeGraphics.lineStyle(1, 0x7dd3fc, 0.9);
-      this.mazeGraphics.lineBetween(cx - 3, cy, cx + 3, cy);
-      this.mazeGraphics.lineBetween(cx, cy - 3, cx, cy + 3);
+      this.mazeGraphics.lineStyle(1 * s, 0x7dd3fc, 0.9);
+      this.mazeGraphics.lineBetween(cx - 3 * s, cy, cx + 3 * s, cy);
+      this.mazeGraphics.lineBetween(cx - 3 * s, cy, cx + 3 * s, cy);
+      this.mazeGraphics.lineBetween(cx, cy - 3 * s, cx, cy + 3 * s);
     } else {
       // Maze 4: Pine Trees / Ruins
       this.mazeGraphics.fillStyle(0x003300, 1);
@@ -471,24 +481,40 @@ export class MainGameScene extends BaseArcadeScene {
 
       // Pine tree trunk
       this.mazeGraphics.fillStyle(0x000000, 1);
-      this.mazeGraphics.fillRect(x + 11, y + 16, 3, 6);
+      this.mazeGraphics.fillRect(x + 11 * s, y + 16 * s, 3 * s, 6 * s);
 
       // Pointed pine canopy layers
       if (typeof (this.mazeGraphics as any).fillTriangle === 'function') {
         // Base pine layer
         this.mazeGraphics.fillStyle(0x000000, 1);
-        (this.mazeGraphics as any).fillTriangle(x + 4, y + 18, x + 20, y + 18, x + 12, y + 10);
+        (this.mazeGraphics as any).fillTriangle(
+          x + 4 * s, y + 18 * s,
+          x + 20 * s, y + 18 * s,
+          x + 12 * s, y + 10 * s
+        );
         this.mazeGraphics.fillStyle(0x00a800, 1);
-        (this.mazeGraphics as any).fillTriangle(x + 5, y + 17, x + 19, y + 17, x + 12, y + 11);
+        (this.mazeGraphics as any).fillTriangle(
+          x + 5 * s, y + 17 * s,
+          x + 19 * s, y + 17 * s,
+          x + 12 * s, y + 11 * s
+        );
 
         // Top pine layer
         this.mazeGraphics.fillStyle(0x000000, 1);
-        (this.mazeGraphics as any).fillTriangle(x + 6, y + 12, x + 18, y + 12, x + 12, y + 3);
+        (this.mazeGraphics as any).fillTriangle(
+          x + 6 * s, y + 12 * s,
+          x + 18 * s, y + 12 * s,
+          x + 12 * s, y + 3 * s
+        );
         this.mazeGraphics.fillStyle(0x00e000, 1);
-        (this.mazeGraphics as any).fillTriangle(x + 7, y + 11, x + 17, y + 11, x + 12, y + 4);
+        (this.mazeGraphics as any).fillTriangle(
+          x + 7 * s, y + 11 * s,
+          x + 17 * s, y + 11 * s,
+          x + 12 * s, y + 4 * s
+        );
       } else {
         this.mazeGraphics.fillStyle(0x00e000, 1);
-        this.mazeGraphics.fillRect(x + 6, y + 4, 12, 14);
+        this.mazeGraphics.fillRect(x + 6 * s, y + 4 * s, 12 * s, 14 * s);
       }
     }
   }
@@ -824,7 +850,7 @@ export class MainGameScene extends BaseArcadeScene {
     for (const rock of config.rocks) {
       const rx = (rock.col + RALLYX_BORDER_WIDTH + 0.5) * RALLYX_TILE_SIZE;
       const ry = (rock.row + RALLYX_BORDER_WIDTH + 0.5) * RALLYX_TILE_SIZE;
-      if (Math.hypot(this.playerX - rx, this.playerY - ry) <= 14) {
+      if (Math.hypot(this.playerX - rx, this.playerY - ry) <= 28) {
         this.triggerPlayerCrash();
         return;
       }

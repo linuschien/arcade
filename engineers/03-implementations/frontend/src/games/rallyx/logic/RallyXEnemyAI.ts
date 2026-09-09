@@ -325,7 +325,7 @@ export class RallyXEnemyAI {
   public static checkSmokeCollisions(
     enemies: EnemyCar[],
     smokePuffs: readonly { x: number; y: number }[],
-    radius: number = 18
+    radius: number = 36
   ): EnemyCar[] {
     const affected: EnemyCar[] = [];
     for (const enemy of enemies) {
@@ -353,7 +353,7 @@ export class RallyXEnemyAI {
     enemies: EnemyCar[],
     rocks: readonly GridPos[],
     borderOffset: number = 0,
-    radius: number = 18
+    radius: number = 36
   ): EnemyCar[] {
     const affected: EnemyCar[] = [];
     for (const enemy of enemies) {
@@ -379,7 +379,7 @@ export class RallyXEnemyAI {
    * Checks car-to-car collisions between pursuing red cars.
    * Both cars spin-out for 1.0s and diverge without exploding.
    */
-  public static checkCarBumps(enemies: EnemyCar[], bumpDist: number = 14): void {
+  public static checkCarBumps(enemies: EnemyCar[], bumpDist: number = 28): void {
     const len = enemies.length;
     for (let i = 0; i < len; i++) {
       for (let j = i + 1; j < len; j++) {
@@ -406,7 +406,7 @@ export class RallyXEnemyAI {
     playerX: number,
     playerY: number,
     enemies: readonly EnemyCar[],
-    lethalRadius: number = 16
+    lethalRadius: number = 32
   ): boolean {
     for (const enemy of enemies) {
       // Spin-out enemies do not harm the player

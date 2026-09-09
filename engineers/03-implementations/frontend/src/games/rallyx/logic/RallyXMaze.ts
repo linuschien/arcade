@@ -72,7 +72,7 @@ export const RALLYX_INNER_MAZE_ROWS = 56;
 export const RALLYX_BORDER_WIDTH = 3;
 export const RALLYX_TOTAL_COLS = RALLYX_INNER_MAZE_COLS + RALLYX_BORDER_WIDTH * 2; // 38
 export const RALLYX_TOTAL_ROWS = RALLYX_INNER_MAZE_ROWS + RALLYX_BORDER_WIDTH * 2; // 62
-export const RALLYX_TILE_SIZE = 24;
+export const RALLYX_TILE_SIZE = 48;
 
 // Standard maze dimensions alias
 export const RALLYX_MAZE_COLS = RALLYX_INNER_MAZE_COLS;
@@ -86,14 +86,14 @@ export const RALLYX_PLAYFIELD_VIEWPORT_HEIGHT = 224;   // Square scrolling playf
 export const RALLYX_RADAR_PANEL_WIDTH = 64;            // Right sidebar radar & HUD (8 chars @ 8px)
 export const RALLYX_RADAR_PANEL_HEIGHT = 224;          // Full height right sidebar HUD
 
-// Clean integer tile viewport configuration (10x10 tiles @ 24px = 240x240 px, paired with 80px radar for 320x240 4:3 QVGA)
+// Clean integer tile viewport configuration (10x10 tiles @ 48px = 480x480 px, paired with 160px radar for 640x480 4:3)
 export const RALLYX_VIEWPORT_TILES_X = 10;
 export const RALLYX_VIEWPORT_TILES_Y = 10;
-export const RALLYX_INTEGER_VIEWPORT_WIDTH = RALLYX_VIEWPORT_TILES_X * RALLYX_TILE_SIZE; // 240 px
-export const RALLYX_INTEGER_VIEWPORT_HEIGHT = RALLYX_VIEWPORT_TILES_Y * RALLYX_TILE_SIZE; // 240 px
-export const RALLYX_INTEGER_RADAR_WIDTH = 80; // 80 px (1/3 of playfield)
-export const RALLYX_INTEGER_SCREEN_WIDTH = RALLYX_INTEGER_VIEWPORT_WIDTH + RALLYX_INTEGER_RADAR_WIDTH; // 320 px (Classic 4:3)
-export const RALLYX_INTEGER_SCREEN_HEIGHT = 240; // 240 px
+export const RALLYX_INTEGER_VIEWPORT_WIDTH = RALLYX_VIEWPORT_TILES_X * RALLYX_TILE_SIZE; // 480 px
+export const RALLYX_INTEGER_VIEWPORT_HEIGHT = RALLYX_VIEWPORT_TILES_Y * RALLYX_TILE_SIZE; // 480 px
+export const RALLYX_INTEGER_RADAR_WIDTH = 160; // 160 px (1/3 of playfield)
+export const RALLYX_INTEGER_SCREEN_WIDTH = RALLYX_INTEGER_VIEWPORT_WIDTH + RALLYX_INTEGER_RADAR_WIDTH; // 640 px (Classic 4:3)
+export const RALLYX_INTEGER_SCREEN_HEIGHT = 480; // 480 px
 
 export type FlagType = "REGULAR" | "SPECIAL" | "LUCKY";
 
