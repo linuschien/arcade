@@ -21,6 +21,7 @@ describe('PreloadScene Unit Tests', () => {
 
     mockTextures = {
       exists: vi.fn().mockReturnValue(false),
+      get: vi.fn().mockReturnValue({ setFilter: vi.fn() }),
       removeKey: vi.fn(),
     };
 

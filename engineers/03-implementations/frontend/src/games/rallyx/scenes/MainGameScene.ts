@@ -157,12 +157,14 @@ export class MainGameScene extends BaseArcadeScene {
     this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
     this.cameras.main.setOrigin(0.5, 0.5);
     this.cameras.main.setZoom(2.0 * dpr);
+    this.cameras.main.setRoundPixels(true);
 
     // HUD Camera: 160x480 right sidebar
     this.hudCamera = this.cameras.add(480 * dpr, 0, 160 * dpr, 480 * dpr);
     this.hudCamera.setOrigin(0, 0);
     this.hudCamera.setScroll(0, 0);
     this.hudCamera.setZoom(dpr);
+    this.hudCamera.setRoundPixels(true);
 
     // Ensure camera isolation
     this.cameras.main.ignore(this.hudContainer);
@@ -334,9 +336,19 @@ export class MainGameScene extends BaseArcadeScene {
   private renderMazeGraphics(mazeIndex: number): void {
     this.mazeGraphics.clear();
 
+    // Authentic 1981 New Rally-X golden yellow road corridor
+    const ROAD_COLOR = 0xc8a800;
+
     // Theme wall colors per maze: 0=Green, 1=Red, 2=Cyan, 3=Grey
-    const wallColors = [0x16a34a, 0xdc2626, 0x0284c7, 0x94a3b8];
-    const wallColor = wallColors[mazeIndex % 4] || 0x16a34a;
+    const wallColors = [0x00b800, 0xdc2626, 0x00a8e8, 0xd1d5db];
+    const wallOutlineColors = [
+      0xdc2626, // Maze 1 (Green wall): Vivid Red outline!
+      0x000000, // Maze 2 (Red wall): Crisp Black outline!
+      0xdc2626, // Maze 3 (Cyan wall): Vivid Red outline!
+      0xdc2626, // Maze 4 (Grey wall): Vivid Red outline!
+    ];
+    const wallColor = wallColors[mazeIndex % 4] || 0x00b800;
+    const outlineColor = wallOutlineColors[mazeIndex % 4] ?? 0xdc2626;
     const mazeTheme = mazeIndex % 4;
 
     for (let r = 0; r < RALLYX_TOTAL_ROWS; r++) {
@@ -358,7 +370,7 @@ export class MainGameScene extends BaseArcadeScene {
           const isLeftWall = c > 0 && this.tileMatrix[r][c - 1] === RallyXTileType.WALL;
           const isRightWall = c < RALLYX_TOTAL_COLS - 1 && this.tileMatrix[r][c + 1] === RallyXTileType.WALL;
 
-          this.mazeGraphics.lineStyle(2, 0x020617, 1); // Crisp black outline around perimeter
+          this.mazeGraphics.lineStyle(2.5, outlineColor, 1);
           if (!isTopWall) {
             this.mazeGraphics.lineBetween(x, y + 1, x + RALLYX_TILE_SIZE, y + 1);
           }
@@ -372,8 +384,8 @@ export class MainGameScene extends BaseArcadeScene {
             this.mazeGraphics.lineBetween(x + RALLYX_TILE_SIZE - 1, y, x + RALLYX_TILE_SIZE - 1, y + RALLYX_TILE_SIZE);
           }
         } else {
-          // Road corridor
-          this.mazeGraphics.fillStyle(0x060b13, 1);
+          // Road corridor: authentic golden yellow road!
+          this.mazeGraphics.fillStyle(ROAD_COLOR, 1);
           this.mazeGraphics.fillRect(x, y, RALLYX_TILE_SIZE, RALLYX_TILE_SIZE);
         }
       }
@@ -382,77 +394,111 @@ export class MainGameScene extends BaseArcadeScene {
 
   /**
    * Renders the outer 3-tile decorative border frame with distinct graphic motifs per maze theme:
-   * Theme 0 (Maze 1): Lush green forest with circular tree canopies & hedges
-   * Theme 1 (Maze 2): Garden lawn with flowerbed clusters & terracotta paving
-   * Theme 2 (Maze 3): Deep blue waterway with flowing ripple waves & sea foam
-   * Theme 3 (Maze 4): Ancient stone ruins with staggered masonry slabs & moss
+   * Theme 0 (Maze 1): Lush green forest with 8-lobed scalloped bumpy tree canopies & black outline on dark dither
+   * Theme 1 (Maze 2): Diagonal light grey stone cobblestones on green lawn
+   * Theme 2 (Maze 3): Deep blue waterway with concentric turquoise water ripple rings & cross pattern
+   * Theme 3 (Maze 4): Pointed pine/fir trees with black trunks on dark green forest floor
    */
   private renderDecorativeBorderTile(x: number, y: number, r: number, c: number, theme: number): void {
     if (theme === 0) {
-      // Maze 1: Forest / Green Trees
-      this.mazeGraphics.fillStyle(0x052e16, 1);
+      // Maze 1: Forest / Green Trees (Authentic 8-lobed bumpy scalloped canopy with black outline on dark dither)
+      this.mazeGraphics.fillStyle(0x002800, 1);
       this.mazeGraphics.fillRect(x, y, RALLYX_TILE_SIZE, RALLYX_TILE_SIZE);
-      this.mazeGraphics.fillStyle(0x15803d, 1);
-      this.mazeGraphics.fillCircle(x + 12, y + 12, 9);
-      this.mazeGraphics.fillStyle(0x22c55e, 1);
-      this.mazeGraphics.fillCircle(x + 11, y + 11, 6);
-      this.mazeGraphics.fillStyle(0x86efac, 1);
-      this.mazeGraphics.fillCircle(x + 10, y + 10, 2.5);
-    } else if (theme === 1) {
-      // Maze 2: Garden / Mud & Lawn
-      const isStripe = (r + c) % 2 === 0;
-      this.mazeGraphics.fillStyle(isStripe ? 0x15803d : 0x166534, 1);
-      this.mazeGraphics.fillRect(x, y, RALLYX_TILE_SIZE, RALLYX_TILE_SIZE);
-      const seed = (r * 7 + c * 13) % 3;
-      if (seed === 0) {
-        // Red flower
-        this.mazeGraphics.fillStyle(0xf43f5e, 1);
-        this.mazeGraphics.fillCircle(x + 8, y + 8, 3);
-        this.mazeGraphics.fillStyle(0xfacc15, 1);
-        this.mazeGraphics.fillCircle(x + 8, y + 8, 1);
-      } else if (seed === 1) {
-        // Amber daisy
-        this.mazeGraphics.fillStyle(0xfef08a, 1);
-        this.mazeGraphics.fillCircle(x + 16, y + 15, 2.5);
-        this.mazeGraphics.fillStyle(0xf59e0b, 1);
-        this.mazeGraphics.fillCircle(x + 16, y + 15, 1);
-      } else {
-        // Terracotta stepping stone
-        this.mazeGraphics.fillStyle(0x9a3412, 0.85);
-        this.mazeGraphics.fillRect(x + 9, y + 9, 6, 6);
+      this.mazeGraphics.fillStyle(0x001400, 1);
+      this.mazeGraphics.fillRect(x + 1, y + 1, 2, 2);
+      this.mazeGraphics.fillRect(x + 13, y + 1, 2, 2);
+      this.mazeGraphics.fillRect(x + 1, y + 13, 2, 2);
+      this.mazeGraphics.fillRect(x + 13, y + 13, 2, 2);
+
+      const cx = x + 12;
+      const cy = y + 12;
+      const lobeAngles = [0, 45, 90, 135, 180, 225, 270, 315];
+
+      // 1. Black scalloped outline of the tree canopy
+      this.mazeGraphics.fillStyle(0x000000, 1);
+      this.mazeGraphics.fillCircle(cx, cy, 8.5);
+      for (const deg of lobeAngles) {
+        const rad = Phaser.Math.DegToRad(deg);
+        this.mazeGraphics.fillCircle(cx + Math.cos(rad) * 6, cy + Math.sin(rad) * 6, 5.5);
       }
+
+      // 2. Bright green foliage body
+      this.mazeGraphics.fillStyle(0x00d800, 1);
+      this.mazeGraphics.fillCircle(cx, cy, 7.5);
+      for (const deg of lobeAngles) {
+        const rad = Phaser.Math.DegToRad(deg);
+        this.mazeGraphics.fillCircle(cx + Math.cos(rad) * 6, cy + Math.sin(rad) * 6, 4.5);
+      }
+
+      // 3. Inner shadow branch/leaf curves
+      this.mazeGraphics.lineStyle(1.5, 0x004d00, 1);
+      this.mazeGraphics.lineBetween(cx - 3, cy - 1, cx + 3, cy - 1);
+      this.mazeGraphics.lineBetween(cx - 2, cy + 3, cx + 4, cy + 3);
+
+      // 4. Sunlight highlights on upper lobes
+      this.mazeGraphics.fillStyle(0x76ff03, 1);
+      this.mazeGraphics.fillCircle(cx - 3, cy - 4, 2);
+      this.mazeGraphics.fillCircle(cx + 3, cy - 4, 1.8);
+    } else if (theme === 1) {
+      // Maze 2: Garden / Diagonal Grey Cobblestones on green lawn
+      this.mazeGraphics.fillStyle(0x005500, 1);
+      this.mazeGraphics.fillRect(x, y, RALLYX_TILE_SIZE, RALLYX_TILE_SIZE);
+
+      // Diagonal stone pavers
+      this.mazeGraphics.fillStyle(0x000000, 1);
+      this.mazeGraphics.fillRect(x + 2, y + 2, 9, 9);
+      this.mazeGraphics.fillRect(x + 13, y + 13, 9, 9);
+      this.mazeGraphics.fillStyle(0xd1d5db, 1);
+      this.mazeGraphics.fillRect(x + 3, y + 3, 7, 7);
+      this.mazeGraphics.fillRect(x + 14, y + 14, 7, 7);
+
+      // Stone highlight
+      this.mazeGraphics.fillStyle(0xf3f4f6, 1);
+      this.mazeGraphics.fillRect(x + 3, y + 3, 7, 2);
+      this.mazeGraphics.fillRect(x + 14, y + 14, 7, 2);
     } else if (theme === 2) {
-      // Maze 3: Waterway / Ocean Waves
+      // Maze 3: Waterway / Circular ripple rings on deep marine water
       this.mazeGraphics.fillStyle(0x075985, 1);
       this.mazeGraphics.fillRect(x, y, RALLYX_TILE_SIZE, RALLYX_TILE_SIZE);
-      this.mazeGraphics.lineStyle(2, 0x0284c7, 1);
-      this.mazeGraphics.lineBetween(x + 2, y + 6, x + 22, y + 6);
-      this.mazeGraphics.lineStyle(2, 0x38bdf8, 1);
-      this.mazeGraphics.lineBetween(x + 4, y + 13, x + 20, y + 13);
-      this.mazeGraphics.lineStyle(1.5, 0x7dd3fc, 1);
-      this.mazeGraphics.lineBetween(x + 3, y + 19, x + 21, y + 19);
-      this.mazeGraphics.fillStyle(0xe0f2fe, 0.9);
-      this.mazeGraphics.fillRect(x + 10, y + 12, 2, 2);
-      this.mazeGraphics.fillRect(x + 17, y + 18, 2, 2);
+
+      const cx = x + 12;
+      const cy = y + 12;
+      // Outer water ripple ring
+      this.mazeGraphics.lineStyle(2, 0x00d8f0, 1);
+      this.mazeGraphics.strokeCircle(cx, cy, 9);
+      // Inner water ripple ring
+      this.mazeGraphics.lineStyle(1.5, 0x38bdf8, 1);
+      this.mazeGraphics.strokeCircle(cx, cy, 5);
+      // Water cross ripple
+      this.mazeGraphics.lineStyle(1, 0x7dd3fc, 0.9);
+      this.mazeGraphics.lineBetween(cx - 3, cy, cx + 3, cy);
+      this.mazeGraphics.lineBetween(cx, cy - 3, cx, cy + 3);
     } else {
-      // Maze 4: Ancient Ruins / Stone Masonry Bricks
-      this.mazeGraphics.fillStyle(0x0f172a, 1);
+      // Maze 4: Pine Trees / Ruins
+      this.mazeGraphics.fillStyle(0x003300, 1);
       this.mazeGraphics.fillRect(x, y, RALLYX_TILE_SIZE, RALLYX_TILE_SIZE);
-      // Staggered stone slabs
-      this.mazeGraphics.fillStyle(0x475569, 1);
-      this.mazeGraphics.fillRect(x + 1, y + 1, 10, 10);
-      this.mazeGraphics.fillRect(x + 13, y + 1, 10, 10);
-      this.mazeGraphics.fillStyle(0x64748b, 1);
-      this.mazeGraphics.fillRect(x + 6, y + 13, 11, 10);
-      this.mazeGraphics.fillRect(x + 1, y + 13, 3, 10);
-      this.mazeGraphics.fillRect(x + 19, y + 13, 4, 10);
-      // Highlights & moss
-      this.mazeGraphics.fillStyle(0x94a3b8, 1);
-      this.mazeGraphics.fillRect(x + 2, y + 2, 8, 1);
-      this.mazeGraphics.fillRect(x + 14, y + 2, 8, 1);
-      this.mazeGraphics.fillStyle(0x15803d, 0.85);
-      this.mazeGraphics.fillRect(x + 11, y + 5, 2, 3);
-      this.mazeGraphics.fillRect(x + 4, y + 17, 2, 2);
+
+      // Pine tree trunk
+      this.mazeGraphics.fillStyle(0x000000, 1);
+      this.mazeGraphics.fillRect(x + 11, y + 16, 3, 6);
+
+      // Pointed pine canopy layers
+      if (typeof (this.mazeGraphics as any).fillTriangle === 'function') {
+        // Base pine layer
+        this.mazeGraphics.fillStyle(0x000000, 1);
+        (this.mazeGraphics as any).fillTriangle(x + 4, y + 18, x + 20, y + 18, x + 12, y + 10);
+        this.mazeGraphics.fillStyle(0x00a800, 1);
+        (this.mazeGraphics as any).fillTriangle(x + 5, y + 17, x + 19, y + 17, x + 12, y + 11);
+
+        // Top pine layer
+        this.mazeGraphics.fillStyle(0x000000, 1);
+        (this.mazeGraphics as any).fillTriangle(x + 6, y + 12, x + 18, y + 12, x + 12, y + 3);
+        this.mazeGraphics.fillStyle(0x00e000, 1);
+        (this.mazeGraphics as any).fillTriangle(x + 7, y + 11, x + 17, y + 11, x + 12, y + 4);
+      } else {
+        this.mazeGraphics.fillStyle(0x00e000, 1);
+        this.mazeGraphics.fillRect(x + 6, y + 4, 12, 14);
+      }
     }
   }
 

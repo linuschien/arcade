@@ -16,6 +16,19 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   public create(): void {
+    const keys = [
+      'rallyx:player_up', 'rallyx:player_down', 'rallyx:player_left', 'rallyx:player_right', 'rallyx:player',
+      'rallyx:enemy_up', 'rallyx:enemy_down', 'rallyx:enemy_left', 'rallyx:enemy_right', 'rallyx:enemy',
+      'rallyx:smoke', 'rallyx:rock', 'rallyx:flag_regular', 'rallyx:flag_special', 'rallyx:flag_lucky',
+      'rallyx:crash_0', 'rallyx:crash_1', 'rallyx:crash_2', 'rallyx:crash_3', 'rallyx:hud_life'
+    ];
+    keys.forEach((k) => {
+      const tex = this.textures.get(k);
+      if (tex && typeof tex.setFilter === 'function') {
+        tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      }
+    });
+
     this.scene.start('rallyx:MainGameScene');
   }
 

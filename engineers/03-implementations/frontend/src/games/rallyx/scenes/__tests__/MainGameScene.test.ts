@@ -22,6 +22,8 @@ describe('MainGameScene Unit Tests', () => {
       fillStyle: vi.fn(),
       fillRect: vi.fn(),
       fillCircle: vi.fn(),
+      strokeCircle: vi.fn(),
+      fillTriangle: vi.fn(),
       lineStyle: vi.fn(),
       strokeRect: vi.fn(),
       lineBetween: vi.fn(),
@@ -73,12 +75,14 @@ describe('MainGameScene Unit Tests', () => {
         centerOn: vi.fn().mockReturnThis(),
         startFollow: vi.fn().mockReturnThis(),
         ignore: vi.fn().mockReturnThis(),
+        setRoundPixels: vi.fn().mockReturnThis(),
       },
       add: vi.fn().mockReturnValue({
         setScroll: vi.fn().mockReturnThis(),
         setOrigin: vi.fn().mockReturnThis(),
         setZoom: vi.fn().mockReturnThis(),
         ignore: vi.fn().mockReturnThis(),
+        setRoundPixels: vi.fn().mockReturnThis(),
       }),
     };
 
