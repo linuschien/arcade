@@ -63,6 +63,7 @@ export class RallyXEnemyAI {
     return spawns.map((spawn, index) => {
       const col = spawn.col + borderOffset;
       const row = spawn.row + borderOffset;
+      const initialDirection = spawn.row <= 10 ? Direction.DOWN : Direction.UP;
       return {
         id: `enemy_${index}`,
         index,
@@ -70,7 +71,7 @@ export class RallyXEnemyAI {
         row,
         x: (col + 0.5) * RALLYX_TILE_SIZE,
         y: (row + 0.5) * RALLYX_TILE_SIZE,
-        direction: Direction.UP,
+        direction: initialDirection,
         state: isChallengingStage ? EnemyState.DORMANT : EnemyState.CHASING,
         spinOutTimerSec: 0,
         spinAngleDeg: 0,

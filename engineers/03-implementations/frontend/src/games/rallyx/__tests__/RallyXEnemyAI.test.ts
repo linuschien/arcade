@@ -25,6 +25,14 @@ describe('RallyXEnemyAI Unit Tests', () => {
       expect(enemies[1].state).toBe(EnemyState.CHASING);
       expect(enemies[0].col).toBe(15);
       expect(enemies[0].row).toBe(52);
+      expect(enemies[0].direction).toBe(Direction.UP);
+    });
+
+    it('should set DOWN direction for enemies spawning at the top of the map', () => {
+      const spawns = [{ col: 15, row: 1 }, { col: 15, row: 52 }];
+      const enemies = RallyXEnemyAI.createEnemies(spawns, false);
+      expect(enemies[0].direction).toBe(Direction.DOWN);
+      expect(enemies[1].direction).toBe(Direction.UP);
     });
 
     it('should create dormant enemies for Challenging Stages', () => {
