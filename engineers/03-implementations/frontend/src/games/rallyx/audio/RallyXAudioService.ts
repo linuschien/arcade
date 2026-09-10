@@ -348,6 +348,18 @@ class RallyXAudioServiceImpl {
   }
 
   /**
+   * Fuel discharge mechanical tick during Stage Clear bonus score tally.
+   */
+  public playFuelDrainTick(): void {
+    SoundEngine.playTone({
+      type: 'square',
+      frequency: 920,
+      durationSeconds: 0.025,
+      volume: 0.06,
+    });
+  }
+
+  /**
    * Smoke Screen Hiss: Fast downward noise/tone pulse.
    */
   public playSmokeHiss(): void {
