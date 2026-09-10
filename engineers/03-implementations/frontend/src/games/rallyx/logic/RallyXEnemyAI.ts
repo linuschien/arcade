@@ -217,7 +217,8 @@ export class RallyXEnemyAI {
     targetCol: number,
     targetRow: number,
     currentDir: Direction = Direction.NONE,
-    blockedTile?: { col: number; row: number }
+    blockedTile?: { col: number; row: number },
+    otherEnemies?: readonly EnemyCar[]
   ): Direction {
     if (startCol === targetCol && startRow === targetRow) {
       return Direction.NONE;
@@ -255,6 +256,37 @@ export class RallyXEnemyAI {
       nonReverseDirs = availableDirs;
     }
 
+    // Check if moving in direction d heads into an oncoming chasing teammate in the same corridor
+    const hasOncomingTeammate = (d: Direction): boolean => {
+      if (!otherEnemies || otherEnemies.length <= 1) return false;
+      const v = DIRECTION_VECTORS[d];
+      const oppD = OPPOSITE_DIRECTIONS[d];
+      // Check corridor up to 5 tiles ahead
+      for (let step = 1; step <= 5; step++) {
+        const c = startCol + v.col * step;
+        const r = startRow + v.row * step;
+        if (c < 0 || c >= maxCols || r < 0 || r >= maxRows) break;
+        if (isRallyXWall(matrix, c, r)) break;
+        for (const other of otherEnemies) {
+          if (other.col === startCol && other.row === startRow) continue;
+          if (other.state !== EnemyState.CHASING) continue;
+          if (other.col === c && other.row === r && other.direction === oppD) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    // Filter out directions that would lead to immediate head-on crash with an oncoming teammate
+    let candidateDirs = nonReverseDirs;
+    if (nonReverseDirs.length > 1) {
+      const safeDirs = nonReverseDirs.filter((d) => !hasOncomingTeammate(d));
+      if (safeDirs.length > 0) {
+        candidateDirs = safeDirs;
+      }
+    }
+
     // BFS Queue
     const visited = new Uint8Array(maxCols * maxRows);
     const startIndex = startRow * maxCols + startCol;
@@ -272,8 +304,8 @@ export class RallyXEnemyAI {
     // Queue entries: [col, row, firstStepDir]
     const queue: Array<[number, number, Direction]> = [];
 
-    // Seed queue with valid first steps
-    for (const d of nonReverseDirs) {
+    // Seed queue with valid first steps (using candidateDirs that avoid oncoming teammates)
+    for (const d of candidateDirs) {
       const v = DIRECTION_VECTORS[d];
       const nc = startCol + v.col;
       const nr = startRow + v.row;
@@ -310,10 +342,10 @@ export class RallyXEnemyAI {
       }
     }
 
-    // If target not reachable via BFS, pick the first non-reverse direction closest by Manhattan distance
-    let bestDir = nonReverseDirs[0];
+    // If target not reachable via BFS, pick the first safe direction closest by Manhattan distance
+    let bestDir = candidateDirs[0];
     let bestDist = Infinity;
-    for (const d of nonReverseDirs) {
+    for (const d of candidateDirs) {
       const v = DIRECTION_VECTORS[d];
       const nc = startCol + v.col;
       const nr = startRow + v.row;
@@ -330,15 +362,18 @@ export class RallyXEnemyAI {
   /**
    * Calculates target tile for an enemy car based on its index:
    * - Car 0 (Lead Chaser): Targets Blue car directly.
-   * - Cars 1+ (Flanking Pursuers): Targets 2~4 tiles ahead along Blue car's heading,
-   *   with deterministic anti-stacking jitter per car index.
+   * - Cars 1+ (Flanking Pursuers): Targets 2~4 tiles ahead along Blue car's heading.
+   *   When enemy position is provided, it maintains its natural flank relative to the player
+   *   to prevent criss-crossing into teammates.
    */
   public static calculateTargetTile(
     matrix: RallyXTileType[][],
     carIndex: number,
     blueCol: number,
     blueRow: number,
-    blueDir: Direction
+    blueDir: Direction,
+    enemyCol?: number,
+    enemyRow?: number
   ): GridPos {
     if (carIndex === 0) {
       return { col: blueCol, row: blueRow };
@@ -353,13 +388,28 @@ export class RallyXEnemyAI {
     let targetCol = blueCol + v.col * stepAhead;
     let targetRow = blueRow + v.row * stepAhead;
 
-    // Add lateral offset for odd/even pursuers to disperse flanking routes
-    if (carIndex % 2 === 1) {
-      targetCol += -v.row * (carIndex > 2 ? 2 : 1);
-      targetRow += v.col * (carIndex > 2 ? 2 : 1);
+    // Lateral flanking:
+    // If enemy position is known, keep enemy on its own natural flank relative to the player
+    // to avoid criss-crossing teammates into head-on collisions.
+    if (enemyCol !== undefined) {
+      if (enemyCol < blueCol) {
+        // Enemy is west of player -> flank on west side
+        targetCol += v.row !== 0 ? -1 : 0;
+        targetRow += v.col !== 0 ? 1 : 0;
+      } else if (enemyCol > blueCol) {
+        // Enemy is east of player -> flank on east side
+        targetCol += v.row !== 0 ? 1 : 0;
+        targetRow += v.col !== 0 ? -1 : 0;
+      }
     } else {
-      targetCol += v.row * 1;
-      targetRow += -v.col * 1;
+      // Deterministic fallback if enemyCol not supplied
+      if (carIndex % 2 === 1) {
+        targetCol += -v.row * (carIndex > 2 ? 2 : 1);
+        targetRow += v.col * (carIndex > 2 ? 2 : 1);
+      } else {
+        targetCol += v.row * 1;
+        targetRow += -v.col * 1;
+      }
     }
 
     // Clamp within bounds
@@ -388,7 +438,8 @@ export class RallyXEnemyAI {
     blueRow: number,
     blueDir: Direction,
     baseSpeed: number, // Base Blue car speed (e.g. 130 px/s)
-    deltaSec: number
+    deltaSec: number,
+    otherEnemies?: readonly EnemyCar[]
   ): void {
     // Decrement rock and bump cooldown timers
     if (enemy.rockCooldownTimerSec > 0) {
@@ -487,16 +538,18 @@ export class RallyXEnemyAI {
       enemy.x = centerTileX;
       enemy.y = centerTileY;
 
-      // Find target tile
+      // Find target tile (pass enemy's current col/row to retain natural flanking corridor)
       const target = RallyXEnemyAI.calculateTargetTile(
         matrix,
         enemy.index,
         blueCol,
         blueRow,
-        blueDir
+        blueDir,
+        enemy.col,
+        enemy.row
       );
 
-      // BFS to select best direction (pass lastHitRockPos as blockedTile so enemy never turns back into rock)
+      // BFS to select best direction (pass lastHitRockPos as blockedTile, otherEnemies for corridor collision safety)
       const nextDir = RallyXEnemyAI.findNextBfsDirection(
         matrix,
         enemy.col,
@@ -504,7 +557,8 @@ export class RallyXEnemyAI {
         target.col,
         target.row,
         enemy.direction,
-        enemy.lastHitRockPos || undefined
+        enemy.lastHitRockPos || undefined,
+        otherEnemies
       );
 
       if (nextDir !== Direction.NONE) {
@@ -658,6 +712,11 @@ export class RallyXEnemyAI {
           b.bumpCooldownTimerSec <= 0
         ) {
           const dist = Math.hypot(a.x - b.x, a.y - b.y);
+          // In arcade Rally-X (and PRD-05 2.9), cars bump on head-on / intersection meetings.
+          // Cars traveling in the same direction form a convoy / pursuit pack and do not spin-out each other.
+          if (a.direction === b.direction && dist > 8) {
+            continue;
+          }
           if (dist <= bumpDist) {
             a.state = EnemyState.SPIN_OUT;
             a.spinOutTimerSec = ENEMY_BUMP_DURATION_SEC;

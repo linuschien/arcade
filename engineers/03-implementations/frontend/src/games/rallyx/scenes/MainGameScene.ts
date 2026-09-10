@@ -775,7 +775,8 @@ export class MainGameScene extends BaseArcadeScene {
         this.playerRow,
         this.currentDirection,
         playerBaseSpeed,
-        deltaSec
+        deltaSec,
+        this.enemies
       );
 
       const sp = this.enemySprites.get(enemy.id);
