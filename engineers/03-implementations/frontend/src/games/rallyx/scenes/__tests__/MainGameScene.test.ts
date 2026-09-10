@@ -348,6 +348,30 @@ describe('MainGameScene Unit Tests', () => {
     delayedCb!();
     expect(gameState.getRound()).toBe(2);
     expect(gameState.getFuel()).toBe(1000);
+    expect((scene as any).lowFuelAlarmActive).toBe(false);
+  });
+
+  it('should not activate low fuel alarm when completing round with 10th flag', () => {
+    scene.create();
+    const gameState = (scene as any).gameState;
+    gameState.setPlayState(RallyXPlayState.PLAYING);
+
+    // Collect 9 flags
+    for (let i = 0; i < 9; i++) {
+      gameState.collectFlag('REGULAR');
+    }
+
+    // Mock 10th flag collision
+    (scene as any).time.delayedCall = vi.fn();
+    const config = gameState.getCurrentLevelConfig();
+    const tenthFlag = config.flags[9];
+    (scene as any).playerX = (tenthFlag.col + RALLYX_BORDER_WIDTH + 0.5) * 48;
+    (scene as any).playerY = (tenthFlag.row + RALLYX_BORDER_WIDTH + 0.5) * 48;
+
+    scene.update(0, 16);
+
+    expect(gameState.getPlayState()).toBe(RallyXPlayState.STAGE_CLEARED);
+    expect((scene as any).lowFuelAlarmActive).toBe(false);
   });
 
   it('should perform comprehensive teardown cleanup safely', () => {

@@ -677,6 +677,8 @@ export class MainGameScene extends BaseArcadeScene {
   }
 
   private startRoundIntro(): void {
+    this.lowFuelAlarmActive = false;
+    RallyXAudioService.stopLowFuelAlarm();
     this.gameState.setPlayState(RallyXPlayState.READY);
     const isChallenging = this.gameState.isChallengingStage();
     this.statusBannerText.setText(isChallenging ? 'CHALLENGE!' : 'READY!');
@@ -749,10 +751,17 @@ export class MainGameScene extends BaseArcadeScene {
       this.updatePendingSmokePuffs(delta);
       this.updateEnemies(deltaSec);
       this.checkCollisions();
+
+      // If collisions triggered state transition (e.g. STAGE_CLEARED or DYING), halt frame immediately
+      if (this.gameState.getPlayState() !== RallyXPlayState.PLAYING) {
+        this.updateHUD();
+        return;
+      }
+
       this.gameState.update(deltaSec);
       this.updateSmokeSprites();
 
-      // Low fuel audio alarm check
+      // Low fuel audio alarm check (strictly while active PLAYING)
       if (this.gameState.isFuelEmpty() && !this.lowFuelAlarmActive) {
         this.lowFuelAlarmActive = true;
         RallyXAudioService.startLowFuelAlarm();
@@ -1068,10 +1077,12 @@ export class MainGameScene extends BaseArcadeScene {
     // 3. Enemy Collision (Blue Car explodes)
     if (RallyXEnemyAI.checkPlayerCollision(this.playerX, this.playerY, this.enemies)) {
       this.triggerPlayerCrash();
+      return;
     }
   }
 
   private triggerPlayerCrash(): void {
+    this.lowFuelAlarmActive = false;
     RallyXAudioService.stopBGM();
     RallyXAudioService.stopLowFuelAlarm();
     RallyXAudioService.playCrash();
