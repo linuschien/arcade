@@ -712,23 +712,26 @@ export class MainGameScene extends BaseArcadeScene {
       return;
     }
 
-    // 2. Stage Clear Fuel Discharge Animation ("卸油" 節奏)
-    if (playState === RallyXPlayState.STAGE_CLEARED && this.isStageClearFuelDraining) {
-      this.stageClearDrainTimerSec += deltaSec;
-      const progress = Math.min(1.0, this.stageClearDrainTimerSec / this.stageClearDrainDurationSec);
-      this.stageClearDisplayFuel = Math.max(0, this.stageClearInitialFuel * (1.0 - progress));
-      this.stageClearDisplayScore = Math.floor(this.stageClearTargetScore - this.stageClearDisplayFuel * 10);
+    // 2. Stage Clear Fuel Discharge Animation ("卸油" 節奏) & Post-Drain Hold
+    if (playState === RallyXPlayState.STAGE_CLEARED) {
+      if (this.isStageClearFuelDraining) {
+        this.stageClearDrainTimerSec += deltaSec;
+        const progress = Math.min(1.0, this.stageClearDrainTimerSec / this.stageClearDrainDurationSec);
+        this.stageClearDisplayFuel = Math.max(0, this.stageClearInitialFuel * (1.0 - progress));
+        this.stageClearDisplayScore = Math.floor(this.stageClearTargetScore - this.stageClearDisplayFuel * 10);
 
-      this.stageClearTickTimerSec += deltaSec;
-      if (this.stageClearTickTimerSec >= 0.05) {
-        this.stageClearTickTimerSec = 0;
-        RallyXAudioService.playFuelDrainTick();
-      }
+        this.stageClearTickTimerSec += deltaSec;
+        if (this.stageClearTickTimerSec >= 0.05) {
+          this.stageClearTickTimerSec = 0;
+          RallyXAudioService.playFuelDrainTick();
+        }
 
-      if (progress >= 1.0) {
-        this.isStageClearFuelDraining = false;
-        this.stageClearDisplayFuel = 0;
-        this.stageClearDisplayScore = this.stageClearTargetScore;
+        if (progress >= 1.0) {
+          this.isStageClearFuelDraining = false;
+          this.stageClearDisplayFuel = 0;
+          this.stageClearDisplayScore = this.stageClearTargetScore;
+          this.gameState.emptyFuel();
+        }
       }
       this.updateHUD();
       return;
@@ -1046,7 +1049,7 @@ export class MainGameScene extends BaseArcadeScene {
         ArcadeBridge.emit('SCORE_UPDATED', { score: this.gameState.getScore() });
 
         if (result.isStageClear) {
-          this.handleStageClear();
+          this.handleStageClear(result.stageClearFuelBonus / 10);
           return;
         }
       }
@@ -1117,7 +1120,11 @@ export class MainGameScene extends BaseArcadeScene {
     }
   }
 
-  private handleStageClear(): void {
+  private handleStageClear(bonusFuel?: number): void {
+    if (this.lowFuelAlarmActive) {
+      this.lowFuelAlarmActive = false;
+      RallyXAudioService.stopLowFuelAlarm();
+    }
     RallyXAudioService.playRoundClear();
     const currentRound = this.gameState.getRound();
     const isGrandSlam = currentRound === 16;
@@ -1125,8 +1132,9 @@ export class MainGameScene extends BaseArcadeScene {
     this.statusBannerText.setVisible(true);
 
     // Initialize fuel discharge animation ("卸油" 節奏)
-    const initialFuel = Math.floor(this.gameState.getFuel());
+    const initialFuel = bonusFuel !== undefined ? Math.floor(bonusFuel) : Math.floor(this.gameState.getFuel());
     const bonusPoints = initialFuel * 10;
+    this.gameState.emptyFuel();
     if (initialFuel > 0) {
       this.isStageClearFuelDraining = true;
       this.stageClearInitialFuel = initialFuel;
@@ -1139,6 +1147,7 @@ export class MainGameScene extends BaseArcadeScene {
       this.stageClearTickTimerSec = 0;
     } else {
       this.isStageClearFuelDraining = false;
+      this.stageClearDisplayFuel = 0;
     }
 
     const clearDelay = isGrandSlam ? 4500 : 2600;
@@ -1162,6 +1171,20 @@ export class MainGameScene extends BaseArcadeScene {
       }
 
       this.renderFuelGauge(this.stageClearDisplayFuel);
+      this.renderRadar();
+      return;
+    }
+
+    if (this.gameState.getPlayState() === RallyXPlayState.STAGE_CLEARED) {
+      this.scoreText.setText(`${this.gameState.getScore()}`);
+      this.roundText.setText(`${this.gameState.getRound()}`);
+
+      const reserveLives = Math.max(0, this.gameState.getLives() - 1);
+      for (let i = 0; i < 4; i++) {
+        this.lifeIcons[i].setVisible(i < reserveLives);
+      }
+
+      this.renderFuelGauge(0);
       this.renderRadar();
       return;
     }

@@ -184,6 +184,14 @@ describe('RallyXGameState Unit Tests', () => {
       expect(res10.isStageClear).toBe(true);
       expect(state.getPlayState()).toBe(RallyXPlayState.STAGE_CLEARED);
       expect(res10.stageClearFuelBonus).toBe(remainingFuel * 10);
+      expect(state.getFuel()).toBe(0);
+    });
+
+    it('should empty fuel and set fuel correctly', () => {
+      state.setFuel(555);
+      expect(state.getFuel()).toBe(555);
+      state.emptyFuel();
+      expect(state.getFuel()).toBe(0);
     });
   });
 

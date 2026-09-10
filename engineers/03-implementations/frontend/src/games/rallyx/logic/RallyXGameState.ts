@@ -197,6 +197,20 @@ export class RallyXGameState {
     this.fuel = MAX_FUEL;
   }
 
+  /**
+   * Empties fuel tank to 0 (e.g. after discharging fuel into bonus points at round end).
+   */
+  public emptyFuel(): void {
+    this.fuel = 0;
+  }
+
+  /**
+   * Directly sets fuel value clamped to [0, MAX_FUEL].
+   */
+  public setFuel(val: number): void {
+    this.fuel = Math.max(0, Math.min(MAX_FUEL, val));
+  }
+
   // --- Smoke Screen Mechanics ---
 
   /**
@@ -331,6 +345,7 @@ export class RallyXGameState {
       if (stage1UP) {
         awarded1UP = true;
       }
+      this.emptyFuel();
     }
 
     return {

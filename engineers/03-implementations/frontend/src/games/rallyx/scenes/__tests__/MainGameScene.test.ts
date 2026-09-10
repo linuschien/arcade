@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MainGameScene } from '../MainGameScene';
 import { InputService, PlayerIndex, ArcadeAction } from '@/core/input/InputService';
 import { RALLYX_BORDER_WIDTH } from '@/games/rallyx/logic/RallyXMaze';
+import { RallyXPlayState } from '@/games/rallyx/logic/RallyXGameState';
 
 describe('MainGameScene Unit Tests', () => {
   let scene: MainGameScene;
@@ -303,6 +304,50 @@ describe('MainGameScene Unit Tests', () => {
 
     const statusBanner = (scene as any).statusBannerText;
     expect(statusBanner.setText).toHaveBeenCalledWith('CONGRATULATIONS!\nALL STAGES CLEARED!');
+  });
+
+  it('should drain fuel to 0 during stage clear and hold fuel gauge at 0 without popping back', () => {
+    scene.create();
+    let delayedCb: (() => void) | null = null;
+    (scene as any).time.delayedCall = vi.fn((_ms: number, cb: () => void) => {
+      delayedCb = cb;
+    });
+
+    const gameState = (scene as any).gameState;
+    gameState.setPlayState(RallyXPlayState.STAGE_CLEARED);
+    gameState.setFuel(600);
+
+    (scene as any).handleStageClear(600);
+
+    expect((scene as any).isStageClearFuelDraining).toBe(true);
+    expect((scene as any).stageClearDisplayFuel).toBe(600);
+    expect(gameState.getFuel()).toBe(0);
+
+    // Mid-drain frame: 0.5s into drain
+    scene.update(0, 500);
+    expect((scene as any).isStageClearFuelDraining).toBe(true);
+    expect((scene as any).stageClearDisplayFuel).toBeLessThan(600);
+    expect((scene as any).stageClearDisplayFuel).toBeGreaterThan(0);
+
+    // Advance 1.5s in 100ms frames to complete drain (delta clamped to 0.1s per frame)
+    for (let i = 0; i < 15; i++) {
+      scene.update(0, 100);
+    }
+    expect((scene as any).isStageClearFuelDraining).toBe(false);
+    expect((scene as any).stageClearDisplayFuel).toBe(0);
+    expect(gameState.getFuel()).toBe(0);
+
+    // Subsequent frame while still in STAGE_CLEARED state (waiting for round delay)
+    // Must NOT pop back to 600 or any non-zero value
+    scene.update(0, 100);
+    expect((scene as any).isStageClearFuelDraining).toBe(false);
+    expect((scene as any).stageClearDisplayFuel).toBe(0);
+    expect(gameState.getFuel()).toBe(0);
+
+    // When round transition fires, fuel is refilled to 1000 for Round N+1
+    delayedCb!();
+    expect(gameState.getRound()).toBe(2);
+    expect(gameState.getFuel()).toBe(1000);
   });
 
   it('should perform comprehensive teardown cleanup safely', () => {
