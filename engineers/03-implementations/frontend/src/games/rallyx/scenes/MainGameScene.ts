@@ -1175,20 +1175,6 @@ export class MainGameScene extends BaseArcadeScene {
       return;
     }
 
-    if (this.gameState.getPlayState() === RallyXPlayState.STAGE_CLEARED) {
-      this.scoreText.setText(`${this.gameState.getScore()}`);
-      this.roundText.setText(`${this.gameState.getRound()}`);
-
-      const reserveLives = Math.max(0, this.gameState.getLives() - 1);
-      for (let i = 0; i < 4; i++) {
-        this.lifeIcons[i].setVisible(i < reserveLives);
-      }
-
-      this.renderFuelGauge(0);
-      this.renderRadar();
-      return;
-    }
-
     this.scoreText.setText(`${this.gameState.getScore()}`);
     this.roundText.setText(`${this.gameState.getRound()}`);
 
