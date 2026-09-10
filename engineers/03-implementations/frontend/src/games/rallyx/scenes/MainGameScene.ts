@@ -53,6 +53,7 @@ export class MainGameScene extends BaseArcadeScene {
   private playerSprite!: Phaser.GameObjects.Sprite;
   private enemySprites: Map<string, Phaser.GameObjects.Sprite> = new Map();
   private flagSprites: Map<string, Phaser.GameObjects.Sprite> = new Map();
+  private collectedFlagKeys: Set<string> = new Set();
   private rockSprites: Phaser.GameObjects.Sprite[] = [];
   private smokeSprites: Map<string, Phaser.GameObjects.Sprite> = new Map();
 
@@ -99,6 +100,7 @@ export class MainGameScene extends BaseArcadeScene {
 
     this.gameState = new RallyXGameState(1);
     this.tileMatrix = buildRallyXTileMatrix(this.gameState.getRound(), true);
+    this.collectedFlagKeys.clear();
 
     this.createWorldElements();
     this.createHUDElements();
@@ -195,26 +197,26 @@ export class MainGameScene extends BaseArcadeScene {
     this.hudBg.setScrollFactor(0);
     this.hudBg.setDepth(100);
 
-    // 2. Score on single line at y: 10 (no line break between SCORE and score value)
+    // 2. Score on single line at y: 10 (label on left, number right-aligned)
     const labelStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-      fontSize: '14px',
+      fontSize: '16px',
       fontFamily: 'monospace',
       color: '#f59e0b',
       fontStyle: 'bold',
     };
-    const valStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-      fontSize: '15px',
+    const scoreValStyle: Phaser.Types.GameObjects.Text.TextStyle = {
+      fontSize: '18px',
       fontFamily: 'monospace',
       color: '#ffffff',
       fontStyle: 'bold',
     };
 
-    this.scLabel = this.add.text(484, 10, 'SCORE', labelStyle).setOrigin(0, 0).setScrollFactor(0).setDepth(102);
-    this.scoreText = this.add.text(544, 10, '0', valStyle).setOrigin(0, 0).setScrollFactor(0).setDepth(102);
+    this.scLabel = this.add.text(486, 10, 'SCORE', labelStyle).setOrigin(0, 0).setScrollFactor(0).setDepth(102);
+    this.scoreText = this.add.text(632, 9, '0', scoreValStyle).setOrigin(1, 0).setScrollFactor(0).setDepth(102);
 
-    // 3. Fuel Gauge Header & Bar (Centered at x: 560, y: 32)
-    this.fuelLabel = this.add.text(560, 32, 'FUEL', {
-      fontSize: '13px',
+    // 3. Fuel Gauge Header & Bar (Centered at x: 560, y: 36)
+    this.fuelLabel = this.add.text(560, 36, 'FUEL', {
+      fontSize: '16px',
       fontFamily: 'monospace',
       color: '#22c55e',
       fontStyle: 'bold',
@@ -224,39 +226,49 @@ export class MainGameScene extends BaseArcadeScene {
     this.fuelBarGraphics.setScrollFactor(0);
     this.fuelBarGraphics.setDepth(101);
 
-    // 4. Radar Minimap Graphics (160x280 at x: 480, y: 73 - zero left/right margin)
+    // 4. Radar Minimap Graphics (160x280 at x: 480, y: 100 - vertically centered in 480px column)
     this.radarGraphics = this.add.graphics();
     this.radarGraphics.setScrollFactor(0);
     this.radarGraphics.setDepth(101);
 
-    // 5. Reserve Lives Icons (x: 498 + i * 28, y: 368)
+    // 5. Round on single line at y: 396 (label on left, number right-aligned)
+    this.rndLabel = this.add.text(486, 396, 'ROUND', labelStyle).setOrigin(0, 0).setScrollFactor(0).setDepth(102);
+    this.roundText = this.add.text(632, 395, '1', {
+      fontSize: '18px',
+      fontFamily: 'monospace',
+      color: '#ffff00',
+      fontStyle: 'bold',
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(102);
+
+    // 6. Reserve Lives Icons (Centered horizontally at y: 442)
+    // 4 icons with 32px spacing: 512, 544, 576, 608
     for (let i = 0; i < 4; i++) {
-      const icon = this.add.sprite(498 + i * 28, 368, 'rallyx:hud_life');
+      const icon = this.add.sprite(512 + i * 32, 442, 'rallyx:hud_life');
       icon.setVisible(false);
       icon.setScrollFactor(0);
       icon.setDepth(101);
       this.lifeIcons.push(icon);
     }
 
-    // 6. Round on single line at y: 398 (no line break between ROUND and number)
-    this.rndLabel = this.add.text(484, 398, 'ROUND', labelStyle).setOrigin(0, 0).setScrollFactor(0).setDepth(102);
-    this.roundText = this.add.text(544, 398, '1', { ...valStyle, color: '#ffff00' }).setOrigin(0, 0).setScrollFactor(0).setDepth(102);
-
-    // 7. Centered Status Banner (x: 560, y: 430)
-    this.statusBannerText = this.add.text(560, 430, 'READY!', {
-      fontSize: '20px',
+    // 7. Playfield Center Status Banner (x: 240, y: 240) - READY, STAGE CLEAR, GAME OVER
+    this.statusBannerText = this.add.text(240, 240, 'READY!', {
+      fontSize: '28px',
       fontFamily: 'monospace',
       color: '#facc15',
       fontStyle: 'bold',
-    }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(102);
+      stroke: '#000000',
+      strokeThickness: 5,
+    }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(200);
 
-    // 8. Lucky Refill Overlay Banner (x: 560, y: 456)
-    this.luckyBannerText = this.add.text(560, 456, '★ LUCKY! ★', {
-      fontSize: '14px',
+    // 8. Lucky Refill Overlay Banner (x: 240, y: 196)
+    this.luckyBannerText = this.add.text(240, 196, '★ LUCKY! ★', {
+      fontSize: '24px',
       fontFamily: 'monospace',
       color: '#22c55e',
       fontStyle: 'bold',
-    }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(102);
+      stroke: '#000000',
+      strokeThickness: 4,
+    }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(200);
     this.luckyBannerText.setVisible(false);
   }
 
@@ -278,10 +290,14 @@ export class MainGameScene extends BaseArcadeScene {
       this.rockSprites.push(rockSprite);
     }
 
-    // Spawn Flags
+    // Spawn Flags (Skip flags that were already collected in this round)
     this.flagSprites.forEach((sp) => sp.destroy());
     this.flagSprites.clear();
-    config.flags.forEach((flag, idx) => {
+    config.flags.forEach((flag) => {
+      const flagKey = `flag_${flag.col}_${flag.row}`;
+      if (this.collectedFlagKeys.has(flagKey)) {
+        return;
+      }
       const fx = (flag.col + RALLYX_BORDER_WIDTH + 0.5) * RALLYX_TILE_SIZE;
       const fy = (flag.row + RALLYX_BORDER_WIDTH + 0.5) * RALLYX_TILE_SIZE;
       const texKey = flag.type === 'SPECIAL'
@@ -292,7 +308,7 @@ export class MainGameScene extends BaseArcadeScene {
       const flagSprite = this.add.sprite(fx, fy, texKey);
       flagSprite.setOrigin(0.5, 0.5);
       flagSprite.setDepth(3);
-      this.flagSprites.set(`flag_${flag.col}_${flag.row}`, flagSprite);
+      this.flagSprites.set(flagKey, flagSprite);
     });
 
     // Reset Player Position
@@ -772,6 +788,7 @@ export class MainGameScene extends BaseArcadeScene {
     if (flagSprite && flagSprite.visible) {
       const flagSpec = config.flags.find((f) => f.col === innerCol && f.row === innerRow);
       if (flagSpec) {
+        this.collectedFlagKeys.add(flagKey);
         flagSprite.setVisible(false);
         const result = this.gameState.collectFlag(flagSpec.type);
 
@@ -860,6 +877,7 @@ export class MainGameScene extends BaseArcadeScene {
 
     this.time.delayedCall(2200, () => {
       this.gameState.advanceToNextRound();
+      this.collectedFlagKeys.clear();
       this.resetLevelEntities();
       this.startRoundIntro();
     });
@@ -878,7 +896,7 @@ export class MainGameScene extends BaseArcadeScene {
     // Update Fuel Bar & Ticks (Full 160px HUD width, zero left/right margin)
     this.renderFuelGauge();
 
-    // Update Minimap Radar (160x280 at x: 480, y: 73 with authentic blue background)
+    // Update Minimap Radar (160x280 at x: 480, y: 100 with authentic blue background)
     this.renderRadar();
   }
 
@@ -886,14 +904,14 @@ export class MainGameScene extends BaseArcadeScene {
     this.fuelBarGraphics.clear();
     const barX = 480;
     const barWidth = 160;
-    const tickY = 48;
-    const barY = 55;
-    const barHeight = 14;
+    const tickY = 58;
+    const barY = 67;
+    const barHeight = 16;
 
     // 1. Tick Marks (刻度) - 10 divisions spanning full 160px HUD width (0 left/right margin)
     // Horizontal ruler baseline
     this.fuelBarGraphics.lineStyle(1, 0x475569, 0.9);
-    this.fuelBarGraphics.lineBetween(barX, tickY + 5, barX + barWidth, tickY + 5);
+    this.fuelBarGraphics.lineBetween(barX, tickY + 6, barX + barWidth, tickY + 6);
 
     // Divisions at 0%, 10%, 20%, 30%, 40%, 50%, 60%, 70%, 80%, 90%, 100%
     for (let i = 0; i <= 10; i++) {
@@ -903,11 +921,11 @@ export class MainGameScene extends BaseArcadeScene {
       if (isMajor) {
         // Major Red Tick Pins (Empty, Half, Full)
         this.fuelBarGraphics.lineStyle(2, 0xef4444, 1);
-        this.fuelBarGraphics.lineBetween(tx, tickY, tx, tickY + 6);
+        this.fuelBarGraphics.lineBetween(tx, tickY, tx, tickY + 7);
       } else {
         // Minor Yellow Tick Marks
         this.fuelBarGraphics.lineStyle(1, 0xfacc15, 1);
-        this.fuelBarGraphics.lineBetween(tx, tickY + 2, tx, tickY + 6);
+        this.fuelBarGraphics.lineBetween(tx, tickY + 2, tx, tickY + 7);
       }
     }
 
@@ -936,7 +954,7 @@ export class MainGameScene extends BaseArcadeScene {
   private renderRadar(): void {
     this.radarGraphics.clear();
     const radarX = 480;
-    const radarY = 73;
+    const radarY = 100;
     const radarW = 32 * RADAR_SCALE; // 32 * 5 = 160px (full HUD width)
     const radarH = 56 * RADAR_SCALE; // 56 * 5 = 280px
 
@@ -953,6 +971,7 @@ export class MainGameScene extends BaseArcadeScene {
     this.radarGraphics.fillStyle(0xffff00, 1);
     config.flags.forEach((flag) => {
       const key = `flag_${flag.col}_${flag.row}`;
+      if (this.collectedFlagKeys.has(key)) return;
       const sp = this.flagSprites.get(key);
       if (sp && sp.visible) {
         const rx = radarX + flag.col * RADAR_SCALE;
@@ -1018,5 +1037,6 @@ export class MainGameScene extends BaseArcadeScene {
     this.clearSprites(this.lifeIcons);
     this.borderTileSprites.forEach((ts) => ts.destroy());
     this.borderTileSprites.length = 0;
+    this.collectedFlagKeys.clear();
   }
 }

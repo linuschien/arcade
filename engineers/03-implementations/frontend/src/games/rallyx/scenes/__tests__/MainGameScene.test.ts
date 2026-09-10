@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MainGameScene } from '../MainGameScene';
 import { InputService, PlayerIndex, ArcadeAction } from '@/core/input/InputService';
+import { RALLYX_BORDER_WIDTH } from '@/games/rallyx/logic/RallyXMaze';
 
 describe('MainGameScene Unit Tests', () => {
   let scene: MainGameScene;
@@ -37,8 +38,11 @@ describe('MainGameScene Unit Tests', () => {
     };
 
     mockSprite = {
+      visible: true,
       setPosition: vi.fn(),
-      setVisible: vi.fn(),
+      setVisible: vi.fn((v: boolean) => {
+        mockSprite.visible = v;
+      }),
       setTexture: vi.fn(),
       setOrigin: vi.fn().mockReturnThis(),
       setAlpha: vi.fn(),
@@ -84,7 +88,14 @@ describe('MainGameScene Unit Tests', () => {
 
     (scene as any).add = {
       graphics: vi.fn().mockReturnValue(mockGraphics),
-      sprite: vi.fn().mockReturnValue(mockSprite),
+      sprite: vi.fn().mockImplementation(() => {
+        const sp = { ...mockSprite, visible: true };
+        sp.setVisible = vi.fn((v: boolean) => {
+          sp.visible = v;
+          return sp;
+        });
+        return sp;
+      }),
       text: vi.fn().mockReturnValue(mockText),
       tileSprite: vi.fn().mockReturnValue(mockSprite),
     };
@@ -189,6 +200,55 @@ describe('MainGameScene Unit Tests', () => {
     (scene as any).renderMazeGraphics(3);
     expect(mockSprite.setTexture).toHaveBeenCalledWith('rallyx:border_theme_3');
     expect(mockGraphics.fillRect).toHaveBeenCalled();
+  });
+
+  it('should retain collected flags across player death and respawn in the same round', () => {
+    scene.create();
+    const config = (scene as any).gameState.getCurrentLevelConfig();
+    const firstFlag = config.flags[0];
+    const flagKey = `flag_${firstFlag.col}_${firstFlag.row}`;
+
+    // Verify initial flag is in flagSprites
+    expect((scene as any).flagSprites.has(flagKey)).toBe(true);
+
+    // Simulate player collecting first flag
+    (scene as any).playerCol = firstFlag.col + RALLYX_BORDER_WIDTH;
+    (scene as any).playerRow = firstFlag.row + RALLYX_BORDER_WIDTH;
+    (scene as any).checkCollisions();
+
+    // Verify flag is recorded as collected and hidden
+    expect((scene as any).collectedFlagKeys.has(flagKey)).toBe(true);
+    expect((scene as any).gameState.getFlagsCollected()).toBe(1);
+
+    // Simulate player death and respawn
+    (scene as any).gameState.handlePlayerDeath();
+    (scene as any).gameState.resetAfterDeath();
+    (scene as any).resetLevelEntities();
+
+    // Flag should NOT be re-spawned into flagSprites!
+    expect((scene as any).flagSprites.has(flagKey)).toBe(false);
+    expect((scene as any).collectedFlagKeys.has(flagKey)).toBe(true);
+    expect((scene as any).gameState.getFlagsCollected()).toBe(1);
+  });
+
+  it('should configure HUD with playfield-centered status text and vertically centered radar', () => {
+    scene.create();
+
+    // Status banner centered in 480x480 playfield
+    const statusBanner = (scene as any).statusBannerText;
+    expect(statusBanner.setOrigin).toHaveBeenCalledWith(0.5, 0.5);
+
+    // Score & Round right-aligned at x = 632
+    const scoreText = (scene as any).scoreText;
+    expect(scoreText.setOrigin).toHaveBeenCalledWith(1, 0);
+    const roundText = (scene as any).roundText;
+    expect(roundText.setOrigin).toHaveBeenCalledWith(1, 0);
+
+    // Radar rendering vertically centered at y = 100
+    mockGraphics.fillRect.mockClear();
+    (scene as any).renderRadar();
+    // Radar background drawn at (480, 100, 160, 280)
+    expect(mockGraphics.fillRect).toHaveBeenCalledWith(480, 100, 160, 280);
   });
 
   it('should perform comprehensive teardown cleanup safely', () => {

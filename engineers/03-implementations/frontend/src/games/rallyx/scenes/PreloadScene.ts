@@ -863,11 +863,11 @@ export class PreloadScene extends Phaser.Scene {
       ctx.fill();
     });
 
-    // 9. HUD Life Mini Car Icon (rallyx:hud_life) - Reuses Blue F1 Player Car scaled down (no more oil barrel!)
-    createProceduralTexture('rallyx:hud_life', 24, 24, (ctx) => {
+    // 9. HUD Life Mini Car Icon (rallyx:hud_life) - Reuses Blue F1 Player Car scaled up for clear visibility
+    createProceduralTexture('rallyx:hud_life', 30, 30, (ctx) => {
       ctx.save();
-      ctx.translate(12, 12);
-      ctx.scale(0.55, 0.55);
+      ctx.translate(15, 15);
+      ctx.scale(0.72, 0.72);
       renderFormulaCarUp(ctx, true);
       ctx.restore();
     });
