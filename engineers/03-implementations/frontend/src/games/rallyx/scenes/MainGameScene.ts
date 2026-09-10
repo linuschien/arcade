@@ -413,8 +413,16 @@ export class MainGameScene extends BaseArcadeScene {
     this.mazeGraphics.fillStyle(ROAD_COLOR, 1);
     this.mazeGraphics.fillRect(innerX, innerY, innerW, innerH);
 
-    // 2. Render inner maze walls with rounded corners (32x56 inner grid)
-    const cornerR = 12;
+    // 2. Render inner maze walls with convex & concave rounded corners (32x56 inner grid)
+    const cornerR = 12; // Outer convex corner radius
+    const innerR = 8;   // Inner concave corner radius
+
+    const isWallAt = (r: number, c: number): boolean => {
+      if (r < 0 || r >= RALLYX_TOTAL_ROWS || c < 0 || c >= RALLYX_TOTAL_COLS) return false;
+      return this.tileMatrix[r][c] === RallyXTileType.WALL;
+    };
+
+    // Pass 1: Solid wall fills, straight segments (with inner corner alignment), and outer convex arcs
     for (let r = RALLYX_BORDER_WIDTH; r < RALLYX_TOTAL_ROWS - RALLYX_BORDER_WIDTH; r++) {
       for (let c = RALLYX_BORDER_WIDTH; c < RALLYX_TOTAL_COLS - RALLYX_BORDER_WIDTH; c++) {
         const tile = this.tileMatrix[r][c];
@@ -423,12 +431,12 @@ export class MainGameScene extends BaseArcadeScene {
         const x = c * RALLYX_TILE_SIZE;
         const y = r * RALLYX_TILE_SIZE;
 
-        const isTopWall = r > 0 && this.tileMatrix[r - 1][c] === RallyXTileType.WALL;
-        const isBottomWall = r < RALLYX_TOTAL_ROWS - 1 && this.tileMatrix[r + 1][c] === RallyXTileType.WALL;
-        const isLeftWall = c > 0 && this.tileMatrix[r][c - 1] === RallyXTileType.WALL;
-        const isRightWall = c < RALLYX_TOTAL_COLS - 1 && this.tileMatrix[r][c + 1] === RallyXTileType.WALL;
+        const isTopWall = isWallAt(r - 1, c);
+        const isBottomWall = isWallAt(r + 1, c);
+        const isLeftWall = isWallAt(r, c - 1);
+        const isRightWall = isWallAt(r, c + 1);
 
-        // Exterior corner radii
+        // Exterior convex corner radii
         const tl = !isTopWall && !isLeftWall ? cornerR : 0;
         const tr = !isTopWall && !isRightWall ? cornerR : 0;
         const bl = !isBottomWall && !isLeftWall ? cornerR : 0;
@@ -445,21 +453,52 @@ export class MainGameScene extends BaseArcadeScene {
         // Outer perimeter outline with rounded corners
         this.mazeGraphics.lineStyle(4, outlineColor, 1);
 
-        // Straight segments
+        // Straight segments with seamless inner corner alignment:
+        // Top edge:
         if (!isTopWall) {
-          this.mazeGraphics.lineBetween(x + tl, y + 2, x + RALLYX_TILE_SIZE - tr, y + 2);
-        }
-        if (!isBottomWall) {
-          this.mazeGraphics.lineBetween(x + bl, y + RALLYX_TILE_SIZE - 2, x + RALLYX_TILE_SIZE - br, y + RALLYX_TILE_SIZE - 2);
-        }
-        if (!isLeftWall) {
-          this.mazeGraphics.lineBetween(x + 2, y + tl, x + 2, y + RALLYX_TILE_SIZE - bl);
-        }
-        if (!isRightWall) {
-          this.mazeGraphics.lineBetween(x + RALLYX_TILE_SIZE - 2, y + tr, x + RALLYX_TILE_SIZE - 2, y + RALLYX_TILE_SIZE - br);
+          const startX = !isLeftWall
+            ? x + tl
+            : (isWallAt(r - 1, c - 1) ? x + innerR : x);
+          const endX = !isRightWall
+            ? x + RALLYX_TILE_SIZE - tr
+            : (isWallAt(r - 1, c + 1) ? x + RALLYX_TILE_SIZE - innerR : x + RALLYX_TILE_SIZE);
+          this.mazeGraphics.lineBetween(startX, y + 2, endX, y + 2);
         }
 
-        // Rounded corner arcs
+        // Bottom edge:
+        if (!isBottomWall) {
+          const startX = !isLeftWall
+            ? x + bl
+            : (isWallAt(r + 1, c - 1) ? x + innerR : x);
+          const endX = !isRightWall
+            ? x + RALLYX_TILE_SIZE - br
+            : (isWallAt(r + 1, c + 1) ? x + RALLYX_TILE_SIZE - innerR : x + RALLYX_TILE_SIZE);
+          this.mazeGraphics.lineBetween(startX, y + RALLYX_TILE_SIZE - 2, endX, y + RALLYX_TILE_SIZE - 2);
+        }
+
+        // Left edge:
+        if (!isLeftWall) {
+          const startY = !isTopWall
+            ? y + tl
+            : (isWallAt(r - 1, c - 1) ? y + innerR : y);
+          const endY = !isBottomWall
+            ? y + RALLYX_TILE_SIZE - bl
+            : (isWallAt(r + 1, c - 1) ? y + RALLYX_TILE_SIZE - innerR : y + RALLYX_TILE_SIZE);
+          this.mazeGraphics.lineBetween(x + 2, startY, x + 2, endY);
+        }
+
+        // Right edge:
+        if (!isRightWall) {
+          const startY = !isTopWall
+            ? y + tr
+            : (isWallAt(r - 1, c + 1) ? y + innerR : y);
+          const endY = !isBottomWall
+            ? y + RALLYX_TILE_SIZE - br
+            : (isWallAt(r + 1, c + 1) ? y + RALLYX_TILE_SIZE - innerR : y + RALLYX_TILE_SIZE);
+          this.mazeGraphics.lineBetween(x + RALLYX_TILE_SIZE - 2, startY, x + RALLYX_TILE_SIZE - 2, endY);
+        }
+
+        // Exterior convex corner arcs
         const arcR = cornerR - 2;
         if (tl && typeof (this.mazeGraphics as any).beginPath === 'function' && typeof (this.mazeGraphics as any).arc === 'function') {
           (this.mazeGraphics as any).beginPath();
@@ -487,6 +526,112 @@ export class MainGameScene extends BaseArcadeScene {
           (this.mazeGraphics as any).arc(x + cornerR, y + RALLYX_TILE_SIZE - cornerR, arcR, Math.PI * 0.5, Math.PI);
           if (typeof (this.mazeGraphics as any).strokePath === 'function') {
             (this.mazeGraphics as any).strokePath();
+          }
+        }
+      }
+    }
+
+    // Pass 2: Inner concave fillet corner fills and outline arcs (where 3 walls meet 1 road at vertex)
+    const arcInnerR = innerR + 2;
+    for (let r = RALLYX_BORDER_WIDTH; r <= RALLYX_TOTAL_ROWS - RALLYX_BORDER_WIDTH; r++) {
+      for (let c = RALLYX_BORDER_WIDTH; c <= RALLYX_TOTAL_COLS - RALLYX_BORDER_WIDTH; c++) {
+        const wTL = isWallAt(r - 1, c - 1);
+        const wTR = isWallAt(r - 1, c);
+        const wBL = isWallAt(r, c - 1);
+        const wBR = isWallAt(r, c);
+
+        const wallCount = (wTL ? 1 : 0) + (wTR ? 1 : 0) + (wBL ? 1 : 0) + (wBR ? 1 : 0);
+        if (wallCount !== 3) continue;
+
+        const vx = c * RALLYX_TILE_SIZE;
+        const vy = r * RALLYX_TILE_SIZE;
+
+        // Case 1: Road is Bottom-Right (wBR is false)
+        if (!wBR && wTL && wTR && wBL) {
+          this.mazeGraphics.fillStyle(wallColor, 1);
+          if (typeof (this.mazeGraphics as any).beginPath === 'function') {
+            (this.mazeGraphics as any).beginPath();
+            (this.mazeGraphics as any).moveTo(vx, vy);
+            (this.mazeGraphics as any).lineTo(vx + innerR, vy);
+            (this.mazeGraphics as any).arc(vx + innerR, vy + innerR, innerR, Math.PI * 1.5, Math.PI, true);
+            (this.mazeGraphics as any).closePath();
+            if (typeof (this.mazeGraphics as any).fillPath === 'function') {
+              (this.mazeGraphics as any).fillPath();
+            }
+          }
+          this.mazeGraphics.lineStyle(4, outlineColor, 1);
+          if (typeof (this.mazeGraphics as any).beginPath === 'function' && typeof (this.mazeGraphics as any).arc === 'function') {
+            (this.mazeGraphics as any).beginPath();
+            (this.mazeGraphics as any).arc(vx + innerR, vy + innerR, arcInnerR, Math.PI, Math.PI * 1.5);
+            if (typeof (this.mazeGraphics as any).strokePath === 'function') {
+              (this.mazeGraphics as any).strokePath();
+            }
+          }
+        }
+        // Case 2: Road is Bottom-Left (wBL is false)
+        else if (!wBL && wTL && wTR && wBR) {
+          this.mazeGraphics.fillStyle(wallColor, 1);
+          if (typeof (this.mazeGraphics as any).beginPath === 'function') {
+            (this.mazeGraphics as any).beginPath();
+            (this.mazeGraphics as any).moveTo(vx, vy);
+            (this.mazeGraphics as any).lineTo(vx - innerR, vy);
+            (this.mazeGraphics as any).arc(vx - innerR, vy + innerR, innerR, Math.PI * 1.5, Math.PI * 2, false);
+            (this.mazeGraphics as any).closePath();
+            if (typeof (this.mazeGraphics as any).fillPath === 'function') {
+              (this.mazeGraphics as any).fillPath();
+            }
+          }
+          this.mazeGraphics.lineStyle(4, outlineColor, 1);
+          if (typeof (this.mazeGraphics as any).beginPath === 'function' && typeof (this.mazeGraphics as any).arc === 'function') {
+            (this.mazeGraphics as any).beginPath();
+            (this.mazeGraphics as any).arc(vx - innerR, vy + innerR, arcInnerR, Math.PI * 1.5, Math.PI * 2);
+            if (typeof (this.mazeGraphics as any).strokePath === 'function') {
+              (this.mazeGraphics as any).strokePath();
+            }
+          }
+        }
+        // Case 3: Road is Top-Right (wTR is false)
+        else if (!wTR && wTL && wBL && wBR) {
+          this.mazeGraphics.fillStyle(wallColor, 1);
+          if (typeof (this.mazeGraphics as any).beginPath === 'function') {
+            (this.mazeGraphics as any).beginPath();
+            (this.mazeGraphics as any).moveTo(vx, vy);
+            (this.mazeGraphics as any).lineTo(vx + innerR, vy);
+            (this.mazeGraphics as any).arc(vx + innerR, vy - innerR, innerR, Math.PI * 0.5, Math.PI, false);
+            (this.mazeGraphics as any).closePath();
+            if (typeof (this.mazeGraphics as any).fillPath === 'function') {
+              (this.mazeGraphics as any).fillPath();
+            }
+          }
+          this.mazeGraphics.lineStyle(4, outlineColor, 1);
+          if (typeof (this.mazeGraphics as any).beginPath === 'function' && typeof (this.mazeGraphics as any).arc === 'function') {
+            (this.mazeGraphics as any).beginPath();
+            (this.mazeGraphics as any).arc(vx + innerR, vy - innerR, arcInnerR, Math.PI * 0.5, Math.PI);
+            if (typeof (this.mazeGraphics as any).strokePath === 'function') {
+              (this.mazeGraphics as any).strokePath();
+            }
+          }
+        }
+        // Case 4: Road is Top-Left (wTL is false)
+        else if (!wTL && wTR && wBL && wBR) {
+          this.mazeGraphics.fillStyle(wallColor, 1);
+          if (typeof (this.mazeGraphics as any).beginPath === 'function') {
+            (this.mazeGraphics as any).beginPath();
+            (this.mazeGraphics as any).moveTo(vx, vy);
+            (this.mazeGraphics as any).lineTo(vx - innerR, vy);
+            (this.mazeGraphics as any).arc(vx - innerR, vy - innerR, innerR, Math.PI * 0.5, 0, true);
+            (this.mazeGraphics as any).closePath();
+            if (typeof (this.mazeGraphics as any).fillPath === 'function') {
+              (this.mazeGraphics as any).fillPath();
+            }
+          }
+          this.mazeGraphics.lineStyle(4, outlineColor, 1);
+          if (typeof (this.mazeGraphics as any).beginPath === 'function' && typeof (this.mazeGraphics as any).arc === 'function') {
+            (this.mazeGraphics as any).beginPath();
+            (this.mazeGraphics as any).arc(vx - innerR, vy - innerR, arcInnerR, 0, Math.PI * 0.5);
+            if (typeof (this.mazeGraphics as any).strokePath === 'function') {
+              (this.mazeGraphics as any).strokePath();
+            }
           }
         }
       }
