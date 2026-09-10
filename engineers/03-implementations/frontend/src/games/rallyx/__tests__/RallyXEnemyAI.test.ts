@@ -4,6 +4,9 @@ import {
   EnemyState,
   ENEMY_SPIN_OUT_DURATION_SEC,
   ENEMY_BUMP_DURATION_SEC,
+  ENEMY_CORNER_DELAY_SEC,
+  normalizeAngleDeg,
+  lerpAngleDeg,
 } from '../logic/RallyXEnemyAI';
 import {
   Direction,
@@ -276,6 +279,51 @@ describe('RallyXEnemyAI Unit Tests', () => {
       expect(hit2.length).toBe(1);
       expect(enemy.state).toBe(EnemyState.SPIN_OUT);
       expect(enemy.lastHitSmokePuffId).toBe('puff_2');
+    });
+  });
+
+  describe('Dynamic Cornering & Visual Angle Interpolation (Scheme B & C)', () => {
+    it('should correctly normalize angles into [0, 360) range', () => {
+      expect(normalizeAngleDeg(0)).toBe(0);
+      expect(normalizeAngleDeg(360)).toBe(0);
+      expect(normalizeAngleDeg(450)).toBe(90);
+      expect(normalizeAngleDeg(-90)).toBe(270);
+    });
+
+    it('should compute shortest arc interpolation between angles', () => {
+      // UP (0) -> RIGHT (90) at 50%
+      expect(lerpAngleDeg(0, 90, 0.5)).toBeCloseTo(45, 1);
+      // UP (0) -> LEFT (270) at 50% (should take shortest counter-clockwise path: -45 -> 315)
+      expect(lerpAngleDeg(0, 270, 0.5)).toBeCloseTo(315, 1);
+      // LEFT (270) -> UP (0) at 50% (should take shortest clockwise path: +45 -> 315)
+      expect(lerpAngleDeg(270, 0, 0.5)).toBeCloseTo(315, 1);
+      // UP (0) -> DOWN (180) at 50% (180° flip halfway)
+      expect(lerpAngleDeg(0, 180, 0.5)).toBeCloseTo(90, 1);
+    });
+
+    it('should smoothly interpolate enemy visualAngleDeg during corner delay', () => {
+      const spawns = [{ col: 10, row: 10 }];
+      const enemies = RallyXEnemyAI.createEnemies(spawns, false);
+      const enemy = enemies[0];
+      enemy.direction = Direction.UP;
+      enemy.visualAngleDeg = 0;
+      enemy.turnStartAngleDeg = 0;
+      enemy.turnTargetAngleDeg = 90;
+      enemy.cornerDelayTimerSec = ENEMY_CORNER_DELAY_SEC; // 0.06s
+
+      // Advance by 0.03s (halfway through corner delay)
+      const mockMatrix: RallyXTileType[][] = Array.from({ length: 20 }, () =>
+        Array(20).fill(RallyXTileType.EMPTY)
+      );
+      RallyXEnemyAI.updateEnemy(enemy, mockMatrix, 15, 10, Direction.RIGHT, 130, 0.03);
+
+      expect(enemy.cornerDelayTimerSec).toBeCloseTo(0.03, 2);
+      expect(enemy.visualAngleDeg).toBeCloseTo(45, 1);
+
+      // Advance remaining 0.03s
+      RallyXEnemyAI.updateEnemy(enemy, mockMatrix, 15, 10, Direction.RIGHT, 130, 0.03);
+      expect(enemy.cornerDelayTimerSec).toBe(0);
+      expect(enemy.visualAngleDeg).toBeCloseTo(90, 1);
     });
   });
 });

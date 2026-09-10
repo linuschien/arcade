@@ -37,6 +37,8 @@ import {
   RallyXEnemyAI,
   EnemyCar,
   EnemyState,
+  DIRECTION_ANGLES,
+  lerpAngleDeg,
 } from '../logic/RallyXEnemyAI';
 import { RallyXAudioService } from '../audio/RallyXAudioService';
 import { getDynamicResolution } from '@/core/phaser/init-high-dpi';
@@ -66,6 +68,13 @@ export class MainGameScene extends BaseArcadeScene {
   private playerRow: number = 0;
   private currentDirection: Direction = Direction.UP;
   private bufferedDirection: Direction = Direction.NONE;
+
+  // Player Dynamic Turning Animation (Scheme B & C)
+  private playerVisualAngleDeg: number = 0;
+  private playerTurnStartAngleDeg: number = 0;
+  private playerTurnTargetAngleDeg: number = 0;
+  private playerTurnTimerSec: number = 0;
+  private playerTurnDurationSec: number = 0.06;
 
   // Enemies
   private enemies: EnemyCar[] = [];
@@ -318,9 +327,14 @@ export class MainGameScene extends BaseArcadeScene {
     this.playerY = (this.playerRow + 0.5) * RALLYX_TILE_SIZE;
     this.currentDirection = Direction.UP;
     this.bufferedDirection = Direction.NONE;
+    this.playerVisualAngleDeg = 0;
+    this.playerTurnStartAngleDeg = 0;
+    this.playerTurnTargetAngleDeg = 0;
+    this.playerTurnTimerSec = 0;
 
     this.playerSprite.setPosition(this.playerX, this.playerY);
     this.playerSprite.setTexture('rallyx:player_up');
+    this.playerSprite.setAngle(0);
     this.playerSprite.setVisible(true);
     if (this.cameras?.main) {
       this.cameras.main.scrollX = this.playerX - 240;
@@ -338,10 +352,9 @@ export class MainGameScene extends BaseArcadeScene {
     );
 
     this.enemies.forEach((enemy) => {
-      const dirKey = `rallyx:enemy_${enemy.direction.toLowerCase()}`;
-      const tex = this.textures.exists(dirKey) ? dirKey : 'rallyx:enemy_up';
-      const enemySprite = this.add.sprite(enemy.x, enemy.y, tex);
+      const enemySprite = this.add.sprite(enemy.x, enemy.y, 'rallyx:enemy_up');
       enemySprite.setOrigin(0.5, 0.5);
+      enemySprite.setAngle(enemy.visualAngleDeg);
       enemySprite.setDepth(4);
       this.enemySprites.set(enemy.id, enemySprite);
     });
@@ -575,14 +588,23 @@ export class MainGameScene extends BaseArcadeScene {
     }
   }
 
+  private startPlayerTurn(newDir: Direction, durationSec: number): void {
+    if (newDir === Direction.NONE || newDir === this.currentDirection) return;
+    this.playerTurnStartAngleDeg = this.playerVisualAngleDeg;
+    this.playerTurnTargetAngleDeg = DIRECTION_ANGLES[newDir];
+    this.playerTurnDurationSec = durationSec;
+    this.playerTurnTimerSec = durationSec;
+  }
+
   private setRequestedDirection(dir: Direction): void {
     if (dir === this.currentDirection) {
       this.bufferedDirection = Direction.NONE;
       return;
     }
 
-    // US-06-01 AC3: Instant 180° U-turn on opposite input
+    // US-06-01 AC3: Instant 180° U-turn on opposite input (Scheme C: 0.08s 180° rapid U-turn flip)
     if (OPPOSITE_DIRECTIONS[this.currentDirection] === dir) {
+      this.startPlayerTurn(dir, 0.08);
       this.currentDirection = dir;
       this.bufferedDirection = Direction.NONE;
       this.updatePlayerSpriteTexture();
@@ -606,7 +628,7 @@ export class MainGameScene extends BaseArcadeScene {
 
     const distToCenter = Math.hypot(this.playerX - centerTileX, this.playerY - centerTileY);
 
-    // Check if within snap radius to execute buffered 90° turn
+    // Check if within snap radius to execute buffered 90° turn (Scheme B: 0.06s 90° cornering lerp)
     if (
       this.bufferedDirection !== Direction.NONE &&
       this.bufferedDirection !== this.currentDirection &&
@@ -618,6 +640,7 @@ export class MainGameScene extends BaseArcadeScene {
       if (!isRallyXWall(this.tileMatrix, nextC, nextR)) {
         this.playerX = centerTileX;
         this.playerY = centerTileY;
+        this.startPlayerTurn(this.bufferedDirection, 0.06);
         this.currentDirection = this.bufferedDirection;
         this.bufferedDirection = Direction.NONE;
         this.updatePlayerSpriteTexture();
@@ -647,13 +670,18 @@ export class MainGameScene extends BaseArcadeScene {
         const ccwV = DIRECTION_VECTORS[ccw];
         const opp = OPPOSITE_DIRECTIONS[this.currentDirection];
 
+        let newDir = Direction.NONE;
         if (!isRallyXWall(this.tileMatrix, this.playerCol + cwV.col, this.playerRow + cwV.row)) {
-          this.currentDirection = cw;
+          newDir = cw;
         } else if (!isRallyXWall(this.tileMatrix, this.playerCol + ccwV.col, this.playerRow + ccwV.row)) {
-          this.currentDirection = ccw;
+          newDir = ccw;
         } else {
           // Dead end: automatic 180° U-turn!
-          this.currentDirection = opp;
+          newDir = opp;
+        }
+        if (newDir !== Direction.NONE) {
+          this.startPlayerTurn(newDir, newDir === opp ? 0.08 : 0.06);
+          this.currentDirection = newDir;
         }
         this.updatePlayerSpriteTexture();
       }
@@ -668,17 +696,27 @@ export class MainGameScene extends BaseArcadeScene {
     this.playerRow = Math.floor(this.playerY / RALLYX_TILE_SIZE);
 
     this.playerSprite.setPosition(this.playerX, this.playerY);
+
+    // Dynamic visual turning interpolation (Scheme B & C)
+    if (this.playerTurnTimerSec > 0) {
+      this.playerTurnTimerSec = Math.max(0, this.playerTurnTimerSec - deltaSec);
+      const progress = 1.0 - (this.playerTurnTimerSec / this.playerTurnDurationSec);
+      this.playerVisualAngleDeg = lerpAngleDeg(
+        this.playerTurnStartAngleDeg,
+        this.playerTurnTargetAngleDeg,
+        progress
+      );
+    } else {
+      this.playerVisualAngleDeg = DIRECTION_ANGLES[this.currentDirection];
+    }
+    this.playerSprite.setAngle(this.playerVisualAngleDeg);
   }
 
   private updatePlayerSpriteTexture(): void {
-    const dirMap: Record<Direction, string> = {
-      [Direction.UP]: 'rallyx:player_up',
-      [Direction.DOWN]: 'rallyx:player_down',
-      [Direction.LEFT]: 'rallyx:player_left',
-      [Direction.RIGHT]: 'rallyx:player_right',
-      [Direction.NONE]: 'rallyx:player_up',
-    };
-    this.playerSprite.setTexture(dirMap[this.currentDirection]);
+    if (this.playerSprite && this.playerSprite.active) {
+      this.playerSprite.setTexture('rallyx:player_up');
+      this.playerSprite.setAngle(this.playerVisualAngleDeg);
+    }
   }
 
   private queueSmokePuffsSequence(x: number, y: number): void {
@@ -746,11 +784,7 @@ export class MainGameScene extends BaseArcadeScene {
         if (enemy.state === EnemyState.SPIN_OUT) {
           sp.setAngle(enemy.spinAngleDeg);
         } else {
-          sp.setAngle(0);
-          const dirKey = `rallyx:enemy_${enemy.direction.toLowerCase()}`;
-          if (this.textures.exists(dirKey)) {
-            sp.setTexture(dirKey);
-          }
+          sp.setAngle(enemy.visualAngleDeg);
         }
       }
     });
@@ -833,6 +867,10 @@ export class MainGameScene extends BaseArcadeScene {
     RallyXAudioService.playCrash();
 
     const isGameOver = this.gameState.handlePlayerDeath();
+
+    if (this.playerSprite && this.playerSprite.active) {
+      this.playerSprite.setAngle(0);
+    }
 
     // Multi-stage animated arcade explosion (Starburst -> Fireball & Shrapnel -> Smoke & Fire -> Dissipating Embers)
     const crashFrames = ['rallyx:crash_0', 'rallyx:crash_1', 'rallyx:crash_2', 'rallyx:crash_3'];

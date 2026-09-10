@@ -251,6 +251,24 @@ describe('MainGameScene Unit Tests', () => {
     expect(mockGraphics.fillRect).toHaveBeenCalledWith(480, 100, 160, 280);
   });
 
+  it('should dynamically interpolate player visual angle on 180° reversal (Scheme C) and 90° cornering (Scheme B)', () => {
+    scene.create();
+    const playerSprite = (scene as any).playerSprite;
+
+    // 1. Trigger 180° reversal from UP to DOWN (Scheme C: 0.08s)
+    InputService.setActionState(PlayerIndex.P1, ArcadeAction.DOWN, true);
+    scene.update(100, 16.6); // 1st frame (~0.0166s out of 0.08s)
+    expect((scene as any).currentDirection).toBe('DOWN');
+    expect(playerSprite.setAngle).toHaveBeenCalled();
+    const angle1 = (scene as any).playerVisualAngleDeg;
+    expect(angle1).toBeGreaterThan(0);
+    expect(angle1).toBeLessThan(180);
+
+    // Advance past 0.08s: reaches target 180°
+    scene.update(200, 80);
+    expect((scene as any).playerVisualAngleDeg).toBe(180);
+  });
+
   it('should perform comprehensive teardown cleanup safely', () => {
     scene.create();
     (scene as any).handleTeardown();

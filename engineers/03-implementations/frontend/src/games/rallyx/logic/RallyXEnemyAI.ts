@@ -43,6 +43,31 @@ export interface EnemyCar {
   rockCooldownTimerSec: number;
   bumpCooldownTimerSec: number;
   lastHitSmokePuffId: string | null;
+  // Dynamic visual cornering orientation (Scheme B & C)
+  visualAngleDeg: number;
+  turnStartAngleDeg: number;
+  turnTargetAngleDeg: number;
+}
+
+export const DIRECTION_ANGLES: Record<Direction, number> = {
+  [Direction.UP]: 0,
+  [Direction.RIGHT]: 90,
+  [Direction.DOWN]: 180,
+  [Direction.LEFT]: 270,
+  [Direction.NONE]: 0,
+};
+
+export function normalizeAngleDeg(angle: number): number {
+  return ((angle % 360) + 360) % 360;
+}
+
+export function lerpAngleDeg(current: number, target: number, t: number): number {
+  const normCurrent = normalizeAngleDeg(current);
+  const normTarget = normalizeAngleDeg(target);
+  let diff = (normTarget - normCurrent) % 360;
+  if (diff < -180) diff += 360;
+  if (diff > 180) diff -= 360;
+  return normalizeAngleDeg(normCurrent + diff * Math.min(1.0, Math.max(0.0, t)));
 }
 
 export const ENEMY_SPIN_OUT_DURATION_SEC = 2.0; // 2.0s spin-out on smoke or rocks
@@ -63,7 +88,8 @@ export class RallyXEnemyAI {
     return spawns.map((spawn, index) => {
       const col = spawn.col + borderOffset;
       const row = spawn.row + borderOffset;
-      const initialDirection = spawn.row <= 10 ? Direction.DOWN : Direction.UP;
+      const initialDirection = spawn.row <= 5 ? Direction.DOWN : Direction.UP;
+      const initialAngle = DIRECTION_ANGLES[initialDirection];
       return {
         id: `enemy_${index}`,
         index,
@@ -81,6 +107,9 @@ export class RallyXEnemyAI {
         rockCooldownTimerSec: 0,
         bumpCooldownTimerSec: 0,
         lastHitSmokePuffId: null,
+        visualAngleDeg: initialAngle,
+        turnStartAngleDeg: initialAngle,
+        turnTargetAngleDeg: initialAngle,
       };
     });
   }
@@ -382,6 +411,7 @@ export class RallyXEnemyAI {
     if (enemy.state === EnemyState.SPIN_OUT) {
       enemy.spinOutTimerSec -= deltaSec;
       enemy.spinAngleDeg = (enemy.spinAngleDeg + 360 * deltaSec * 2) % 360; // Spin 720 deg/sec
+      enemy.visualAngleDeg = (enemy.turnStartAngleDeg + enemy.spinAngleDeg) % 360;
       if (enemy.spinOutTimerSec <= 0) {
         enemy.state = EnemyState.CHASING;
         enemy.spinOutTimerSec = 0;
@@ -418,13 +448,18 @@ export class RallyXEnemyAI {
             }
           }
         }
+        enemy.visualAngleDeg = DIRECTION_ANGLES[enemy.direction];
+        enemy.turnStartAngleDeg = enemy.visualAngleDeg;
+        enemy.turnTargetAngleDeg = enemy.visualAngleDeg;
       }
       return;
     }
 
-    // Cornering delay check
+    // Cornering delay check (Dynamic Cornering Lerp - Scheme B)
     if (enemy.cornerDelayTimerSec > 0) {
-      enemy.cornerDelayTimerSec -= deltaSec;
+      enemy.cornerDelayTimerSec = Math.max(0, enemy.cornerDelayTimerSec - deltaSec);
+      const progress = 1.0 - (enemy.cornerDelayTimerSec / ENEMY_CORNER_DELAY_SEC);
+      enemy.visualAngleDeg = lerpAngleDeg(enemy.turnStartAngleDeg, enemy.turnTargetAngleDeg, progress);
       return;
     }
 
@@ -476,9 +511,12 @@ export class RallyXEnemyAI {
         if (nextDir !== enemy.direction) {
           // Incur micro corner delay when turning (stays at center during corner delay)
           enemy.cornerDelayTimerSec = ENEMY_CORNER_DELAY_SEC;
+          enemy.turnStartAngleDeg = enemy.visualAngleDeg;
+          enemy.turnTargetAngleDeg = DIRECTION_ANGLES[nextDir];
           enemy.direction = nextDir;
         } else {
           enemy.direction = nextDir;
+          enemy.visualAngleDeg = DIRECTION_ANGLES[enemy.direction];
           // Continue moving remaining distance along current straight direction
           const remDist = (enemy.direction === Direction.UP || enemy.direction === Direction.DOWN)
             ? Math.abs(newY - centerTileY)
@@ -491,6 +529,7 @@ export class RallyXEnemyAI {
     } else {
       enemy.x = newX;
       enemy.y = newY;
+      enemy.visualAngleDeg = DIRECTION_ANGLES[enemy.direction];
     }
 
     // Update coordinates and grid position
@@ -532,6 +571,7 @@ export class RallyXEnemyAI {
           enemy.state = EnemyState.SPIN_OUT;
           enemy.spinOutTimerSec = ENEMY_SPIN_OUT_DURATION_SEC;
           enemy.spinAngleDeg = 0;
+          enemy.turnStartAngleDeg = enemy.visualAngleDeg;
           enemy.lastHitSmokePuffId = puffId;
           affected.push(enemy);
           break;
@@ -591,6 +631,7 @@ export class RallyXEnemyAI {
           enemy.lastHitRockPos = { col: rockCol, row: rockRow };
           enemy.rockCooldownTimerSec = ENEMY_SPIN_OUT_DURATION_SEC + ENEMY_ROCK_GRACE_SEC;
           enemy.spinAngleDeg = 0;
+          enemy.turnStartAngleDeg = enemy.visualAngleDeg;
           affected.push(enemy);
           break;
         }
@@ -622,11 +663,13 @@ export class RallyXEnemyAI {
             a.spinOutTimerSec = ENEMY_BUMP_DURATION_SEC;
             a.bumpCooldownTimerSec = ENEMY_BUMP_DURATION_SEC + ENEMY_BUMP_GRACE_SEC;
             a.spinAngleDeg = 0;
+            a.turnStartAngleDeg = a.visualAngleDeg;
 
             b.state = EnemyState.SPIN_OUT;
             b.spinOutTimerSec = ENEMY_BUMP_DURATION_SEC;
             b.bumpCooldownTimerSec = ENEMY_BUMP_DURATION_SEC + ENEMY_BUMP_GRACE_SEC;
             b.spinAngleDeg = 0;
+            b.turnStartAngleDeg = b.visualAngleDeg;
 
             RallyXEnemyAI.divergeCarsOnBump(a, b);
 
