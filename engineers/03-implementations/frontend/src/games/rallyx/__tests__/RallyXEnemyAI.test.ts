@@ -217,19 +217,57 @@ describe('RallyXEnemyAI Unit Tests', () => {
       expect(enemies[1].state).toBe(EnemyState.CHASING);
     });
 
-    it('should route around rock obstacles in BFS pathfinding', () => {
-      // 3x3 grid:
-      // [Road] [Rock] [Target]
-      // [Road] [Road] [Road]
-      const mockMatrix: RallyXTileType[][] = [
-        [RallyXTileType.EMPTY, RallyXTileType.ROCK, RallyXTileType.EMPTY],
-        [RallyXTileType.EMPTY, RallyXTileType.EMPTY, RallyXTileType.EMPTY],
-      ];
+    it('should allow enemy to pathfind through road with rock and trigger spin-out upon contact', () => {
+      const spawns = [{ col: 10, row: 10 }];
+      const enemies = RallyXEnemyAI.createEnemies(spawns, false);
+      const enemy = enemies[0];
 
-      // Start at (0, 0), Target at (2, 0). (1, 0) has a ROCK!
-      const dir = RallyXEnemyAI.findNextBfsDirection(mockMatrix, 0, 0, 2, 0, Direction.NONE);
-      // It must route DOWN to (0, 1), not RIGHT into the ROCK!
-      expect(dir).toBe(Direction.DOWN);
+      // BFS treats roads normally: target at (10, 8), rock at (10, 9).
+      const mockMatrix: RallyXTileType[][] = Array.from({ length: 20 }, () =>
+        Array(20).fill(RallyXTileType.EMPTY)
+      );
+      mockMatrix[9][10] = RallyXTileType.ROCK;
+
+      // BFS will direct enemy UP toward target, not avoiding the rock
+      const nextDir = RallyXEnemyAI.findNextBfsDirection(mockMatrix, 10, 10, 10, 8, Direction.NONE);
+      expect(nextDir).toBe(Direction.UP);
+
+      // When driving into the rock, checkRockCollisions triggers!
+      enemy.y = 9.5 * RALLYX_TILE_SIZE;
+      const hit = RallyXEnemyAI.checkRockCollisions(enemies, [{ col: 10, row: 9 }]);
+      expect(hit.length).toBe(1);
+      expect(enemy.state).toBe(EnemyState.SPIN_OUT);
+    });
+
+    it('should allow consecutive smoke puffs to spin-out enemy without any grace time', () => {
+      const spawns = [{ col: 10, row: 10 }];
+      const enemies = RallyXEnemyAI.createEnemies(spawns, false);
+      const enemy = enemies[0];
+
+      // 1. Hit first smoke puff
+      const puff1 = { id: 'puff_1', x: enemy.x, y: enemy.y };
+      const hit1 = RallyXEnemyAI.checkSmokeCollisions(enemies, [puff1]);
+      expect(hit1.length).toBe(1);
+      expect(enemy.state).toBe(EnemyState.SPIN_OUT);
+      expect(enemy.lastHitSmokePuffId).toBe('puff_1');
+
+      // 2. Advance 2.01s so spin-out ends
+      const mockMatrix: RallyXTileType[][] = Array.from({ length: 20 }, () =>
+        Array(20).fill(RallyXTileType.EMPTY)
+      );
+      RallyXEnemyAI.updateEnemy(enemy, mockMatrix, 10, 0, Direction.UP, 130, 2.01);
+      expect(enemy.state).toBe(EnemyState.CHASING);
+
+      // Puff 1 does not re-spin while standing in it
+      const reHit1 = RallyXEnemyAI.checkSmokeCollisions(enemies, [puff1]);
+      expect(reHit1.length).toBe(0);
+
+      // 3. BUT a new puff (consecutive smoke deployed by player) IMMEDIATELY triggers spin-out with zero grace time!
+      const puff2 = { id: 'puff_2', x: enemy.x, y: enemy.y };
+      const hit2 = RallyXEnemyAI.checkSmokeCollisions(enemies, [puff1, puff2]);
+      expect(hit2.length).toBe(1);
+      expect(enemy.state).toBe(EnemyState.SPIN_OUT);
+      expect(enemy.lastHitSmokePuffId).toBe('puff_2');
     });
   });
 });

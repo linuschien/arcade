@@ -37,18 +37,18 @@ export interface EnemyCar {
   spinOutTimerSec: number;
   spinAngleDeg: number;
   cornerDelayTimerSec: number;
-  // Cooldown timers to prevent deadlock loops upon recovery
+  // Rock & bump recovery timers (Zero global smoke grace time!)
+  lastHitRockIndex: number;
   rockCooldownTimerSec: number;
   bumpCooldownTimerSec: number;
-  smokeCooldownTimerSec: number;
+  lastHitSmokePuffId: string | null;
 }
 
 export const ENEMY_SPIN_OUT_DURATION_SEC = 2.0; // 2.0s spin-out on smoke or rocks
 export const ENEMY_BUMP_DURATION_SEC = 1.0;     // 1.0s spin-out on car-to-car bumps
 export const ENEMY_CORNER_DELAY_SEC = 0.06;     // Micro-delay when taking 90° corners
-export const ENEMY_ROCK_GRACE_SEC = 2.0;        // Grace period to escape rock after spin-out
-export const ENEMY_BUMP_GRACE_SEC = 2.0;        // Grace period to diverge after car-to-car bump
-export const ENEMY_SMOKE_GRACE_SEC = 1.5;       // Grace period to accelerate out of smoke puff
+export const ENEMY_ROCK_GRACE_SEC = 1.0;        // Grace period to escape rock after spin-out
+export const ENEMY_BUMP_GRACE_SEC = 1.0;        // Grace period to diverge after car-to-car bump
 
 export class RallyXEnemyAI {
   /**
@@ -74,9 +74,10 @@ export class RallyXEnemyAI {
         spinOutTimerSec: 0,
         spinAngleDeg: 0,
         cornerDelayTimerSec: 0,
+        lastHitRockIndex: -1,
         rockCooldownTimerSec: 0,
         bumpCooldownTimerSec: 0,
-        smokeCooldownTimerSec: 0,
+        lastHitSmokePuffId: null,
       };
     });
   }
@@ -188,14 +189,14 @@ export class RallyXEnemyAI {
     // Disallowed 180° reverse unless no other choice
     const oppositeDir = OPPOSITE_DIRECTIONS[currentDir];
 
-    // Priority directions: check open adjacent tiles (avoiding walls and rocks)
+    // Priority directions: check open adjacent tiles (walls only; enemies do not have radar omniscience for rocks)
     const candidates: Direction[] = [Direction.UP, Direction.RIGHT, Direction.DOWN, Direction.LEFT];
     const availableDirs = candidates.filter((d) => {
       const v = DIRECTION_VECTORS[d];
       const nc = startCol + v.col;
       const nr = startRow + v.row;
       if (nc < 0 || nc >= maxCols || nr < 0 || nr >= maxRows) return false;
-      return !RallyXEnemyAI.isTileBlockedForEnemy(matrix, nc, nr);
+      return !isRallyXWall(matrix, nc, nr);
     });
 
     if (availableDirs.length === 0) {
@@ -247,7 +248,7 @@ export class RallyXEnemyAI {
         const nc = currCol + v.col;
         const nr = currRow + v.row;
         if (nc < 0 || nc >= maxCols || nr < 0 || nr >= maxRows) continue;
-        if (RallyXEnemyAI.isTileBlockedForEnemy(matrix, nc, nr)) continue;
+        if (isRallyXWall(matrix, nc, nr)) continue;
 
         const idx = nr * maxCols + nc;
         if (!visited[idx]) {
@@ -313,8 +314,8 @@ export class RallyXEnemyAI {
     targetCol = Math.max(0, Math.min(maxCols - 1, targetCol));
     targetRow = Math.max(0, Math.min(maxRows - 1, targetRow));
 
-    // If target lands on a wall or rock, fallback to player tile
-    if (RallyXEnemyAI.isTileBlockedForEnemy(matrix, targetCol, targetRow)) {
+    // If target lands on a wall, fallback to player tile
+    if (isRallyXWall(matrix, targetCol, targetRow)) {
       return { col: blueCol, row: blueRow };
     }
 
@@ -337,15 +338,15 @@ export class RallyXEnemyAI {
     baseSpeed: number, // Base Blue car speed (e.g. 130 px/s)
     deltaSec: number
   ): void {
-    // Decrement immunity/cooldown timers
+    // Decrement rock and bump cooldown timers
     if (enemy.rockCooldownTimerSec > 0) {
       enemy.rockCooldownTimerSec = Math.max(0, enemy.rockCooldownTimerSec - deltaSec);
+      if (enemy.rockCooldownTimerSec === 0) {
+        enemy.lastHitRockIndex = -1;
+      }
     }
     if (enemy.bumpCooldownTimerSec > 0) {
       enemy.bumpCooldownTimerSec = Math.max(0, enemy.bumpCooldownTimerSec - deltaSec);
-    }
-    if (enemy.smokeCooldownTimerSec > 0) {
-      enemy.smokeCooldownTimerSec = Math.max(0, enemy.smokeCooldownTimerSec - deltaSec);
     }
 
     // Dormant enemies in Challenging Stages do not move or calculate paths
@@ -362,19 +363,25 @@ export class RallyXEnemyAI {
         enemy.spinOutTimerSec = 0;
         enemy.spinAngleDeg = 0;
 
-        // Escape orientation: If heading into an impassable obstacle (rock/wall), turn to an open exit
-        const curV = DIRECTION_VECTORS[enemy.direction];
-        const nextCol = enemy.col + curV.col;
-        const nextRow = enemy.row + curV.row;
-        if (RallyXEnemyAI.isTileBlockedForEnemy(matrix, nextCol, nextRow)) {
-          const escapeDir = RallyXEnemyAI.findEscapeDirection(
-            matrix,
-            enemy.col,
-            enemy.row,
-            enemy.direction
-          );
-          if (escapeDir !== Direction.NONE) {
-            enemy.direction = escapeDir;
+        // If enemy was spinning out on a rock, reverse 180° away from the rock!
+        // US-06-04 AC4: "結束後轉向避開岩石繼續巡航"
+        if (enemy.lastHitRockIndex !== -1) {
+          const opp = OPPOSITE_DIRECTIONS[enemy.direction];
+          if (
+            opp !== Direction.NONE &&
+            !isRallyXWall(matrix, enemy.col + DIRECTION_VECTORS[opp].col, enemy.row + DIRECTION_VECTORS[opp].row)
+          ) {
+            enemy.direction = opp;
+          } else {
+            const escapeDir = RallyXEnemyAI.findEscapeDirection(
+              matrix,
+              enemy.col,
+              enemy.row,
+              enemy.direction
+            );
+            if (escapeDir !== Direction.NONE) {
+              enemy.direction = escapeDir;
+            }
           }
         }
       }
@@ -459,25 +466,38 @@ export class RallyXEnemyAI {
   /**
    * Checks collisions between enemy cars and active smoke puffs.
    * Puts affected enemy cars into 2.0s Spin-Out state.
-   * Protects enemy with smoke grace period to prevent immediate re-spin.
+   * ZERO global grace time: every distinct smoke puff can spin the enemy!
+   * Consecutive smoke screens will continuously stall pursuing red cars.
    */
   public static checkSmokeCollisions(
     enemies: EnemyCar[],
-    smokePuffs: readonly { x: number; y: number }[],
+    smokePuffs: readonly { id?: string; x: number; y: number }[],
     radius: number = 36
   ): EnemyCar[] {
     const affected: EnemyCar[] = [];
+    const activePuffIds = new Set(
+      smokePuffs.map((p) => p.id || `${p.x}_${p.y}`)
+    );
+
     for (const enemy of enemies) {
+      // Clear lastHitSmokePuffId if that puff has expired from the map
+      if (enemy.lastHitSmokePuffId && !activePuffIds.has(enemy.lastHitSmokePuffId)) {
+        enemy.lastHitSmokePuffId = null;
+      }
+
       if (enemy.state !== EnemyState.CHASING) continue;
-      if (enemy.smokeCooldownTimerSec > 0) continue;
 
       for (const puff of smokePuffs) {
+        const puffId = puff.id || `${puff.x}_${puff.y}`;
+        // Only skip the specific single puff instance that the enemy is currently standing in
+        if (enemy.lastHitSmokePuffId === puffId) continue;
+
         const dist = Math.hypot(enemy.x - puff.x, enemy.y - puff.y);
         if (dist <= radius) {
           enemy.state = EnemyState.SPIN_OUT;
           enemy.spinOutTimerSec = ENEMY_SPIN_OUT_DURATION_SEC;
-          enemy.smokeCooldownTimerSec = ENEMY_SPIN_OUT_DURATION_SEC + ENEMY_SMOKE_GRACE_SEC;
           enemy.spinAngleDeg = 0;
+          enemy.lastHitSmokePuffId = puffId;
           affected.push(enemy);
           break;
         }
@@ -489,7 +509,8 @@ export class RallyXEnemyAI {
   /**
    * Checks collisions between enemy cars and rock obstacles.
    * Red cars do NOT explode on rocks; they spin-out for 2.0s.
-   * Protects enemy with rock grace period to allow turning away without deadlock.
+   * Red cars can and WILL hit rocks whenever their path crosses one!
+   * Only protects the enemy from the specific rock it is actively escaping from to prevent deadlocks.
    */
   public static checkRockCollisions(
     enemies: EnemyCar[],
@@ -500,15 +521,21 @@ export class RallyXEnemyAI {
     const affected: EnemyCar[] = [];
     for (const enemy of enemies) {
       if (enemy.state !== EnemyState.CHASING) continue;
-      if (enemy.rockCooldownTimerSec > 0) continue;
 
-      for (const rock of rocks) {
+      for (let rIdx = 0; rIdx < rocks.length; rIdx++) {
+        const rock = rocks[rIdx];
+        // If enemy is currently escaping from this exact rock, skip it
+        if (enemy.lastHitRockIndex === rIdx && enemy.rockCooldownTimerSec > 0) {
+          continue;
+        }
+
         const rockX = (rock.col + borderOffset + 0.5) * RALLYX_TILE_SIZE;
         const rockY = (rock.row + borderOffset + 0.5) * RALLYX_TILE_SIZE;
         const dist = Math.hypot(enemy.x - rockX, enemy.y - rockY);
         if (dist <= radius) {
           enemy.state = EnemyState.SPIN_OUT;
           enemy.spinOutTimerSec = ENEMY_SPIN_OUT_DURATION_SEC;
+          enemy.lastHitRockIndex = rIdx;
           enemy.rockCooldownTimerSec = ENEMY_SPIN_OUT_DURATION_SEC + ENEMY_ROCK_GRACE_SEC;
           enemy.spinAngleDeg = 0;
           affected.push(enemy);
