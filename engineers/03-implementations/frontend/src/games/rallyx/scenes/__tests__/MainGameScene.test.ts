@@ -58,8 +58,16 @@ describe('MainGameScene Unit Tests', () => {
     };
 
     mockText = {
+      x: 0,
+      y: 0,
       setText: vi.fn(),
       setVisible: vi.fn(),
+      setPosition: vi.fn().mockImplementation((x: number, y: number) => {
+        mockText.x = x;
+        mockText.y = y;
+        return mockText;
+      }),
+      setAlpha: vi.fn().mockReturnThis(),
       setOrigin: vi.fn().mockReturnThis(),
       setScrollFactor: vi.fn().mockReturnThis(),
       setDepth: vi.fn().mockReturnThis(),
@@ -372,6 +380,84 @@ describe('MainGameScene Unit Tests', () => {
 
     expect(gameState.getPlayState()).toBe(RallyXPlayState.STAGE_CLEARED);
     expect((scene as any).lowFuelAlarmActive).toBe(false);
+  });
+
+  it('should spawn floating score with 400x2 format when collecting flag under 2x multiplier', () => {
+    scene.create();
+    const gameState = (scene as any).gameState;
+    gameState.setPlayState(RallyXPlayState.PLAYING);
+
+    // Collect S flag to activate 2x multiplier
+    gameState.collectFlag('SPECIAL');
+    expect(gameState.isSpecialActive()).toBe(true);
+
+    // Trigger popup on next flag
+    const flagResult = gameState.collectFlag('REGULAR');
+    expect(flagResult.multiplierApplied).toBe(true);
+    expect(flagResult.basePoints).toBe(200);
+
+    (scene as any).triggerFlagScorePopup(100, 200, flagResult);
+
+    const floatingScores = (scene as any).floatingScores;
+    expect(floatingScores.length).toBe(1);
+    expect((scene as any).add.text).toHaveBeenCalledWith(
+      100,
+      200,
+      '200×2',
+      expect.objectContaining({ color: '#facc15' })
+    );
+
+    // Advance 0.7s to finish floating score duration
+    for (let i = 0; i < 8; i++) {
+      scene.update(0, 100);
+    }
+    expect((scene as any).floatingScores.length).toBe(0);
+  });
+
+  it('should spawn SPECIAL and LUCKY formatted floating scores', () => {
+    scene.create();
+
+    // Special flag popup
+    const sResult = {
+      flagType: 'SPECIAL' as const,
+      basePoints: 300,
+      multiplierApplied: false,
+      totalPoints: 300,
+      luckyFuelBonus: 0,
+      isStageClear: false,
+      stageClearFuelBonus: 0,
+      isSpecialActivated: true,
+      isLuckyActivated: false,
+      awarded1UP: false,
+    };
+    (scene as any).triggerFlagScorePopup(100, 100, sResult);
+    expect((scene as any).add.text).toHaveBeenCalledWith(
+      100,
+      100,
+      'SPECIAL!\n300',
+      expect.objectContaining({ color: '#38bdf8' })
+    );
+
+    // Lucky flag popup with fuel bonus
+    const lResult = {
+      flagType: 'LUCKY' as const,
+      basePoints: 400,
+      multiplierApplied: true,
+      totalPoints: 800,
+      luckyFuelBonus: 650,
+      isStageClear: false,
+      stageClearFuelBonus: 0,
+      isSpecialActivated: false,
+      isLuckyActivated: true,
+      awarded1UP: false,
+    };
+    (scene as any).triggerFlagScorePopup(200, 200, lResult);
+    expect((scene as any).add.text).toHaveBeenCalledWith(
+      200,
+      200,
+      'LUCKY!\n400×2 +650',
+      expect.objectContaining({ color: '#4ade80' })
+    );
   });
 
   it('should perform comprehensive teardown cleanup safely', () => {

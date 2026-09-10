@@ -32,6 +32,7 @@ import {
   RallyXPlayState,
   MAX_FUEL,
   LUCKY_REFILL_SPEED,
+  FlagCollectResult,
 } from '../logic/RallyXGameState';
 import {
   RallyXEnemyAI,
@@ -46,6 +47,13 @@ import { getDynamicResolution } from '@/core/phaser/init-high-dpi';
 const PLAYER_BASE_SPEED = 240; // 240 pixels per second (5 tiles / sec @ 48px/tile)
 const RADAR_SCALE = 5; // 32 cols * 5 = 160px (full HUD width), 56 rows * 5 = 280px
 
+interface FloatingScoreItem {
+  textObj: Phaser.GameObjects.Text;
+  startY: number;
+  elapsedSec: number;
+  durationSec: number;
+}
+
 export class MainGameScene extends BaseArcadeScene {
   private gameState!: RallyXGameState;
   private tileMatrix!: RallyXTileType[][];
@@ -58,6 +66,7 @@ export class MainGameScene extends BaseArcadeScene {
   private collectedFlagKeys: Set<string> = new Set();
   private rockSprites: Phaser.GameObjects.Sprite[] = [];
   private smokeSprites: Map<string, Phaser.GameObjects.Sprite> = new Map();
+  private floatingScores: FloatingScoreItem[] = [];
 
   private borderTileSprites: Phaser.GameObjects.TileSprite[] = [];
 
@@ -400,6 +409,10 @@ export class MainGameScene extends BaseArcadeScene {
     this.smokeSprites.clear();
     this.pendingSmokePuffs = [];
 
+    // Clear Floating Scores
+    this.floatingScores.forEach((item) => item.textObj.destroy());
+    this.floatingScores = [];
+
     this.updateHUD();
   }
 
@@ -698,6 +711,7 @@ export class MainGameScene extends BaseArcadeScene {
     if (this.isPausedState) return;
 
     const deltaSec = Math.min(delta / 1000, 0.1); // Clamp to prevent massive physics leaps
+    this.updateFloatingScores(deltaSec);
     const playState = this.gameState.getPlayState();
 
     // 1. Lucky Refill Animation State
@@ -1043,6 +1057,11 @@ export class MainGameScene extends BaseArcadeScene {
         flagSprite.setVisible(false);
         const result = this.gameState.collectFlag(flagSpec.type);
 
+        // Spawn floating score popup at flag position
+        const fx = (flagSpec.col + RALLYX_BORDER_WIDTH + 0.5) * RALLYX_TILE_SIZE;
+        const fy = (flagSpec.row + RALLYX_BORDER_WIDTH + 0.5) * RALLYX_TILE_SIZE;
+        this.triggerFlagScorePopup(fx, fy, result);
+
         if (result.awarded1UP) {
           RallyXAudioService.playExtraLife();
         }
@@ -1310,6 +1329,78 @@ export class MainGameScene extends BaseArcadeScene {
     }
   }
 
+  private triggerFlagScorePopup(x: number, y: number, result: FlagCollectResult): void {
+    let text = '';
+    let color = '#ffffff';
+
+    if (result.isSpecialActivated) {
+      // Special "S" Flag: Activate 2X
+      text = `SPECIAL!\n${result.basePoints}`;
+      color = '#38bdf8';
+    } else if (result.isLuckyActivated) {
+      // Lucky "L" Flag: Fuel bonus + restore
+      const multText = result.multiplierApplied ? `${result.basePoints}×2` : `${result.basePoints}`;
+      if (result.luckyFuelBonus > 0) {
+        text = `LUCKY!\n${multText} +${result.luckyFuelBonus}`;
+      } else {
+        text = `LUCKY!\n${multText}`;
+      }
+      color = '#4ade80';
+    } else {
+      // Regular Flag
+      if (result.multiplierApplied) {
+        text = `${result.basePoints}×2`;
+        color = '#facc15';
+      } else {
+        text = `${result.basePoints}`;
+        color = '#ffffff';
+      }
+    }
+
+    this.spawnFloatingScore(x, y, text, color);
+  }
+
+  private spawnFloatingScore(x: number, y: number, text: string, color: string): void {
+    const textObj = this.add.text(x, y, text, {
+      fontSize: '14px',
+      fontFamily: 'monospace',
+      fontStyle: 'bold',
+      color: color,
+      align: 'center',
+      stroke: '#000000',
+      strokeThickness: 4,
+    });
+    textObj.setOrigin(0.5, 0.5);
+    textObj.setDepth(10);
+
+    this.floatingScores.push({
+      textObj,
+      startY: y,
+      elapsedSec: 0,
+      durationSec: 0.65,
+    });
+  }
+
+  private updateFloatingScores(deltaSec: number): void {
+    for (let i = this.floatingScores.length - 1; i >= 0; i--) {
+      const item = this.floatingScores[i];
+      item.elapsedSec += deltaSec;
+      const progress = Math.min(1.0, item.elapsedSec / item.durationSec);
+
+      item.textObj.setPosition(item.textObj.x, item.startY - progress * 24);
+
+      if (progress > 0.5) {
+        const fadeProgress = (progress - 0.5) / 0.5;
+        item.textObj.setAlpha(Math.max(0, 1.0 - fadeProgress));
+      }
+
+      if (progress >= 1.0) {
+        item.textObj.destroy();
+        this.floatingScores.splice(i, 1);
+      }
+    }
+  }
+
   private clearSprites(sprites: Phaser.GameObjects.Sprite[]): void {
     sprites.forEach((sp) => sp.destroy());
     sprites.length = 0;
@@ -1325,6 +1416,8 @@ export class MainGameScene extends BaseArcadeScene {
     this.clearSprites(this.rockSprites);
     this.smokeSprites.forEach((sp) => sp.destroy());
     this.smokeSprites.clear();
+    this.floatingScores.forEach((item) => item.textObj.destroy());
+    this.floatingScores = [];
 
     if (this.mazeGraphics) this.mazeGraphics.destroy();
     if (this.radarGraphics) this.radarGraphics.destroy();
