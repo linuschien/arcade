@@ -338,7 +338,9 @@ export class MainGameScene extends BaseArcadeScene {
     );
 
     this.enemies.forEach((enemy) => {
-      const enemySprite = this.add.sprite(enemy.x, enemy.y, 'rallyx:enemy_up');
+      const dirKey = `rallyx:enemy_${enemy.direction.toLowerCase()}`;
+      const tex = this.textures.exists(dirKey) ? dirKey : 'rallyx:enemy_up';
+      const enemySprite = this.add.sprite(enemy.x, enemy.y, tex);
       enemySprite.setOrigin(0.5, 0.5);
       enemySprite.setDepth(4);
       this.enemySprites.set(enemy.id, enemySprite);
