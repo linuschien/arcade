@@ -39,6 +39,7 @@ export interface EnemyCar {
   cornerDelayTimerSec: number;
   // Rock & bump recovery timers (Zero global smoke grace time!)
   lastHitRockIndex: number;
+  lastHitRockPos: { col: number; row: number } | null;
   rockCooldownTimerSec: number;
   bumpCooldownTimerSec: number;
   lastHitSmokePuffId: string | null;
@@ -75,6 +76,7 @@ export class RallyXEnemyAI {
         spinAngleDeg: 0,
         cornerDelayTimerSec: 0,
         lastHitRockIndex: -1,
+        lastHitRockPos: null,
         rockCooldownTimerSec: 0,
         bumpCooldownTimerSec: 0,
         lastHitSmokePuffId: null,
@@ -103,12 +105,16 @@ export class RallyXEnemyAI {
     matrix: RallyXTileType[][],
     col: number,
     row: number,
-    currentDir: Direction
+    currentDir: Direction,
+    blockedTile?: { col: number; row: number }
   ): Direction {
     const opp = OPPOSITE_DIRECTIONS[currentDir];
     if (opp !== Direction.NONE) {
       const v = DIRECTION_VECTORS[opp];
-      if (!RallyXEnemyAI.isTileBlockedForEnemy(matrix, col + v.col, row + v.row)) {
+      const nc = col + v.col;
+      const nr = row + v.row;
+      const isBlocked = blockedTile && nc === blockedTile.col && nr === blockedTile.row;
+      if (!isBlocked && !RallyXEnemyAI.isTileBlockedForEnemy(matrix, nc, nr)) {
         return opp;
       }
     }
@@ -120,7 +126,10 @@ export class RallyXEnemyAI {
     for (const d of candidates) {
       if (d !== Direction.NONE) {
         const v = DIRECTION_VECTORS[d];
-        if (!RallyXEnemyAI.isTileBlockedForEnemy(matrix, col + v.col, row + v.row)) {
+        const nc = col + v.col;
+        const nr = row + v.row;
+        const isBlocked = blockedTile && nc === blockedTile.col && nr === blockedTile.row;
+        if (!isBlocked && !RallyXEnemyAI.isTileBlockedForEnemy(matrix, nc, nr)) {
           return d;
         }
       }
@@ -177,7 +186,8 @@ export class RallyXEnemyAI {
     startRow: number,
     targetCol: number,
     targetRow: number,
-    currentDir: Direction = Direction.NONE
+    currentDir: Direction = Direction.NONE,
+    blockedTile?: { col: number; row: number }
   ): Direction {
     if (startCol === targetCol && startRow === targetRow) {
       return Direction.NONE;
@@ -196,6 +206,7 @@ export class RallyXEnemyAI {
       const nc = startCol + v.col;
       const nr = startRow + v.row;
       if (nc < 0 || nc >= maxCols || nr < 0 || nr >= maxRows) return false;
+      if (blockedTile && nc === blockedTile.col && nr === blockedTile.row) return false;
       return !isRallyXWall(matrix, nc, nr);
     });
 
@@ -218,6 +229,15 @@ export class RallyXEnemyAI {
     const visited = new Uint8Array(maxCols * maxRows);
     const startIndex = startRow * maxCols + startCol;
     visited[startIndex] = 1;
+    if (
+      blockedTile &&
+      blockedTile.col >= 0 &&
+      blockedTile.col < maxCols &&
+      blockedTile.row >= 0 &&
+      blockedTile.row < maxRows
+    ) {
+      visited[blockedTile.row * maxCols + blockedTile.col] = 1;
+    }
 
     // Queue entries: [col, row, firstStepDir]
     const queue: Array<[number, number, Direction]> = [];
@@ -227,6 +247,7 @@ export class RallyXEnemyAI {
       const v = DIRECTION_VECTORS[d];
       const nc = startCol + v.col;
       const nr = startRow + v.row;
+      if (blockedTile && nc === blockedTile.col && nr === blockedTile.row) continue;
       if (nc === targetCol && nr === targetRow) {
         return d;
       }
@@ -248,6 +269,7 @@ export class RallyXEnemyAI {
         const nc = currCol + v.col;
         const nr = currRow + v.row;
         if (nc < 0 || nc >= maxCols || nr < 0 || nr >= maxRows) continue;
+        if (blockedTile && nc === blockedTile.col && nr === blockedTile.row) continue;
         if (isRallyXWall(matrix, nc, nr)) continue;
 
         const idx = nr * maxCols + nc;
@@ -343,6 +365,7 @@ export class RallyXEnemyAI {
       enemy.rockCooldownTimerSec = Math.max(0, enemy.rockCooldownTimerSec - deltaSec);
       if (enemy.rockCooldownTimerSec === 0) {
         enemy.lastHitRockIndex = -1;
+        enemy.lastHitRockPos = null;
       }
     }
     if (enemy.bumpCooldownTimerSec > 0) {
@@ -367,9 +390,18 @@ export class RallyXEnemyAI {
         // US-06-04 AC4: "結束後轉向避開岩石繼續巡航"
         if (enemy.lastHitRockIndex !== -1) {
           const opp = OPPOSITE_DIRECTIONS[enemy.direction];
+          const oppVec = DIRECTION_VECTORS[opp];
+          const oppCol = enemy.col + oppVec.col;
+          const oppRow = enemy.row + oppVec.row;
+          const oppIsRock =
+            enemy.lastHitRockPos &&
+            oppCol === enemy.lastHitRockPos.col &&
+            oppRow === enemy.lastHitRockPos.row;
+
           if (
             opp !== Direction.NONE &&
-            !isRallyXWall(matrix, enemy.col + DIRECTION_VECTORS[opp].col, enemy.row + DIRECTION_VECTORS[opp].row)
+            !oppIsRock &&
+            !isRallyXWall(matrix, oppCol, oppRow)
           ) {
             enemy.direction = opp;
           } else {
@@ -377,7 +409,8 @@ export class RallyXEnemyAI {
               matrix,
               enemy.col,
               enemy.row,
-              enemy.direction
+              enemy.direction,
+              enemy.lastHitRockPos || undefined
             );
             if (escapeDir !== Direction.NONE) {
               enemy.direction = escapeDir;
@@ -427,14 +460,15 @@ export class RallyXEnemyAI {
         blueDir
       );
 
-      // BFS to select best direction
+      // BFS to select best direction (pass lastHitRockPos as blockedTile so enemy never turns back into rock)
       const nextDir = RallyXEnemyAI.findNextBfsDirection(
         matrix,
         enemy.col,
         enemy.row,
         target.col,
         target.row,
-        enemy.direction
+        enemy.direction,
+        enemy.lastHitRockPos || undefined
       );
 
       if (nextDir !== Direction.NONE) {
@@ -524,18 +558,36 @@ export class RallyXEnemyAI {
 
       for (let rIdx = 0; rIdx < rocks.length; rIdx++) {
         const rock = rocks[rIdx];
-        // If enemy is currently escaping from this exact rock, skip it
-        if (enemy.lastHitRockIndex === rIdx && enemy.rockCooldownTimerSec > 0) {
-          continue;
+        const rockCol = rock.col + borderOffset;
+        const rockRow = rock.row + borderOffset;
+        const rockX = (rockCol + 0.5) * RALLYX_TILE_SIZE;
+        const rockY = (rockRow + 0.5) * RALLYX_TILE_SIZE;
+        const dist = Math.hypot(enemy.x - rockX, enemy.y - rockY);
+
+        // If enemy is currently escaping from this exact rock:
+        if (enemy.lastHitRockIndex === rIdx) {
+          // If car has moved away beyond 1.5 tiles (72px), clear rock memory
+          if (dist > RALLYX_TILE_SIZE * 1.5) {
+            enemy.lastHitRockIndex = -1;
+            enemy.lastHitRockPos = null;
+          } else {
+            // Check movement direction relative to rock
+            const toRockX = rockX - enemy.x;
+            const toRockY = rockY - enemy.y;
+            const moveVec = DIRECTION_VECTORS[enemy.direction];
+            const dot = moveVec.col * toRockX + moveVec.row * toRockY;
+            // Moving away from the rock: allow escape without re-spinning
+            if (dot <= 0) {
+              continue;
+            }
+          }
         }
 
-        const rockX = (rock.col + borderOffset + 0.5) * RALLYX_TILE_SIZE;
-        const rockY = (rock.row + borderOffset + 0.5) * RALLYX_TILE_SIZE;
-        const dist = Math.hypot(enemy.x - rockX, enemy.y - rockY);
         if (dist <= radius) {
           enemy.state = EnemyState.SPIN_OUT;
           enemy.spinOutTimerSec = ENEMY_SPIN_OUT_DURATION_SEC;
           enemy.lastHitRockIndex = rIdx;
+          enemy.lastHitRockPos = { col: rockCol, row: rockRow };
           enemy.rockCooldownTimerSec = ENEMY_SPIN_OUT_DURATION_SEC + ENEMY_ROCK_GRACE_SEC;
           enemy.spinAngleDeg = 0;
           affected.push(enemy);

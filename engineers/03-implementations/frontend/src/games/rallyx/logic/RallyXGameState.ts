@@ -42,6 +42,8 @@ export const SMOKE_FUEL_COST = 30;
 export const SMOKE_COOLDOWN_SEC = 0.4;
 export const SMOKE_PUFF_DURATION_SEC = 3.5;
 export const LUCKY_REFILL_SPEED = 1200; // Fuel points per second during Lucky refill animation (~0.8s)
+export const LUCKY_CYCLE_COUNT = 3;
+export const LUCKY_CYCLE_DURATION_SEC = 0.35; // 0.35s per cycle, 1.05s total (0 to full 3 times)
 
 export class RallyXGameState {
   private score: number = 0;
@@ -53,6 +55,8 @@ export class RallyXGameState {
 
   // Fuel System
   private fuel: number = MAX_FUEL;
+  private luckyCycle: number = 0;
+  private luckyCycleTimerSec: number = 0;
 
   // Smoke System
   private smokeCooldown: number = 0;
@@ -155,18 +159,33 @@ export class RallyXGameState {
   }
 
   /**
-   * Lucky "L" flag rapid fuel refill animation update.
-   * Returns true when tank has fully reached MAX_FUEL (1000).
+   * Lucky "L" flag 3-cycle rapid fuel refill animation update.
+   * Sweeps fuel gauge from 0% to 100% three times (~0.35s per cycle, 1.05s total).
+   * Returns true when all 3 cycles complete and tank is locked at MAX_FUEL (1000).
    */
   public updateLuckyRefill(deltaSec: number): boolean {
     if (this.playState !== RallyXPlayState.LUCKY_REFILL) return false;
 
-    this.fuel = Math.min(MAX_FUEL, this.fuel + LUCKY_REFILL_SPEED * deltaSec);
-    if (this.fuel >= MAX_FUEL) {
-      this.fuel = MAX_FUEL;
-      this.playState = RallyXPlayState.PLAYING;
-      return true;
+    let remainingSec = deltaSec;
+    while (remainingSec > 0) {
+      const timeNeeded = LUCKY_CYCLE_DURATION_SEC - this.luckyCycleTimerSec;
+      if (remainingSec >= timeNeeded) {
+        remainingSec -= timeNeeded;
+        this.luckyCycle++;
+        this.luckyCycleTimerSec = 0;
+        if (this.luckyCycle >= LUCKY_CYCLE_COUNT) {
+          this.fuel = MAX_FUEL;
+          this.playState = RallyXPlayState.PLAYING;
+          return true;
+        }
+      } else {
+        this.luckyCycleTimerSec += remainingSec;
+        remainingSec = 0;
+      }
     }
+
+    const progress = Math.min(1.0, this.luckyCycleTimerSec / LUCKY_CYCLE_DURATION_SEC);
+    this.fuel = Math.max(1, Math.floor(progress * MAX_FUEL));
     return false;
   }
 
@@ -290,8 +309,10 @@ export class RallyXGameState {
       // Award fuel bonus equal to current remaining fuel (rounded integer)
       luckyFuelBonus = Math.floor(this.fuel);
       isLuckyActivated = true;
-      // Enter freeze refill state
+      // Enter freeze refill state (runs 3-cycle 0-to-full gauge animation)
       this.playState = RallyXPlayState.LUCKY_REFILL;
+      this.luckyCycle = 0;
+      this.luckyCycleTimerSec = 0;
     }
 
     // Award flag score + any lucky fuel bonus

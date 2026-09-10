@@ -250,8 +250,8 @@ export class MainGameScene extends BaseArcadeScene {
       this.lifeIcons.push(icon);
     }
 
-    // 7. Playfield Center Status Banner (x: 240, y: 240) - READY, STAGE CLEAR, GAME OVER
-    this.statusBannerText = this.add.text(240, 240, 'READY!', {
+    // 7. Playfield Status Banner positioned above Player Car (x: 240, y: 160) - READY, STAGE CLEAR, GAME OVER
+    this.statusBannerText = this.add.text(240, 160, 'READY!', {
       fontSize: '28px',
       fontFamily: 'monospace',
       color: '#facc15',
@@ -260,8 +260,8 @@ export class MainGameScene extends BaseArcadeScene {
       strokeThickness: 5,
     }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(200);
 
-    // 8. Lucky Refill Overlay Banner (x: 240, y: 196)
-    this.luckyBannerText = this.add.text(240, 196, '★ LUCKY! ★', {
+    // 8. Lucky Refill Overlay Banner positioned above Player Car (x: 240, y: 160)
+    this.luckyBannerText = this.add.text(240, 160, '★ LUCKY! ★', {
       fontSize: '24px',
       fontFamily: 'monospace',
       color: '#22c55e',
