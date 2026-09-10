@@ -34,6 +34,7 @@ export interface FlagCollectResult {
   stageClearFuelBonus: number;
   isSpecialActivated: boolean;
   isLuckyActivated: boolean;
+  awarded1UP: boolean;
 }
 
 export const MAX_FUEL = 1000;
@@ -316,7 +317,7 @@ export class RallyXGameState {
     }
 
     // Award flag score + any lucky fuel bonus
-    this.addScore(totalPoints + luckyFuelBonus);
+    let awarded1UP = this.addScore(totalPoints + luckyFuelBonus);
 
     // Check for Round Clear (10 flags collected)
     const isStageClear = this.flagsCollectedInRound >= 10;
@@ -326,7 +327,10 @@ export class RallyXGameState {
       this.playState = RallyXPlayState.STAGE_CLEARED;
       // If Stage Clear, remaining fuel bonus is fuel * 10
       stageClearFuelBonus = Math.floor(this.fuel) * 10;
-      this.addScore(stageClearFuelBonus);
+      const stage1UP = this.addScore(stageClearFuelBonus);
+      if (stage1UP) {
+        awarded1UP = true;
+      }
     }
 
     return {
@@ -339,6 +343,7 @@ export class RallyXGameState {
       stageClearFuelBonus,
       isSpecialActivated,
       isLuckyActivated,
+      awarded1UP,
     };
   }
 

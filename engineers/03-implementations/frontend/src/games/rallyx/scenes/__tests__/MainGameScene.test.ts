@@ -273,6 +273,38 @@ describe('MainGameScene Unit Tests', () => {
     expect((scene as any).playerVisualAngleDeg).toBe(180);
   });
 
+  it('should emit sequential smoke puffs trailing along player moving position', () => {
+    scene.create();
+    const gameState = (scene as any).gameState;
+    (scene as any).playerX = 500;
+    (scene as any).playerY = 500;
+
+    // Trigger smoke
+    (scene as any).queueSmokePuffsSequence(500, 500);
+    expect(gameState.getActiveSmokePuffs().length).toBe(1);
+    expect(gameState.getActiveSmokePuffs()[0].x).toBe(500);
+
+    // Advance 85ms and change player position to simulate car driving forward
+    (scene as any).playerX = 500;
+    (scene as any).playerY = 480; // moved up
+    (scene as any).updatePendingSmokePuffs(85);
+
+    expect(gameState.getActiveSmokePuffs().length).toBe(2);
+    // Second puff should be dropped at the car's updated wake coordinate (480)
+    expect(gameState.getActiveSmokePuffs()[1].y).toBe(480);
+  });
+
+  it('should display Grand Slam congratulatory banner when clearing Round 16', () => {
+    scene.create();
+    const gameState = (scene as any).gameState;
+    // Set round to 16
+    (gameState as any).round = 16;
+    (scene as any).handleStageClear();
+
+    const statusBanner = (scene as any).statusBannerText;
+    expect(statusBanner.setText).toHaveBeenCalledWith('CONGRATULATIONS!\nALL STAGES CLEARED!');
+  });
+
   it('should perform comprehensive teardown cleanup safely', () => {
     scene.create();
     (scene as any).handleTeardown();

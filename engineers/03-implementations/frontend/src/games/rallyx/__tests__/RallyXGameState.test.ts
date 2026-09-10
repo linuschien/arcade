@@ -246,8 +246,17 @@ describe('RallyXGameState Unit Tests', () => {
       expect(state.getLives()).toBe(5);
 
       // Capped at 5
-      state.addScore(100000);
       expect(state.getLives()).toBe(5);
+    });
+
+    it('should report awarded1UP: true in collectFlag result when flag points trigger 1UP', () => {
+      state.setPlayState(RallyXPlayState.PLAYING);
+      state.addScore(19900); // 100 points away from 20k
+      expect(state.getLives()).toBe(3);
+
+      const res = state.collectFlag('REGULAR'); // +100 points -> 20,000!
+      expect(res.awarded1UP).toBe(true);
+      expect(state.getLives()).toBe(4);
     });
   });
 

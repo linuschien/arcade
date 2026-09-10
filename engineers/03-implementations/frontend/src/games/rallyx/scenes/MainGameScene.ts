@@ -80,7 +80,7 @@ export class MainGameScene extends BaseArcadeScene {
   private enemies: EnemyCar[] = [];
 
   // Smoke Puff Queue for 3-puff sequence
-  private pendingSmokePuffs: Array<{ x: number; y: number; delayMs: number }> = [];
+  private pendingSmokePuffs: Array<{ delayMs: number }> = [];
 
   // HUD Game Objects
   private hudBg!: Phaser.GameObjects.Graphics;
@@ -155,25 +155,51 @@ export class MainGameScene extends BaseArcadeScene {
   }
 
   private createWorldElements(): void {
+    const extraBorderTiles = 2; // 2 tiles (96px) outer coverage margin
+    const extraPx = extraBorderTiles * RALLYX_TILE_SIZE;
     const worldWidth = RALLYX_TOTAL_COLS * RALLYX_TILE_SIZE;
     const worldHeight = RALLYX_TOTAL_ROWS * RALLYX_TILE_SIZE;
     const borderPx = RALLYX_BORDER_WIDTH * RALLYX_TILE_SIZE;
     const innerHeight = worldHeight - 2 * borderPx;
 
     if (typeof (this.add as any).tileSprite === 'function') {
-      const topBorder = (this.add as any).tileSprite(0, 0, worldWidth, borderPx, 'rallyx:border_theme_0');
+      const topBorder = (this.add as any).tileSprite(
+        -extraPx,
+        -extraPx,
+        worldWidth + 2 * extraPx,
+        borderPx + extraPx,
+        'rallyx:border_theme_0'
+      );
       topBorder.setOrigin(0, 0);
       topBorder.setDepth(0);
 
-      const botBorder = (this.add as any).tileSprite(0, worldHeight - borderPx, worldWidth, borderPx, 'rallyx:border_theme_0');
+      const botBorder = (this.add as any).tileSprite(
+        -extraPx,
+        worldHeight - borderPx,
+        worldWidth + 2 * extraPx,
+        borderPx + extraPx,
+        'rallyx:border_theme_0'
+      );
       botBorder.setOrigin(0, 0);
       botBorder.setDepth(0);
 
-      const leftBorder = (this.add as any).tileSprite(0, borderPx, borderPx, innerHeight, 'rallyx:border_theme_0');
+      const leftBorder = (this.add as any).tileSprite(
+        -extraPx,
+        borderPx,
+        borderPx + extraPx,
+        innerHeight,
+        'rallyx:border_theme_0'
+      );
       leftBorder.setOrigin(0, 0);
       leftBorder.setDepth(0);
 
-      const rightBorder = (this.add as any).tileSprite(worldWidth - borderPx, borderPx, borderPx, innerHeight, 'rallyx:border_theme_0');
+      const rightBorder = (this.add as any).tileSprite(
+        worldWidth - borderPx,
+        borderPx,
+        borderPx + extraPx,
+        innerHeight,
+        'rallyx:border_theme_0'
+      );
       rightBorder.setOrigin(0, 0);
       rightBorder.setDepth(0);
 
@@ -395,14 +421,16 @@ export class MainGameScene extends BaseArcadeScene {
 
     // Fallback border fill if tile sprites are not available in test/headless environment
     if (this.borderTileSprites.length === 0) {
+      const extraBorderTiles = 2;
+      const extraPx = extraBorderTiles * RALLYX_TILE_SIZE;
       const worldWidth = RALLYX_TOTAL_COLS * RALLYX_TILE_SIZE;
       const worldHeight = RALLYX_TOTAL_ROWS * RALLYX_TILE_SIZE;
       const borderPx = RALLYX_BORDER_WIDTH * RALLYX_TILE_SIZE;
       this.mazeGraphics.fillStyle(0x002800, 1);
-      this.mazeGraphics.fillRect(0, 0, worldWidth, borderPx);
-      this.mazeGraphics.fillRect(0, worldHeight - borderPx, worldWidth, borderPx);
-      this.mazeGraphics.fillRect(0, borderPx, borderPx, worldHeight - 2 * borderPx);
-      this.mazeGraphics.fillRect(worldWidth - borderPx, borderPx, borderPx, worldHeight - 2 * borderPx);
+      this.mazeGraphics.fillRect(-extraPx, -extraPx, worldWidth + 2 * extraPx, borderPx + extraPx);
+      this.mazeGraphics.fillRect(-extraPx, worldHeight - borderPx, worldWidth + 2 * extraPx, borderPx + extraPx);
+      this.mazeGraphics.fillRect(-extraPx, borderPx, borderPx + extraPx, worldHeight - 2 * borderPx);
+      this.mazeGraphics.fillRect(worldWidth - borderPx, borderPx, borderPx + extraPx, worldHeight - 2 * borderPx);
     }
 
     // 1. Fill entire road background across inner playable maze
@@ -865,17 +893,18 @@ export class MainGameScene extends BaseArcadeScene {
   }
 
   private queueSmokePuffsSequence(x: number, y: number): void {
-    // 3 sequential puffs emitted in the car's wake
+    // 3 sequential puffs emitted along the car's dynamic wake
     this.gameState.addSmokePuff(x, y);
-    this.pendingSmokePuffs.push({ x, y, delayMs: 80 });
-    this.pendingSmokePuffs.push({ x, y, delayMs: 160 });
+    this.pendingSmokePuffs.push({ delayMs: 80 });
+    this.pendingSmokePuffs.push({ delayMs: 160 });
   }
 
   private updatePendingSmokePuffs(deltaMs: number): void {
     for (let i = this.pendingSmokePuffs.length - 1; i >= 0; i--) {
       this.pendingSmokePuffs[i].delayMs -= deltaMs;
       if (this.pendingSmokePuffs[i].delayMs <= 0) {
-        this.gameState.addSmokePuff(this.pendingSmokePuffs[i].x, this.pendingSmokePuffs[i].y);
+        // Emit smoke puff along the car's current wake position
+        this.gameState.addSmokePuff(this.playerX, this.playerY);
         this.pendingSmokePuffs.splice(i, 1);
       }
     }
@@ -974,6 +1003,10 @@ export class MainGameScene extends BaseArcadeScene {
         flagSprite.setVisible(false);
         const result = this.gameState.collectFlag(flagSpec.type);
 
+        if (result.awarded1UP) {
+          RallyXAudioService.playExtraLife();
+        }
+
         if (result.isSpecialActivated) {
           RallyXAudioService.playSpecialFlagFanfare();
         } else if (result.isLuckyActivated) {
@@ -1058,10 +1091,13 @@ export class MainGameScene extends BaseArcadeScene {
 
   private handleStageClear(): void {
     RallyXAudioService.playRoundClear();
-    this.statusBannerText.setText('STAGE CLEAR!');
+    const currentRound = this.gameState.getRound();
+    const isGrandSlam = currentRound === 16;
+    this.statusBannerText.setText(isGrandSlam ? 'CONGRATULATIONS!\nALL STAGES CLEARED!' : 'STAGE CLEAR!');
     this.statusBannerText.setVisible(true);
 
-    this.time.delayedCall(2200, () => {
+    const clearDelay = isGrandSlam ? 4000 : 2200;
+    this.time.delayedCall(clearDelay, () => {
       this.gameState.advanceToNextRound();
       this.collectedFlagKeys.clear();
       this.resetLevelEntities();
