@@ -148,5 +148,88 @@ describe('RallyXEnemyAI Unit Tests', () => {
       const isLethal2 = RallyXEnemyAI.checkPlayerCollision(enemy.x, enemy.y, enemies);
       expect(isLethal2).toBe(false);
     });
+
+    it('should NOT deadlock after rock spin-out and should turn away to escape', () => {
+      const spawns = [{ col: 10, row: 10 }];
+      const enemies = RallyXEnemyAI.createEnemies(spawns, false);
+      const enemy = enemies[0];
+      enemy.direction = Direction.UP;
+
+      const rocks = [{ col: 10, row: 9 }]; // Rock directly UP ahead
+      const mockMatrix: RallyXTileType[][] = Array.from({ length: 20 }, () =>
+        Array(20).fill(RallyXTileType.EMPTY)
+      );
+      mockMatrix[9][10] = RallyXTileType.ROCK;
+
+      // 1. Trigger rock collision
+      enemy.y = (9.5) * RALLYX_TILE_SIZE; // within 36px of rock at (10, 9)
+      const hit = RallyXEnemyAI.checkRockCollisions(enemies, rocks);
+      expect(hit.length).toBe(1);
+      expect(enemy.state).toBe(EnemyState.SPIN_OUT);
+      expect(enemy.rockCooldownTimerSec).toBeGreaterThan(ENEMY_SPIN_OUT_DURATION_SEC);
+
+      // 2. Advance 2.0s so spin-out ends
+      RallyXEnemyAI.updateEnemy(enemy, mockMatrix, 10, 0, Direction.UP, 130, 2.01);
+      expect(enemy.state).toBe(EnemyState.CHASING);
+      expect(enemy.rockCooldownTimerSec).toBeGreaterThan(0); // Grace period remains
+      // Direction should have turned away from the rock (not UP into the rock)
+      expect(enemy.direction).not.toBe(Direction.UP);
+
+      // 3. Immediate checkRockCollisions must NOT re-trigger spin-out (no deadlock!)
+      const reHit = RallyXEnemyAI.checkRockCollisions(enemies, rocks);
+      expect(reHit.length).toBe(0);
+      expect(enemy.state).toBe(EnemyState.CHASING);
+    });
+
+    it('should NOT deadlock after car-to-car bump and both cars should diverge', () => {
+      const spawns = [{ col: 10, row: 10 }, { col: 10, row: 10 }];
+      const enemies = RallyXEnemyAI.createEnemies(spawns, false);
+      enemies[0].direction = Direction.RIGHT;
+      enemies[1].direction = Direction.LEFT; // Head-on collision
+
+      // 1. Trigger car bump
+      const bumped = RallyXEnemyAI.checkCarBumps(enemies);
+      expect(bumped.length).toBe(2);
+      expect(enemies[0].state).toBe(EnemyState.SPIN_OUT);
+      expect(enemies[1].state).toBe(EnemyState.SPIN_OUT);
+      expect(enemies[0].bumpCooldownTimerSec).toBeGreaterThan(ENEMY_BUMP_DURATION_SEC);
+      expect(enemies[1].bumpCooldownTimerSec).toBeGreaterThan(ENEMY_BUMP_DURATION_SEC);
+
+      // Cars should have reversed (head-on divergence)
+      expect(enemies[0].direction).toBe(Direction.LEFT);
+      expect(enemies[1].direction).toBe(Direction.RIGHT);
+
+      // 2. Advance 1.01s so spin-out ends
+      const mockMatrix: RallyXTileType[][] = Array.from({ length: 20 }, () =>
+        Array(20).fill(RallyXTileType.EMPTY)
+      );
+      RallyXEnemyAI.updateEnemy(enemies[0], mockMatrix, 0, 0, Direction.NONE, 130, 1.01);
+      RallyXEnemyAI.updateEnemy(enemies[1], mockMatrix, 0, 0, Direction.NONE, 130, 1.01);
+
+      expect(enemies[0].state).toBe(EnemyState.CHASING);
+      expect(enemies[1].state).toBe(EnemyState.CHASING);
+      expect(enemies[0].bumpCooldownTimerSec).toBeGreaterThan(0);
+
+      // 3. Immediate checkCarBumps must NOT re-trigger bump (grace period protects them)
+      const reBump = RallyXEnemyAI.checkCarBumps(enemies);
+      expect(reBump.length).toBe(0);
+      expect(enemies[0].state).toBe(EnemyState.CHASING);
+      expect(enemies[1].state).toBe(EnemyState.CHASING);
+    });
+
+    it('should route around rock obstacles in BFS pathfinding', () => {
+      // 3x3 grid:
+      // [Road] [Rock] [Target]
+      // [Road] [Road] [Road]
+      const mockMatrix: RallyXTileType[][] = [
+        [RallyXTileType.EMPTY, RallyXTileType.ROCK, RallyXTileType.EMPTY],
+        [RallyXTileType.EMPTY, RallyXTileType.EMPTY, RallyXTileType.EMPTY],
+      ];
+
+      // Start at (0, 0), Target at (2, 0). (1, 0) has a ROCK!
+      const dir = RallyXEnemyAI.findNextBfsDirection(mockMatrix, 0, 0, 2, 0, Direction.NONE);
+      // It must route DOWN to (0, 1), not RIGHT into the ROCK!
+      expect(dir).toBe(Direction.DOWN);
+    });
   });
 });

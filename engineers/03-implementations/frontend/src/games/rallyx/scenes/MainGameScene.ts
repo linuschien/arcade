@@ -754,7 +754,10 @@ export class MainGameScene extends BaseArcadeScene {
       RallyXAudioService.playSpinOut();
     }
 
-    RallyXEnemyAI.checkCarBumps(this.enemies);
+    const bumpedEnemies = RallyXEnemyAI.checkCarBumps(this.enemies);
+    if (bumpedEnemies.length > 0) {
+      RallyXAudioService.playSpinOut();
+    }
   }
 
   private checkCollisions(): void {

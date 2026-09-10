@@ -9,6 +9,8 @@ import {
   Direction,
   DIRECTION_VECTORS,
   OPPOSITE_DIRECTIONS,
+  RELATIVE_CLOCKWISE_DIRECTIONS,
+  RELATIVE_COUNTER_CLOCKWISE_DIRECTIONS,
   GridPos,
   RallyXTileType,
   isRallyXWall,
@@ -35,11 +37,18 @@ export interface EnemyCar {
   spinOutTimerSec: number;
   spinAngleDeg: number;
   cornerDelayTimerSec: number;
+  // Cooldown timers to prevent deadlock loops upon recovery
+  rockCooldownTimerSec: number;
+  bumpCooldownTimerSec: number;
+  smokeCooldownTimerSec: number;
 }
 
 export const ENEMY_SPIN_OUT_DURATION_SEC = 2.0; // 2.0s spin-out on smoke or rocks
 export const ENEMY_BUMP_DURATION_SEC = 1.0;     // 1.0s spin-out on car-to-car bumps
 export const ENEMY_CORNER_DELAY_SEC = 0.06;     // Micro-delay when taking 90° corners
+export const ENEMY_ROCK_GRACE_SEC = 2.0;        // Grace period to escape rock after spin-out
+export const ENEMY_BUMP_GRACE_SEC = 2.0;        // Grace period to diverge after car-to-car bump
+export const ENEMY_SMOKE_GRACE_SEC = 1.5;       // Grace period to accelerate out of smoke puff
 
 export class RallyXEnemyAI {
   /**
@@ -65,8 +74,96 @@ export class RallyXEnemyAI {
         spinOutTimerSec: 0,
         spinAngleDeg: 0,
         cornerDelayTimerSec: 0,
+        rockCooldownTimerSec: 0,
+        bumpCooldownTimerSec: 0,
+        smokeCooldownTimerSec: 0,
       };
     });
+  }
+
+  /**
+   * Checks whether a tile is impassable for enemy cars (walls, border decor, and rocks).
+   */
+  public static isTileBlockedForEnemy(
+    matrix: RallyXTileType[][],
+    col: number,
+    row: number
+  ): boolean {
+    if (isRallyXWall(matrix, col, row)) return true;
+    const tile = matrix[row]?.[col];
+    return tile === RallyXTileType.ROCK;
+  }
+
+  /**
+   * Finds an open non-blocked exit direction for an enemy to escape an obstacle.
+   * Prioritizes reversing (180° U-turn) to back out of deadlocks, then lateral directions.
+   */
+  public static findEscapeDirection(
+    matrix: RallyXTileType[][],
+    col: number,
+    row: number,
+    currentDir: Direction
+  ): Direction {
+    const opp = OPPOSITE_DIRECTIONS[currentDir];
+    if (opp !== Direction.NONE) {
+      const v = DIRECTION_VECTORS[opp];
+      if (!RallyXEnemyAI.isTileBlockedForEnemy(matrix, col + v.col, row + v.row)) {
+        return opp;
+      }
+    }
+
+    const candidates: Direction[] = [
+      RELATIVE_CLOCKWISE_DIRECTIONS[currentDir],
+      RELATIVE_COUNTER_CLOCKWISE_DIRECTIONS[currentDir],
+    ];
+    for (const d of candidates) {
+      if (d !== Direction.NONE) {
+        const v = DIRECTION_VECTORS[d];
+        if (!RallyXEnemyAI.isTileBlockedForEnemy(matrix, col + v.col, row + v.row)) {
+          return d;
+        }
+      }
+    }
+
+    return Direction.NONE;
+  }
+
+  /**
+   * Diverges two enemy cars upon bumping to prevent endless deadlock loops.
+   * Reverses head-on collisions, diverts rear-end pursuers, and applies a separation nudge.
+   */
+  public static divergeCarsOnBump(a: EnemyCar, b: EnemyCar): void {
+    // 1. Head-on collision: reverse both cars so they cruise away from each other
+    if (a.direction === OPPOSITE_DIRECTIONS[b.direction]) {
+      a.direction = OPPOSITE_DIRECTIONS[a.direction];
+      b.direction = OPPOSITE_DIRECTIONS[b.direction];
+    } else if (a.direction === b.direction) {
+      // 2. Same direction (rear-end): follower reverses, leader keeps heading forward
+      let follower = a;
+      let leader = b;
+      if (a.direction === Direction.UP) {
+        if (a.y > b.y) { follower = a; leader = b; } else { follower = b; leader = a; }
+      } else if (a.direction === Direction.DOWN) {
+        if (a.y < b.y) { follower = a; leader = b; } else { follower = b; leader = a; }
+      } else if (a.direction === Direction.LEFT) {
+        if (a.x > b.x) { follower = a; leader = b; } else { follower = b; leader = a; }
+      } else if (a.direction === Direction.RIGHT) {
+        if (a.x < b.x) { follower = a; leader = b; } else { follower = b; leader = a; }
+      }
+      follower.direction = OPPOSITE_DIRECTIONS[follower.direction];
+    } else {
+      // 3. Perpendicular/intersection collision: reverse one car to divert paths
+      b.direction = OPPOSITE_DIRECTIONS[b.direction];
+    }
+
+    // 4. Positional separation nudge to prevent sharing the identical pixel coordinate
+    const nudge = 3;
+    const va = DIRECTION_VECTORS[a.direction];
+    a.x += va.col * nudge;
+    a.y += va.row * nudge;
+    const vb = DIRECTION_VECTORS[b.direction];
+    b.x += vb.col * nudge;
+    b.y += vb.row * nudge;
   }
 
   /**
@@ -91,14 +188,14 @@ export class RallyXEnemyAI {
     // Disallowed 180° reverse unless no other choice
     const oppositeDir = OPPOSITE_DIRECTIONS[currentDir];
 
-    // Priority directions: check open adjacent tiles
+    // Priority directions: check open adjacent tiles (avoiding walls and rocks)
     const candidates: Direction[] = [Direction.UP, Direction.RIGHT, Direction.DOWN, Direction.LEFT];
     const availableDirs = candidates.filter((d) => {
       const v = DIRECTION_VECTORS[d];
       const nc = startCol + v.col;
       const nr = startRow + v.row;
       if (nc < 0 || nc >= maxCols || nr < 0 || nr >= maxRows) return false;
-      return !isRallyXWall(matrix, nc, nr);
+      return !RallyXEnemyAI.isTileBlockedForEnemy(matrix, nc, nr);
     });
 
     if (availableDirs.length === 0) {
@@ -150,7 +247,7 @@ export class RallyXEnemyAI {
         const nc = currCol + v.col;
         const nr = currRow + v.row;
         if (nc < 0 || nc >= maxCols || nr < 0 || nr >= maxRows) continue;
-        if (isRallyXWall(matrix, nc, nr)) continue;
+        if (RallyXEnemyAI.isTileBlockedForEnemy(matrix, nc, nr)) continue;
 
         const idx = nr * maxCols + nc;
         if (!visited[idx]) {
@@ -216,8 +313,8 @@ export class RallyXEnemyAI {
     targetCol = Math.max(0, Math.min(maxCols - 1, targetCol));
     targetRow = Math.max(0, Math.min(maxRows - 1, targetRow));
 
-    // If target lands on a wall, fallback to player tile
-    if (isRallyXWall(matrix, targetCol, targetRow)) {
+    // If target lands on a wall or rock, fallback to player tile
+    if (RallyXEnemyAI.isTileBlockedForEnemy(matrix, targetCol, targetRow)) {
       return { col: blueCol, row: blueRow };
     }
 
@@ -226,7 +323,8 @@ export class RallyXEnemyAI {
 
   /**
    * Updates an individual enemy car for one delta step:
-   * - Handles Spin-Out timer and rotation
+   * - Handles Spin-Out timer, escape orientation, and rotation
+   * - Decrements rock, bump, and smoke collision cooldown timers
    * - Handles Cornering Delay
    * - Executes BFS pathfinding and grid/pixel movement
    */
@@ -239,6 +337,17 @@ export class RallyXEnemyAI {
     baseSpeed: number, // Base Blue car speed (e.g. 130 px/s)
     deltaSec: number
   ): void {
+    // Decrement immunity/cooldown timers
+    if (enemy.rockCooldownTimerSec > 0) {
+      enemy.rockCooldownTimerSec = Math.max(0, enemy.rockCooldownTimerSec - deltaSec);
+    }
+    if (enemy.bumpCooldownTimerSec > 0) {
+      enemy.bumpCooldownTimerSec = Math.max(0, enemy.bumpCooldownTimerSec - deltaSec);
+    }
+    if (enemy.smokeCooldownTimerSec > 0) {
+      enemy.smokeCooldownTimerSec = Math.max(0, enemy.smokeCooldownTimerSec - deltaSec);
+    }
+
     // Dormant enemies in Challenging Stages do not move or calculate paths
     if (enemy.state === EnemyState.DORMANT) {
       return;
@@ -252,6 +361,22 @@ export class RallyXEnemyAI {
         enemy.state = EnemyState.CHASING;
         enemy.spinOutTimerSec = 0;
         enemy.spinAngleDeg = 0;
+
+        // Escape orientation: If heading into an impassable obstacle (rock/wall), turn to an open exit
+        const curV = DIRECTION_VECTORS[enemy.direction];
+        const nextCol = enemy.col + curV.col;
+        const nextRow = enemy.row + curV.row;
+        if (RallyXEnemyAI.isTileBlockedForEnemy(matrix, nextCol, nextRow)) {
+          const escapeDir = RallyXEnemyAI.findEscapeDirection(
+            matrix,
+            enemy.col,
+            enemy.row,
+            enemy.direction
+          );
+          if (escapeDir !== Direction.NONE) {
+            enemy.direction = escapeDir;
+          }
+        }
       }
       return;
     }
@@ -334,6 +459,7 @@ export class RallyXEnemyAI {
   /**
    * Checks collisions between enemy cars and active smoke puffs.
    * Puts affected enemy cars into 2.0s Spin-Out state.
+   * Protects enemy with smoke grace period to prevent immediate re-spin.
    */
   public static checkSmokeCollisions(
     enemies: EnemyCar[],
@@ -343,12 +469,14 @@ export class RallyXEnemyAI {
     const affected: EnemyCar[] = [];
     for (const enemy of enemies) {
       if (enemy.state !== EnemyState.CHASING) continue;
+      if (enemy.smokeCooldownTimerSec > 0) continue;
 
       for (const puff of smokePuffs) {
         const dist = Math.hypot(enemy.x - puff.x, enemy.y - puff.y);
         if (dist <= radius) {
           enemy.state = EnemyState.SPIN_OUT;
           enemy.spinOutTimerSec = ENEMY_SPIN_OUT_DURATION_SEC;
+          enemy.smokeCooldownTimerSec = ENEMY_SPIN_OUT_DURATION_SEC + ENEMY_SMOKE_GRACE_SEC;
           enemy.spinAngleDeg = 0;
           affected.push(enemy);
           break;
@@ -361,6 +489,7 @@ export class RallyXEnemyAI {
   /**
    * Checks collisions between enemy cars and rock obstacles.
    * Red cars do NOT explode on rocks; they spin-out for 2.0s.
+   * Protects enemy with rock grace period to allow turning away without deadlock.
    */
   public static checkRockCollisions(
     enemies: EnemyCar[],
@@ -371,6 +500,7 @@ export class RallyXEnemyAI {
     const affected: EnemyCar[] = [];
     for (const enemy of enemies) {
       if (enemy.state !== EnemyState.CHASING) continue;
+      if (enemy.rockCooldownTimerSec > 0) continue;
 
       for (const rock of rocks) {
         const rockX = (rock.col + borderOffset + 0.5) * RALLYX_TILE_SIZE;
@@ -379,6 +509,7 @@ export class RallyXEnemyAI {
         if (dist <= radius) {
           enemy.state = EnemyState.SPIN_OUT;
           enemy.spinOutTimerSec = ENEMY_SPIN_OUT_DURATION_SEC;
+          enemy.rockCooldownTimerSec = ENEMY_SPIN_OUT_DURATION_SEC + ENEMY_ROCK_GRACE_SEC;
           enemy.spinAngleDeg = 0;
           affected.push(enemy);
           break;
@@ -390,25 +521,42 @@ export class RallyXEnemyAI {
 
   /**
    * Checks car-to-car collisions between pursuing red cars.
-   * Both cars spin-out for 1.0s and diverge without exploding.
+   * Both cars spin-out for 1.0s and diverge without exploding or deadlocking.
    */
-  public static checkCarBumps(enemies: EnemyCar[], bumpDist: number = 28): void {
+  public static checkCarBumps(enemies: EnemyCar[], bumpDist: number = 28): EnemyCar[] {
+    const affected: EnemyCar[] = [];
     const len = enemies.length;
     for (let i = 0; i < len; i++) {
       for (let j = i + 1; j < len; j++) {
         const a = enemies[i];
         const b = enemies[j];
-        if (a.state === EnemyState.CHASING && b.state === EnemyState.CHASING) {
+        if (
+          a.state === EnemyState.CHASING &&
+          b.state === EnemyState.CHASING &&
+          a.bumpCooldownTimerSec <= 0 &&
+          b.bumpCooldownTimerSec <= 0
+        ) {
           const dist = Math.hypot(a.x - b.x, a.y - b.y);
           if (dist <= bumpDist) {
             a.state = EnemyState.SPIN_OUT;
             a.spinOutTimerSec = ENEMY_BUMP_DURATION_SEC;
+            a.bumpCooldownTimerSec = ENEMY_BUMP_DURATION_SEC + ENEMY_BUMP_GRACE_SEC;
+            a.spinAngleDeg = 0;
+
             b.state = EnemyState.SPIN_OUT;
             b.spinOutTimerSec = ENEMY_BUMP_DURATION_SEC;
+            b.bumpCooldownTimerSec = ENEMY_BUMP_DURATION_SEC + ENEMY_BUMP_GRACE_SEC;
+            b.spinAngleDeg = 0;
+
+            RallyXEnemyAI.divergeCarsOnBump(a, b);
+
+            if (!affected.includes(a)) affected.push(a);
+            if (!affected.includes(b)) affected.push(b);
           }
         }
       }
     }
+    return affected;
   }
 
   /**
