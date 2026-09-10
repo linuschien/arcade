@@ -407,17 +407,17 @@ describe('MainGameScene Unit Tests', () => {
       expect.objectContaining({ color: '#facc15' })
     );
 
-    // Advance 0.7s to finish floating score duration
-    for (let i = 0; i < 8; i++) {
+    // Advance 1.3s to finish 1.2s floating score duration
+    for (let i = 0; i < 14; i++) {
       scene.update(0, 100);
     }
     expect((scene as any).floatingScores.length).toBe(0);
   });
 
-  it('should spawn SPECIAL and LUCKY formatted floating scores', () => {
+  it('should spawn Special and Lucky formatted single-line floating scores', () => {
     scene.create();
 
-    // Special flag popup
+    // Special flag popup: single-line score in cyan
     const sResult = {
       flagType: 'SPECIAL' as const,
       basePoints: 300,
@@ -434,11 +434,11 @@ describe('MainGameScene Unit Tests', () => {
     expect((scene as any).add.text).toHaveBeenCalledWith(
       100,
       100,
-      'SPECIAL!\n300',
-      expect.objectContaining({ color: '#38bdf8' })
+      '300',
+      expect.objectContaining({ color: '#38bdf8', fontSize: '18px' })
     );
 
-    // Lucky flag popup with fuel bonus
+    // Lucky flag popup with fuel bonus: single-line in electric green
     const lResult = {
       flagType: 'LUCKY' as const,
       basePoints: 400,
@@ -455,8 +455,8 @@ describe('MainGameScene Unit Tests', () => {
     expect((scene as any).add.text).toHaveBeenCalledWith(
       200,
       200,
-      'LUCKY!\n400×2 +650',
-      expect.objectContaining({ color: '#4ade80' })
+      '400×2 +650',
+      expect.objectContaining({ color: '#4ade80', fontSize: '18px' })
     );
   });
 

@@ -1334,16 +1334,16 @@ export class MainGameScene extends BaseArcadeScene {
     let color = '#ffffff';
 
     if (result.isSpecialActivated) {
-      // Special "S" Flag: Activate 2X
-      text = `SPECIAL!\n${result.basePoints}`;
+      // Special "S" Flag: Cyan score (activates 2X for subsequent flags)
+      text = `${result.basePoints}`;
       color = '#38bdf8';
     } else if (result.isLuckyActivated) {
-      // Lucky "L" Flag: Fuel bonus + restore
+      // Lucky "L" Flag: Fuel bonus + score in electric green
       const multText = result.multiplierApplied ? `${result.basePoints}×2` : `${result.basePoints}`;
       if (result.luckyFuelBonus > 0) {
-        text = `LUCKY!\n${multText} +${result.luckyFuelBonus}`;
+        text = `${multText} +${result.luckyFuelBonus}`;
       } else {
-        text = `LUCKY!\n${multText}`;
+        text = `${multText}`;
       }
       color = '#4ade80';
     } else {
@@ -1362,7 +1362,7 @@ export class MainGameScene extends BaseArcadeScene {
 
   private spawnFloatingScore(x: number, y: number, text: string, color: string): void {
     const textObj = this.add.text(x, y, text, {
-      fontSize: '14px',
+      fontSize: '18px',
       fontFamily: 'monospace',
       fontStyle: 'bold',
       color: color,
@@ -1377,20 +1377,21 @@ export class MainGameScene extends BaseArcadeScene {
       textObj,
       startY: y,
       elapsedSec: 0,
-      durationSec: 0.65,
+      durationSec: 1.2,
     });
   }
 
   private updateFloatingScores(deltaSec: number): void {
+    const holdRatio = 0.8 / 1.2; // Keep 100% opaque for first 0.8s
     for (let i = this.floatingScores.length - 1; i >= 0; i--) {
       const item = this.floatingScores[i];
       item.elapsedSec += deltaSec;
       const progress = Math.min(1.0, item.elapsedSec / item.durationSec);
 
-      item.textObj.setPosition(item.textObj.x, item.startY - progress * 24);
+      item.textObj.setPosition(item.textObj.x, item.startY - progress * 32);
 
-      if (progress > 0.5) {
-        const fadeProgress = (progress - 0.5) / 0.5;
+      if (progress > holdRatio) {
+        const fadeProgress = (progress - holdRatio) / (1.0 - holdRatio);
         item.textObj.setAlpha(Math.max(0, 1.0 - fadeProgress));
       }
 
