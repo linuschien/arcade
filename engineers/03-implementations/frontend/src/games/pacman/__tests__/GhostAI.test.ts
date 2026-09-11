@@ -142,4 +142,28 @@ describe('GhostAI Unit Tests', () => {
       expect(currentPos.col === 13 || currentPos.col === 14).toBe(true);
     }
   });
+
+  it('should guide Clyde and Inky cleanly through lower vertical corridors into bottom loop', () => {
+    const maze = new PacmanMaze();
+
+    // Clyde at (9, 27) heading DOWN towards bottom-left corner target (0, 35)
+    // When stepping tile-by-tile, from (9, 28) Clyde must turn RIGHT, entering col 10
+    const clydeNextDir = GhostAI.getNextDirection(
+      maze,
+      { col: 9, row: 28 },
+      Direction.DOWN,
+      { col: 0, row: 35 }
+    );
+    expect(clydeNextDir).toBe(Direction.RIGHT);
+
+    // Inky at (18, 28) heading DOWN towards bottom-right corner target (27, 35)
+    // When stepping tile-by-tile, from (18, 28) Inky must turn LEFT, entering col 17
+    const inkyNextDir = GhostAI.getNextDirection(
+      maze,
+      { col: 18, row: 28 },
+      Direction.DOWN,
+      { col: 27, row: 35 }
+    );
+    expect(inkyNextDir).toBe(Direction.LEFT);
+  });
 });

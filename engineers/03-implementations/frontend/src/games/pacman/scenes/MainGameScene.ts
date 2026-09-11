@@ -36,6 +36,7 @@ export interface GhostEntity {
   direction: Direction;
   sprite: Phaser.GameObjects.Sprite;
   targetTile: GridPos;
+  lastSteeredTile?: GridPos;
   eyesEnteredGate?: boolean;
   eyesAtHouseFloor?: boolean;
 }
@@ -254,6 +255,7 @@ export class MainGameScene extends BaseArcadeScene {
         ghost.sprite.setPosition(gx, gy);
         ghost.sprite.setVisible(true);
       }
+      ghost.lastSteeredTile = undefined;
       if (typeof ghost.sprite.setDisplaySize === 'function') {
         ghost.sprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
       }
@@ -688,6 +690,7 @@ export class MainGameScene extends BaseArcadeScene {
         // Authentic Arcade Pac-Man Rule: 180-degree turn (Reverse Direction) upon entering Frightened Mode!
         if (ghost.houseState === GhostHouseState.OUTSIDE && ghost.direction !== Direction.NONE) {
           ghost.direction = OPPOSITE_DIRECTIONS[ghost.direction];
+          ghost.lastSteeredTile = undefined;
         }
       }
     });
@@ -750,6 +753,7 @@ export class MainGameScene extends BaseArcadeScene {
           // Authentic Arcade Pac-Man Rule: 180-degree turn when switching Scatter <-> Chase phase!
           if (g.houseState === GhostHouseState.OUTSIDE && g.direction !== Direction.NONE) {
             g.direction = OPPOSITE_DIRECTIONS[g.direction];
+            g.lastSteeredTile = undefined;
           }
         }
       });
@@ -805,6 +809,7 @@ export class MainGameScene extends BaseArcadeScene {
           ghost.y = doorY;
           ghost.direction = ghost.type === GhostType.INKY ? Direction.RIGHT : Direction.LEFT;
           ghost.gridPos = { col: 13, row: 13 };
+          ghost.lastSteeredTile = undefined;
         }
         return;
       }
@@ -851,6 +856,7 @@ export class MainGameScene extends BaseArcadeScene {
             ghost.sprite.setPosition(ghost.x, ghost.y);
             ghost.eyesEnteredGate = false;
             ghost.eyesAtHouseFloor = false;
+            ghost.lastSteeredTile = undefined;
             return;
           }
           ghost.targetTile = { col: 13, row: 13 };
@@ -907,6 +913,7 @@ export class MainGameScene extends BaseArcadeScene {
             ghost.y = ghost.homeBaseY;
             ghost.eyesEnteredGate = false;
             ghost.eyesAtHouseFloor = false;
+            ghost.lastSteeredTile = undefined;
             const delays = spec.ghostExitDelaysSec || { pinky: 1.0, inky: 2.0, clyde: 3.0 };
             ghost.exitDelaySec =
               ghost.type === GhostType.PINKY
@@ -932,7 +939,13 @@ export class MainGameScene extends BaseArcadeScene {
       const wCenterY = this.offsetY + center.y;
       const dist = Phaser.Math.Distance.Between(ghost.x, ghost.y, wCenterX, wCenterY);
 
-      if (dist < 4) {
+      const isNewTile =
+        !ghost.lastSteeredTile ||
+        ghost.lastSteeredTile.col !== ghost.gridPos.col ||
+        ghost.lastSteeredTile.row !== ghost.gridPos.row;
+
+      if (dist < 4 && isNewTile) {
+        ghost.lastSteeredTile = { col: ghost.gridPos.col, row: ghost.gridPos.row };
         const isEaten = ghost.mode === GhostMode.EATEN;
         let newDir = ghost.direction;
 
@@ -1133,6 +1146,7 @@ export class MainGameScene extends BaseArcadeScene {
           ghost.mode = GhostMode.EATEN;
           ghost.eyesEnteredGate = false;
           ghost.eyesAtHouseFloor = false;
+          ghost.lastSteeredTile = undefined;
           ghost.sprite.setTexture('pacman:ghost_eyes');
           if (typeof ghost.sprite.setDisplaySize === 'function') {
             ghost.sprite.setDisplaySize(CHARACTER_SPRITE_SIZE, CHARACTER_SPRITE_SIZE);
