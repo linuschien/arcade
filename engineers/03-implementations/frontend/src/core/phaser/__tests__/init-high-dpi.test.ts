@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { getDynamicResolution, applyHighDpiFrameMetadata } from '../init-high-dpi';
+import { getDynamicResolution, applyHighDpiFrameMetadata, getActiveGameDpr } from '../init-high-dpi';
 import Phaser from 'phaser';
 
 describe('High-DPI Dynamic Resolution Unit Tests', () => {
@@ -206,5 +206,16 @@ describe('High-DPI Dynamic Resolution Unit Tests', () => {
     expect(originalCreate).toHaveBeenCalledWith('test:key', 72, 96);
     expect(mockContext.scale).toHaveBeenCalledWith(2, 2);
     expect(result).toBe(mockTexture);
+  });
+
+  it('should prioritize _arcadeDpr from gameContext when present', () => {
+    const mockGame = { _arcadeDpr: 4 };
+    expect(getActiveGameDpr(mockGame)).toBe(4);
+
+    const mockSceneGame = { _arcadeDpr: 3 };
+    expect(getActiveGameDpr(mockSceneGame)).toBe(3);
+
+    expect(getActiveGameDpr(null)).toBeGreaterThanOrEqual(2);
+    expect(getActiveGameDpr({})).toBeGreaterThanOrEqual(2);
   });
 });

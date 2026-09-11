@@ -42,7 +42,6 @@ import {
   lerpAngleDeg,
 } from '../logic/RallyXEnemyAI';
 import { RallyXAudioService } from '../audio/RallyXAudioService';
-import { getDynamicResolution } from '@/core/phaser/init-high-dpi';
 
 const PLAYER_BASE_SPEED = 240; // 240 pixels per second (5 tiles / sec @ 48px/tile)
 const RADAR_SCALE = 5; // 32 cols * 5 = 160px (full HUD width), 56 rows * 5 = 280px

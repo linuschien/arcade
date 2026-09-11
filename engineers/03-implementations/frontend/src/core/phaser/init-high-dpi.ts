@@ -51,6 +51,17 @@ export function applyHighDpiFrameMetadata(
   }
 }
 
+/**
+ * Helper to extract active game dpr from any Phaser context (Game, Scene, or TextureManager).
+ */
+export function getActiveGameDpr(gameContext?: any): number {
+  if (gameContext) {
+    const dpr = gameContext._arcadeDpr;
+    if (typeof dpr === 'number' && dpr > 0) return dpr;
+  }
+  return getDynamicResolution();
+}
+
 // 1. Global Text Factory interception (Automatic High-DPI text resolution)
 if (typeof Phaser !== 'undefined' && Phaser.GameObjects?.GameObjectFactory) {
   const originalText = Phaser.GameObjects.GameObjectFactory.prototype.text;
@@ -61,7 +72,8 @@ if (typeof Phaser !== 'undefined' && Phaser.GameObjects?.GameObjectFactory) {
       text: string | string[],
       style?: Phaser.Types.GameObjects.Text.TextStyle
     ) {
-      const dynamicResolution = getDynamicResolution();
+      const game = (this as any).scene?.sys?.game ?? (this as any).scene?.game;
+      const dynamicResolution = getActiveGameDpr(game);
       const mergedStyle: Phaser.Types.GameObjects.Text.TextStyle = {
         resolution: style?.resolution ?? dynamicResolution,
         ...style,
@@ -82,7 +94,8 @@ if (typeof Phaser !== 'undefined' && Phaser.Textures?.TextureManager) {
       width?: number,
       height?: number
     ) {
-      const dpr = getDynamicResolution();
+      const game = (this as any).game;
+      const dpr = getActiveGameDpr(game);
       const logicalWidth = width ?? 32;
       const logicalHeight = height ?? 32;
 
@@ -115,7 +128,8 @@ if (typeof Phaser !== 'undefined' && Phaser.GameObjects?.Graphics) {
       width?: number,
       height?: number
     ) {
-      const dpr = getDynamicResolution();
+      const game = (this as any).scene?.sys?.game ?? (this as any).scene?.game;
+      const dpr = getActiveGameDpr(game);
       const logicalWidth = width ?? (this as any).width ?? 32;
       const logicalHeight = height ?? (this as any).height ?? 32;
 

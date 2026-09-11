@@ -7,8 +7,8 @@
 import Phaser from 'phaser';
 import { IArcadeGame, ArcadeBridge } from '@/core/bridge/ArcadeBridge';
 import { SoundEngine } from '@/core/audio/SoundEngine';
-import { getDynamicResolution } from './init-high-dpi';
 import { BaseArcadeScene } from './BaseArcadeScene';
+import './init-high-dpi';
 
 export interface BaseArcadeGameOptions {
   gameId?: string;
@@ -16,10 +16,36 @@ export interface BaseArcadeGameOptions {
   parentContainerId: string | HTMLElement;
   baseWidth: number;
   baseHeight: number;
+  resolutionMultiplier?: number;
   backgroundColor?: string;
   scene: Phaser.Types.Scenes.SceneType[];
   physics?: Phaser.Types.Core.PhysicsConfig;
   autoCenter?: Phaser.Scale.CenterType;
+}
+
+/**
+ * Calculates the optimal integer supersampling resolution multiplier (2x ~ 4x)
+ * based on the physical screen/viewport dimensions and logical game boundaries.
+ */
+export function calculateDynamicResolution(baseWidth: number, baseHeight: number): number {
+  if (typeof window === 'undefined') return 2;
+  const dpr = window.devicePixelRatio || 1;
+
+  if (baseWidth > 0 && baseHeight > 0) {
+    // Determine physical display dimensions
+    const screenW = (window.screen?.width || window.innerWidth || 1280) * dpr;
+    const screenH = (window.screen?.height || window.innerHeight || 720) * dpr;
+
+    // Simulate Scale.FIT constraints: ratio of physical display to logical base dimensions
+    const scaleX = screenW / baseWidth;
+    const scaleY = screenH / baseHeight;
+    const fitScale = Math.min(scaleX, scaleY);
+
+    // Supersampling factor: render slightly larger and downscale to prevent upscale blur, clamped between [2, 4]
+    return Math.min(Math.max(Math.ceil(fitScale), 2), 4);
+  }
+
+  return Math.min(Math.max(Math.ceil(dpr), 2), 4);
 }
 
 export abstract class BaseArcadeGame implements IArcadeGame {
@@ -37,7 +63,7 @@ export abstract class BaseArcadeGame implements IArcadeGame {
         ? document.getElementById(options.parentContainerId) || undefined
         : options.parentContainerId;
 
-    const dpr = getDynamicResolution();
+    const dpr = options.resolutionMultiplier ?? calculateDynamicResolution(options.baseWidth, options.baseHeight);
     const physicalWidth = options.baseWidth * dpr;
     const physicalHeight = options.baseHeight * dpr;
 
@@ -59,18 +85,20 @@ export abstract class BaseArcadeGame implements IArcadeGame {
         },
       },
       callbacks: {
-        postBoot: (game: Phaser.Game) => {
+        preBoot: (game: Phaser.Game) => {
+          (game as any)._arcadeDpr = dpr;
           (game as any)._arcadeBaseWidth = options.baseWidth;
           (game as any)._arcadeBaseHeight = options.baseHeight;
-          if (game.config) {
-            (game.config as any).arcadeBaseWidth = options.baseWidth;
-            (game.config as any).arcadeBaseHeight = options.baseHeight;
-          }
         },
       },
     };
 
     this.game = new Phaser.Game(config);
+    if (this.game) {
+      (this.game as any)._arcadeDpr = dpr;
+      (this.game as any)._arcadeBaseWidth = options.baseWidth;
+      (this.game as any)._arcadeBaseHeight = options.baseHeight;
+    }
     this.setupBridgeListeners();
   }
 

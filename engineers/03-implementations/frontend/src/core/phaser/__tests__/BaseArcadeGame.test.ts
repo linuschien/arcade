@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BaseArcadeGame } from '../BaseArcadeGame';
+import { BaseArcadeGame, calculateDynamicResolution } from '../BaseArcadeGame';
 import Phaser from 'phaser';
 
 vi.mock('phaser', () => {
@@ -96,7 +96,7 @@ describe('BaseArcadeGame Unit Tests', () => {
     );
   });
 
-  it('should trigger postBoot callback and set arcadeBaseWidth/Height properties', () => {
+  it('should trigger preBoot callback and set arcadeBaseWidth/Height and _arcadeDpr properties', () => {
     let capturedConfig: any = null;
     vi.mocked(Phaser.Game).mockImplementationOnce((config) => {
       capturedConfig = config;
@@ -111,14 +111,86 @@ describe('BaseArcadeGame Unit Tests', () => {
     });
 
     expect(capturedConfig).toBeDefined();
-    expect(capturedConfig.callbacks?.postBoot).toBeDefined();
+    expect(capturedConfig.callbacks?.preBoot).toBeDefined();
 
-    const mockGameObj: any = { config: {} };
-    capturedConfig.callbacks.postBoot(mockGameObj);
+    const mockGameObj: any = {};
+    capturedConfig.callbacks.preBoot(mockGameObj);
 
     expect(mockGameObj._arcadeBaseWidth).toBe(920);
     expect(mockGameObj._arcadeBaseHeight).toBe(640);
-    expect(mockGameObj.config.arcadeBaseWidth).toBe(920);
+    expect(mockGameObj._arcadeDpr).toBeDefined();
+  });
+
+  it('should calculate dynamic integer resolution correctly across different screens and game bases', () => {
+    const originalScreen = window.screen;
+    const originalDpr = window.devicePixelRatio;
+
+    try {
+      // 1. Retina / 2.8K display (2880x1800)
+      Object.defineProperty(window, 'devicePixelRatio', { writable: true, configurable: true, value: 1 });
+      Object.defineProperty(window, 'screen', {
+        writable: true,
+        configurable: true,
+        value: { width: 2880, height: 1800 },
+      });
+
+      // New Rally-X (640x480): min(2880/640=4.5, 1800/480=3.75) = 3.75 -> ceil: 4
+      expect(calculateDynamicResolution(640, 480)).toBe(4);
+
+      // Mahjong (1280x720): min(2880/1280=2.25, 1800/720=2.5) = 2.25 -> ceil: 3
+      expect(calculateDynamicResolution(1280, 720)).toBe(3);
+
+      // Tetris (800x720): min(2880/800=3.6, 1800/720=2.5) = 2.5 -> ceil: 3
+      expect(calculateDynamicResolution(800, 720)).toBe(3);
+
+      // 2. 4K display (3840x2160)
+      Object.defineProperty(window, 'screen', {
+        writable: true,
+        configurable: true,
+        value: { width: 3840, height: 2160 },
+      });
+      // New Rally-X (640x480): min(3840/640=6, 2160/480=4.5) = 4.5 -> clamped max: 4
+      expect(calculateDynamicResolution(640, 480)).toBe(4);
+      // Mahjong (1280x720): min(3840/1280=3, 2160/720=3) = 3.0 -> ceil: 3
+      expect(calculateDynamicResolution(1280, 720)).toBe(3);
+
+      // 3. 1080p display (1920x1080)
+      Object.defineProperty(window, 'screen', {
+        writable: true,
+        configurable: true,
+        value: { width: 1920, height: 1080 },
+      });
+      // Mahjong (1280x720): min(1920/1280=1.5, 1080/720=1.5) = 1.5 -> ceil: 2
+      expect(calculateDynamicResolution(1280, 720)).toBe(2);
+      // New Rally-X (640x480): min(1920/640=3, 1080/480=2.25) = 2.25 -> ceil: 3
+      expect(calculateDynamicResolution(640, 480)).toBe(3);
+    } finally {
+      Object.defineProperty(window, 'screen', { writable: true, configurable: true, value: originalScreen });
+      Object.defineProperty(window, 'devicePixelRatio', { writable: true, configurable: true, value: originalDpr });
+    }
+  });
+
+  it('should respect custom resolutionMultiplier override when provided in options', () => {
+    let capturedConfig: any = null;
+    vi.mocked(Phaser.Game).mockImplementationOnce((config) => {
+      capturedConfig = config;
+      return { config } as any;
+    });
+
+    new ConcreteTestGame({
+      parentContainerId: 'test-div',
+      baseWidth: 640,
+      baseHeight: 480,
+      resolutionMultiplier: 4,
+      scene: [],
+    });
+
+    expect(capturedConfig.scale.width).toBe(640 * 4);
+    expect(capturedConfig.scale.height).toBe(480 * 4);
+
+    const mockGameObj: any = {};
+    capturedConfig.callbacks.preBoot(mockGameObj);
+    expect(mockGameObj._arcadeDpr).toBe(4);
   });
 
   it('should support default onCoinInsert, onPause, onResume, and destroyGame lifecycle implementations', () => {
