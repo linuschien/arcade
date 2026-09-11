@@ -96,7 +96,7 @@ describe('BaseArcadeGame Unit Tests', () => {
     );
   });
 
-  it('should trigger preBoot callback and set arcadeBaseWidth/Height and _arcadeDpr properties', () => {
+  it('should trigger preBoot callback and set _arcadeDpr property', () => {
     let capturedConfig: any = null;
     vi.mocked(Phaser.Game).mockImplementationOnce((config) => {
       capturedConfig = config;
@@ -116,8 +116,6 @@ describe('BaseArcadeGame Unit Tests', () => {
     const mockGameObj: any = {};
     capturedConfig.callbacks.preBoot(mockGameObj);
 
-    expect(mockGameObj._arcadeBaseWidth).toBe(920);
-    expect(mockGameObj._arcadeBaseHeight).toBe(640);
     expect(mockGameObj._arcadeDpr).toBeDefined();
   });
 

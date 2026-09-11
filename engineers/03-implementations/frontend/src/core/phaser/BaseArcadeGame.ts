@@ -87,18 +87,11 @@ export abstract class BaseArcadeGame implements IArcadeGame {
       callbacks: {
         preBoot: (game: Phaser.Game) => {
           (game as any)._arcadeDpr = dpr;
-          (game as any)._arcadeBaseWidth = options.baseWidth;
-          (game as any)._arcadeBaseHeight = options.baseHeight;
         },
       },
     };
 
     this.game = new Phaser.Game(config);
-    if (this.game) {
-      (this.game as any)._arcadeDpr = dpr;
-      (this.game as any)._arcadeBaseWidth = options.baseWidth;
-      (this.game as any)._arcadeBaseHeight = options.baseHeight;
-    }
     this.setupBridgeListeners();
   }
 
