@@ -99,6 +99,79 @@ describe('RallyXEnemyAI Unit Tests', () => {
       const nextDir = RallyXEnemyAI.findNextBfsDirection(matrix, 5, 5, 5, 5);
       expect(nextDir).toBe(Direction.NONE);
     });
+
+    it('should immediately return forward direction on straight corridors (early return without full BFS)', () => {
+      const corridorMatrix: RallyXTileType[][] = [
+        [RallyXTileType.WALL, RallyXTileType.WALL, RallyXTileType.WALL, RallyXTileType.WALL, RallyXTileType.WALL],
+        [RallyXTileType.EMPTY, RallyXTileType.EMPTY, RallyXTileType.EMPTY, RallyXTileType.EMPTY, RallyXTileType.EMPTY],
+        [RallyXTileType.WALL, RallyXTileType.WALL, RallyXTileType.WALL, RallyXTileType.WALL, RallyXTileType.WALL],
+      ];
+      // Enemy is at (1, 1) moving RIGHT, player is at (4, 1)
+      const nextDir = RallyXEnemyAI.findNextBfsDirection(
+        corridorMatrix,
+        1,
+        1,
+        4,
+        1,
+        Direction.RIGHT
+      );
+      expect(nextDir).toBe(Direction.RIGHT);
+    });
+
+    it('should immediately return corner direction at a 90-degree bend', () => {
+      const cornerMatrix: RallyXTileType[][] = [
+        [RallyXTileType.WALL, RallyXTileType.EMPTY, RallyXTileType.WALL],
+        [RallyXTileType.WALL, RallyXTileType.EMPTY, RallyXTileType.WALL],
+        [RallyXTileType.WALL, RallyXTileType.EMPTY, RallyXTileType.EMPTY],
+        [RallyXTileType.WALL, RallyXTileType.WALL, RallyXTileType.WALL],
+      ];
+      // Moving DOWN into (1, 2) where DOWN is wall, UP is opposite. Only RIGHT is valid.
+      const nextDir = RallyXEnemyAI.findNextBfsDirection(
+        cornerMatrix,
+        1,
+        2,
+        2,
+        2,
+        Direction.DOWN
+      );
+      expect(nextDir).toBe(Direction.RIGHT);
+    });
+
+    it('should early return when teammate avoidance reduces candidate directions to one', () => {
+      // T-junction at (1, 1) with options RIGHT or DOWN (came from LEFT)
+      const tMatrix: RallyXTileType[][] = [
+        [RallyXTileType.WALL, RallyXTileType.WALL, RallyXTileType.WALL],
+        [RallyXTileType.EMPTY, RallyXTileType.EMPTY, RallyXTileType.EMPTY],
+        [RallyXTileType.WALL, RallyXTileType.EMPTY, RallyXTileType.WALL],
+      ];
+      // Moving RIGHT into (1, 1). Available: LEFT (opp), RIGHT, DOWN.
+      // Self is at (1, 1), teammate is at (1, 2) facing UP (oncoming on DOWN branch)
+      const selfCar = {
+        col: 1,
+        row: 1,
+        direction: Direction.RIGHT,
+        state: EnemyState.CHASING,
+      } as any;
+      const oncomingTeammate = {
+        col: 1,
+        row: 2,
+        direction: Direction.UP,
+        state: EnemyState.CHASING,
+      } as any;
+
+      const nextDir = RallyXEnemyAI.findNextBfsDirection(
+        tMatrix,
+        1,
+        1,
+        1,
+        2, // target is DOWN
+        Direction.RIGHT,
+        undefined,
+        [selfCar, oncomingTeammate]
+      );
+      // Even though target is DOWN, DOWN is blocked by oncoming teammate, so only candidate is RIGHT
+      expect(nextDir).toBe(Direction.RIGHT);
+    });
   });
 
   describe('Collisions: Smoke, Rocks, Car Bumps & Lethal Player Touch', () => {

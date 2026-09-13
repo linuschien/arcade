@@ -245,15 +245,18 @@ export class RallyXEnemyAI {
       return Direction.NONE;
     }
 
-    // If only one direction available, take it
+    // If only one direction available (dead-end blocked by rocks), take it
     if (availableDirs.length === 1) {
       return availableDirs[0];
     }
 
     // Filter out opposite direction if there are other valid choices (avoid erratic 180° flapping)
-    let nonReverseDirs = availableDirs.filter((d) => d !== oppositeDir);
-    if (nonReverseDirs.length === 0) {
-      nonReverseDirs = availableDirs;
+    const nonReverseDirs = availableDirs.filter((d) => d !== oppositeDir);
+
+    // Early return 1: Straight corridor or single corner turn (only 1 forward direction)
+    // Red cars cannot reverse without being blocked, so take the only forward path without running BFS
+    if (nonReverseDirs.length === 1) {
+      return nonReverseDirs[0];
     }
 
     // Check if moving in direction d heads into an oncoming chasing teammate in the same corridor
@@ -280,11 +283,14 @@ export class RallyXEnemyAI {
 
     // Filter out directions that would lead to immediate head-on crash with an oncoming teammate
     let candidateDirs = nonReverseDirs;
-    if (nonReverseDirs.length > 1) {
-      const safeDirs = nonReverseDirs.filter((d) => !hasOncomingTeammate(d));
-      if (safeDirs.length > 0) {
-        candidateDirs = safeDirs;
-      }
+    const safeDirs = nonReverseDirs.filter((d) => !hasOncomingTeammate(d));
+    if (safeDirs.length > 0) {
+      candidateDirs = safeDirs;
+    }
+
+    // Early return 2: If teammate avoidance leaves only 1 safe candidate direction, take it immediately
+    if (candidateDirs.length === 1) {
+      return candidateDirs[0];
     }
 
     // BFS Queue
