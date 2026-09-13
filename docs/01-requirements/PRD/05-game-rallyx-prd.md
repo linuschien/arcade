@@ -149,7 +149,7 @@
   - 兩輛紅車在通道正面交會時，各自打滑打轉 1.0 秒後錯開，不爆炸。
 - **4×4 對稱矩陣 16 關完整數值排布表 (Scheme B - Full 16-Round Schedule Table)**：
   - 4 套母迷宮各自固定分配 4 個關卡（$\text{mazeIndex} = \lfloor(\text{round}-1)/4\rfloor \pmod 4$）。
-  - 地圖、旗幟、岩石分佈 1:1 精確對應 [`MazeDeathRallyX.png`](file:///home/linus/workspace/arcade/docs/01-requirements/PRD/MazeDeathRallyX.png) 之 4 行 $\times$ 4 列矩陣。
+  - 地圖、旗幟、岩石分佈 1:1 精確對應 [`MazeDeathRallyX.png`](file:///home/linus/workspace/arcade/docs/01-requirements/external-specs/MazeDeathRallyX.png) 之 4 行 $\times$ 4 列矩陣。
 
 | 關卡 (Round) | 母迷宮 (Maze) | 對應圖檔座標 | 關卡類型 (Stage Type) | 紅車總數 (Red Cars) | 紅車出發位置 | 岩石數 (Rocks) | 關卡節奏定位 |
 |:---:|:---:|:---:|:---:|:---:|:---|:---:|:---|
