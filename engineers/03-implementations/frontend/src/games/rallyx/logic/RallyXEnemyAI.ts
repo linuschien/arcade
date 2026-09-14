@@ -43,6 +43,8 @@ export interface EnemyCar {
   rockCooldownTimerSec: number;
   bumpCooldownTimerSec: number;
   lastHitSmokePuffId: string | null;
+  // Single-decision tile lock to prevent corner-delay double triggering at intersections
+  lastTurnDecisionTile: { col: number; row: number } | null;
   // Dynamic visual cornering orientation (Scheme B & C)
   visualAngleDeg: number;
   turnStartAngleDeg: number;
@@ -107,6 +109,7 @@ export class RallyXEnemyAI {
         rockCooldownTimerSec: 0,
         bumpCooldownTimerSec: 0,
         lastHitSmokePuffId: null,
+        lastTurnDecisionTile: null,
         visualAngleDeg: initialAngle,
         turnStartAngleDeg: initialAngle,
         turnTargetAngleDeg: initialAngle,
@@ -472,6 +475,7 @@ export class RallyXEnemyAI {
         enemy.state = EnemyState.CHASING;
         enemy.spinOutTimerSec = 0;
         enemy.spinAngleDeg = 0;
+        enemy.lastTurnDecisionTile = null;
 
         // If enemy was spinning out on a rock, reverse 180° away from the rock!
         // US-06-04 AC4: "結束後轉向避開岩石繼續巡航"
@@ -554,7 +558,15 @@ export class RallyXEnemyAI {
       (enemy.direction === Direction.LEFT && enemy.x >= centerTileX && newX <= centerTileX) ||
       (enemy.direction === Direction.RIGHT && enemy.x <= centerTileX && newX >= centerTileX);
 
-    if (crossedCenter) {
+    // Single-decision tile lock: only trigger BFS navigation once per tile center (like Pacman's lastSteeredTile)
+    const isNewTile =
+      !enemy.lastTurnDecisionTile ||
+      enemy.lastTurnDecisionTile.col !== enemy.col ||
+      enemy.lastTurnDecisionTile.row !== enemy.row;
+
+    if (crossedCenter && isNewTile) {
+      enemy.lastTurnDecisionTile = { col: enemy.col, row: enemy.row };
+
       // Snap to tile center
       enemy.x = centerTileX;
       enemy.y = centerTileY;

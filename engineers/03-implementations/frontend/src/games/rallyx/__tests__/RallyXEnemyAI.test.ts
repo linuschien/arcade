@@ -403,5 +403,49 @@ describe('RallyXEnemyAI Unit Tests', () => {
       expect(enemy.cornerDelayTimerSec).toBe(0);
       expect(enemy.visualAngleDeg).toBeCloseTo(90, 1);
     });
+
+    it('prevents double-trigger BFS decisions and 180° reversal on the same tile after corner delay', () => {
+      // 5x5 matrix with an intersection at (2, 2)
+      const matrix: RallyXTileType[][] = Array.from({ length: 5 }, () =>
+        Array(5).fill(RallyXTileType.WALL)
+      );
+      matrix[2][1] = RallyXTileType.EMPTY; // West
+      matrix[2][2] = RallyXTileType.EMPTY; // Intersection center
+      matrix[2][3] = RallyXTileType.EMPTY; // East
+      matrix[1][2] = RallyXTileType.EMPTY; // North
+      matrix[3][2] = RallyXTileType.EMPTY; // South
+
+      // Enemy is moving RIGHT into intersection (2, 2), just before center (120, 120)
+      const spawns = [{ col: 1, row: 2 }];
+      const enemies = RallyXEnemyAI.createEnemies(spawns, false);
+      const enemy = enemies[0];
+      enemy.direction = Direction.RIGHT;
+      enemy.col = 2;
+      enemy.row = 2;
+      enemy.x = 118;
+      enemy.y = 120;
+
+      // Player is at (1, 2) - directly behind the incoming car
+      const blueCol = 1;
+      const blueRow = 2;
+
+      // Step 1: Car crosses center at (2, 2), initiates turn with corner delay
+      RallyXEnemyAI.updateEnemy(enemy, matrix, blueCol, blueRow, Direction.LEFT, 130, 0.02);
+
+      expect(enemy.direction).not.toBe(Direction.LEFT); // Cannot choose reverse (LEFT)
+      expect(enemy.cornerDelayTimerSec).toBeGreaterThan(0);
+      expect(enemy.lastTurnDecisionTile).toEqual({ col: 2, row: 2 });
+      const initialTurnDir = enemy.direction;
+
+      // Step 2: Finish corner delay while car is at center
+      RallyXEnemyAI.updateEnemy(enemy, matrix, blueCol, blueRow, Direction.LEFT, 130, ENEMY_CORNER_DELAY_SEC);
+      expect(enemy.cornerDelayTimerSec).toBe(0);
+
+      // Step 3: Next frame after corner delay. Car moves along initialTurnDir without double-triggering BFS
+      RallyXEnemyAI.updateEnemy(enemy, matrix, blueCol, blueRow, Direction.LEFT, 130, 0.02);
+
+      expect(enemy.direction).toBe(initialTurnDir); // Maintained turn direction
+      expect(enemy.direction).not.toBe(Direction.LEFT); // Did NOT 180° reverse back to player
+    });
   });
 });
