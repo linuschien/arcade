@@ -360,16 +360,24 @@ class RallyXAudioServiceImpl {
   }
 
   /**
-   * Smoke Screen Hiss: Fast downward noise/tone pulse.
+   * Authentic Namco WSG Smoke Screen "Pu" Sound (SFX_SMOKE_STREAM).
+   * 4-note rapid ascending pulse: A#2 (116.54Hz) -> B2 (123.47Hz) -> C3 (130.81Hz) -> C#3 (138.59Hz).
+   */
+  public playSmokePuff(): void {
+    const puSeq = [
+      { freq: 116.54, delayMs:  0, durationSeconds: 0.03, type: 'triangle' as OscillatorType, vol: 0.12 },
+      { freq: 123.47, delayMs: 25, durationSeconds: 0.03, type: 'triangle' as OscillatorType, vol: 0.12 },
+      { freq: 130.81, delayMs: 50, durationSeconds: 0.03, type: 'triangle' as OscillatorType, vol: 0.12 },
+      { freq: 138.59, delayMs: 75, durationSeconds: 0.04, type: 'triangle' as OscillatorType, vol: 0.14 },
+    ];
+    SoundEngine.playSequence(puSeq);
+  }
+
+  /**
+   * @deprecated Retained for backwards compatibility; delegates to playSmokePuff().
    */
   public playSmokeHiss(): void {
-    SoundEngine.playTone({
-      type: 'sawtooth',
-      frequency: 240,
-      targetFrequency: 60,
-      durationSeconds: 0.12,
-      volume: 0.09,
-    });
+    this.playSmokePuff();
   }
 
   /**

@@ -173,30 +173,11 @@ export class RallyXEnemyAI {
    * Reverses head-on collisions, diverts rear-end pursuers, and applies a separation nudge.
    */
   public static divergeCarsOnBump(a: EnemyCar, b: EnemyCar): void {
-    // 1. Head-on collision: reverse both cars so they cruise away from each other
-    if (a.direction === OPPOSITE_DIRECTIONS[b.direction]) {
-      a.direction = OPPOSITE_DIRECTIONS[a.direction];
-      b.direction = OPPOSITE_DIRECTIONS[b.direction];
-    } else if (a.direction === b.direction) {
-      // 2. Same direction (rear-end): follower reverses, leader keeps heading forward
-      let follower = a;
-      let leader = b;
-      if (a.direction === Direction.UP) {
-        if (a.y > b.y) { follower = a; leader = b; } else { follower = b; leader = a; }
-      } else if (a.direction === Direction.DOWN) {
-        if (a.y < b.y) { follower = a; leader = b; } else { follower = b; leader = a; }
-      } else if (a.direction === Direction.LEFT) {
-        if (a.x > b.x) { follower = a; leader = b; } else { follower = b; leader = a; }
-      } else if (a.direction === Direction.RIGHT) {
-        if (a.x < b.x) { follower = a; leader = b; } else { follower = b; leader = a; }
-      }
-      follower.direction = OPPOSITE_DIRECTIONS[follower.direction];
-    } else {
-      // 3. Perpendicular/intersection collision: reverse one car to divert paths
-      b.direction = OPPOSITE_DIRECTIONS[b.direction];
-    }
+    // Universal 180° spin reversal for both bumped cars (Z80 ROM: xor 2 on both cars)
+    a.direction = OPPOSITE_DIRECTIONS[a.direction];
+    b.direction = OPPOSITE_DIRECTIONS[b.direction];
 
-    // 4. Positional separation nudge to prevent sharing the identical pixel coordinate
+    // Positional separation nudge to prevent sharing the identical pixel coordinate
     const nudge = 3;
     const va = DIRECTION_VECTORS[a.direction];
     a.x += va.col * nudge;
@@ -504,6 +485,22 @@ export class RallyXEnemyAI {
               enemy.direction = escapeDir;
             }
           }
+        } else {
+          // Smoke or Car Bump spin recovery: if reversed direction faces a wall, escape to open path
+          const vec = DIRECTION_VECTORS[enemy.direction];
+          const nextCol = enemy.col + vec.col;
+          const nextRow = enemy.row + vec.row;
+          if (isRallyXWall(matrix, nextCol, nextRow)) {
+            const escapeDir = RallyXEnemyAI.findEscapeDirection(
+              matrix,
+              enemy.col,
+              enemy.row,
+              enemy.direction
+            );
+            if (escapeDir !== Direction.NONE) {
+              enemy.direction = escapeDir;
+            }
+          }
         }
         enemy.visualAngleDeg = DIRECTION_ANGLES[enemy.direction];
         enemy.turnStartAngleDeg = enemy.visualAngleDeg;
@@ -638,6 +635,8 @@ export class RallyXEnemyAI {
           enemy.lastHitSmokePuffId = puffId;
           // Disarm this puff so it only triggers once (single-charge trap)
           (puff as { armed?: boolean }).armed = false;
+          // Reverse direction 180° away from smoke (Z80 ROM: add a, 2; and 3)
+          enemy.direction = OPPOSITE_DIRECTIONS[enemy.direction];
           affected.push(enemy);
           break;
         }

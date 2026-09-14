@@ -309,6 +309,43 @@ describe('MainGameScene Unit Tests', () => {
     expect(gameState.getActiveSmokePuffs()[1].y).toBe(456);
   });
 
+  it('should enforce deterministic spatial lock preventing smoke deployment in same tile or mid-sequence', () => {
+    scene.create();
+    (scene as any).playerCol = 10;
+    (scene as any).playerRow = 10;
+
+    // Initially can deploy
+    expect((scene as any).canDeploySmoke()).toBe(true);
+
+    // Deploy initial puff in (10, 10)
+    (scene as any).deployInitialSmokePuff();
+    expect((scene as any).pendingSmokeTileCount).toBe(2);
+
+    // Cannot deploy while pending sequence is active
+    expect((scene as any).canDeploySmoke()).toBe(false);
+
+    // Move to next tile (10, 9) and deploy 2nd puff
+    (scene as any).playerCol = 10;
+    (scene as any).playerRow = 9;
+    (scene as any).deployNextPendingSmoke();
+    expect((scene as any).pendingSmokeTileCount).toBe(1);
+    expect((scene as any).canDeploySmoke()).toBe(false);
+
+    // Move to next tile (10, 8) and deploy 3rd puff
+    (scene as any).playerCol = 10;
+    (scene as any).playerRow = 8;
+    (scene as any).deployNextPendingSmoke();
+    expect((scene as any).pendingSmokeTileCount).toBe(0);
+
+    // Sequence is done, but player is STILL in (10, 8) where puff 3 was dropped: cannot deploy!
+    expect((scene as any).canDeploySmoke()).toBe(false);
+
+    // Player enters new tile (10, 7): now can deploy!
+    (scene as any).playerCol = 10;
+    (scene as any).playerRow = 7;
+    expect((scene as any).canDeploySmoke()).toBe(true);
+  });
+
   it('should display Grand Slam congratulatory banner when clearing Round 16', () => {
     scene.create();
     const gameState = (scene as any).gameState;

@@ -6,6 +6,7 @@
  */
 
 import { FlagType, RallyXLevelConfig, getRallyXLevelConfig } from './RallyXMaze';
+import { RallyXAudioService } from '../audio/RallyXAudioService';
 
 export enum RallyXPlayState {
   READY = 'READY',
@@ -250,6 +251,7 @@ export class RallyXGameState {
       armed,
     };
     this.activeSmokePuffs.push(puff);
+    RallyXAudioService.playSmokePuff();
     return puff;
   }
 

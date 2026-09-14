@@ -45,6 +45,7 @@ describe('RallyXAudioService Unit Tests', () => {
     expect(() => RallyXAudioService.playSpecialFlagFanfare()).not.toThrow();
     expect(() => RallyXAudioService.playLuckyFlagChime()).not.toThrow();
     expect(() => RallyXAudioService.playRefuelingChirp(0.5)).not.toThrow();
+    expect(() => RallyXAudioService.playSmokePuff()).not.toThrow();
     expect(() => RallyXAudioService.playSmokeHiss()).not.toThrow();
     expect(() => RallyXAudioService.playSpinOut()).not.toThrow();
     expect(() => RallyXAudioService.playCrash()).not.toThrow();

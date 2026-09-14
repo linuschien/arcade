@@ -186,6 +186,7 @@ describe('RallyXEnemyAI Unit Tests', () => {
       expect(affected.length).toBe(1);
       expect(enemy.state).toBe(EnemyState.SPIN_OUT);
       expect(enemy.spinOutTimerSec).toBe(ENEMY_SPIN_OUT_DURATION_SEC);
+      expect(enemy.direction).toBe(Direction.DOWN); // Reversed 180° from UP
 
       // In spin-out, updateEnemy should decrement timer and rotate (0.25s -> 180 degrees)
       RallyXEnemyAI.updateEnemy(enemy, matrix, 10, 15, Direction.DOWN, 130, 0.25);
@@ -206,16 +207,20 @@ describe('RallyXEnemyAI Unit Tests', () => {
       expect(enemy.spinOutTimerSec).toBe(ENEMY_SPIN_OUT_DURATION_SEC);
     });
 
-    it('should cause 1.0s spin-out for both cars on car-to-car collision', () => {
+    it('should cause 1.0s spin-out for both cars on car-to-car collision and reverse both directions', () => {
       const spawns = [{ col: 10, row: 10 }, { col: 10, row: 10 }];
       const enemies = RallyXEnemyAI.createEnemies(spawns, false);
+      enemies[0].direction = Direction.UP;
+      enemies[1].direction = Direction.DOWN;
 
       RallyXEnemyAI.checkCarBumps(enemies);
 
       expect(enemies[0].state).toBe(EnemyState.SPIN_OUT);
       expect(enemies[0].spinOutTimerSec).toBe(ENEMY_BUMP_DURATION_SEC);
+      expect(enemies[0].direction).toBe(Direction.DOWN); // Reversed from UP
       expect(enemies[1].state).toBe(EnemyState.SPIN_OUT);
       expect(enemies[1].spinOutTimerSec).toBe(ENEMY_BUMP_DURATION_SEC);
+      expect(enemies[1].direction).toBe(Direction.UP); // Reversed from DOWN
     });
 
     it('should detect lethal player collision with active or dormant enemy, but NOT spinning enemy', () => {
