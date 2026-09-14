@@ -346,6 +346,57 @@ describe('MainGameScene Unit Tests', () => {
     expect((scene as any).canDeploySmoke()).toBe(true);
   });
 
+  it('should delay smoke deployment when current or next tile has active smoke, preserving all 3 puffs without loss', () => {
+    scene.create();
+    const gameState = (scene as any).gameState;
+
+    // Place an existing active smoke puff at (10, 10)
+    (scene as any).playerCol = 10;
+    (scene as any).playerRow = 10;
+    const initialPuff = gameState.addSmokePuff((10 + 0.5) * 48, (10 + 0.5) * 48);
+    expect(initialPuff).not.toBeNull();
+    expect(gameState.getActiveSmokePuffs().length).toBe(1);
+
+    // Also place an active smoke puff at (10, 9)
+    const secondPuff = gameState.addSmokePuff((10 + 0.5) * 48, (9 + 0.5) * 48);
+    expect(secondPuff).not.toBeNull();
+    expect(gameState.getActiveSmokePuffs().length).toBe(2);
+
+    // Player triggers smoke deployment while standing in (10, 10)
+    (scene as any).deployInitialSmokePuff();
+    // Since (10, 10) is occupied, init puff is delayed -> all 3 puffs are retained in pending!
+    expect((scene as any).pendingSmokeTileCount).toBe(3);
+    expect(gameState.getActiveSmokePuffs().length).toBe(2);
+
+    // Player enters (10, 9) which is ALSO occupied: pending count preserved at 3!
+    (scene as any).playerCol = 10;
+    (scene as any).playerRow = 9;
+    (scene as any).deployNextPendingSmoke();
+    expect((scene as any).pendingSmokeTileCount).toBe(3);
+    expect(gameState.getActiveSmokePuffs().length).toBe(2);
+
+    // Player enters (10, 8) which is EMPTY: puff 1 deployed! pending becomes 2
+    (scene as any).playerCol = 10;
+    (scene as any).playerRow = 8;
+    (scene as any).deployNextPendingSmoke();
+    expect((scene as any).pendingSmokeTileCount).toBe(2);
+    expect(gameState.getActiveSmokePuffs().length).toBe(3);
+
+    // Player enters (10, 7) which is EMPTY: puff 2 deployed! pending becomes 1
+    (scene as any).playerCol = 10;
+    (scene as any).playerRow = 7;
+    (scene as any).deployNextPendingSmoke();
+    expect((scene as any).pendingSmokeTileCount).toBe(1);
+    expect(gameState.getActiveSmokePuffs().length).toBe(4);
+
+    // Player enters (10, 6) which is EMPTY: puff 3 deployed! pending becomes 0
+    (scene as any).playerCol = 10;
+    (scene as any).playerRow = 6;
+    (scene as any).deployNextPendingSmoke();
+    expect((scene as any).pendingSmokeTileCount).toBe(0);
+    expect(gameState.getActiveSmokePuffs().length).toBe(5);
+  });
+
   it('should display Grand Slam congratulatory banner when clearing Round 16', () => {
     scene.create();
     const gameState = (scene as any).gameState;

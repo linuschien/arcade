@@ -973,17 +973,25 @@ export class MainGameScene extends BaseArcadeScene {
     const centerX = (col + 0.5) * RALLYX_TILE_SIZE;
     const centerY = (row + 0.5) * RALLYX_TILE_SIZE;
 
-    this.gameState.addSmokePuff(centerX, centerY);
     this.lastSmokeTile = { col, row };
-    this.pendingSmokeTileCount = 2; // 2 more puffs to place as player moves into next tiles
+    const puff = this.gameState.addSmokePuff(centerX, centerY);
+    if (puff) {
+      this.pendingSmokeTileCount = 2; // 2 more puffs to place as player moves into next tiles
+    } else {
+      // Current tile already has active smoke (Arcade Z80 ret c): delay deployment, preserve all 3 puffs!
+      this.pendingSmokeTileCount = 3;
+    }
   }
 
   private deployNextPendingSmoke(): void {
     const nextCenterX = (this.playerCol + 0.5) * RALLYX_TILE_SIZE;
     const nextCenterY = (this.playerRow + 0.5) * RALLYX_TILE_SIZE;
-    this.gameState.addSmokePuff(nextCenterX, nextCenterY);
     this.lastSmokeTile = { col: this.playerCol, row: this.playerRow };
-    this.pendingSmokeTileCount--;
+    const puff = this.gameState.addSmokePuff(nextCenterX, nextCenterY);
+    if (puff) {
+      this.pendingSmokeTileCount--;
+    }
+    // If puff is null (tile occupied), pendingSmokeTileCount is preserved for the next empty tile!
   }
 
   // Alias for backward-compatibility and tests

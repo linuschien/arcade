@@ -365,10 +365,10 @@ class RallyXAudioServiceImpl {
    */
   public playSmokePuff(): void {
     const puSeq = [
-      { freq: 116.54, delayMs:  0, durationSeconds: 0.03, type: 'triangle' as OscillatorType, vol: 0.12 },
-      { freq: 123.47, delayMs: 25, durationSeconds: 0.03, type: 'triangle' as OscillatorType, vol: 0.12 },
-      { freq: 130.81, delayMs: 50, durationSeconds: 0.03, type: 'triangle' as OscillatorType, vol: 0.12 },
-      { freq: 138.59, delayMs: 75, durationSeconds: 0.04, type: 'triangle' as OscillatorType, vol: 0.14 },
+      { freq: 116.54, delayMs:  0, durationSeconds: 0.03, type: 'square' as OscillatorType, vol: 0.22 },
+      { freq: 123.47, delayMs: 25, durationSeconds: 0.03, type: 'square' as OscillatorType, vol: 0.22 },
+      { freq: 130.81, delayMs: 50, durationSeconds: 0.03, type: 'square' as OscillatorType, vol: 0.22 },
+      { freq: 138.59, delayMs: 75, durationSeconds: 0.04, type: 'square' as OscillatorType, vol: 0.24 },
     ];
     SoundEngine.playSequence(puSeq);
   }

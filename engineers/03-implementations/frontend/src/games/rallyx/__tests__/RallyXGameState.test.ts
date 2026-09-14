@@ -110,6 +110,24 @@ describe('RallyXGameState Unit Tests', () => {
       state.updateSmoke(2.0);
       expect(state.getActiveSmokePuffs().length).toBe(0);
     });
+
+    it('should reject duplicate smoke puff if armed puff already exists within 16px (Choice A / Arcade ret c)', () => {
+      state.setPlayState(RallyXPlayState.PLAYING);
+      const puff1 = state.addSmokePuff(100, 200);
+      expect(puff1).not.toBeNull();
+      expect(state.getActiveSmokePuffs().length).toBe(1);
+
+      // Attempting to place another puff at exact same location while puff1 is armed returns null
+      const dup = state.addSmokePuff(100, 200);
+      expect(dup).toBeNull();
+      expect(state.getActiveSmokePuffs().length).toBe(1);
+
+      // Disarming puff1 (enemy hit it): now a new puff can be placed there
+      puff1!.armed = false;
+      const puff2 = state.addSmokePuff(100, 200);
+      expect(puff2).not.toBeNull();
+      expect(state.getActiveSmokePuffs().length).toBe(2);
+    });
   });
 
   describe('Flag Collection, Multipliers, Lucky Refill & Clear', () => {

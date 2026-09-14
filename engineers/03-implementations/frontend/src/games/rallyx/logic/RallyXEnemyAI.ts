@@ -173,9 +173,27 @@ export class RallyXEnemyAI {
    * Reverses head-on collisions, diverts rear-end pursuers, and applies a separation nudge.
    */
   public static divergeCarsOnBump(a: EnemyCar, b: EnemyCar): void {
-    // Universal 180° spin reversal for both bumped cars (Z80 ROM: xor 2 on both cars)
-    a.direction = OPPOSITE_DIRECTIONS[a.direction];
-    b.direction = OPPOSITE_DIRECTIONS[b.direction];
+    if (a.direction === b.direction) {
+      // Same direction rear-end bump (Z80 ROM lines 4160-4163):
+      // Leader continues forward; Follower reverses 180° away!
+      let leader = a;
+      let follower = b;
+      if (a.direction === Direction.UP) {
+        if (a.y > b.y) { leader = b; follower = a; } else { leader = a; follower = b; }
+      } else if (a.direction === Direction.DOWN) {
+        if (a.y > b.y) { leader = a; follower = b; } else { leader = b; follower = a; }
+      } else if (a.direction === Direction.LEFT) {
+        if (a.x > b.x) { leader = b; follower = a; } else { leader = a; follower = b; }
+      } else if (a.direction === Direction.RIGHT) {
+        if (a.x > b.x) { leader = a; follower = b; } else { leader = b; follower = a; }
+      }
+      follower.direction = OPPOSITE_DIRECTIONS[follower.direction];
+      // Leader keeps its original direction
+    } else {
+      // Head-on or intersection: both cars reverse 180° away from each other
+      a.direction = OPPOSITE_DIRECTIONS[a.direction];
+      b.direction = OPPOSITE_DIRECTIONS[b.direction];
+    }
 
     // Positional separation nudge to prevent sharing the identical pixel coordinate
     const nudge = 3;

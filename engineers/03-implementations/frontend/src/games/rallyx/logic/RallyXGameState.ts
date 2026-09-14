@@ -241,8 +241,17 @@ export class RallyXGameState {
 
   /**
    * Adds an active smoke puff into the simulation.
+   * Choice A (Arcade Z80 ret c): Rejects duplicate placement if an armed puff already exists within 16px.
    */
-  public addSmokePuff(x: number, y: number, armed: boolean = true): SmokePuff {
+  public addSmokePuff(x: number, y: number, armed: boolean = true): SmokePuff | null {
+    // Check if an armed active puff already exists at this location (within 16px, matching Z80 ROM cp 10h)
+    const existingArmedPuff = this.activeSmokePuffs.find(
+      (p) => p.armed && Math.hypot(p.x - x, p.y - y) < 16
+    );
+    if (existingArmedPuff) {
+      return null;
+    }
+
     const puff: SmokePuff = {
       id: `smoke_${++this.smokeIdCounter}`,
       x,
