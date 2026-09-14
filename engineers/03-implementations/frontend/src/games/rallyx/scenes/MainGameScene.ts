@@ -87,8 +87,9 @@ export class MainGameScene extends BaseArcadeScene {
   // Enemies
   private enemies: EnemyCar[] = [];
 
-  // Smoke Puff Queue for 3-puff sequence
-  private pendingSmokePuffs: Array<{ delayMs: number }> = [];
+  // Smoke Puff Queue for 3-puff sequence (Grid-aligned trajectory: 1 puff per tile)
+  private pendingSmokeTileCount: number = 0;
+  private lastSmokeTile: { col: number; row: number } | null = null;
 
   // HUD Game Objects
   private hudBg!: Phaser.GameObjects.Graphics;
@@ -406,7 +407,8 @@ export class MainGameScene extends BaseArcadeScene {
     // Clear Smoke Puffs
     this.smokeSprites.forEach((sp) => sp.destroy());
     this.smokeSprites.clear();
-    this.pendingSmokePuffs = [];
+    this.pendingSmokeTileCount = 0;
+    this.lastSmokeTile = null;
 
     // Clear Floating Scores
     this.floatingScores.forEach((item) => item.textObj.destroy());
@@ -761,7 +763,7 @@ export class MainGameScene extends BaseArcadeScene {
     if (playState === RallyXPlayState.PLAYING) {
       this.handlePlayerInput();
       this.updatePlayerMovement(deltaSec);
-      this.updatePendingSmokePuffs(delta);
+      this.checkPendingSmokePlacement();
       this.updateEnemies(deltaSec);
       this.checkCollisions();
 
@@ -812,7 +814,7 @@ export class MainGameScene extends BaseArcadeScene {
         const deployed = this.gameState.triggerSmokeDeployment();
         if (deployed) {
           RallyXAudioService.playSmokeHiss();
-          this.queueSmokePuffsSequence(this.playerX, this.playerY);
+          this.queueSmokePuffsSequence();
         }
       }
     }
@@ -949,22 +951,33 @@ export class MainGameScene extends BaseArcadeScene {
     }
   }
 
-  private queueSmokePuffsSequence(x: number, y: number): void {
-    // 3 sequential puffs emitted along the car's dynamic wake
-    this.gameState.addSmokePuff(x, y);
-    this.pendingSmokePuffs.push({ delayMs: 80 });
-    this.pendingSmokePuffs.push({ delayMs: 160 });
+  private queueSmokePuffsSequence(x?: number, y?: number): void {
+    // 3 sequential puffs emitted along the car's dynamic tile trajectory (1 puff per tile, centered)
+    const col = x !== undefined ? Math.floor(x / RALLYX_TILE_SIZE) : this.playerCol;
+    const row = y !== undefined ? Math.floor(y / RALLYX_TILE_SIZE) : this.playerRow;
+    const centerX = (col + 0.5) * RALLYX_TILE_SIZE;
+    const centerY = (row + 0.5) * RALLYX_TILE_SIZE;
+
+    this.gameState.addSmokePuff(centerX, centerY);
+    this.lastSmokeTile = { col, row };
+    this.pendingSmokeTileCount = 2; // 2 more puffs to place as player moves into next tiles
   }
 
-  private updatePendingSmokePuffs(deltaMs: number): void {
-    for (let i = this.pendingSmokePuffs.length - 1; i >= 0; i--) {
-      this.pendingSmokePuffs[i].delayMs -= deltaMs;
-      if (this.pendingSmokePuffs[i].delayMs <= 0) {
-        // Emit smoke puff along the car's current wake position
-        this.gameState.addSmokePuff(this.playerX, this.playerY);
-        this.pendingSmokePuffs.splice(i, 1);
+  private checkPendingSmokePlacement(): void {
+    if (this.pendingSmokeTileCount > 0 && this.lastSmokeTile) {
+      if (this.playerCol !== this.lastSmokeTile.col || this.playerRow !== this.lastSmokeTile.row) {
+        const nextCenterX = (this.playerCol + 0.5) * RALLYX_TILE_SIZE;
+        const nextCenterY = (this.playerRow + 0.5) * RALLYX_TILE_SIZE;
+        this.gameState.addSmokePuff(nextCenterX, nextCenterY);
+        this.lastSmokeTile = { col: this.playerCol, row: this.playerRow };
+        this.pendingSmokeTileCount--;
       }
     }
+  }
+
+  // Alias for backward-compatibility and tests
+  private updatePendingSmokePuffs(_deltaMs?: number): void {
+    this.checkPendingSmokePlacement();
   }
 
   private updateSmokeSprites(): void {

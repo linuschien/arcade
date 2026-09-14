@@ -600,13 +600,13 @@ export class RallyXEnemyAI {
   /**
    * Checks collisions between enemy cars and active smoke puffs.
    * Puts affected enemy cars into 2.0s Spin-Out state.
-   * ZERO global grace time: every distinct smoke puff can spin the enemy!
-   * Consecutive smoke screens will continuously stall pursuing red cars.
+   * Each puff has a single-charge armed state (disarms on hit, visual stays to fade out).
+   * Radius = 22px to ensure car spins right in the center of the grid tile on the smoke puff.
    */
   public static checkSmokeCollisions(
     enemies: EnemyCar[],
-    smokePuffs: readonly { id?: string; x: number; y: number }[],
-    radius: number = 36
+    smokePuffs: readonly { id?: string; x: number; y: number; armed?: boolean }[],
+    radius: number = 22
   ): EnemyCar[] {
     const affected: EnemyCar[] = [];
     const activePuffIds = new Set(
@@ -622,6 +622,9 @@ export class RallyXEnemyAI {
       if (enemy.state !== EnemyState.CHASING) continue;
 
       for (const puff of smokePuffs) {
+        // Skip disarmed (spent) puffs
+        if (puff.armed === false) continue;
+
         const puffId = puff.id || `${puff.x}_${puff.y}`;
         // Only skip the specific single puff instance that the enemy is currently standing in
         if (enemy.lastHitSmokePuffId === puffId) continue;
@@ -633,6 +636,8 @@ export class RallyXEnemyAI {
           enemy.spinAngleDeg = 0;
           enemy.turnStartAngleDeg = enemy.visualAngleDeg;
           enemy.lastHitSmokePuffId = puffId;
+          // Disarm this puff so it only triggers once (single-charge trap)
+          (puff as { armed?: boolean }).armed = false;
           affected.push(enemy);
           break;
         }

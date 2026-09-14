@@ -22,6 +22,7 @@ export interface SmokePuff {
   x: number;
   y: number;
   remainingTimeSec: number;
+  armed: boolean;
 }
 
 export interface FlagCollectResult {
@@ -240,12 +241,13 @@ export class RallyXGameState {
   /**
    * Adds an active smoke puff into the simulation.
    */
-  public addSmokePuff(x: number, y: number): SmokePuff {
+  public addSmokePuff(x: number, y: number, armed: boolean = true): SmokePuff {
     const puff: SmokePuff = {
       id: `smoke_${++this.smokeIdCounter}`,
       x,
       y,
       remainingTimeSec: SMOKE_PUFF_DURATION_SEC,
+      armed,
     };
     this.activeSmokePuffs.push(puff);
     return puff;

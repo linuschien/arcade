@@ -285,22 +285,28 @@ describe('MainGameScene Unit Tests', () => {
   it('should emit sequential smoke puffs trailing along player moving position', () => {
     scene.create();
     const gameState = (scene as any).gameState;
-    (scene as any).playerX = 500;
-    (scene as any).playerY = 500;
+    (scene as any).playerCol = 10;
+    (scene as any).playerRow = 10;
+    (scene as any).playerX = (10 + 0.5) * 48; // 504
+    (scene as any).playerY = (10 + 0.5) * 48; // 504
 
-    // Trigger smoke
-    (scene as any).queueSmokePuffsSequence(500, 500);
+    // Trigger smoke (placed at tile center 504, 504)
+    (scene as any).queueSmokePuffsSequence();
     expect(gameState.getActiveSmokePuffs().length).toBe(1);
-    expect(gameState.getActiveSmokePuffs()[0].x).toBe(500);
+    expect(gameState.getActiveSmokePuffs()[0].x).toBe(504);
+    expect(gameState.getActiveSmokePuffs()[0].y).toBe(504);
 
-    // Advance 85ms and change player position to simulate car driving forward
-    (scene as any).playerX = 500;
-    (scene as any).playerY = 480; // moved up
+    // Car moves into the adjacent tile above (col 10, row 9)
+    (scene as any).playerCol = 10;
+    (scene as any).playerRow = 9;
+    (scene as any).playerX = 504;
+    (scene as any).playerY = (9 + 0.5) * 48; // 456
     (scene as any).updatePendingSmokePuffs(85);
 
     expect(gameState.getActiveSmokePuffs().length).toBe(2);
-    // Second puff should be dropped at the car's updated wake coordinate (480)
-    expect(gameState.getActiveSmokePuffs()[1].y).toBe(480);
+    // Second puff should be dropped at the new tile's exact center (col 10, row 9 -> y: 456)
+    expect(gameState.getActiveSmokePuffs()[1].x).toBe(504);
+    expect(gameState.getActiveSmokePuffs()[1].y).toBe(456);
   });
 
   it('should display Grand Slam congratulatory banner when clearing Round 16', () => {
