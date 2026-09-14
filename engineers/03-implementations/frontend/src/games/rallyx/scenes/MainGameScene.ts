@@ -928,8 +928,13 @@ export class MainGameScene extends BaseArcadeScene {
     this.playerCol = Math.floor(this.playerX / RALLYX_TILE_SIZE);
     this.playerRow = Math.floor(this.playerY / RALLYX_TILE_SIZE);
 
-    if ((this.playerCol !== prevCol || this.playerRow !== prevRow) && this.pendingSmokeTileCount > 0) {
-      this.deployNextPendingSmoke();
+    if (this.playerCol !== prevCol || this.playerRow !== prevRow) {
+      if (this.pendingSmokeTileCount > 0) {
+        this.deployNextPendingSmoke();
+      } else {
+        // Player has left the tile where the last puff was dropped: clear the same-tile lock
+        this.lastSmokeTile = null;
+      }
     }
 
     this.playerSprite.setPosition(this.playerX, this.playerY);

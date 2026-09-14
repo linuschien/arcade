@@ -340,9 +340,18 @@ describe('MainGameScene Unit Tests', () => {
     // Sequence is done, but player is STILL in (10, 8) where puff 3 was dropped: cannot deploy!
     expect((scene as any).canDeploySmoke()).toBe(false);
 
-    // Player enters new tile (10, 7): now can deploy!
+    // Player enters new tile (10, 7) via updatePlayerMovement: clears same-tile lock!
+    (scene as any).currentDirection = 'UP';
+    (scene as any).playerX = (10 + 0.5) * 48;
+    (scene as any).playerY = (7 + 0.5) * 48;
+    (scene as any).updatePlayerMovement(0.001);
+    expect((scene as any).lastSmokeTile).toBeNull();
+    expect((scene as any).canDeploySmoke()).toBe(true);
+
+    // Player loops back to (10, 8) where puff 3 was dropped earlier:
+    // Since player previously left (10, 8), the same-tile lock was cleared, so canDeploySmoke is true!
     (scene as any).playerCol = 10;
-    (scene as any).playerRow = 7;
+    (scene as any).playerRow = 8;
     expect((scene as any).canDeploySmoke()).toBe(true);
   });
 
