@@ -57,6 +57,10 @@ export class SokobanGameState {
     deadlockedBoxes: [],
   };
 
+  public getDeadlockReport(): DeadlockReport {
+    return this.pendingDeadlockReport;
+  }
+
   constructor() {
     this.loadPersistence();
   }

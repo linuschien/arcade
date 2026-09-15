@@ -5,6 +5,8 @@ vi.mock('../../audio/SokobanAudioService', () => ({
   SokobanAudioService: {
     playWorldBGM: vi.fn(),
     stopBGM: vi.fn(),
+    pauseBGM: vi.fn(),
+    resumeBGM: vi.fn(),
     playStep: vi.fn(),
     playPush: vi.fn(),
     playBoxTarget: vi.fn(),
@@ -118,6 +120,19 @@ describe('Sokoban MainGameScene Unit Tests', () => {
     (scene as any).handleShutdown();
     expect((scene as any).tweens.killAll).toHaveBeenCalled();
     expect((scene as any).time.removeAllEvents).toHaveBeenCalled();
+  });
+
+  it('should handle onPauseAudio and onResumeAudio lifecycle safely', () => {
+    scene.create();
+    expect(() => (scene as any).onPauseAudio()).not.toThrow();
+    expect(() => (scene as any).onResumeAudio()).not.toThrow();
+  });
+
+  it('should assign layered depths to overlays ensuring high visibility', () => {
+    scene.create();
+    expect(mockContainer.setDepth).toHaveBeenCalledWith(100);
+    expect(mockContainer.setDepth).toHaveBeenCalledWith(200);
+    expect(mockContainer.setDepth).toHaveBeenCalledWith(300);
   });
 });
 

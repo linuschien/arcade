@@ -12,6 +12,8 @@ describe('SokobanAudioService Unit Tests', () => {
     expect(() => SokobanAudioService.playWorldBGM('cyber_vault')).not.toThrow();
     expect(() => SokobanAudioService.playWorldBGM('steel_works')).not.toThrow();
     expect(() => SokobanAudioService.playWorldBGM('mega_terminal')).not.toThrow();
+    expect(() => SokobanAudioService.pauseBGM()).not.toThrow();
+    expect(() => SokobanAudioService.resumeBGM()).not.toThrow();
     expect(() => SokobanAudioService.stopBGM()).not.toThrow();
   });
 

@@ -52,6 +52,38 @@ class SokobanAudioServiceImpl {
     }
   }
 
+  /**
+   * Temporarily pause BGM synthesizer loop during game pause.
+   */
+  public pauseBGM(): void {
+    if (this.bgmTimer) {
+      clearInterval(this.bgmTimer);
+      this.bgmTimer = null;
+    }
+  }
+
+  /**
+   * Resume BGM synthesizer loop when unpausing.
+   */
+  public resumeBGM(): void {
+    if (this.isBgmPlaying && this.currentTheme && !this.bgmTimer) {
+      switch (this.currentTheme) {
+        case 'cargo_depot':
+          this.startCargoWarmthLoop();
+          break;
+        case 'cyber_vault':
+          this.startCyberPulseLoop();
+          break;
+        case 'steel_works':
+          this.startSteelJazzLoop();
+          break;
+        case 'mega_terminal':
+          this.startTerminalVistaLoop();
+          break;
+      }
+    }
+  }
+
   // --- 4 World BGM Synthesizers ---
 
   // World 1: Cargo Warmth (88 BPM -> ~170ms 16th note, warm C Major triangle arpeggios)

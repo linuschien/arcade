@@ -68,6 +68,19 @@ export class MainGameScene extends BaseArcadeScene {
   private actionDebounceMs: number = 0;
   private currentWorkerFacing: 'down' | 'up' | 'left' | 'right' = 'down';
   private titleMenuSelectedIndex: number = 0;
+  private isRDown: boolean = false;
+
+  private onKeyDownHandler = (e: KeyboardEvent) => {
+    if (e.key === 'r' || e.key === 'R') {
+      this.isRDown = true;
+    }
+  };
+
+  private onKeyUpHandler = (e: KeyboardEvent) => {
+    if (e.key === 'r' || e.key === 'R') {
+      this.isRDown = false;
+    }
+  };
 
   constructor() {
     super({ key: 'sokoban:MainGameScene' });
@@ -76,6 +89,12 @@ export class MainGameScene extends BaseArcadeScene {
   public create(): void {
     this.initHighDpiCamera(1280);
     this.state = new SokobanGameState();
+
+    // Register window keyboard listeners for Hold-R give up
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', this.onKeyDownHandler);
+      window.addEventListener('keyup', this.onKeyUpHandler);
+    }
 
     // Setup base visual layers
     this.createBackground();
@@ -90,6 +109,14 @@ export class MainGameScene extends BaseArcadeScene {
 
     // Show initial title menu
     this.showTitleMenu();
+  }
+
+  protected override onPauseAudio(): void {
+    SokobanAudioService.pauseBGM();
+  }
+
+  protected override onResumeAudio(): void {
+    SokobanAudioService.resumeBGM();
   }
 
   private createBackground(): void {
@@ -176,22 +203,19 @@ export class MainGameScene extends BaseArcadeScene {
     // 3. Layer 2 Board Container
     this.boardLayer = this.add.container(0, 0);
     if (typeof (this.boardLayer as any).setDepth === 'function') {
-      this.boardLayer.setDepth(2);
+      this.boardLayer.setDepth(10);
     }
 
-    // 4. Layer 3 Vignette Frame (Optical edge blending)
+    // 4. Layer 3 Vignette Frame (Optical edge blending & rounded frame)
     this.vignetteGfx = this.add.graphics();
     if (typeof (this.vignetteGfx as any).setDepth === 'function') {
-      this.vignetteGfx.setDepth(3);
+      this.vignetteGfx.setDepth(20);
     }
     this.drawVignetteFrame();
   }
 
   private drawVignetteFrame(): void {
     this.vignetteGfx.clear();
-    // 1px inner border around the 880x660 central viewport (顏色稍淡、低調)
-    this.vignetteGfx.lineStyle(1.5, 0x1e293b, 0.7);
-    this.vignetteGfx.strokeRect(200, 30, 880, 660);
 
     // Edge gradient shadow bands to blend arena smoothly with Left/Right HUDs
     for (let i = 0; i < 16; i++) {
@@ -206,6 +230,10 @@ export class MainGameScene extends BaseArcadeScene {
       this.vignetteGfx.fillRect(200, 30 + i, 880, 1);
       this.vignetteGfx.fillRect(200, 690 - 1 - i, 880, 1);
     }
+
+    // Outer rounded rect border around the 880x660 central arena (matching Left & Right HUDs)
+    this.vignetteGfx.lineStyle(1.5, 0x334155, 0.8);
+    this.vignetteGfx.strokeRoundedRect(200, 30, 880, 660, 8);
   }
 
   private createRightHUD(): void {
@@ -286,6 +314,9 @@ export class MainGameScene extends BaseArcadeScene {
   private createOverlays(): void {
     // 1. Deadlock Banner (Top of center area)
     this.deadlockBannerContainer = this.add.container(640, 65).setVisible(false);
+    if (typeof (this.deadlockBannerContainer as any).setDepth === 'function') {
+      this.deadlockBannerContainer.setDepth(100);
+    }
     this.deadlockBannerBg = this.add.graphics();
     this.deadlockBannerText = this.add.text(0, 0, '', {
       fontFamily: 'monospace',
@@ -298,6 +329,9 @@ export class MainGameScene extends BaseArcadeScene {
 
     // 2. Hold Give Up Modal (Center 320x120)
     this.giveUpModalContainer = this.add.container(640, 360).setVisible(false);
+    if (typeof (this.giveUpModalContainer as any).setDepth === 'function') {
+      this.giveUpModalContainer.setDepth(200);
+    }
     const modalBg = this.add.graphics();
     modalBg.fillStyle(0x0f172a, 0.95);
     modalBg.fillRoundedRect(-160, -60, 320, 120, 8);
@@ -322,6 +356,9 @@ export class MainGameScene extends BaseArcadeScene {
 
     // 3. General Dialog Modal (Title Menu, Stage Clear, Game Over, Victory)
     this.modalOverlayContainer = this.add.container(640, 360).setVisible(false);
+    if (typeof (this.modalOverlayContainer as any).setDepth === 'function') {
+      this.modalOverlayContainer.setDepth(300);
+    }
     this.modalBg = this.add.graphics();
     this.modalTitleText = this.add.text(0, -110, '', {
       fontFamily: 'monospace',
@@ -356,6 +393,10 @@ export class MainGameScene extends BaseArcadeScene {
   private showTitleMenu(): void {
     this.modalOverlayContainer.setVisible(true);
     this.modalBg.clear();
+    // Backdrop dimmer to ensure high contrast over center arena
+    this.modalBg.fillStyle(0x000000, 0.65);
+    this.modalBg.fillRect(-640, -360, 1280, 720);
+
     this.modalBg.fillStyle(0x0a0f1d, 0.95);
     this.modalBg.fillRoundedRect(-250, -150, 500, 300, 12);
     this.modalBg.lineStyle(2, 0x38bdf8, 0.85);
@@ -373,7 +414,7 @@ export class MainGameScene extends BaseArcadeScene {
     const maxCleared = this.state.maxClearedStage;
     if (maxCleared > 0) {
       const optContinue = (this.titleMenuSelectedIndex === 0 ? '► ' : '  ') + `CONTINUE (STAGE ${maxCleared + 1})`;
-      const optNewGame  = (this.titleMenuSelectedIndex === 1 ? '► ' : '  ') + 'NEW GAME (FROM STAGE 1)';
+      const optNewGame  = (this.titleMenuSelectedIndex === 1 ? '► ' : '  ') + 'NEW GAME (STAGE 1)';
       this.modalBodyText.setText(
         `SAVED PROGRESS: STAGE ${maxCleared} CLEARED\n\n` +
         `${optContinue}\n` +
@@ -602,7 +643,9 @@ export class MainGameScene extends BaseArcadeScene {
     // Active Gameplay Inputs
     if (this.state.status === 'PLAYING' || this.state.status === 'DEADLOCK_CRITICAL_PENDING') {
       // 1. Hold-to-Give-Up [R] / BUTTON_B
-      const isGivingUp = InputService.isActionDown(PlayerIndex.P1, ArcadeAction.BUTTON_B) || (this.input.keyboard?.addKey('R').isDown ?? false);
+      const isGivingUp = this.isRDown ||
+        InputService.isActionDown(PlayerIndex.P1, ArcadeAction.BUTTON_B) ||
+        (this.input.keyboard?.addKey('R').isDown ?? false);
       this.state.setHoldGiveUp(isGivingUp);
       this.updateGiveUpModal();
 
@@ -789,17 +832,21 @@ export class MainGameScene extends BaseArcadeScene {
     this.extendBarGfx.fillRoundedRect(1100, 285, 160 * extendProgress, 8, 3);
 
     // 3. Deadlock Alert Banner
-    const dlReport = (this.state as any).pendingDeadlockReport;
+    const dlReport = this.state.getDeadlockReport();
     if (dlReport && dlReport.isDeadlocked) {
       this.deadlockBannerContainer.setVisible(true);
       this.deadlockBannerBg.clear();
       if (dlReport.status === 'DEADLOCK_WARNING') {
         this.deadlockBannerBg.fillStyle(0xd97706, 0.95);
-        this.deadlockBannerBg.fillRoundedRect(-180, -18, 360, 36, 6);
+        this.deadlockBannerBg.fillRoundedRect(-200, -18, 400, 36, 8);
+        this.deadlockBannerBg.lineStyle(2, 0xfef08a, 1);
+        this.deadlockBannerBg.strokeRoundedRect(-200, -18, 400, 36, 8);
         this.deadlockBannerText.setText('⚠ DEADLOCK DETECTED! PRESS [Z] TO UNDO');
       } else {
         this.deadlockBannerBg.fillStyle(0xdc2626, 0.95);
-        this.deadlockBannerBg.fillRoundedRect(-180, -18, 360, 36, 6);
+        this.deadlockBannerBg.fillRoundedRect(-200, -18, 400, 36, 8);
+        this.deadlockBannerBg.lineStyle(2, 0xfecaca, 1);
+        this.deadlockBannerBg.strokeRoundedRect(-200, -18, 400, 36, 8);
         this.deadlockBannerText.setText('🚨 CRITICAL DEADLOCK! NO UNDO AVAILABLE');
       }
     } else {
@@ -827,6 +874,10 @@ export class MainGameScene extends BaseArcadeScene {
   private showStageClear(breakdown: any): void {
     this.modalOverlayContainer.setVisible(true);
     this.modalBg.clear();
+    // Backdrop dimmer to ensure high contrast over board
+    this.modalBg.fillStyle(0x000000, 0.65);
+    this.modalBg.fillRect(-640, -360, 1280, 720);
+
     this.modalBg.fillStyle(0x0a0f1d, 0.95);
     this.modalBg.fillRoundedRect(-250, -160, 500, 320, 12);
     this.modalBg.lineStyle(2, 0x10b981, 0.85);
@@ -850,6 +901,10 @@ export class MainGameScene extends BaseArcadeScene {
   private showGameOver(): void {
     this.modalOverlayContainer.setVisible(true);
     this.modalBg.clear();
+    // Backdrop dimmer to ensure high contrast over board
+    this.modalBg.fillStyle(0x000000, 0.65);
+    this.modalBg.fillRect(-640, -360, 1280, 720);
+
     this.modalBg.fillStyle(0x0a0f1d, 0.95);
     this.modalBg.fillRoundedRect(-250, -150, 500, 300, 12);
     this.modalBg.lineStyle(2, 0xef4444, 0.85);
@@ -881,6 +936,10 @@ export class MainGameScene extends BaseArcadeScene {
   private showVictory(): void {
     this.modalOverlayContainer.setVisible(true);
     this.modalBg.clear();
+    // Backdrop dimmer to ensure high contrast over board
+    this.modalBg.fillStyle(0x000000, 0.65);
+    this.modalBg.fillRect(-640, -360, 1280, 720);
+
     this.modalBg.fillStyle(0x0a0f1d, 0.95);
     this.modalBg.fillRoundedRect(-250, -150, 500, 300, 12);
     this.modalBg.lineStyle(2, 0xfacc15, 0.9);
@@ -908,6 +967,10 @@ export class MainGameScene extends BaseArcadeScene {
   }
 
   private handleShutdown(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('keydown', this.onKeyDownHandler);
+      window.removeEventListener('keyup', this.onKeyUpHandler);
+    }
     SokobanAudioService.stopBGM();
     this.tweens.killAll();
     this.time.removeAllEvents();
