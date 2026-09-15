@@ -45,7 +45,7 @@ export class SokobanGameState {
   public currentStageConfig!: SokobanStageConfig;
 
   public elapsedSeconds: number = 0;
-  public softTimeoutFired: boolean = false;
+  private softTimeoutFired: boolean = false;
 
   public giveUpHoldMs: number = 0;
   public isGivingUp: boolean = false;

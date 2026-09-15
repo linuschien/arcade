@@ -83,8 +83,11 @@ describe('SokobanGameState Unit Tests', () => {
     // Advance tick by tSoft seconds
     const event = state.tick(tSoft * 1000);
     expect(event.timeoutTriggered).toBe(true);
-    expect(state.softTimeoutFired).toBe(true);
     expect(state.status).toBe('PLAYING'); // Gameplay continues uninterrupted!
+
+    // Subsequent tick should NOT re-trigger timeout
+    const nextEvent = state.tick(1000);
+    expect(nextEvent.timeoutTriggered).toBeUndefined();
   });
 
   it('should deduct life and restart when holding [R] for 1.0 second', () => {

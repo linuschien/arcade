@@ -764,23 +764,16 @@ export class MainGameScene extends BaseArcadeScene {
     const secs = (remainingTime % 60).toString().padStart(2, '0');
     this.timerText.setText(`${mins}:${secs}`);
 
-    // Timer bar & colors
+    // Timer bar & colors (Unified color: CSS string for Text, Hex integer for Graphics)
     const progress = Math.max(0, Math.min(remainingTime / cfg.tSoft, 1));
-    let timerColor = 0x10b981; // Green
-    if (progress < 0.2) timerColor = 0xef4444; // Red
-    else if (progress < 0.5) timerColor = 0xfacc15; // Yellow
+    const colorHex = progress < 0.2 ? 'ef4444' : progress < 0.5 ? 'facc15' : '10b981';
 
-    if (this.state.softTimeoutFired) {
-      this.timerText.setText('00:00 [TIMEOUT]');
-      this.timerText.setColor('#ef4444');
-    } else {
-      this.timerText.setColor(progress < 0.2 ? '#ef4444' : progress < 0.5 ? '#facc15' : '#10b981');
-    }
+    this.timerText.setColor(`#${colorHex}`);
 
     this.timerBarGfx.clear();
     this.timerBarGfx.fillStyle(0x1e293b, 0.8);
     this.timerBarGfx.fillRoundedRect(20, 185, 160, 8, 3);
-    this.timerBarGfx.fillStyle(timerColor, 1);
+    this.timerBarGfx.fillStyle(parseInt(colorHex, 16), 1);
     this.timerBarGfx.fillRoundedRect(20, 185, 160 * progress, 8, 3);
 
     // Undo Lamps
