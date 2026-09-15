@@ -134,5 +134,11 @@ describe('Sokoban MainGameScene Unit Tests', () => {
     expect(mockContainer.setDepth).toHaveBeenCalledWith(200);
     expect(mockContainer.setDepth).toHaveBeenCalledWith(300);
   });
+
+  it('should process DAS movement and edge-triggered inputs safely without throwing', () => {
+    scene.create();
+    expect(() => scene.update(1000, 16.6)).not.toThrow();
+    expect(() => (scene as any).handleInput(16.6)).not.toThrow();
+  });
 });
 

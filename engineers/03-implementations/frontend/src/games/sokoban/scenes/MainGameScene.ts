@@ -63,12 +63,32 @@ export class MainGameScene extends BaseArcadeScene {
   private modalBodyText!: Phaser.GameObjects.Text;
   private modalPromptText!: Phaser.GameObjects.Text;
 
-  // Input debouncing
-  private moveDebounceMs: number = 0;
-  private actionDebounceMs: number = 0;
+  // Input edge detection & Delayed Auto Shift (DAS)
+  private prevActionDown: Map<string, boolean> = new Map();
+  private prevKeyDown: Map<string, boolean> = new Map();
+  private readonly DAS_DELAY_MS: number = 260; // Initial delay before hold auto-repeat begins
+  private readonly ARR_SPEED_MS: number = 140; // Auto-repeat rate once hold threshold is reached
+  private activeMoveDir: Direction = Direction.NONE;
+  private moveHoldTimer: number = 0;
+  private giveUpLockedUntilRelease: boolean = false;
+
   private currentWorkerFacing: 'down' | 'up' | 'left' | 'right' = 'down';
   private titleMenuSelectedIndex: number = 0;
   private isRDown: boolean = false;
+
+  private isActionJustPressed(action: ArcadeAction): boolean {
+    const isDown = InputService.isActionDown(PlayerIndex.P1, action);
+    const wasDown = this.prevActionDown.get(action) || false;
+    this.prevActionDown.set(action, isDown);
+    return isDown && !wasDown;
+  }
+
+  private isKeyJustPressed(code: string): boolean {
+    const isDown = (this.input.keyboard?.addKey(code).isDown ?? false);
+    const wasDown = this.prevKeyDown.get(code) || false;
+    this.prevKeyDown.set(code, isDown);
+    return isDown && !wasDown;
+  }
 
   private onKeyDownHandler = (e: KeyboardEvent) => {
     if (e.key === 'r' || e.key === 'R') {
@@ -554,6 +574,7 @@ export class MainGameScene extends BaseArcadeScene {
       SokobanAudioService.playTimeout();
     }
     if (tickEvent.lifeLost) {
+      this.giveUpLockedUntilRelease = true; // Prevent chained sacrifice on continuous hold
       if (this.state.status === 'GAME_OVER') {
         this.showGameOver();
       } else {
@@ -569,44 +590,38 @@ export class MainGameScene extends BaseArcadeScene {
   }
 
   private handleInput(delta: number): void {
-    this.moveDebounceMs -= delta;
-    this.actionDebounceMs -= delta;
-
-    // Input: Title Menu / Dialog confirmations
+    // 1. Title Menu Navigation & Confirmation
     if (this.state.status === 'TITLE_MENU') {
       const maxCleared = this.state.maxClearedStage;
 
-      // Arrow Up / W
-      const isUp = InputService.isActionDown(PlayerIndex.P1, ArcadeAction.UP) ||
-        (this.input.keyboard?.addKey('UP').isDown ?? false) ||
-        (this.input.keyboard?.addKey('W').isDown ?? false);
+      // Arrow Up / W (Edge-triggered: 1 tap = 1 step)
+      const isUp = this.isActionJustPressed(ArcadeAction.UP) ||
+        this.isKeyJustPressed('UP') ||
+        this.isKeyJustPressed('W');
 
-      // Arrow Down / S
-      const isDown = InputService.isActionDown(PlayerIndex.P1, ArcadeAction.DOWN) ||
-        (this.input.keyboard?.addKey('DOWN').isDown ?? false) ||
-        (this.input.keyboard?.addKey('S').isDown ?? false);
+      // Arrow Down / S (Edge-triggered: 1 tap = 1 step)
+      const isDown = this.isActionJustPressed(ArcadeAction.DOWN) ||
+        this.isKeyJustPressed('DOWN') ||
+        this.isKeyJustPressed('S');
 
       if (maxCleared > 0) {
-        if (isUp && this.actionDebounceMs <= 0) {
-          this.actionDebounceMs = 200;
+        if (isUp) {
           this.titleMenuSelectedIndex = 0;
           this.updateTitleMenuDisplay();
           SokobanAudioService.playStep();
-        } else if (isDown && this.actionDebounceMs <= 0) {
-          this.actionDebounceMs = 200;
+        } else if (isDown) {
           this.titleMenuSelectedIndex = 1;
           this.updateTitleMenuDisplay();
           SokobanAudioService.playStep();
         }
       }
 
-      // Confirm selection with SPACE / ENTER / BUTTON_A
-      const isConfirm = InputService.isActionDown(PlayerIndex.P1, ArcadeAction.BUTTON_A) ||
-        (this.input.keyboard?.addKey('SPACE').isDown ?? false) ||
-        (this.input.keyboard?.addKey('ENTER').isDown ?? false);
+      // Confirm selection with SPACE / ENTER / BUTTON_A (Edge-triggered)
+      const isConfirm = this.isActionJustPressed(ArcadeAction.BUTTON_A) ||
+        this.isKeyJustPressed('SPACE') ||
+        this.isKeyJustPressed('ENTER');
 
-      if (isConfirm && this.actionDebounceMs <= 0) {
-        this.actionDebounceMs = 300;
+      if (isConfirm) {
         if (maxCleared > 0 && this.titleMenuSelectedIndex === 0) {
           this.state.continueGame();
         } else {
@@ -618,8 +633,13 @@ export class MainGameScene extends BaseArcadeScene {
       return;
     }
 
+    // 2. Stage Clear Confirmation (Edge-triggered: cannot bleed into game)
     if (this.state.status === 'STAGE_CLEAR_FANFARE') {
-      if (InputService.isActionDown(PlayerIndex.P1, ArcadeAction.BUTTON_A) || this.input.keyboard?.addKey('SPACE').isDown) {
+      const isAdvance = this.isActionJustPressed(ArcadeAction.BUTTON_A) ||
+        this.isKeyJustPressed('SPACE') ||
+        this.isKeyJustPressed('ENTER');
+
+      if (isAdvance) {
         this.modalOverlayContainer.setVisible(false);
         const hasNextStage = this.state.advanceNextStage();
         if (!hasNextStage) {
@@ -631,8 +651,13 @@ export class MainGameScene extends BaseArcadeScene {
       return;
     }
 
+    // 3. Game Over / All Clear Confirmation (Edge-triggered)
     if (this.state.status === 'GAME_OVER' || this.state.status === 'ALL_CLEAR') {
-      if (InputService.isActionDown(PlayerIndex.P1, ArcadeAction.BUTTON_A) || this.input.keyboard?.addKey('SPACE').isDown) {
+      const isRestart = this.isActionJustPressed(ArcadeAction.BUTTON_A) ||
+        this.isKeyJustPressed('SPACE') ||
+        this.isKeyJustPressed('ENTER');
+
+      if (isRestart) {
         this.state.startNewGame();
         this.modalOverlayContainer.setVisible(false);
         this.renderStageBoard();
@@ -640,40 +665,65 @@ export class MainGameScene extends BaseArcadeScene {
       return;
     }
 
-    // Active Gameplay Inputs
+    // 4. Active Gameplay Inputs
     if (this.state.status === 'PLAYING' || this.state.status === 'DEADLOCK_CRITICAL_PENDING') {
-      // 1. Hold-to-Give-Up [R] / BUTTON_B
-      const isGivingUp = this.isRDown ||
+      // 4A. Hold-to-Give-Up [R] / BUTTON_B (Guards against double-death on continuous hold)
+      const rawGivingUp = this.isRDown ||
         InputService.isActionDown(PlayerIndex.P1, ArcadeAction.BUTTON_B) ||
         (this.input.keyboard?.addKey('R').isDown ?? false);
+
+      if (!rawGivingUp) {
+        this.giveUpLockedUntilRelease = false;
+      }
+
+      const isGivingUp = rawGivingUp && !this.giveUpLockedUntilRelease;
       this.state.setHoldGiveUp(isGivingUp);
       this.updateGiveUpModal();
 
-      // 2. Undo [Z] / BUTTON_A
-      if (this.actionDebounceMs <= 0) {
-        const wantsUndo = InputService.isActionDown(PlayerIndex.P1, ArcadeAction.BUTTON_A) || (this.input.keyboard?.addKey('Z').isDown ?? false);
-        if (wantsUndo) {
-          this.actionDebounceMs = 180;
-          const undoRes = this.state.stepUndo();
-          if (undoRes.isUndo) {
-            SokobanAudioService.playUndo();
-            this.syncBoardSprites();
-          }
+      // 4B. Undo [Z] / BUTTON_A (Edge-triggered: 1 tap = exactly 1 undo move)
+      // Note: On keyboard, Z is Undo. Space/Enter should NOT trigger Undo during gameplay.
+      const isUndo = this.isKeyJustPressed('Z') ||
+        (this.isActionJustPressed(ArcadeAction.BUTTON_A) &&
+         !(this.input.keyboard?.addKey('SPACE').isDown ?? false) &&
+         !(this.input.keyboard?.addKey('ENTER').isDown ?? false));
+
+      if (isUndo) {
+        const undoRes = this.state.stepUndo();
+        if (undoRes.isUndo) {
+          SokobanAudioService.playUndo();
+          this.syncBoardSprites();
         }
       }
 
-      // 3. Directional Movement
-      if (this.moveDebounceMs <= 0) {
-        const vec = InputService.getActionVector(PlayerIndex.P1);
-        let dir = Direction.NONE;
+      // 4C. Directional Movement with Delayed Auto Shift (DAS)
+      // Tap (<260ms): Takes 1 precision step immediately. Zero accidental double-steps.
+      // Hold (>260ms): Waits DAS_DELAY_MS, then smoothly repeats at ARR_SPEED_MS (140ms).
+      const vec = InputService.getActionVector(PlayerIndex.P1);
+      let dir = Direction.NONE;
 
-        if (vec.y < -0.4) dir = Direction.UP;
-        else if (vec.y > 0.4) dir = Direction.DOWN;
-        else if (vec.x < -0.4) dir = Direction.LEFT;
-        else if (vec.x > 0.4) dir = Direction.RIGHT;
+      if (vec.y < -0.4) dir = Direction.UP;
+      else if (vec.y > 0.4) dir = Direction.DOWN;
+      else if (vec.x < -0.4) dir = Direction.LEFT;
+      else if (vec.x > 0.4) dir = Direction.RIGHT;
 
-        if (dir !== Direction.NONE) {
-          this.moveDebounceMs = 140; // 140ms movement repeat rate
+      if (dir !== Direction.NONE) {
+        let shouldStep = false;
+
+        if (dir !== this.activeMoveDir) {
+          // New direction or initial press: step immediately!
+          this.activeMoveDir = dir;
+          this.moveHoldTimer = 0;
+          shouldStep = true;
+        } else {
+          // Holding the same direction: wait for initial DAS delay, then repeat
+          this.moveHoldTimer += delta;
+          if (this.moveHoldTimer >= this.DAS_DELAY_MS + this.ARR_SPEED_MS) {
+            shouldStep = true;
+            this.moveHoldTimer = this.DAS_DELAY_MS;
+          }
+        }
+
+        if (shouldStep) {
           this.currentWorkerFacing = {
             [Direction.UP]: 'up',
             [Direction.DOWN]: 'down',
@@ -707,6 +757,10 @@ export class MainGameScene extends BaseArcadeScene {
             }
           }
         }
+      } else {
+        // No direction active: reset DAS state
+        this.activeMoveDir = Direction.NONE;
+        this.moveHoldTimer = 0;
       }
     }
   }
