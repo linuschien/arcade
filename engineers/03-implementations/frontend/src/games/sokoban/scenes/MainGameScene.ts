@@ -75,6 +75,7 @@ export class MainGameScene extends BaseArcadeScene {
   private currentWorkerFacing: 'down' | 'up' | 'left' | 'right' = 'down';
   private workerWalkStep: number = 0;
   private titleMenuSelectedIndex: number = 0;
+  private isLastActionPush: boolean = false;
 
   private isActionJustPressed(action: ArcadeAction): boolean {
     const isDown = InputService.isActionDown(PlayerIndex.P1, action);
@@ -673,8 +674,10 @@ export class MainGameScene extends BaseArcadeScene {
           shouldStep = true;
         } else {
           // Holding the same direction: wait for initial DAS delay, then repeat
+          // Pushing is heavier and paces repeats at 200ms, while walking repeats at 140ms
           this.moveHoldTimer += delta;
-          if (this.moveHoldTimer >= this.DAS_DELAY_MS + this.ARR_SPEED_MS) {
+          const repeatInterval = this.isLastActionPush ? 200 : this.ARR_SPEED_MS;
+          if (this.moveHoldTimer >= this.DAS_DELAY_MS + repeatInterval) {
             shouldStep = true;
             this.moveHoldTimer = this.DAS_DELAY_MS;
           }
@@ -690,6 +693,7 @@ export class MainGameScene extends BaseArcadeScene {
           }[dir] as any;
 
           const moveEvent = this.state.stepMove(dir);
+          this.isLastActionPush = moveEvent.actionResult?.isPush || false;
 
           if (moveEvent.actionResult?.success) {
             if (moveEvent.actionResult.isPush) {
@@ -726,6 +730,7 @@ export class MainGameScene extends BaseArcadeScene {
         // No direction active: reset DAS state
         this.activeMoveDir = Direction.NONE;
         this.moveHoldTimer = 0;
+        this.isLastActionPush = false;
       }
     }
   }
@@ -747,7 +752,7 @@ export class MainGameScene extends BaseArcadeScene {
     }
 
     if (actionResult.isPush && actionResult.boxFrom && actionResult.boxTo) {
-      // 1. Worker Push Pose & Forward Advance
+      // 1. Worker Push Pose with 35ms Anticipation & 160ms Slide
       this.workerSprite.setTexture(`sokoban:worker_${this.currentWorkerFacing}_push`);
       if (typeof (this.workerSprite as any).setDisplaySize === 'function') {
         this.workerSprite.setDisplaySize(this.tileSize, this.tileSize);
@@ -759,8 +764,9 @@ export class MainGameScene extends BaseArcadeScene {
           targets: this.workerSprite,
           x: toWx,
           y: toWy,
-          duration: 115,
-          ease: 'Cubic.easeOut',
+          delay: 35,
+          duration: 160,
+          ease: 'Quad.easeInOut',
           onComplete: () => {
             this.workerSprite.setPosition(toWx, toWy);
             this.workerSprite.setTexture(`sokoban:worker_${this.currentWorkerFacing}`);
@@ -777,7 +783,7 @@ export class MainGameScene extends BaseArcadeScene {
         }
       }
 
-      // 2. Box Slide & Push Physics (preserves exact tileSize without distortion)
+      // 2. Box Slide & Push Physics with 35ms Anticipation & 160ms Heavy Slide
       const fromKey = posKey(actionResult.boxFrom.col, actionResult.boxFrom.row);
       const toKey = posKey(actionResult.boxTo.col, actionResult.boxTo.row);
       const boxSprite = this.boxSprites.get(fromKey);
@@ -804,8 +810,9 @@ export class MainGameScene extends BaseArcadeScene {
             targets: boxSprite,
             x: toBx,
             y: toBy,
-            duration: 115,
-            ease: 'Cubic.easeOut',
+            delay: 35,
+            duration: 160,
+            ease: 'Quad.easeInOut',
             onComplete: () => {
               boxSprite.setPosition(toBx, toBy);
               if (typeof (boxSprite as any).setDisplaySize === 'function') {
@@ -842,7 +849,7 @@ export class MainGameScene extends BaseArcadeScene {
       this.spawnDustEffect((fromWx + fromBx) / 2, (fromWy + fromBy) / 2);
 
     } else {
-      // Pure walking step: alternate footstep frame
+      // Pure walking step: snappy 90ms step with alternating footstep frame
       this.workerWalkStep = 1 - this.workerWalkStep;
       const walkKey = `sokoban:worker_${this.currentWorkerFacing}_walk${this.workerWalkStep + 1}`;
       this.workerSprite.setTexture(walkKey);
@@ -856,7 +863,7 @@ export class MainGameScene extends BaseArcadeScene {
           targets: this.workerSprite,
           x: toWx,
           y: toWy,
-          duration: 95,
+          duration: 90,
           ease: 'Cubic.easeOut',
           onComplete: () => {
             this.workerSprite.setPosition(toWx, toWy);
@@ -938,6 +945,8 @@ export class MainGameScene extends BaseArcadeScene {
   private syncBoardSprites(): void {
     const maze = this.state.maze;
     if (!maze) return;
+
+    this.isLastActionPush = false;
 
     // Cancel all running animations immediately for instant undo
     if (this.tweens?.killTweensOf && this.workerSprite) {
