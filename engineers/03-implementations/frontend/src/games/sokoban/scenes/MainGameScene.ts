@@ -64,8 +64,7 @@ export class MainGameScene extends BaseArcadeScene {
   private modalPromptText!: Phaser.GameObjects.Text;
 
   // Input edge detection & Delayed Auto Shift (DAS)
-  private prevActionDown: Map<string, boolean> = new Map();
-  private prevKeyDown: Map<string, boolean> = new Map();
+  private prevActionDown: Map<ArcadeAction, boolean> = new Map();
   private readonly DAS_DELAY_MS: number = 260; // Initial delay before hold auto-repeat begins
   private readonly ARR_SPEED_MS: number = 140; // Auto-repeat rate once hold threshold is reached
   private activeMoveDir: Direction = Direction.NONE;
@@ -74,7 +73,6 @@ export class MainGameScene extends BaseArcadeScene {
 
   private currentWorkerFacing: 'down' | 'up' | 'left' | 'right' = 'down';
   private titleMenuSelectedIndex: number = 0;
-  private isRDown: boolean = false;
 
   private isActionJustPressed(action: ArcadeAction): boolean {
     const isDown = InputService.isActionDown(PlayerIndex.P1, action);
@@ -83,25 +81,6 @@ export class MainGameScene extends BaseArcadeScene {
     return isDown && !wasDown;
   }
 
-  private isKeyJustPressed(code: string): boolean {
-    const isDown = (this.input.keyboard?.addKey(code).isDown ?? false);
-    const wasDown = this.prevKeyDown.get(code) || false;
-    this.prevKeyDown.set(code, isDown);
-    return isDown && !wasDown;
-  }
-
-  private onKeyDownHandler = (e: KeyboardEvent) => {
-    if (e.key === 'r' || e.key === 'R') {
-      this.isRDown = true;
-    }
-  };
-
-  private onKeyUpHandler = (e: KeyboardEvent) => {
-    if (e.key === 'r' || e.key === 'R') {
-      this.isRDown = false;
-    }
-  };
-
   constructor() {
     super({ key: 'sokoban:MainGameScene' });
   }
@@ -109,12 +88,6 @@ export class MainGameScene extends BaseArcadeScene {
   public create(): void {
     this.initHighDpiCamera(1280);
     this.state = new SokobanGameState();
-
-    // Register window keyboard listeners for Hold-R give up
-    if (typeof window !== 'undefined') {
-      window.addEventListener('keydown', this.onKeyDownHandler);
-      window.addEventListener('keyup', this.onKeyUpHandler);
-    }
 
     // Setup base visual layers
     this.createBackground();
@@ -317,7 +290,7 @@ export class MainGameScene extends BaseArcadeScene {
       '[Z] KEY',
       'UNDO MOVE',
       '',
-      '[R] (HOLD 1S)',
+      '[X] (HOLD 1S)',
       'GIVE UP & RETRY',
     ];
 
@@ -594,15 +567,11 @@ export class MainGameScene extends BaseArcadeScene {
     if (this.state.status === 'TITLE_MENU') {
       const maxCleared = this.state.maxClearedStage;
 
-      // Arrow Up / W (Edge-triggered: 1 tap = 1 step)
-      const isUp = this.isActionJustPressed(ArcadeAction.UP) ||
-        this.isKeyJustPressed('UP') ||
-        this.isKeyJustPressed('W');
+      // Arrow Up (Edge-triggered: 1 tap = 1 step)
+      const isUp = this.isActionJustPressed(ArcadeAction.UP);
 
-      // Arrow Down / S (Edge-triggered: 1 tap = 1 step)
-      const isDown = this.isActionJustPressed(ArcadeAction.DOWN) ||
-        this.isKeyJustPressed('DOWN') ||
-        this.isKeyJustPressed('S');
+      // Arrow Down (Edge-triggered: 1 tap = 1 step)
+      const isDown = this.isActionJustPressed(ArcadeAction.DOWN);
 
       if (maxCleared > 0) {
         if (isUp) {
@@ -616,10 +585,8 @@ export class MainGameScene extends BaseArcadeScene {
         }
       }
 
-      // Confirm selection with SPACE / ENTER / BUTTON_A (Edge-triggered)
-      const isConfirm = this.isActionJustPressed(ArcadeAction.BUTTON_A) ||
-        this.isKeyJustPressed('SPACE') ||
-        this.isKeyJustPressed('ENTER');
+      // Confirm selection with BUTTON_A (Edge-triggered: Space/Enter/Z/Gamepad A)
+      const isConfirm = this.isActionJustPressed(ArcadeAction.BUTTON_A);
 
       if (isConfirm) {
         if (maxCleared > 0 && this.titleMenuSelectedIndex === 0) {
@@ -635,9 +602,7 @@ export class MainGameScene extends BaseArcadeScene {
 
     // 2. Stage Clear Confirmation (Edge-triggered: cannot bleed into game)
     if (this.state.status === 'STAGE_CLEAR_FANFARE') {
-      const isAdvance = this.isActionJustPressed(ArcadeAction.BUTTON_A) ||
-        this.isKeyJustPressed('SPACE') ||
-        this.isKeyJustPressed('ENTER');
+      const isAdvance = this.isActionJustPressed(ArcadeAction.BUTTON_A);
 
       if (isAdvance) {
         this.modalOverlayContainer.setVisible(false);
@@ -653,9 +618,7 @@ export class MainGameScene extends BaseArcadeScene {
 
     // 3. Game Over / All Clear Confirmation (Edge-triggered)
     if (this.state.status === 'GAME_OVER' || this.state.status === 'ALL_CLEAR') {
-      const isRestart = this.isActionJustPressed(ArcadeAction.BUTTON_A) ||
-        this.isKeyJustPressed('SPACE') ||
-        this.isKeyJustPressed('ENTER');
+      const isRestart = this.isActionJustPressed(ArcadeAction.BUTTON_A);
 
       if (isRestart) {
         this.state.startNewGame();
@@ -667,10 +630,8 @@ export class MainGameScene extends BaseArcadeScene {
 
     // 4. Active Gameplay Inputs
     if (this.state.status === 'PLAYING' || this.state.status === 'DEADLOCK_CRITICAL_PENDING') {
-      // 4A. Hold-to-Give-Up [R] / BUTTON_B (Guards against double-death on continuous hold)
-      const rawGivingUp = this.isRDown ||
-        InputService.isActionDown(PlayerIndex.P1, ArcadeAction.BUTTON_B) ||
-        (this.input.keyboard?.addKey('R').isDown ?? false);
+      // 4A. Hold-to-Give-Up [X] / BUTTON_B (Guards against double-death on continuous hold)
+      const rawGivingUp = InputService.isActionDown(PlayerIndex.P1, ArcadeAction.BUTTON_B);
 
       if (!rawGivingUp) {
         this.giveUpLockedUntilRelease = false;
@@ -681,13 +642,7 @@ export class MainGameScene extends BaseArcadeScene {
       this.updateGiveUpModal();
 
       // 4B. Undo [Z] / BUTTON_A (Edge-triggered: 1 tap = exactly 1 undo move)
-      // Note: On keyboard, Z is Undo. Space/Enter should NOT trigger Undo during gameplay.
-      const isUndo = this.isKeyJustPressed('Z') ||
-        (this.isActionJustPressed(ArcadeAction.BUTTON_A) &&
-         !(this.input.keyboard?.addKey('SPACE').isDown ?? false) &&
-         !(this.input.keyboard?.addKey('ENTER').isDown ?? false));
-
-      if (isUndo) {
+      if (this.isActionJustPressed(ArcadeAction.BUTTON_A)) {
         const undoRes = this.state.stepUndo();
         if (undoRes.isUndo) {
           SokobanAudioService.playUndo();
@@ -1021,10 +976,6 @@ export class MainGameScene extends BaseArcadeScene {
   }
 
   private handleShutdown(): void {
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('keydown', this.onKeyDownHandler);
-      window.removeEventListener('keyup', this.onKeyUpHandler);
-    }
     SokobanAudioService.stopBGM();
     this.tweens.killAll();
     this.time.removeAllEvents();
