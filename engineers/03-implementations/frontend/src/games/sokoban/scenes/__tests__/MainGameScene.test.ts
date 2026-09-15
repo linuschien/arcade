@@ -90,11 +90,6 @@ describe('Sokoban MainGameScene Unit Tests', () => {
     };
 
     (scene as any).events = mockEvents;
-    (scene as any).input = {
-      keyboard: {
-        addKey: vi.fn().mockReturnValue({ isDown: false }),
-      },
-    };
     (scene as any).tweens = {
       killAll: vi.fn(),
     };
