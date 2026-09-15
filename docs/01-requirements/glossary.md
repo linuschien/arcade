@@ -135,11 +135,31 @@
 
 ---
 
-## 7. 功能與系統狀態術語 (System State Terms)
+### 7. 街機倉庫番領域物件 (Sokoban 50 Domain Objects)
+
+| 術語 | 英文 / 代碼 | 定義 | 備註 / 約束 |
+|------|------------|------|------------|
+| **沙盤美學渲染管線** | `Floating Diorama Pipeline` | 中央 4:3 區域（$880 \times 660\text{ px}$）採用分層渲染（底圖平鋪、外牆陰影、棋盤置中、徑向暗角）之美學呈現。 | 徹底消除黑邊，具備懸浮立體感 |
+| **推箱粒度 Undo 快照** | `Push-Granularity Undo Snapshot` | 純走廊移動不扣額度，僅在推箱位移瞬間將推箱前的工人座標與箱子狀態封裝為歷史棧節點。 | 資源專注保護推箱幾何決策 |
+| **瞬間還原** | `Instant Snapshot Restore` | 按下 `[Z]` 鍵瞬間將盤面所有箱子與工人還原至推箱前一刻，無逐步倒帶動畫。 | 消耗 1 次 Undo 配額 |
+| **嚴格正交直角死鎖** | `Strict Orthogonal Corner Trap` | 任一不在目標點（`.`）上的箱子，兩相鄰垂直側皆為不可穿越障礙（牆壁或卡死箱子）之死鎖狀態。 | 零誤判，配額為 0 時觸發處決扣命 |
+| **長按棄局防誤觸** | `Hold-to-Give-Up` | 玩家按住 `[R]` 鍵滿 1.0 秒彈出動態進度條視窗，按滿 1.0 秒扣 1 命重置關卡；單擊無效。 | 杜絕單擊誤觸意外扣命 |
+| **軟性倒數計時器** | `Soft Timer` | 關卡倒數計時器，歸零後數字鎖定為 `00:00` 紅色閃爍並播放提示音，但不猝死扣命，允許安心長考。 | 超時喪失時間分與完美獎勵 |
+| **防刷分通關結算** | `Anti-Pressing Scoring System` | 遊戲進行中零即時得分，僅於 STAGE CLEAR 結算「保底+時間+節約Undo+完美獎勵」，且得分模數為 100。 | 嚴格滿足 $\text{RawScore} \pmod{100} \equiv 0$ |
+| **固定階梯獎命** | `Fixed 1UP Extend` | 純得分每跨過 100,000 分階梯門檻時，自動獎勵 1 條額外生命（1UP）。 | 彈出金色 1UP 字卡並重置進度條 |
+| **兩位數關卡分數隱寫術** | `Steganographic Score Encoding` | 將最後成功通關關卡序號（00~50）寫入總分末兩位數，無縫相容平台單一整數排行榜資料結構。 | $\text{Score}_{\text{final}} = (\lfloor \text{RawScore}/100 \rfloor \times 100) + \text{lastClearedStage}$ |
+| **四大主題世界** | `Four Themed Worlds` | World 1 木造貨棧、World 2 重工廠、World 3 賽博金庫（第26關轉場）、World 4 巨型碼頭。 | 5/20/15/10 關卡難度線性推進 |
+| **幾何拓撲長寬比過濾** | `Geometric Aspect-Ratio Filter` | 篩選 $1.00 \le W_{\text{grid}}/H_{\text{grid}} \le 1.45$ 之正方形至微橫幅地圖，排除直幅與牙膏地圖。 | 構建期固化為 50 關靜態 JSON |
+| **二擇一開局選單** | `Binary Start Selector` | 投幣後僅提供 `NEW GAME (STAGE 01)` 或 `CONTINUE (STAGE [max+1])` 二擇一，極簡街機風格。 | 不設複雜選關縮圖 |
+
+---
+
+## 8. 功能與系統狀態術語 (System State Terms)
 
 | 術語 | 英文 / 代碼 | 定義 |
 |------|------------|------|
 | **遊戲狀態機** | `Game Flow FSM` | 涵蓋 `UNLOADED`, `LOBBY`, `PLAYING`, `PAUSED`, `GAMEOVER` 的狀態轉移。 |
 | **單遊戲前十名榜** | `Per-Game Top 10 Leaderboard` | 每款子遊戲 (`game_id`) 獨立展示專屬前十名最高分紀錄。 | 依 `game_id` 獨立計算 |
 | **GCP IAP 認證 Email** | `GCP IAP Authenticated Email` | 經由 GCP IAP 驗證傳入之 User Email，自動作為排行榜識別與發幣標示。 | 由系統標頭自動帶入 |
+
 
