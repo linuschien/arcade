@@ -13,34 +13,40 @@
 ### 2.1 全域畫布與三欄式佈局 (Canvas Layout)
 
 * **基準解析度：** $1280 \times 720\text{ px}$（標準 16:9 街機寬螢幕）。
-* **結構劃分：** 採用左右對稱雙翼 HUD 與中央 4:3 核心棋盤之三欄式設計。徹底消除多餘標籤，排行榜最高分僅於平台大廳展示，遊戲內維持乾淨專注。
+* **結構劃分：** 採用左右對稱雙翼 HUD 與中央 4:3 核心棋盤之三欄式無縫貼合設計。徹底消除多餘標籤，排行榜最高分僅於平台大廳展示，遊戲內維持乾淨專注。
+* **垂直絕對居中（Vertical Centering）：**
+  * 畫布高度為 $720\text{ px}$，三欄組件高度皆為 $660\text{ px}$，錨定於頂部 $Y = 30\text{ px}$。
+  * 頂部外邊距 $30\text{ px}$，底部外邊距 $720 - (30 + 660) = 30\text{ px}$（$30 + 660 + 30 = 720\text{ px}$），達成上下嚴格對稱垂直置中。
+* **水平無縫貼合（Horizontal Seamless Docking）：**
+  * 畫布寬度為 $1280\text{ px}$。
+  * 左側 HUD（$200\text{ px}$）＋ 中央棋盤（$880\text{ px}$）＋ 右側 HUD（$200\text{ px}$）$= 1280\text{ px}$。
+  * 座標嚴密對齊：左側 $X: 0 \sim 200$、中央 $X: 200 \sim 1080$、右側 $X: 1080 \sim 1280$，無任何水平黑邊縫隙與錯位。
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│ 16:9 ARCADE CANVAS ( 1280 x 720 px )                                                        │
-│                                                                                             │
-│ ┌──────────────────┐  ┌────────────────────────────────────────────────┐  ┌──────────────────┐ │
-│ │  LEFT FLANK HUD  │  │            CENTER PLAYFIELD ( 4:3 )            │  │  RIGHT FLANK HUD │ │
-│ │  ( 200 x 660 px )│  │                ( 880 x 660 px )                │  │  ( 200 x 660 px )│ │
-│ ├──────────────────┤  ├────────────────────────────────────────────────┤  ├──────────────────┤ │
-│ │                  │  │                                                │  │                  │ │
-│ │ [WORLD THEME]    │  │    [ 主題環境底圖平鋪 (Ambient Backdrop) ]     │  │ [CURRENT SCORE]  │ │
-│ │ WORLD 02         │  │                                                │  │ SCORE:           │ │
-│ │ STEEL WORKS      │  │        ┌── 外牆陰影 (Drop Shadow) ──┐          │  │ 0,420,100        │ │
-│ │                  │  │        │                            │          │  │                  │ │
-│ │ [STAGE]          │  │        │   ######                   │          │  │ [LIVES]          │ │
-│ │ STAGE 18 / 50    │  │        │   #  $ #    (核心迷宮)     │          │  │ ▲ ▲ ▲ (3)        │ │
-│ │                  │  │        │   # .@ #                   │          │  │                  │ │
-│ │ [SOFT TIMER]     │  │        │   ######                   │          │  │ [EXTEND PROGRESS]│ │
-│ │ 02:45            │  │        │                            │          │  │ 42,000 / 100,000 │ │
-│ │ [██████████░░░░] │  │        └────────────────────────────┘          │  │                  │ │
-│ │                  │  │                                                │  │ [CONTROLS GUIDE] │ │
-│ │ [UNDO QUOTA]     │  │                                                │  │ [↑↓←→] MOVE      │ │
-│ │ ● ● ● ○ ○        │  │                                                │  │ [Z]    UNDO      │ │
-│ │ REMAINING: 3 / 5 │  │                                                │  │ [HOLD R]         │ │
-│ │                  │  │       [ 邊緣徑向暗角 (Vignette Mask) ]         │  │ GIVE UP (-1♥)    │ │
-│ └──────────────────┘  └────────────────────────────────────────────────┘  └──────────────────┘ │
-│                                                                                             │
+│ 16:9 ARCADE CANVAS ( 1280 x 720 px )                                (Top Margin: 30 px)     │
+│┌───────────────────┬────────────────────────────────────────────────┬──────────────────────┐│
+││  LEFT FLANK HUD   │            CENTER PLAYFIELD ( 4:3 )            │   RIGHT FLANK HUD    ││
+││ (X:0, 200x660 px) │               (X:200, 880x660 px)              │ (X:1080, 200x660 px) ││
+│├───────────────────┼────────────────────────────────────────────────┼──────────────────────┤│
+││                   │                                                │                      ││
+││ [WORLD THEME]     │    Layer 0: 主題環境底圖平鋪 (TileSprite)      │ [CURRENT SCORE]      ││
+││ WORLD 02          │                                                │ SCORE:               ││
+││ STEEL WORKS       │        ┌── 外牆陰影 (Drop Shadow) ──┐          │ 0,420,100            ││
+││                   │        │                            │          │                      ││
+││ [STAGE]           │        │   ######                   │          │ [LIVES]              ││
+││ STAGE 18 / 50     │        │   #  $ #    (核心迷宮)     │          │ ▲ ▲ ▲ (3)            ││
+││                   │        │   # .@ #                   │          │                      ││
+││ [SOFT TIMER]      │        │   ######                   │          │ [EXTEND PROGRESS]    ││
+││ 02:45             │        │                            │          │ 42,000 / 100,000     ││
+││ [██████████░░░░]  │        └────────────────────────────┘          │                      ││
+││                   │                                                │ [CONTROLS GUIDE]     ││
+││ [UNDO QUOTA]      │                                                │ [↑↓←→] MOVE          ││
+││ ● ● ● ○ ○         │                                                │ [Z]    UNDO          ││
+││ REMAINING: 3 / 5  │                                                │ [HOLD R]             ││
+││                   │    Layer 3: 邊緣徑向暗角 (Vignette Mask)       │ GIVE UP (-1♥)        ││
+│└───────────────────┴────────────────────────────────────────────────┴──────────────────────┘│
+│                                                                     (Bottom Margin: 30 px)  │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -67,13 +73,13 @@
 ### 2.3 雙翼 HUD 規格 (Left & Right Flank HUDs)
 
 * **左側儀表板 (Left Flank HUD)**：
-  * 座標與尺寸：錨定於 $(X: 30, Y: 30)$，尺寸 $200 \times 660\text{ px}$，半透明暗黑底板（Alpha 85%）。
+  * 座標與尺寸：錨定於 $(X: 0, Y: 30)$，尺寸 $200 \times 660\text{ px}$，半透明暗黑底板（Alpha 85%）。
   * **主題徽章**：顯示當前世界代號與主題名稱（例如：`WORLD 02: STEEL WORKS`）。
   * **關卡計數**：顯示 `STAGE SS / 50`。
   * **軟性倒數計時器**：顯示分秒 `MM:SS`，三段色彩警示與 $160\text{ px}$ 倒數進度條。
   * **Undo 配額矩陣**：實心點陣圓燈與剩餘數字標籤 `REMAINING: u / U_quota`。
 * **右側儀表板 (Right Flank HUD)**：
-  * 座標與尺寸：錨定於 $(X: 1050, Y: 30)$，尺寸 $200 \times 660\text{ px}$，半透明暗黑底板（Alpha 85%）。
+  * 座標與尺寸：錨定於 $(X: 1080, Y: 30)$，尺寸 $200 \times 660\text{ px}$，半透明暗黑底板（Alpha 85%）。
   * **純得分儀表**：8 位數補零金色大字（例如 `0,420,100`，`#FFD700`，字級 $24\text{ px}$）。
   * **生命數顯示**：工人頭像圖示與數字（例如：`▲ ▲ ▲ (3)`）。
   * **1UP 獎命進度條**：累計距離下一個 $100,000$ 分門檻之進度條。
@@ -92,6 +98,19 @@
 * **關卡配額計算公式**：
   關卡載入時依據關卡序號 $S$、箱數 $B$ 與世界基底參數動態初始化：
   $$U_{\text{quota}}(S, B, W) = \operatorname{clamp}\left( U_{\text{base}}(W) + \left\lfloor \frac{S - S_{\text{start}}(W)}{4} \right\rfloor + \lfloor B \cdot K_u(W) \rfloor, \quad 3, \quad 16 \right)$$
+
+  **$U_{\text{quota}}$ 公式參數符號定義表：**
+  | 參數符號 | 參數名稱 | 單位 / 型態 | 說明與定義 |
+  |---|---|---|---|
+  | $S$ | 當前關卡序號 (Stage) | 整數 ($1 \sim 50$) | 當前進行的關卡編號。 |
+  | $W$ | 當前世界代號 (World) | 整數 ($1 \sim 4$) | 當前所屬主題世界（1: Cargo Depot, 2: Steel Works, 3: Cyber Vault, 4: Mega Terminal）。 |
+  | $B$ | 目標箱子數 (Box Count) | 顆 (整數) | 當前地圖需推入目標點的箱子總數量。 |
+  | $S_{\text{start}}(W)$ | 世界起始關卡序號 | 關 (整數) | 各世界起點關卡：World 1 為 `1`、World 2 為 `6`、World 3 為 `26`、World 4 為 `41`。 |
+  | $U_{\text{base}}(W)$ | 世界基準保底額度 | 次 (整數) | 該世界第一關之基準 Undo 次數（W1: 2, W2: 4, W3: 6, W4: 6）。 |
+  | $K_u(W)$ | 單箱 Undo 加權係數 | 次/顆 (浮點數) | 隨箱數增加給予之 Undo 補償（W1: 0.6, W2: 0.5, W3: 0.8, W4: 0.6）。 |
+  | $\lfloor \frac{S - S_{\text{start}}(W)}{4} \rfloor$ | 關卡推進額度加乘 | 次 (整數) | 世界內每深入推進 4 關，自動額外獎勵 1 次 Undo 配額。 |
+  | $\operatorname{clamp}(\cdot, 3, 16)$ | 邊界鉗夾函數 | 次 (整數) | 強制鎖定配額區間，單關最少 3 次，最多不超過 16 次。 |
+
 * **瞬間還原流程 (Instant Snapshot Restore)**：
   * 當玩家按下 `[Z]` 鍵：
     * 若剩餘額度 $u_{\text{remaining}} > 0$：立即自棧頂彈出上一快照，**瞬間**將工人和所有箱子座標還原至推箱前一刻（無逐格倒退動畫），$u_{\text{remaining}} \leftarrow u_{\text{remaining}} - 1$，左側 HUD 圓燈熄滅一顆。
@@ -132,6 +151,17 @@
 
 * **關卡總秒數公式**：
   $$T_{\text{soft}}(S, B, W) = T_{\text{base}}(W) + 2 \cdot (S - S_{\text{start}}(W)) + B \cdot K_t(W)$$
+
+  **$T_{\text{soft}}$ 公式參數符號定義表：**
+  | 參數符號 | 參數名稱 | 單位 / 型態 | 說明與定義 |
+  |---|---|---|---|
+  | $S$ | 當前關卡序號 (Stage) | 整數 ($1 \sim 50$) | 當前進行的關卡編號。 |
+  | $W$ | 當前世界代號 (World) | 整數 ($1 \sim 4$) | 當前所屬主題世界（1: Cargo Depot, 2: Steel Works, 3: Cyber Vault, 4: Mega Terminal）。 |
+  | $B$ | 目標箱子數 (Box Count) | 顆 (整數) | 當前地圖需推入目標點的箱子總數量。 |
+  | $S_{\text{start}}(W)$ | 世界起始關卡序號 | 關 (整數) | 各世界起點關卡：World 1 為 `1`、World 2 為 `6`、World 3 為 `26`、World 4 為 `41`。 |
+  | $T_{\text{base}}(W)$ | 世界基底時限 (Base Time) | 秒 ($\text{s}$) | 該世界第一關之起始基準秒數（W1: $50\text{s}$, W2: $100\text{s}$, W3: $150\text{s}$, W4: $180\text{s}$）。 |
+  | $K_t(W)$ | 單箱時間加權權重 | 秒/顆 ($\text{s}$) | 每增加 1 顆箱子給予之思考緩衝時間（W1: $10\text{s}$, W2: $15\text{s}$, W3: $25\text{s}$, W4: $20\text{s}$）。 |
+  | $2 \cdot (S - S_{\text{start}}(W))$ | 關卡推進時間遞增 | 秒 ($\text{s}$) | 該世界內每推進 1 關，自動線性遞增 2 秒思考時間。 |
 * **超時保護機制**：
   * 當累計遊玩時間 $t_{\text{elapsed}} \ge T_{\text{soft}}$ 時：
     * 播放單次低沉提示音（`SFX_TIMEOUT`）。
@@ -225,7 +255,7 @@
 
 ### 6.1 純鍵盤輸入映射 (Input Mapping via InputService)
 
-遵循街機硬體規範，專注純鍵盤精確操作，按鍵行為嚴格對應右側 HUD 實體按鍵指南：
+遵循街機硬體規範，專注純鍵盤精確操作，按鍵行為嚴格對應右側 HUD 實體按鍵指南。遊戲為純回合制空間解謎，工人靜止即等同暫停，且採用軟性長考計時，無需額外配置實體 Escape 暫停鍵：
 
 | 實體按鍵 | 遊戲動作 | 行為細節 |
 |---|---|---|
@@ -235,7 +265,6 @@
 | `ArrowRight` | 向右移動 | 工人向右走 1 格；若有箱子則推動箱子 1 格 |
 | `KeyZ` | 執行 Undo | 扣除 1 次配額，盤面瞬間還原至推箱前一刻 |
 | `KeyR` (長按 1.0s) | 主動棄局 | 彈出進度條視窗，按滿 1.0 秒扣除 1 命重置關卡 |
-| `Escape` | 暫停遊戲 | 觸發遊戲暫停與暫停選單遮罩 |
 
 ### 6.2 投幣與二擇一啟動流程 (Coin Insert & Binary Start Selector)
 
@@ -253,11 +282,17 @@
 
 * **介面實作**：`IArcadeGame`（`init()`, `start()`, `pause()`, `resume()`, `destroyGame()`）。
 * **雙向事件廣播 (`ArcadeBridge`)**：
-  * 接收：`START_GAME`, `PAUSE_REQUESTED`, `RESUME_REQUESTED`, `MUTE_TOGGLED`。
+  * 接收：`START_GAME`, `MUTE_TOGGLED`。
   * 廣播：`SCORE_UPDATED`, `LIVES_UPDATED`, `STAGE_CLEARED`, `GAME_OVER`。
 * **Game Over 處理**：
   當 $\text{Lives} = 0$ 時，計算隱寫分數 $\text{Score}_{\text{final}}$，廣播 `GAME_OVER` 事件，隨後銷毀 Canvas 並退回 Arcade Stadium 大廳。
-* **程序化 Web Audio 音效**：
+* **程序化 Web Audio 輕音樂 (Four-World Ambient Chip BGM)**：
+  為四大主題世界分別配置獨立的低干擾、輕節奏晶片音樂，音量適中柔和，營造專注長考氛圍；支援大廳與快捷鍵 `MUTE_TOGGLED` 一鍵靜音：
+  * `BGM_WORLD_1 (Cargo Warmth)`：木質溫暖、輕巧打擊節奏（World 1: Cargo Depot）。
+  * `BGM_WORLD_2 (Steel Jazz)`：沉穩輕爵士、低音貝斯點綴（World 2: Steel Works）。
+  * `BGM_WORLD_3 (Cyber Pulse)`：輕量合成器脈衝、賽博空間氛圍（World 3: Cyber Vault）。
+  * `BGM_WORLD_4 (Terminal Vista)`：廣角大氣、開闊晶片管弦音（World 4: Mega Terminal）。
+* **程序化 Web Audio 音效 (Synthesized SFX)**：
   * `SFX_STEP`：輕巧腳步聲。
   * `SFX_PUSH`：厚重推箱摩擦音。
   * `SFX_TARGET_ON`：箱子入目標點清脆鎖定鈴聲。

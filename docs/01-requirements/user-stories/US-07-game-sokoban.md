@@ -41,7 +41,7 @@
 
 ### 驗收條件 (Acceptance Criteria)
 
-- **AC1 (位置與外觀規格)**：左側 HUD 錨定於 $(X: 30, Y: 30)$，尺寸固定為 $200 \times 660\text{ px}$，具備 Alpha 85% 半透明暗黑底板與微光邊框。
+- **AC1 (位置與外觀規格)**：左側 HUD 錨定於 $(X: 0, Y: 30)$，尺寸固定為 $200 \times 660\text{ px}$，具備 Alpha 85% 半透明暗黑底板與微光邊框。
 - **AC2 (世界主題徽章)**：頂部展示當前世界代號與主題名稱（例如：`WORLD 02: STEEL WORKS`）。
 - **AC3 (關卡計數器)**：展示當前關卡序號與總關卡數，格式為 `STAGE SS / 50`（例如 `STAGE 18 / 50`）。
 - **AC4 (軟性倒數計時器渲染)**：
@@ -67,7 +67,7 @@
 
 ### 驗收條件 (Acceptance Criteria)
 
-- **AC1 (位置與外觀規格)**：右側 HUD 錨定於 $(X: 1050, Y: 30)$，尺寸固定為 $200 \times 660\text{ px}$，具備 Alpha 85% 半透明暗黑底板。
+- **AC1 (位置與外觀規格)**：右側 HUD 錨定於 $(X: 1080, Y: 30)$，尺寸固定為 $200 \times 660\text{ px}$，具備 Alpha 85% 半透明暗黑底板。
 - **AC2 (純得分儀表)**：標題為 `SCORE`，數值為 8 位數補零（例如 `0,420,100`），文字採用亮金色（`#FFD700`），字級 $24\text{ px}$。
 - **AC3 (生命數顯示)**：顯示工人頭像圖示與當前剩餘命數數字（例如：`▲ ▲ ▲ (3)`）。
 - **AC4 (1UP 獎命進度條)**：顯示距離下一個 $100,000$ 分門檻的累計進度條，滿額瞬間觸發 1UP 動畫。
@@ -88,7 +88,10 @@
 
 ### 驗收條件 (Acceptance Criteria)
 
-- **AC1 (中央可玩視窗規格)**：固定於 $(X: 200, Y: 30)$，尺寸為 $880 \times 660\text{ px}$（嚴格 4:3 比例）。
+- **AC1 (中央可玩視窗與無縫貼合佈局)**：
+  - 可玩視窗固定於 $(X: 200, Y: 30)$，尺寸為 $880 \times 660\text{ px}$（嚴格 4:3 比例）。
+  - **垂直對稱置中**：高度 $660\text{ px}$ 配合頂部 $Y: 30$ 與底部 $30\text{ px}$ 外邊距（$30 + 660 + 30 = 720\text{ px}$）。
+  - **水平無縫貼合**：左側 HUD ($0 \sim 200$) ＋ 中央棋盤 ($200 \sim 1080$) ＋ 右側 HUD ($1080 \sim 1280$) 剛好填滿 $1280\text{ px}$，消除任何欄間死黑邊隙。
 - **AC2 (圖塊尺寸動態換算)**：
   依據當前關卡網格寬高計算等比正方形圖塊尺寸：
   $$\text{TileSize} = \min\left( \left\lfloor \frac{880}{W_{\text{grid}}} \right\rfloor, \; \left\lfloor \frac{660}{H_{\text{grid}}} \right\rfloor \right)$$
@@ -117,9 +120,21 @@
 
 ### 驗收條件 (Acceptance Criteria)
 
-- **AC1 (額度初始化)**：關卡載入時計算該關可用總配額 $U_{\text{quota}}$：
+- **AC1 (額度初始化與參數定義)**：
+  關卡載入時計算該關可用總配額 $U_{\text{quota}}$：
   $$U_{\text{quota}}(S, B, W) = \operatorname{clamp}\left( U_{\text{base}}(W) + \left\lfloor \frac{S - S_{\text{start}}(W)}{4} \right\rfloor + \lfloor B \cdot K_u(W) \rfloor, \quad 3, \quad 16 \right)$$
   初始化剩餘額度 $u_{\text{remaining}} \leftarrow U_{\text{quota}}$。
+  
+  **參數符號定義：**
+  * $S \in [1, 50]$：當前關卡序號。
+  * $W \in [1, 4]$：當前所屬主題世界代號。
+  * $B$：當前關卡需歸位之目標箱子總數。
+  * $S_{\text{start}}(W)$：世界起始關卡序號（W1: 1, W2: 6, W3: 26, W4: 41）。
+  * $U_{\text{base}}(W)$：世界基準保底額度（W1: 2, W2: 4, W3: 6, W4: 6）。
+  * $K_u(W)$：單箱 Undo 加權權重（W1: 0.6, W2: 0.5, W3: 0.8, W4: 0.6）。
+  * $\lfloor \frac{S - S_{\text{start}}}{4} \rfloor$：世界內每深入推進 4 關額外 $+1$ 次。
+  * $\operatorname{clamp}(\cdot, 3, 16)$：限制單關額度最小 3 次、最大 16 次。
+
 - **AC2 (純走位不扣額度與推箱快照封裝)**：
   - 工人在通道內純走動位移時，不扣除 $u_{\text{remaining}}$，不入推箱歷史棧。
   - 當工人成功推動箱子（箱子座標產生改變）瞬間，系統將推箱前一刻的工人座標與全盤箱子座標封裝為單一快照（Snapshot）推入棧頂。
@@ -190,8 +205,19 @@
 
 ### 驗收條件 (Acceptance Criteria)
 
-- **AC1 (時限初始化)**：關卡載入時初始化總秒數 $T_{\text{soft}}$：
+- **AC1 (時限初始化與參數定義)**：
+  關卡載入時初始化總秒數 $T_{\text{soft}}$：
   $$T_{\text{soft}}(S, B, W) = T_{\text{base}}(W) + 2 \cdot (S - S_{\text{start}}(W)) + B \cdot K_t(W)$$
+
+  **參數符號定義：**
+  * $S \in [1, 50]$：當前關卡序號。
+  * $W \in [1, 4]$：當前所屬主題世界代號。
+  * $B$：當前關卡需歸位之目標箱子總數。
+  * $S_{\text{start}}(W)$：世界起始關卡序號（W1: 1, W2: 6, W3: 26, W4: 41）。
+  * $T_{\text{base}}(W)$：世界第一關基準秒數（W1: 50s, W2: 100s, W3: 150s, W4: 180s）。
+  * $K_t(W)$：單箱時間加權權重（W1: 10s, W2: 15s, W3: 25s, W4: 20s）。
+  * $2 \cdot (S - S_{\text{start}})$：世界內每推進 1 關線性遞增 2 秒思考寬容度。
+
 - **AC2 (倒數計時推進)**：遊戲進行期間，$t_{\text{elapsed}}$ 每秒累加，左側 HUD 計時器與進度條即時更新。
 - **AC3 (超時鎖定與提示音)**：當 $t_{\text{elapsed}} \ge T_{\text{soft}}$ 瞬間：
   - 播放單次低沉超時提示音（`SFX_TIMEOUT`）。
@@ -346,8 +372,15 @@
   - 方向鍵 `[↑↓←→]` 映射為移動。
   - `[Z]` 鍵映射為 Undo。
   - 長按 `[R]` 鍵滿 1.0 秒映射為棄局。
-  - `[ESC]` 鍵映射為暫停選單。
+  - 不設置實體 `[ESC]` 暫停鍵（純回合制益智，工人靜止即等同暫停）。
   - 嚴格不擴展 Gamepad 額外按鍵，保持純鍵盤操作。
 - **AC4 (Game Over 退出流程)**：當 $\text{Lives} = 0$ 觸發 Game Over 時，系統上報隱寫分數，銷毀 Canvas 視窗，直接返回 Arcade Stadium 大廳，不提供原地投幣接關倒數。
-- **AC5 (程序化 Web Audio 音效)**：採用 Web Audio 即時合成全套音效（腳步聲、推箱聲、入洞鈴聲、Undo 音、死鎖警告、超時提示、1UP 號角、通關音樂），零外部音檔依賴。
+- **AC5 (程序化 Web Audio 輕音樂 BGM)**：
+  為四大世界各配置專屬低干擾、輕節奏之合成器晶片背景音樂（BGM），營造專注長考氛圍：
+  - `BGM_WORLD_1 (Cargo Warmth)`：木質溫暖打擊晶片音樂（World 1: Cargo Depot）。
+  - `BGM_WORLD_2 (Steel Jazz)`：沉穩輕爵士晶片音樂（World 2: Steel Works）。
+  - `BGM_WORLD_3 (Cyber Pulse)`：賽博低頻環境脈衝晶片音樂（World 3: Cyber Vault）。
+  - `BGM_WORLD_4 (Terminal Vista)`：碼頭廣角大氣晶片管弦樂（World 4: Mega Terminal）。
+  - 支援平台 `MUTE_TOGGLED` 一鍵靜音與音量控管。
+- **AC6 (程序化 Web Audio 音效 SFX)**：採用 Web Audio 即時合成全套音效（腳步聲、推箱聲、入洞鈴聲、Undo 音、死鎖警告、超時提示、1UP 號角、通關音樂），零外部音檔依賴。
 
