@@ -139,14 +139,16 @@ export class PreloadScene extends Phaser.Scene {
     this.generateFloorTexture('sokoban:floor_mega', S, 'mega_terminal', floorThemes.mega_terminal);
 
     // 7. Ambient World Backdrops (Tiled over 880x660 arena to eliminate pitch-black voids)
+    // S_AMBIENT = 44: Exact integer common divisor of 880 (20 tiles) and 660 (15 tiles) preventing edge cutoff
+    const S_AMBIENT = 44;
     const ambientThemes = ['cargo_depot', 'cyber_vault', 'steel_works', 'mega_terminal'];
     for (const key of ambientThemes) {
-      this.generateAmbientTexture(`sokoban:ambient_${key}`, S, key);
+      this.generateAmbientTexture(`sokoban:ambient_${key}`, S_AMBIENT, key);
     }
-    this.generateAmbientTexture('sokoban:ambient_cargo', S, 'cargo_depot');
-    this.generateAmbientTexture('sokoban:ambient_cyber', S, 'cyber_vault');
-    this.generateAmbientTexture('sokoban:ambient_steel', S, 'steel_works');
-    this.generateAmbientTexture('sokoban:ambient_mega', S, 'mega_terminal');
+    this.generateAmbientTexture('sokoban:ambient_cargo', S_AMBIENT, 'cargo_depot');
+    this.generateAmbientTexture('sokoban:ambient_cyber', S_AMBIENT, 'cyber_vault');
+    this.generateAmbientTexture('sokoban:ambient_steel', S_AMBIENT, 'steel_works');
+    this.generateAmbientTexture('sokoban:ambient_mega', S_AMBIENT, 'mega_terminal');
   }
 
   private generateWorkerTexture(key: string, S: number, dir: 'down' | 'up' | 'left' | 'right'): void {

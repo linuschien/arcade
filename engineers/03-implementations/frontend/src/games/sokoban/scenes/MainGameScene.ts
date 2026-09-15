@@ -67,6 +67,7 @@ export class MainGameScene extends BaseArcadeScene {
   private moveDebounceMs: number = 0;
   private actionDebounceMs: number = 0;
   private currentWorkerFacing: 'down' | 'up' | 'left' | 'right' = 'down';
+  private titleMenuSelectedIndex: number = 0;
 
   constructor() {
     super({ key: 'sokoban:MainGameScene' });
@@ -96,15 +97,16 @@ export class MainGameScene extends BaseArcadeScene {
     // Arcade deep obsidian backdrop
     bgGfx.fillStyle(0x020617, 1);
     bgGfx.fillRect(0, 0, 1280, 720);
-
-    // Subtle 1px dividers between Left HUD (200px), Center (880px), Right HUD (200px)
-    bgGfx.lineStyle(1, 0x1e293b, 0.8);
-    bgGfx.lineBetween(200, 30, 200, 690);
-    bgGfx.lineBetween(1080, 30, 1080, 690);
   }
 
   private createLeftHUD(): void {
     this.leftHudGfx = this.add.graphics();
+    // Glass panel base & outer border
+    this.leftHudGfx.fillStyle(0x090f1d, 0.75);
+    this.leftHudGfx.fillRoundedRect(8, 30, 184, 660, 8);
+    this.leftHudGfx.lineStyle(1.5, 0x334155, 0.8);
+    this.leftHudGfx.strokeRoundedRect(8, 30, 184, 660, 8);
+
     this.timerBarGfx = this.add.graphics();
     this.undoLampsGfx = this.add.graphics();
 
@@ -187,8 +189,8 @@ export class MainGameScene extends BaseArcadeScene {
 
   private drawVignetteFrame(): void {
     this.vignetteGfx.clear();
-    // 1px inner border around the 880x660 central viewport
-    this.vignetteGfx.lineStyle(1, 0x334155, 0.4);
+    // 1px inner border around the 880x660 central viewport (顏色稍淡、低調)
+    this.vignetteGfx.lineStyle(1.5, 0x1e293b, 0.7);
     this.vignetteGfx.strokeRect(200, 30, 880, 660);
 
     // Edge gradient shadow bands to blend arena smoothly with Left/Right HUDs
@@ -208,6 +210,12 @@ export class MainGameScene extends BaseArcadeScene {
 
   private createRightHUD(): void {
     this.rightHudGfx = this.add.graphics();
+    // Glass panel base & outer border
+    this.rightHudGfx.fillStyle(0x090f1d, 0.75);
+    this.rightHudGfx.fillRoundedRect(1088, 30, 184, 660, 8);
+    this.rightHudGfx.lineStyle(1.5, 0x334155, 0.8);
+    this.rightHudGfx.strokeRoundedRect(1088, 30, 184, 660, 8);
+
     this.livesGfx = this.add.graphics();
     this.extendBarGfx = this.add.graphics();
 
@@ -219,10 +227,10 @@ export class MainGameScene extends BaseArcadeScene {
       align: 'center',
     }).setOrigin(0.5);
 
-    // 8-Digit Gold Score
-    this.scoreText = this.add.text(1180, 85, '00000000', {
+    // Clean Gold Score Display (no excessive leading zeros)
+    this.scoreText = this.add.text(1180, 85, '0', {
       fontFamily: 'monospace',
-      fontSize: '26px',
+      fontSize: '28px',
       fontStyle: 'bold',
       color: '#facc15',
       align: 'center',
@@ -315,14 +323,14 @@ export class MainGameScene extends BaseArcadeScene {
     // 3. General Dialog Modal (Title Menu, Stage Clear, Game Over, Victory)
     this.modalOverlayContainer = this.add.container(640, 360).setVisible(false);
     this.modalBg = this.add.graphics();
-    this.modalTitleText = this.add.text(0, -70, '', {
+    this.modalTitleText = this.add.text(0, -110, '', {
       fontFamily: 'monospace',
       fontSize: '24px',
       fontStyle: 'bold',
       color: '#facc15',
     }).setOrigin(0.5);
 
-    this.modalBodyText = this.add.text(0, -10, '', {
+    this.modalBodyText = this.add.text(0, -5, '', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#f8fafc',
@@ -330,7 +338,7 @@ export class MainGameScene extends BaseArcadeScene {
       lineSpacing: 8,
     }).setOrigin(0.5);
 
-    this.modalPromptText = this.add.text(0, 65, '', {
+    this.modalPromptText = this.add.text(0, 115, '', {
       fontFamily: 'monospace',
       fontSize: '13px',
       fontStyle: 'bold',
@@ -349,26 +357,36 @@ export class MainGameScene extends BaseArcadeScene {
     this.modalOverlayContainer.setVisible(true);
     this.modalBg.clear();
     this.modalBg.fillStyle(0x0a0f1d, 0.95);
-    this.modalBg.fillRoundedRect(-240, -120, 480, 240, 12);
-    this.modalBg.lineStyle(2, 0x38bdf8, 0.8);
-    this.modalBg.strokeRoundedRect(-240, -120, 480, 240, 12);
+    this.modalBg.fillRoundedRect(-250, -150, 500, 300, 12);
+    this.modalBg.lineStyle(2, 0x38bdf8, 0.85);
+    this.modalBg.strokeRoundedRect(-250, -150, 500, 300, 12);
 
     this.modalTitleText.setText('SOKOBAN 50 SELECTION');
+    this.modalTitleText.setColor('#facc15');
+
+    this.titleMenuSelectedIndex = 0;
+    this.updateTitleMenuDisplay();
+    this.modalPromptText.setText('[↑ / ↓] SELECT    [SPACE] CONFIRM');
+  }
+
+  private updateTitleMenuDisplay(): void {
     const maxCleared = this.state.maxClearedStage;
     if (maxCleared > 0) {
+      const optContinue = (this.titleMenuSelectedIndex === 0 ? '► ' : '  ') + `CONTINUE (STAGE ${maxCleared + 1})`;
+      const optNewGame  = (this.titleMenuSelectedIndex === 1 ? '► ' : '  ') + 'NEW GAME (FROM STAGE 1)';
       this.modalBodyText.setText(
-        `PREVIOUS PROGRESS SAVED: STAGE ${maxCleared} CLEARED\n` +
-        `PRESS [ENTER / SPACE] TO CONTINUE (STAGE ${maxCleared + 1})\n` +
-        `PRESS [N] FOR NEW GAME FROM STAGE 1`,
+        `SAVED PROGRESS: STAGE ${maxCleared} CLEARED\n\n` +
+        `${optContinue}\n` +
+        `${optNewGame}`
       );
     } else {
+      this.titleMenuSelectedIndex = 0;
       this.modalBodyText.setText(
         '50 CURATED DIORAMA BOX-PUSHING PUZZLES\n' +
-        'ACROSS 4 ATMOSPHERIC WORLDS\n' +
-        'PRESS [ENTER / SPACE] TO START NEW GAME',
+        'ACROSS 4 ATMOSPHERIC WORLDS\n\n' +
+        '► START NEW GAME (STAGE 1)'
       );
     }
-    this.modalPromptText.setText('INSERT COIN OR PRESS SPACE');
   }
 
   private renderStageBoard(): void {
@@ -515,16 +533,44 @@ export class MainGameScene extends BaseArcadeScene {
 
     // Input: Title Menu / Dialog confirmations
     if (this.state.status === 'TITLE_MENU') {
-      if (InputService.isActionDown(PlayerIndex.P1, ArcadeAction.BUTTON_A) || this.input.keyboard?.addKey('SPACE').isDown) {
-        if (this.state.maxClearedStage > 0) {
+      const maxCleared = this.state.maxClearedStage;
+
+      // Arrow Up / W
+      const isUp = InputService.isActionDown(PlayerIndex.P1, ArcadeAction.UP) ||
+        (this.input.keyboard?.addKey('UP').isDown ?? false) ||
+        (this.input.keyboard?.addKey('W').isDown ?? false);
+
+      // Arrow Down / S
+      const isDown = InputService.isActionDown(PlayerIndex.P1, ArcadeAction.DOWN) ||
+        (this.input.keyboard?.addKey('DOWN').isDown ?? false) ||
+        (this.input.keyboard?.addKey('S').isDown ?? false);
+
+      if (maxCleared > 0) {
+        if (isUp && this.actionDebounceMs <= 0) {
+          this.actionDebounceMs = 200;
+          this.titleMenuSelectedIndex = 0;
+          this.updateTitleMenuDisplay();
+          SokobanAudioService.playStep();
+        } else if (isDown && this.actionDebounceMs <= 0) {
+          this.actionDebounceMs = 200;
+          this.titleMenuSelectedIndex = 1;
+          this.updateTitleMenuDisplay();
+          SokobanAudioService.playStep();
+        }
+      }
+
+      // Confirm selection with SPACE / ENTER / BUTTON_A
+      const isConfirm = InputService.isActionDown(PlayerIndex.P1, ArcadeAction.BUTTON_A) ||
+        (this.input.keyboard?.addKey('SPACE').isDown ?? false) ||
+        (this.input.keyboard?.addKey('ENTER').isDown ?? false);
+
+      if (isConfirm && this.actionDebounceMs <= 0) {
+        this.actionDebounceMs = 300;
+        if (maxCleared > 0 && this.titleMenuSelectedIndex === 0) {
           this.state.continueGame();
         } else {
           this.state.startNewGame();
         }
-        this.modalOverlayContainer.setVisible(false);
-        this.renderStageBoard();
-      } else if (this.input.keyboard?.addKey('N').isDown) {
-        this.state.startNewGame();
         this.modalOverlayContainer.setVisible(false);
         this.renderStageBoard();
       }
@@ -715,20 +761,23 @@ export class MainGameScene extends BaseArcadeScene {
 
     // 2. Right HUD
     const scoreVal = this.state.scoreKeeper.getRawScore();
-    this.scoreText.setText(scoreVal.toString().padStart(8, '0'));
+    this.scoreText.setText(scoreVal.toLocaleString());
 
-    // Lives icons
+    // Lives icons: spare reserve lives (excluding active worker in the arena)
     this.livesGfx.clear();
+    const spareLives = Math.max(0, this.state.lives - 1);
     const lifeIconSpacing = 28;
-    const lifeStartX = 1180 - ((this.state.lives - 1) * lifeIconSpacing) / 2;
-    for (let i = 0; i < this.state.lives; i++) {
-      const lx = lifeStartX + i * lifeIconSpacing;
-      const ly = 195;
-      // Worker mini avatar icon
-      this.livesGfx.fillStyle(0x2563eb, 1);
-      this.livesGfx.fillCircle(lx, ly, 8);
-      this.livesGfx.fillStyle(0xfacc15, 1);
-      this.livesGfx.fillRect(lx - 6, ly - 8, 12, 5);
+    if (spareLives > 0) {
+      const lifeStartX = 1180 - ((spareLives - 1) * lifeIconSpacing) / 2;
+      for (let i = 0; i < spareLives; i++) {
+        const lx = lifeStartX + i * lifeIconSpacing;
+        const ly = 195;
+        // Worker mini avatar icon
+        this.livesGfx.fillStyle(0x2563eb, 1);
+        this.livesGfx.fillCircle(lx, ly, 8);
+        this.livesGfx.fillStyle(0xfacc15, 1);
+        this.livesGfx.fillRect(lx - 6, ly - 8, 12, 5);
+      }
     }
 
     // 1UP progress bar
@@ -779,9 +828,9 @@ export class MainGameScene extends BaseArcadeScene {
     this.modalOverlayContainer.setVisible(true);
     this.modalBg.clear();
     this.modalBg.fillStyle(0x0a0f1d, 0.95);
-    this.modalBg.fillRoundedRect(-240, -130, 480, 260, 12);
+    this.modalBg.fillRoundedRect(-250, -160, 500, 320, 12);
     this.modalBg.lineStyle(2, 0x10b981, 0.85);
-    this.modalBg.strokeRoundedRect(-240, -130, 480, 260, 12);
+    this.modalBg.strokeRoundedRect(-250, -160, 500, 320, 12);
 
     this.modalTitleText.setText(breakdown.isPerfect ? 'PERFECT STAGE CLEAR!' : 'STAGE CLEAR!');
     this.modalTitleText.setColor(breakdown.isPerfect ? '#facc15' : '#10b981');
@@ -802,9 +851,9 @@ export class MainGameScene extends BaseArcadeScene {
     this.modalOverlayContainer.setVisible(true);
     this.modalBg.clear();
     this.modalBg.fillStyle(0x0a0f1d, 0.95);
-    this.modalBg.fillRoundedRect(-240, -120, 480, 240, 12);
+    this.modalBg.fillRoundedRect(-250, -150, 500, 300, 12);
     this.modalBg.lineStyle(2, 0xef4444, 0.85);
-    this.modalBg.strokeRoundedRect(-240, -120, 480, 240, 12);
+    this.modalBg.strokeRoundedRect(-250, -150, 500, 300, 12);
 
     this.modalTitleText.setText('GAME OVER');
     this.modalTitleText.setColor('#ef4444');
@@ -833,9 +882,9 @@ export class MainGameScene extends BaseArcadeScene {
     this.modalOverlayContainer.setVisible(true);
     this.modalBg.clear();
     this.modalBg.fillStyle(0x0a0f1d, 0.95);
-    this.modalBg.fillRoundedRect(-240, -130, 480, 260, 12);
+    this.modalBg.fillRoundedRect(-250, -150, 500, 300, 12);
     this.modalBg.lineStyle(2, 0xfacc15, 0.9);
-    this.modalBg.strokeRoundedRect(-240, -130, 480, 260, 12);
+    this.modalBg.strokeRoundedRect(-250, -150, 500, 300, 12);
 
     this.modalTitleText.setText('CONGRATULATIONS!');
     this.modalTitleText.setColor('#facc15');
