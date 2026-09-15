@@ -407,7 +407,7 @@ export class MainGameScene extends BaseArcadeScene {
     const maxCleared = this.state.maxClearedStage;
     if (maxCleared > 0) {
       const optContinue = (this.titleMenuSelectedIndex === 0 ? '► ' : '  ') + `CONTINUE (STAGE ${maxCleared + 1})`;
-      const optNewGame  = (this.titleMenuSelectedIndex === 1 ? '► ' : '  ') + 'NEW GAME (STAGE 1)';
+      const optNewGame  = (this.titleMenuSelectedIndex === 1 ? '► ' : '  ') + 'NEW GAME (STAGE 01)';
       this.modalBodyText.setText(
         `SAVED PROGRESS: STAGE ${maxCleared} CLEARED\n\n` +
         `${optContinue}\n` +
