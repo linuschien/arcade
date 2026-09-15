@@ -47,6 +47,7 @@ export class MainGameScene extends BaseArcadeScene {
   private rightHudGfx!: Phaser.GameObjects.Graphics;
   private scoreText!: Phaser.GameObjects.Text;
   private livesGfx!: Phaser.GameObjects.Graphics;
+  private lifeSprites: Phaser.GameObjects.Sprite[] = [];
   private extendBarGfx!: Phaser.GameObjects.Graphics;
   private extendLabelText!: Phaser.GameObjects.Text;
 
@@ -241,6 +242,7 @@ export class MainGameScene extends BaseArcadeScene {
     this.rightHudGfx.strokeRoundedRect(1088, 30, 184, 660, 8);
 
     this.livesGfx = this.add.graphics();
+    this.lifeSprites = [];
     this.extendBarGfx = this.add.graphics();
 
     // Score Header
@@ -619,15 +621,8 @@ export class MainGameScene extends BaseArcadeScene {
       return;
     }
 
-    // 3. Game Over / All Clear Confirmation (Edge-triggered)
+    // 3. Game Over / All Clear (Waiting for arcade platform host to return to lobby)
     if (this.state.status === 'GAME_OVER' || this.state.status === 'ALL_CLEAR') {
-      const isRestart = this.isActionJustPressed(ArcadeAction.BUTTON_A);
-
-      if (isRestart) {
-        this.state.startNewGame();
-        this.modalOverlayContainer.setVisible(false);
-        this.renderStageBoard();
-      }
       return;
     }
 
@@ -1050,22 +1045,35 @@ export class MainGameScene extends BaseArcadeScene {
     const scoreVal = this.state.scoreKeeper.getRawScore();
     this.scoreText.setText(scoreVal.toLocaleString());
 
-    // Lives icons: spare reserve lives (excluding active worker in the arena)
+    // Lives icons: spare reserve lives (reusing authentic new front-facing worker sprite)
     this.livesGfx.clear();
     const spareLives = Math.max(0, this.state.lives - 1);
-    const lifeIconSpacing = 28;
-    if (spareLives > 0) {
-      const lifeStartX = 1180 - ((spareLives - 1) * lifeIconSpacing) / 2;
-      for (let i = 0; i < spareLives; i++) {
-        const lx = lifeStartX + i * lifeIconSpacing;
-        const ly = 195;
-        // Worker mini avatar icon
-        this.livesGfx.fillStyle(0x2563eb, 1);
-        this.livesGfx.fillCircle(lx, ly, 8);
-        this.livesGfx.fillStyle(0xfacc15, 1);
-        this.livesGfx.fillRect(lx - 6, ly - 8, 12, 5);
+    const lifeIconSpacing = 34;
+    const iconSize = 28;
+    const lifeStartX = 1180 - ((spareLives - 1) * lifeIconSpacing) / 2;
+
+    while (this.lifeSprites.length < spareLives) {
+      const sp = this.add.sprite(0, 0, 'sokoban:worker_down');
+      if (typeof (sp as any).setDisplaySize === 'function') {
+        sp.setDisplaySize(iconSize, iconSize);
       }
+      if (typeof (sp as any).setDepth === 'function') {
+        sp.setDepth(15);
+      }
+      this.lifeSprites.push(sp);
     }
+
+    this.lifeSprites.forEach((sp, idx) => {
+      if (idx < spareLives) {
+        sp.setVisible(true);
+        sp.setPosition(lifeStartX + idx * lifeIconSpacing, 195);
+        if (typeof (sp as any).setDisplaySize === 'function') {
+          sp.setDisplaySize(iconSize, iconSize);
+        }
+      } else {
+        sp.setVisible(false);
+      }
+    });
 
     // 1UP progress bar
     const extendProgress = this.state.scoreKeeper.getExtendProgress();
@@ -1166,7 +1174,7 @@ export class MainGameScene extends BaseArcadeScene {
       `(Includes two-digit stage steganography)`,
     );
 
-    this.modalPromptText.setText('PRESS [SPACE / BUTTON A] TO PLAY AGAIN');
+    this.modalPromptText.setText('RETURNING TO LOBBY...');
 
     // Emit GameOver via ArcadeBridge to React shell
     ArcadeBridge.emit('GAME_OVER', {
@@ -1200,7 +1208,7 @@ export class MainGameScene extends BaseArcadeScene {
       `FINAL SCORE: ${finalStegoScore.toLocaleString()} PTS`,
     );
 
-    this.modalPromptText.setText('PRESS [SPACE / BUTTON A] TO RETURN TO TITLE');
+    this.modalPromptText.setText('RETURNING TO LOBBY...');
 
     ArcadeBridge.emit('GAME_OVER', {
       gameId: 'sokoban',
@@ -1214,6 +1222,12 @@ export class MainGameScene extends BaseArcadeScene {
     SokobanAudioService.stopBGM();
     this.tweens.killAll();
     this.time.removeAllEvents();
+    this.lifeSprites.forEach((sp) => {
+      if (typeof sp.destroy === 'function') {
+        sp.destroy();
+      }
+    });
+    this.lifeSprites = [];
     if (this.ambientBackdrop && typeof this.ambientBackdrop.destroy === 'function') {
       this.ambientBackdrop.destroy();
     }
