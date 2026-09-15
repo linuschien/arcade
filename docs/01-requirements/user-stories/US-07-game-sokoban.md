@@ -307,24 +307,30 @@
 **身份**： 街機玩家 (Arcade Player)
 
 > **As a** 玩家，  
-> **I want to** 體驗 50 關在視覺氛圍、難度與箱數分明遞進的四大主題世界，  
+> **I want to** 體驗 50 關在視覺氛圍、難度與箱數分明遞進且完全不重疊的四大主題世界，  
 > **So that** 長時間遊玩時獲得清晰的篇章推進感與視覺新鮮度。
 
 ### 驗收條件 (Acceptance Criteria)
 
 - **AC1 (World 1: Cargo Depot，Stage 01～05，5 關)**：
-  - 箱數分佈嚴格固定為：**`1, 2, 3, 3, 3`** 顆。
-  - 風格為木造貨棧，光線溫暖，供玩家熟悉基礎操作。
-- **AC2 (World 2: Steel Works，Stage 06～25，20 關)**：
-  - 箱數分佈：**4 箱 $\times$ 6 關**（06～11）、**5 箱 $\times$ 7 關**（12～18）、**6 箱 $\times$ 7 關**（19～25）。
-  - 風格為重工業鋼鐵廠，經典開闊長廊與多凹槽空間。
-- **AC3 (World 3: Cyber Vault，Stage 26～40，15 關)**：
-  - 箱數分佈：**4 箱 $\times$ 5 關**（26～30）、**5 箱 $\times$ 5 關**（31～35）、**6 箱 $\times$ 5 關**（36～40）。
+  - 題庫來源：`Microban.txt`（David W. Skinner）。
+  - 箱數分佈嚴格固定為：**`[1, 2, 2, 2, 2]`** 顆（包含傳奇單箱破冰神關 `#44 Duh!`）。
+  - 風格為木造貨棧，光線溫暖，供玩家熟悉基礎操作與避免死鎖。
+- **AC2 (World 2: Cyber Vault，Stage 06～20，15 關)**：
+  - 題庫來源：`minicosmos.txt`（3 箱關卡）＋ `microcosmos.txt`（4～5 箱關卡）（Aymeric du Peloux 宇宙雙部曲）。
+  - 箱數分佈：**$5 : 5 : 5$ 均勻線性分佈**，每 5 關箱數精準 $+1$（3 箱 $\times$ 5、4 箱 $\times$ 5、5 箱 $\times$ 5）。
   - 風格為賽博金庫，高密度微型密室。
-  - **第 26 關篇章轉場**：首次進入第 26 關時，觸發全屏紅色警報閃爍、CRT 雜訊掃描與鏡頭拉近（Zoom-in）轉場特效。
+  - **第 06 關篇章轉場**：首次進入第 06 關時，觸發全屏紅色警報閃爍、CRT 雜訊掃描與鏡頭拉近（Zoom-in）轉場特效。
+- **AC3 (World 3: Steel Works，Stage 21～40，20 關)**：
+  - 題庫來源：`Original-Plus-Extra.txt`（今林宏行 Thinking Rabbit 原版經典 20 關）。
+  - 箱數分佈：**6 箱 $\times$ 2**（含歷史開山第 1 關 `#01`）、**8 箱 $\times$ 2**、**9 箱 $\times$ 2**、**10 箱 $\times$ 5**、**11 箱 $\times$ 3**、**12 箱 $\times$ 6**。
+  - 風格為重工業鋼鐵廠，經典開闊長廊與多凹槽空間。
+  - **第 21 關篇章轉場**：首次進入第 21 關時，觸發重工業廠警報蒸氣轉場特效。
 - **AC4 (World 4: Mega Terminal，Stage 41～50，10 關)**：
-  - 箱數分佈：**7 箱 $\times$ 3 關**（41～43）、**8 箱 $\times$ 3 關**（44～46）、**9 箱 $\times$ 2 關**（47～48）、**10 箱 $\times$ 2 關**（49～50 雙關底）。
+  - 題庫來源：`Sasquatch.txt`（David W. Skinner）。
+  - 箱數分佈：**13 箱 $\times$ 2**、**14 箱 $\times$ 2**、**15 箱 $\times$ 1**、**16 箱 $\times$ 1**、**17 箱 $\times$ 1**、**18 箱 $\times$ 1**、**19 箱 $\times$ 1**、**20 箱 $\times$ 1**（壓軸終戰 `#39`）。
   - 風格為巨型碼頭，全域廣角大圖終極決戰。
+  - **第 41 關篇章轉場**：首次進入第 41 關時，觸發巨型碼頭開闊轉場特效。
 
 ---
 
@@ -340,15 +346,15 @@
 
 - **AC1 (長寬比篩選標準)**：
   所有收錄地圖必須嚴格滿足：
-  $$1.00 \le \frac{W_{\text{grid}}}{H_{\text{grid}}} \le 1.45$$
-  （嚴格排除直幅圖，僅收錄正方形至微橫幅幾何拓撲）。
+  $$1.00 \le \frac{W_{\text{grid}}}{H_{\text{grid}}} \le 1.75$$
+  （嚴格排除直幅地圖，精選 50 關中 0 關需要旋轉；78% 落在 $1.00 \le W/H \le 1.45$ 之黃金正方與微橫幅，22% 容納今林宏行 #1 等不可替代之原版開闊寬橫幅）。
 - **AC2 (各世界網格上限限制)**：
   - World 1: $W_{\text{grid}} \le 12, \; H_{\text{grid}} \le 12$
-  - World 2: $W_{\text{grid}} \le 16, \; H_{\text{grid}} \le 13$
-  - World 3: $W_{\text{grid}} \le 12, \; H_{\text{grid}} \le 12$
-  - World 4: $W_{\text{grid}} \le 18, \; H_{\text{grid}} \le 15$
+  - World 2: $W_{\text{grid}} \le 12, \; H_{\text{grid}} \le 12$
+  - World 3: $W_{\text{grid}} \le 20, \; H_{\text{grid}} \le 16$
+  - World 4: $W_{\text{grid}} \le 26, \; H_{\text{grid}} \le 18$
 - **AC3 (構建期靜態固化)**：
-  地圖由建置腳本自 external-specs 篩選並固化為 50 關靜態 JSON 檔案，包含地圖 ASCII 矩陣、工人起始點座標、目標點座標與箱子數量，遊戲運行時零動態計算。
+  地圖由建置腳本 `filter_levels.py` 自 external-specs 的 5 大題庫篩選並固化為 50 關靜態 JSON 檔案（`sokoban_50_master.json`），包含地圖 ASCII 矩陣、工人起始點座標、目標點座標與箱子數量，遊戲運行時零動態計算。
 
 ---
 
@@ -383,8 +389,8 @@
 - **AC6 (程序化 Web Audio 輕音樂 BGM)**：
   為四大世界各配置專屬低干擾、輕節奏之合成器晶片背景音樂（BGM），營造專注長考氛圍：
   - `BGM_WORLD_1 (Cargo Warmth)`：木質溫暖打擊晶片音樂（World 1: Cargo Depot）。
-  - `BGM_WORLD_2 (Steel Jazz)`：沉穩輕爵士晶片音樂（World 2: Steel Works）。
-  - `BGM_WORLD_3 (Cyber Pulse)`：賽博低頻環境脈衝晶片音樂（World 3: Cyber Vault）。
+  - `BGM_WORLD_2 (Cyber Pulse)`：賽博低頻環境脈衝晶片音樂（World 2: Cyber Vault）。
+  - `BGM_WORLD_3 (Steel Jazz)`：沉穩輕爵士晶片音樂（World 3: Steel Works）。
   - `BGM_WORLD_4 (Terminal Vista)`：碼頭廣角大氣晶片管弦樂（World 4: Mega Terminal）。
   - 支援平台 `MUTE_TOGGLED` 一鍵靜音與音量控管。
 - **AC7 (程序化 Web Audio 音效 SFX)**：採用 Web Audio 即時合成全套音效（腳步聲、推箱聲、入洞鈴聲、Undo 音、死鎖警告、超時提示、1UP 號角、通關音樂），零外部音檔依賴。

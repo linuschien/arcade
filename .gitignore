@@ -3,3 +3,4 @@ engineers/03-implementations/backend/target
 engineers/03-implementations/frontend/coverage
 engineers/03-implementations/frontend/dist
 engineers/03-implementations/frontend/node_modules
+docs/01-requirements/external-specs/__pycache__

@@ -97,19 +97,19 @@
 * **保護決策原則**：玩家單純在走廊走位位移不消耗 Undo 配額；只有當工人施力推動箱子（箱子座標發生改變）時，系統將推箱前一刻的工人座標與所有箱子座標封裝為單一快照節點（Undo Snapshot）推入歷史棧。
 * **關卡配額計算公式**：
   關卡載入時依據關卡序號 $S$、箱數 $B$ 與世界基底參數動態初始化：
-  $$U_{\text{quota}}(S, B, W) = \operatorname{clamp}\left( U_{\text{base}}(W) + \left\lfloor \frac{S - S_{\text{start}}(W)}{4} \right\rfloor + \lfloor B \cdot K_u(W) \rfloor, \quad 3, \quad 16 \right)$$
+  $$U_{\text{quota}}(S, B, W) = \min\left( U_{\max}(W), \; \left\lfloor U_{\text{base}}(W) + B \cdot K_u(W) + 0.15 \cdot (S - S_{\text{start}}(W)) \right\rfloor \right)$$
 
   **$U_{\text{quota}}$ 公式參數符號定義表：**
   | 參數符號 | 參數名稱 | 單位 / 型態 | 說明與定義 |
   |---|---|---|---|
   | $S$ | 當前關卡序號 (Stage) | 整數 ($1 \sim 50$) | 當前進行的關卡編號。 |
-  | $W$ | 當前世界代號 (World) | 整數 ($1 \sim 4$) | 當前所屬主題世界（1: Cargo Depot, 2: Steel Works, 3: Cyber Vault, 4: Mega Terminal）。 |
+  | $W$ | 當前世界代號 (World) | 整數 ($1 \sim 4$) | 當前所屬主題世界（1: Cargo Depot, 2: Cyber Vault, 3: Steel Works, 4: Mega Terminal）。 |
   | $B$ | 目標箱子數 (Box Count) | 顆 (整數) | 當前地圖需推入目標點的箱子總數量。 |
-  | $S_{\text{start}}(W)$ | 世界起始關卡序號 | 關 (整數) | 各世界起點關卡：World 1 為 `1`、World 2 為 `6`、World 3 為 `26`、World 4 為 `41`。 |
-  | $U_{\text{base}}(W)$ | 世界基準保底額度 | 次 (整數) | 該世界第一關之基準 Undo 次數（W1: 2, W2: 4, W3: 6, W4: 6）。 |
-  | $K_u(W)$ | 單箱 Undo 加權係數 | 次/顆 (浮點數) | 隨箱數增加給予之 Undo 補償（W1: 0.6, W2: 0.5, W3: 0.8, W4: 0.6）。 |
-  | $\lfloor \frac{S - S_{\text{start}}(W)}{4} \rfloor$ | 關卡推進額度加乘 | 次 (整數) | 世界內每深入推進 4 關，自動額外獎勵 1 次 Undo 配額。 |
-  | $\operatorname{clamp}(\cdot, 3, 16)$ | 邊界鉗夾函數 | 次 (整數) | 強制鎖定配額區間，單關最少 3 次，最多不超過 16 次。 |
+  | $S_{\text{start}}(W)$ | 世界起始關卡序號 | 關 (整數) | 各世界起點關卡：World 1 為 `1`、World 2 為 `6`、World 3 為 `21`、World 4 為 `41`。 |
+  | $U_{\text{base}}(W)$ | 世界基準保底額度 | 次 (整數) | 該世界第一關之基準 Undo 次數（W1: 2, W2: 4, W3: 5, W4: 6）。 |
+  | $K_u(W)$ | 單箱 Undo 加權係數 | 次/顆 (浮點數) | 隨箱數增加給予之 Undo 補償（W1: 0.6, W2: 0.6, W3: 0.5, W4: 0.5）。 |
+  | $0.15 \cdot (S - S_{\text{start}}(W))$ | 關卡推進額度微調 | 次 (浮點數) | 世界內每深入推進，給予微幅 Undo 補償。 |
+  | $U_{\max}(W)$ | 各世界配額上限 | 次 (整數) | 強制鎖定配額上限（W1: 6, W2: 12, W3: 14, W4: 16）。 |
 
 * **瞬間還原流程 (Instant Snapshot Restore)**：
   * 當玩家按下 `[Z]` 鍵：
@@ -156,11 +156,11 @@
   | 參數符號 | 參數名稱 | 單位 / 型態 | 說明與定義 |
   |---|---|---|---|
   | $S$ | 當前關卡序號 (Stage) | 整數 ($1 \sim 50$) | 當前進行的關卡編號。 |
-  | $W$ | 當前世界代號 (World) | 整數 ($1 \sim 4$) | 當前所屬主題世界（1: Cargo Depot, 2: Steel Works, 3: Cyber Vault, 4: Mega Terminal）。 |
+  | $W$ | 當前世界代號 (World) | 整數 ($1 \sim 4$) | 當前所屬主題世界（1: Cargo Depot, 2: Cyber Vault, 3: Steel Works, 4: Mega Terminal）。 |
   | $B$ | 目標箱子數 (Box Count) | 顆 (整數) | 當前地圖需推入目標點的箱子總數量。 |
-  | $S_{\text{start}}(W)$ | 世界起始關卡序號 | 關 (整數) | 各世界起點關卡：World 1 為 `1`、World 2 為 `6`、World 3 為 `26`、World 4 為 `41`。 |
-  | $T_{\text{base}}(W)$ | 世界基底時限 (Base Time) | 秒 ($\text{s}$) | 該世界第一關之起始基準秒數（W1: $50\text{s}$, W2: $100\text{s}$, W3: $150\text{s}$, W4: $180\text{s}$）。 |
-  | $K_t(W)$ | 單箱時間加權權重 | 秒/顆 ($\text{s}$) | 每增加 1 顆箱子給予之思考緩衝時間（W1: $10\text{s}$, W2: $15\text{s}$, W3: $25\text{s}$, W4: $20\text{s}$）。 |
+  | $S_{\text{start}}(W)$ | 世界起始關卡序號 | 關 (整數) | 各世界起點關卡：World 1 為 `1`、World 2 為 `6`、World 3 為 `21`、World 4 為 `41`。 |
+  | $T_{\text{base}}(W)$ | 世界基底時限 (Base Time) | 秒 ($\text{s}$) | 該世界第一關之起始基準秒數（W1: $50\text{s}$, W2: $120\text{s}$, W3: $140\text{s}$, W4: $180\text{s}$）。 |
+  | $K_t(W)$ | 單箱時間加權權重 | 秒/顆 ($\text{s}$) | 每增加 1 顆箱子給予之思考緩衝時間（W1: $10\text{s}$, W2: $20\text{s}$, W3: $15\text{s}$, W4: $15\text{s}$）。 |
   | $2 \cdot (S - S_{\text{start}}(W))$ | 關卡推進時間遞增 | 秒 ($\text{s}$) | 該世界內每推進 1 關，自動線性遞增 2 秒思考時間。 |
 * **超時保護機制**：
   * 當累計遊玩時間 $t_{\text{elapsed}} \ge T_{\text{soft}}$ 時：
@@ -208,46 +208,60 @@
 
 ## 5. 四大主題世界巡迴與幾何拓撲 (World Progression & Geometric Topology)
 
-### 5.1 四大主題世界（5/20/15/10 陣列）
+### 5.1 四大主題世界（5/15/20/10 零重疊線性推進陣列）
 
-遊戲 50 關按四大主題世界線性推進，箱數與難度梯級嚴格控制：
+遊戲 50 關按四大主題世界線性推進，各世界題庫來源 100% 獨立純粹，箱數梯級滿足嚴格零重疊整數分割（$W_1 [1, 2] < W_2 [3, 5] < W_3 [6, 12] < W_4 [13, 20]$）：
 
 * **World 1 (Stage 01～05，Microban，5 關)：**
-  * **風格**：木造貨棧（CARGO DEPOT），明亮溫暖，新手入門教學衝刺。
-  * **箱數分佈**：嚴格固定為 **`1, 2, 3, 3, 3`** 顆。
-* **World 2 (Stage 06～25，Original，20 關)：**
-  * **風格**：重工業工廠（STEEL WORKS），經典開闊長廊與多凹槽調度。
+  * **題庫來源**：`Microban.txt`（David W. Skinner）。
+  * **風格**：木造貨棧（CARGO DEPOT），明亮溫暖，極致平緩的新手入門教學階梯。
+  * **箱數分佈**：嚴格固定為 **`[1, 2, 2, 2, 2]`** 顆（包含傳奇單箱破冰神關 `#44 Duh!`）。
+* **World 2 (Stage 06～20，Cosmos 宇宙雙部曲，15 關)：**
+  * **題庫來源**：`minicosmos.txt`（3 箱關卡）＋ `microcosmos.txt`（4～5 箱關卡）（Aymeric du Peloux）。
+  * **風格**：賽博金庫（CYBER VAULT），高密度微型密室，科技冷冽。
+  * **箱數分佈**：**$5 : 5 : 5$ 完美均勻對稱**，每 5 關箱數精準 $+1$：
+    * **3 箱 $\times$ 5 關**（Stage 06～10，來自 `minicosmos.txt` 自然正方/微橫幅精華）
+    * **4 箱 $\times$ 5 關**（Stage 11～15，來自 `microcosmos.txt`）
+    * **5 箱 $\times$ 5 關**（Stage 16～20，來自 `microcosmos.txt`）
+  * **特殊演出**：首次進入第 06 關時，觸發全屏紅色警報閃爍、CRT 雜訊掃描與鏡頭拉近（Zoom-in）震撼篇章轉場。
+* **World 3 (Stage 21～40，Original，20 關)：**
+  * **題庫來源**：`Original-Plus-Extra.txt`（今林宏行 Thinking Rabbit 原版經典 20 關）。
+  * **風格**：重工業工廠（STEEL WORKS），經典開闊長廊與多凹槽空間。
   * **箱數分佈**：
-    * **4 箱 $\times$ 6 關**（Stage 06～11）
-    * **5 箱 $\times$ 7 關**（Stage 12～18）
-    * **6 箱 $\times$ 7 關**（Stage 19～25）
-* **World 3 (Stage 26～40，Cosmos，15 關)：**
-  * **風格**：賽博金庫（CYBER VAULT），高密度微型密室。
-  * **箱數分佈**：
-    * **4 箱 $\times$ 5 關**（Stage 26～30）
-    * **5 箱 $\times$ 5 關**（Stage 31～35）
-    * **6 箱 $\times$ 5 關**（Stage 36～40）
-  * **特殊演出**：首次進入第 26 關時，觸發全屏紅色警報閃爍、CRT 雜訊掃描與鏡頭拉近（Zoom-in）震撼篇章轉場。
+    * **6 箱 $\times$ 2 關**（Stage 21～22，完整收錄 1982 年歷史開山第 1 關 `#01`）
+    * **8 箱 $\times$ 2 關**（Stage 23～24）
+    * **9 箱 $\times$ 2 關**（Stage 25～26）
+    * **10 箱 $\times$ 5 關**（Stage 27～31）
+    * **11 箱 $\times$ 3 關**（Stage 32～34，含原版第 3 關 `#03`）
+    * **12 箱 $\times$ 6 關**（Stage 35～40，含原版第 5 關 `#05`）
+  * **特殊演出**：首次進入第 21 關時，觸發重工業廠篇章轉場與警報蒸氣特效。
 * **World 4 (Stage 41～50，Sasquatch，10 關)：**
+  * **題庫來源**：`Sasquatch.txt`（David W. Skinner）。
   * **風格**：巨型碼頭（MEGA TERMINAL），全域廣角大圖終極決戰。
-  * **箱數分佈**：
-    * **7 箱 $\times$ 3 關**（Stage 41～43）
-    * **8 箱 $\times$ 3 關**（Stage 44～46）
-    * **9 箱 $\times$ 2 關**（Stage 47～48）
-    * **10 箱 $\times$ 2 關**（Stage 49～50 雙關底壓軸終戰）
+  * **箱數分佈**：由 14 箱至 20 箱呈現每關線性 $+1$ 箱之終極登山階梯：
+    * **13 箱 $\times$ 2 關**（Stage 41～42）
+    * **14 箱 $\times$ 2 關**（Stage 43～44）
+    * **15 箱 $\times$ 1 關**（Stage 45）
+    * **16 箱 $\times$ 1 關**（Stage 46，全題庫唯一）
+    * **17 箱 $\times$ 1 關**（Stage 47，全題庫唯一）
+    * **18 箱 $\times$ 1 關**（Stage 48）
+    * **19 箱 $\times$ 1 關**（Stage 49）
+    * **20 箱 $\times$ 1 關**（Stage 50 壓軸終戰 `#39`）
+  * **特殊演出**：首次進入第 41 關時，觸發巨型碼頭篇章轉場。
 
 ### 5.2 幾何拓撲過濾與地圖固化管線 (Geometric Filter & Static Dataset)
 
 * **長寬比與邊長限制**：
-  為排除不美觀之直幅或扁平牙膏圖，收錄地圖必須嚴格滿足：
-  $$\begin{cases} 1.00 \le \dfrac{W_{\text{grid}}}{H_{\text{grid}}} \le 1.45 & (\text{排除直幅，僅收錄正方形至微橫幅}) \\ W_{\text{grid}} \le W_{\max}(W) \;\land\; H_{\text{grid}} \le H_{\max}(W) & (\text{各世界網格邊長上限}) \end{cases}$$
+  為排除視覺壓迫之直幅地圖（$W < H$），收錄地圖必須嚴格滿足：
+  $$\begin{cases} 1.00 \le \dfrac{W_{\text{grid}}}{H_{\text{grid}}} \le 1.75 & (\text{排除直幅地圖，僅收錄正方形至橫幅；50 關中 0 關需要旋轉}) \\ W_{\text{grid}} \le W_{\max}(W) \;\land\; H_{\text{grid}} \le H_{\max}(W) & (\text{各世界網格邊長上限，保障單格 Tile 高清像素}) \end{cases}$$
+  * **比例分佈**：入選 50 關中，78%（39 關）落在 $1.00 \le W/H \le 1.45$ 之黃金正方與微橫幅；22%（11 關）落在 $1.45 < W/H \le 1.73$，完整保全今林宏行 #1（$19\times 11$）與 Skinner #44（$5\times 3$）等原版歷史名作。
 * **各世界網格邊長上限矩陣**：
   * World 1: $W_{\text{grid}} \le 12, \; H_{\text{grid}} \le 12$
-  * World 2: $W_{\text{grid}} \le 16, \; H_{\text{grid}} \le 13$
-  * World 3: $W_{\text{grid}} \le 12, \; H_{\text{grid}} \le 12$
-  * World 4: $W_{\text{grid}} \le 18, \; H_{\text{grid}} \le 15$
+  * World 2: $W_{\text{grid}} \le 12, \; H_{\text{grid}} \le 12$
+  * World 3: $W_{\text{grid}} \le 20, \; H_{\text{grid}} \le 16$
+  * World 4: $W_{\text{grid}} \le 26, \; H_{\text{grid}} \le 18$
 * **構建期靜態固化**：
-  由過濾管線於構建期預先自 external-specs 提取並固化為 50 關靜態 JSON 資料集（包含盤面 ASCII 陣列、工人起點、箱數、寬高），遊戲運行時零動態解析開銷。
+  由過濾管線腳本（`filter_levels.py`）於構建期預先自 external-specs 提取並固化為 50 關靜態 JSON 資料集（`sokoban_50_master.json`，包含盤面 ASCII 陣列、工人起點、箱數、寬高、預先運算之 $T_{\text{soft}}$ 與 $U_{\text{quota}}$），遊戲運行時零動態解析開銷。
 
 ---
 
@@ -296,8 +310,8 @@
 * **程序化 Web Audio 輕音樂 (Four-World Ambient Chip BGM)**：
   為四大主題世界分別配置獨立的低干擾、輕節奏晶片音樂，音量適中柔和，營造專注長考氛圍；支援大廳與快捷鍵 `MUTE_TOGGLED` 一鍵靜音：
   * `BGM_WORLD_1 (Cargo Warmth)`：木質溫暖、輕巧打擊節奏（World 1: Cargo Depot）。
-  * `BGM_WORLD_2 (Steel Jazz)`：沉穩輕爵士、低音貝斯點綴（World 2: Steel Works）。
-  * `BGM_WORLD_3 (Cyber Pulse)`：輕量合成器脈衝、賽博空間氛圍（World 3: Cyber Vault）。
+  * `BGM_WORLD_2 (Cyber Pulse)`：輕量合成器脈衝、賽博空間氛圍（World 2: Cyber Vault）。
+  * `BGM_WORLD_3 (Steel Jazz)`：沉穩輕爵士、冷軋鋼敲擊點綴（World 3: Steel Works）。
   * `BGM_WORLD_4 (Terminal Vista)`：廣角大氣、開闊晶片管弦音（World 4: Mega Terminal）。
 * **程序化 Web Audio 音效 (Synthesized SFX)**：
   * `SFX_STEP`：輕巧腳步聲。
@@ -314,61 +328,60 @@
 ## 附錄：50 關全域靜態數值與時間對照矩陣 (50-Stage Master Schedule Table)
 
 各世界基底常數：
-* **World 1:** $T_{\text{base}}=50\text{s}, K_t=10\text{s}, U_{\text{base}}=2, K_u=0.6, P_{\text{base}}=200, P_{\text{perf}}=300$
-* **World 2:** $T_{\text{base}}=100\text{s}, K_t=15\text{s}, U_{\text{base}}=4, K_u=0.5, P_{\text{base}}=400, P_{\text{perf}}=500$
-* **World 3:** $T_{\text{base}}=150\text{s}, K_t=25\text{s}, U_{\text{base}}=6, K_u=0.8, P_{\text{base}}=600, P_{\text{perf}}=700$
-* **World 4:** $T_{\text{base}}=180\text{s}, K_t=20\text{s}, U_{\text{base}}=6, K_u=0.6, P_{\text{base}}=800, P_{\text{perf}}=900$
+* **World 1 (Cargo Depot):** $T_{\text{base}}=50\text{s}, K_t=10\text{s}, U_{\text{base}}=2, K_u=0.6, U_{\max}=6, P_{\text{base}}=200, P_{\text{perf}}=300$
+* **World 2 (Cyber Vault):** $T_{\text{base}}=120\text{s}, K_t=20\text{s}, U_{\text{base}}=4, K_u=0.6, U_{\max}=12, P_{\text{base}}=400, P_{\text{perf}}=500$
+* **World 3 (Steel Works):** $T_{\text{base}}=140\text{s}, K_t=15\text{s}, U_{\text{base}}=5, K_u=0.5, U_{\max}=14, P_{\text{base}}=600, P_{\text{perf}}=700$
+* **World 4 (Mega Terminal):** $T_{\text{base}}=180\text{s}, K_t=15\text{s}, U_{\text{base}}=6, K_u=0.5, U_{\max}=16, P_{\text{base}}=800, P_{\text{perf}}=900$
 
-| 關卡 $S$ | 世界 $W$ | 箱數 $B$ | 軟性時限 $T_{\text{soft}}$ | Undo 配額 $U_{\text{quota}}$ | 保底分 $P_{\text{base}}$ | Perfect 獎勵 $P_{\text{perf}}$ |
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **01** | 1 (Cargo Depot) | 1 | $60\text{ s}$ | 3 次 | 200 | 300 |
-| **02** | 1 (Cargo Depot) | 2 | $72\text{ s}$ | 3 次 | 200 | 300 |
-| **03** | 1 (Cargo Depot) | 3 | $84\text{ s}$ | 3 次 | 200 | 300 |
-| **04** | 1 (Cargo Depot) | 3 | $86\text{ s}$ | 3 次 | 200 | 300 |
-| **05** | 1 (Cargo Depot) | 3 | $88\text{ s}$ | 4 次 | 200 | 300 |
-| **06** | 2 (Steel Works) | 4 | $160\text{ s}$ | 6 次 | 400 | 500 |
-| **07** | 2 (Steel Works) | 4 | $162\text{ s}$ | 6 次 | 400 | 500 |
-| **08** | 2 (Steel Works) | 4 | $164\text{ s}$ | 6 次 | 400 | 500 |
-| **09** | 2 (Steel Works) | 4 | $166\text{ s}$ | 6 次 | 400 | 500 |
-| **10** | 2 (Steel Works) | 4 | $168\text{ s}$ | 7 次 | 400 | 500 |
-| **11** | 2 (Steel Works) | 4 | $170\text{ s}$ | 7 次 | 400 | 500 |
-| **12** | 2 (Steel Works) | 5 | $187\text{ s}$ | 7 次 | 400 | 500 |
-| **13** | 2 (Steel Works) | 5 | $189\text{ s}$ | 7 次 | 400 | 500 |
-| **14** | 2 (Steel Works) | 5 | $191\text{ s}$ | 8 次 | 400 | 500 |
-| **15** | 2 (Steel Works) | 5 | $193\text{ s}$ | 8 次 | 400 | 500 |
-| **16** | 2 (Steel Works) | 5 | $195\text{ s}$ | 8 次 | 400 | 500 |
-| **17** | 2 (Steel Works) | 5 | $197\text{ s}$ | 8 次 | 400 | 500 |
-| **18** | 2 (Steel Works) | 5 | $199\text{ s}$ | 9 次 | 400 | 500 |
-| **19** | 2 (Steel Works) | 6 | $216\text{ s}$ | 10 次 | 400 | 500 |
-| **20** | 2 (Steel Works) | 6 | $218\text{ s}$ | 10 次 | 400 | 500 |
-| **21** | 2 (Steel Works) | 6 | $220\text{ s}$ | 10 次 | 400 | 500 |
-| **22** | 2 (Steel Works) | 6 | $222\text{ s}$ | 11 次 | 400 | 500 |
-| **23** | 2 (Steel Works) | 6 | $224\text{ s}$ | 11 次 | 400 | 500 |
-| **24** | 2 (Steel Works) | 6 | $226\text{ s}$ | 11 次 | 400 | 500 |
-| **25** | 2 (Steel Works) | 6 | $228\text{ s}$ | 11 次 | 400 | 500 |
-| **26** | 3 (Cyber Vault) | 4 | $250\text{ s}$ | 9 次 | 600 | 700 |
-| **27** | 3 (Cyber Vault) | 4 | $252\text{ s}$ | 9 次 | 600 | 700 |
-| **28** | 3 (Cyber Vault) | 4 | $254\text{ s}$ | 9 次 | 600 | 700 |
-| **29** | 3 (Cyber Vault) | 4 | $256\text{ s}$ | 9 次 | 600 | 700 |
-| **30** | 3 (Cyber Vault) | 4 | $258\text{ s}$ | 10 次 | 600 | 700 |
-| **31** | 3 (Cyber Vault) | 5 | $285\text{ s}$ | 11 次 | 600 | 700 |
-| **32** | 3 (Cyber Vault) | 5 | $287\text{ s}$ | 11 次 | 600 | 700 |
-| **33** | 3 (Cyber Vault) | 5 | $289\text{ s}$ | 11 次 | 600 | 700 |
-| **34** | 3 (Cyber Vault) | 5 | $291\text{ s}$ | 12 次 | 600 | 700 |
-| **35** | 3 (Cyber Vault) | 5 | $293\text{ s}$ | 12 次 | 600 | 700 |
-| **36** | 3 (Cyber Vault) | 6 | $320\text{ s}$ | 12 次 | 600 | 700 |
-| **37** | 3 (Cyber Vault) | 6 | $322\text{ s}$ | 12 次 | 600 | 700 |
-| **38** | 3 (Cyber Vault) | 6 | $324\text{ s}$ | 13 次 | 600 | 700 |
-| **39** | 3 (Cyber Vault) | 6 | $326\text{ s}$ | 13 次 | 600 | 700 |
-| **40** | 3 (Cyber Vault) | 6 | $328\text{ s}$ | 13 次 | 600 | 700 |
-| **41** | 4 (Mega Terminal) | 7 | $320\text{ s}$ | 10 次 | 800 | 900 |
-| **42** | 4 (Mega Terminal) | 7 | $322\text{ s}$ | 10 次 | 800 | 900 |
-| **43** | 4 (Mega Terminal) | 7 | $324\text{ s}$ | 10 次 | 800 | 900 |
-| **44** | 4 (Mega Terminal) | 8 | $346\text{ s}$ | 10 次 | 800 | 900 |
-| **45** | 4 (Mega Terminal) | 8 | $348\text{ s}$ | 11 次 | 800 | 900 |
-| **46** | 4 (Mega Terminal) | 8 | $350\text{ s}$ | 11 次 | 800 | 900 |
-| **47** | 4 (Mega Terminal) | 9 | $372\text{ s}$ | 11 次 | 800 | 900 |
-| **48** | 4 (Mega Terminal) | 9 | $374\text{ s}$ | 11 次 | 800 | 900 |
-| **49** | 4 (Mega Terminal) | 10 | $396\text{ s}$ | 14 次 | 800 | 900 |
-| **50** | 4 (Mega Terminal) | 10 | $398\text{ s}$ | 14 次 | 800 | 900 |
-
+| 關卡 $S$ | 世界 $W$ | 箱數 $B$ | 來源題庫與關卡 | 網格尺寸 | 長寬比 | 軟性時限 $T_{\text{soft}}$ | Undo 配額 $U_{\text{quota}}$ | 保底分 $P_{\text{base}}$ | Perfect 獎勵 $P_{\text{perf}}$ |
+|:---:|:---:|:---:|:---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **01** | 1 (Cargo) | 1 | Microban #44 | 5x3 | 1.67 | $60\text{ s}$ | 2 次 | 200 | 300 |
+| **02** | 1 (Cargo) | 2 | Microban #14 | 7x6 | 1.17 | $72\text{ s}$ | 3 次 | 200 | 300 |
+| **03** | 1 (Cargo) | 2 | Microban #21 | 7x6 | 1.17 | $74\text{ s}$ | 3 次 | 200 | 300 |
+| **04** | 1 (Cargo) | 2 | Microban #11 | 9x8 | 1.12 | $76\text{ s}$ | 3 次 | 200 | 300 |
+| **05** | 1 (Cargo) | 2 | Microban #12 | 9x8 | 1.12 | $78\text{ s}$ | 3 次 | 200 | 300 |
+| **06** | 2 (Cyber) | 3 | minicosmos #3 | 8x8 | 1.00 | $180\text{ s}$ | 5 次 | 400 | 500 |
+| **07** | 2 (Cyber) | 3 | minicosmos #10 | 8x8 | 1.00 | $182\text{ s}$ | 5 次 | 400 | 500 |
+| **08** | 2 (Cyber) | 3 | minicosmos #12 | 9x8 | 1.12 | $184\text{ s}$ | 6 次 | 400 | 500 |
+| **09** | 2 (Cyber) | 3 | minicosmos #18 | 10x9 | 1.11 | $186\text{ s}$ | 6 次 | 400 | 500 |
+| **10** | 2 (Cyber) | 3 | minicosmos #33 | 9x7 | 1.29 | $188\text{ s}$ | 6 次 | 400 | 500 |
+| **11** | 2 (Cyber) | 4 | microcosmos #1 | 9x7 | 1.29 | $210\text{ s}$ | 7 次 | 400 | 500 |
+| **12** | 2 (Cyber) | 4 | microcosmos #8 | 8x8 | 1.00 | $212\text{ s}$ | 7 次 | 400 | 500 |
+| **13** | 2 (Cyber) | 4 | microcosmos #9 | 9x9 | 1.00 | $214\text{ s}$ | 7 次 | 400 | 500 |
+| **14** | 2 (Cyber) | 4 | microcosmos #13 | 8x8 | 1.00 | $216\text{ s}$ | 7 次 | 400 | 500 |
+| **15** | 2 (Cyber) | 4 | microcosmos #15 | 10x9 | 1.11 | $218\text{ s}$ | 7 次 | 400 | 500 |
+| **16** | 2 (Cyber) | 5 | microcosmos #6 | 8x8 | 1.00 | $240\text{ s}$ | 8 次 | 400 | 500 |
+| **17** | 2 (Cyber) | 5 | microcosmos #11 | 9x8 | 1.12 | $242\text{ s}$ | 8 次 | 400 | 500 |
+| **18** | 2 (Cyber) | 5 | microcosmos #21 | 9x9 | 1.00 | $244\text{ s}$ | 8 次 | 400 | 500 |
+| **19** | 2 (Cyber) | 5 | microcosmos #24 | 10x9 | 1.11 | $246\text{ s}$ | 8 次 | 400 | 500 |
+| **20** | 2 (Cyber) | 5 | microcosmos #26 | 10x10 | 1.00 | $248\text{ s}$ | 9 次 | 400 | 500 |
+| **21** | 3 (Steel) | 6 | Original-Plus-Extra #18 | 16x14 | 1.14 | $230\text{ s}$ | 8 次 | 600 | 700 |
+| **22** | 3 (Steel) | 6 | Original-Plus-Extra #1 | 19x11 | 1.73 | $232\text{ s}$ | 8 次 | 600 | 700 |
+| **23** | 3 (Steel) | 8 | Original-Plus-Extra #42 | 11x11 | 1.00 | $264\text{ s}$ | 9 次 | 600 | 700 |
+| **24** | 3 (Steel) | 8 | Original-Plus-Extra #85 | 19x12 | 1.58 | $266\text{ s}$ | 9 次 | 600 | 700 |
+| **25** | 3 (Steel) | 9 | Original-Plus-Extra #48 | 19x11 | 1.73 | $283\text{ s}$ | 10 次 | 600 | 700 |
+| **26** | 3 (Steel) | 9 | Original-Plus-Extra #49 | 19x15 | 1.27 | $285\text{ s}$ | 10 次 | 600 | 700 |
+| **27** | 3 (Steel) | 10 | Original-Plus-Extra #6 | 12x11 | 1.09 | $302\text{ s}$ | 10 次 | 600 | 700 |
+| **28** | 3 (Steel) | 10 | Original-Plus-Extra #2 | 14x10 | 1.40 | $304\text{ s}$ | 11 次 | 600 | 700 |
+| **29** | 3 (Steel) | 10 | Original-Plus-Extra #84 | 14x13 | 1.08 | $306\text{ s}$ | 11 次 | 600 | 700 |
+| **30** | 3 (Steel) | 10 | Original-Plus-Extra #90 | 17x13 | 1.31 | $308\text{ s}$ | 11 次 | 600 | 700 |
+| **31** | 3 (Steel) | 10 | Original-Plus-Extra #93 | 17x10 | 1.70 | $310\text{ s}$ | 11 次 | 600 | 700 |
+| **32** | 3 (Steel) | 11 | Original-Plus-Extra #7 | 13x12 | 1.08 | $327\text{ s}$ | 12 次 | 600 | 700 |
+| **33** | 3 (Steel) | 11 | Original-Plus-Extra #19 | 19x13 | 1.46 | $329\text{ s}$ | 12 次 | 600 | 700 |
+| **34** | 3 (Steel) | 11 | Original-Plus-Extra #3 | 17x10 | 1.70 | $331\text{ s}$ | 12 次 | 600 | 700 |
+| **35** | 3 (Steel) | 12 | Original-Plus-Extra #91 | 16x12 | 1.33 | $348\text{ s}$ | 13 次 | 600 | 700 |
+| **36** | 3 (Steel) | 12 | Original-Plus-Extra #5 | 17x13 | 1.31 | $350\text{ s}$ | 13 次 | 600 | 700 |
+| **37** | 3 (Steel) | 12 | Original-Plus-Extra #89 | 17x13 | 1.31 | $352\text{ s}$ | 13 次 | 600 | 700 |
+| **38** | 3 (Steel) | 12 | Original-Plus-Extra #94 | 16x14 | 1.14 | $354\text{ s}$ | 13 次 | 600 | 700 |
+| **39** | 3 (Steel) | 12 | Original-Plus-Extra #54 | 16x15 | 1.07 | $356\text{ s}$ | 13 次 | 600 | 700 |
+| **40** | 3 (Steel) | 12 | Original-Plus-Extra #86 | 19x12 | 1.58 | $358\text{ s}$ | 13 次 | 600 | 700 |
+| **41** | 4 (Mega) | 13 | Sasquatch #6 | 15x12 | 1.25 | $375\text{ s}$ | 12 次 | 800 | 900 |
+| **42** | 4 (Mega) | 13 | Sasquatch #24 | 14x14 | 1.00 | $377\text{ s}$ | 12 次 | 800 | 900 |
+| **43** | 4 (Mega) | 14 | Sasquatch #42 | 19x17 | 1.12 | $394\text{ s}$ | 13 次 | 800 | 900 |
+| **44** | 4 (Mega) | 14 | Sasquatch #32 | 24x16 | 1.50 | $396\text{ s}$ | 13 次 | 800 | 900 |
+| **45** | 4 (Mega) | 15 | Sasquatch #48 | 23x17 | 1.35 | $413\text{ s}$ | 14 次 | 800 | 900 |
+| **46** | 4 (Mega) | 16 | Sasquatch #41 | 24x14 | 1.71 | $430\text{ s}$ | 14 次 | 800 | 900 |
+| **47** | 4 (Mega) | 17 | Sasquatch #28 | 21x13 | 1.61 | $447\text{ s}$ | 15 次 | 800 | 900 |
+| **48** | 4 (Mega) | 18 | Sasquatch #29 | 22x16 | 1.38 | $464\text{ s}$ | 16 次 | 800 | 900 |
+| **49** | 4 (Mega) | 19 | Sasquatch #25 | 18x14 | 1.29 | $481\text{ s}$ | 16 次 | 800 | 900 |
+| **50** | 4 (Mega) | 20 | Sasquatch #39 | 23x17 | 1.35 | $498\text{ s}$ | 16 次 | 800 | 900 |
