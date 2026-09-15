@@ -106,10 +106,10 @@
   | $W$ | 當前世界代號 (World) | 整數 ($1 \sim 4$) | 當前所屬主題世界（1: Cargo Depot, 2: Cyber Vault, 3: Steel Works, 4: Mega Terminal）。 |
   | $B$ | 目標箱子數 (Box Count) | 顆 (整數) | 當前地圖需推入目標點的箱子總數量。 |
   | $S_{\text{start}}(W)$ | 世界起始關卡序號 | 關 (整數) | 各世界起點關卡：World 1 為 `1`、World 2 為 `6`、World 3 為 `21`、World 4 為 `41`。 |
-  | $U_{\text{base}}(W)$ | 世界基準保底額度 | 次 (整數) | 該世界第一關之基準 Undo 次數（W1: 2, W2: 4, W3: 5, W4: 6）。 |
+  | $U_{\text{base}}(W)$ | 世界基準保底額度 | 次 (整數) | 該世界第一關之基準 Undo 次數（W1: 2, W2: 4, W3: 6, W4: 8）。 |
   | $K_u(W)$ | 單箱 Undo 加權係數 | 次/顆 (浮點數) | 隨箱數增加給予之 Undo 補償（W1: 0.6, W2: 0.6, W3: 0.5, W4: 0.5）。 |
   | $0.15 \cdot (S - S_{\text{start}}(W))$ | 關卡推進額度微調 | 次 (浮點數) | 世界內每深入推進，給予微幅 Undo 補償。 |
-  | $U_{\max}(W)$ | 各世界配額上限 | 次 (整數) | 強制鎖定配額上限（W1: 6, W2: 12, W3: 14, W4: 16）。 |
+  | $U_{\max}(W)$ | 各世界配額上限 | 次 (整數) | 強制鎖定配額上限（W1: 6, W2: 12, W3: 14, W4: 18）。 |
 
 * **瞬間還原流程 (Instant Snapshot Restore)**：
   * 當玩家按下 `[Z]` 鍵：
@@ -159,7 +159,7 @@
   | $W$ | 當前世界代號 (World) | 整數 ($1 \sim 4$) | 當前所屬主題世界（1: Cargo Depot, 2: Cyber Vault, 3: Steel Works, 4: Mega Terminal）。 |
   | $B$ | 目標箱子數 (Box Count) | 顆 (整數) | 當前地圖需推入目標點的箱子總數量。 |
   | $S_{\text{start}}(W)$ | 世界起始關卡序號 | 關 (整數) | 各世界起點關卡：World 1 為 `1`、World 2 為 `6`、World 3 為 `21`、World 4 為 `41`。 |
-  | $T_{\text{base}}(W)$ | 世界基底時限 (Base Time) | 秒 ($\text{s}$) | 該世界第一關之起始基準秒數（W1: $50\text{s}$, W2: $120\text{s}$, W3: $140\text{s}$, W4: $180\text{s}$）。 |
+  | $T_{\text{base}}(W)$ | 世界基底時限 (Base Time) | 秒 ($\text{s}$) | 該世界第一關之起始基準秒數（W1: $50\text{s}$, W2: $120\text{s}$, W3: $160\text{s}$, W4: $200\text{s}$）。 |
   | $K_t(W)$ | 單箱時間加權權重 | 秒/顆 ($\text{s}$) | 每增加 1 顆箱子給予之思考緩衝時間（W1: $10\text{s}$, W2: $20\text{s}$, W3: $15\text{s}$, W4: $15\text{s}$）。 |
   | $2 \cdot (S - S_{\text{start}}(W))$ | 關卡推進時間遞增 | 秒 ($\text{s}$) | 該世界內每推進 1 關，自動線性遞增 2 秒思考時間。 |
 * **超時保護機制**：
@@ -330,8 +330,8 @@
 各世界基底常數：
 * **World 1 (Cargo Depot):** $T_{\text{base}}=50\text{s}, K_t=10\text{s}, U_{\text{base}}=2, K_u=0.6, U_{\max}=6, P_{\text{base}}=200, P_{\text{perf}}=300$
 * **World 2 (Cyber Vault):** $T_{\text{base}}=120\text{s}, K_t=20\text{s}, U_{\text{base}}=4, K_u=0.6, U_{\max}=12, P_{\text{base}}=400, P_{\text{perf}}=500$
-* **World 3 (Steel Works):** $T_{\text{base}}=140\text{s}, K_t=15\text{s}, U_{\text{base}}=5, K_u=0.5, U_{\max}=14, P_{\text{base}}=600, P_{\text{perf}}=700$
-* **World 4 (Mega Terminal):** $T_{\text{base}}=180\text{s}, K_t=15\text{s}, U_{\text{base}}=6, K_u=0.5, U_{\max}=16, P_{\text{base}}=800, P_{\text{perf}}=900$
+* **World 3 (Steel Works):** $T_{\text{base}}=160\text{s}, K_t=15\text{s}, U_{\text{base}}=6, K_u=0.5, U_{\max}=14, P_{\text{base}}=600, P_{\text{perf}}=700$
+* **World 4 (Mega Terminal):** $T_{\text{base}}=200\text{s}, K_t=15\text{s}, U_{\text{base}}=8, K_u=0.5, U_{\max}=18, P_{\text{base}}=800, P_{\text{perf}}=900$
 
 | 關卡 $S$ | 世界 $W$ | 箱數 $B$ | 來源題庫與關卡 | 網格尺寸 | 長寬比 | 軟性時限 $T_{\text{soft}}$ | Undo 配額 $U_{\text{quota}}$ | 保底分 $P_{\text{base}}$ | Perfect 獎勵 $P_{\text{perf}}$ |
 |:---:|:---:|:---:|:---|:---:|:---:|:---:|:---:|:---:|:---:|
@@ -355,33 +355,33 @@
 | **18** | 2 (Cyber) | 5 | microcosmos #21 | 9x9 | 1.00 | $244\text{ s}$ | 8 次 | 400 | 500 |
 | **19** | 2 (Cyber) | 5 | microcosmos #24 | 10x9 | 1.11 | $246\text{ s}$ | 8 次 | 400 | 500 |
 | **20** | 2 (Cyber) | 5 | microcosmos #26 | 10x10 | 1.00 | $248\text{ s}$ | 9 次 | 400 | 500 |
-| **21** | 3 (Steel) | 6 | Original-Plus-Extra #18 | 16x14 | 1.14 | $230\text{ s}$ | 8 次 | 600 | 700 |
-| **22** | 3 (Steel) | 6 | Original-Plus-Extra #1 | 19x11 | 1.73 | $232\text{ s}$ | 8 次 | 600 | 700 |
-| **23** | 3 (Steel) | 8 | Original-Plus-Extra #42 | 11x11 | 1.00 | $264\text{ s}$ | 9 次 | 600 | 700 |
-| **24** | 3 (Steel) | 8 | Original-Plus-Extra #85 | 19x12 | 1.58 | $266\text{ s}$ | 9 次 | 600 | 700 |
-| **25** | 3 (Steel) | 9 | Original-Plus-Extra #48 | 19x11 | 1.73 | $283\text{ s}$ | 10 次 | 600 | 700 |
-| **26** | 3 (Steel) | 9 | Original-Plus-Extra #49 | 19x15 | 1.27 | $285\text{ s}$ | 10 次 | 600 | 700 |
-| **27** | 3 (Steel) | 10 | Original-Plus-Extra #6 | 12x11 | 1.09 | $302\text{ s}$ | 10 次 | 600 | 700 |
-| **28** | 3 (Steel) | 10 | Original-Plus-Extra #2 | 14x10 | 1.40 | $304\text{ s}$ | 11 次 | 600 | 700 |
-| **29** | 3 (Steel) | 10 | Original-Plus-Extra #84 | 14x13 | 1.08 | $306\text{ s}$ | 11 次 | 600 | 700 |
-| **30** | 3 (Steel) | 10 | Original-Plus-Extra #90 | 17x13 | 1.31 | $308\text{ s}$ | 11 次 | 600 | 700 |
-| **31** | 3 (Steel) | 10 | Original-Plus-Extra #93 | 17x10 | 1.70 | $310\text{ s}$ | 11 次 | 600 | 700 |
-| **32** | 3 (Steel) | 11 | Original-Plus-Extra #7 | 13x12 | 1.08 | $327\text{ s}$ | 12 次 | 600 | 700 |
-| **33** | 3 (Steel) | 11 | Original-Plus-Extra #19 | 19x13 | 1.46 | $329\text{ s}$ | 12 次 | 600 | 700 |
-| **34** | 3 (Steel) | 11 | Original-Plus-Extra #3 | 17x10 | 1.70 | $331\text{ s}$ | 12 次 | 600 | 700 |
-| **35** | 3 (Steel) | 12 | Original-Plus-Extra #91 | 16x12 | 1.33 | $348\text{ s}$ | 13 次 | 600 | 700 |
-| **36** | 3 (Steel) | 12 | Original-Plus-Extra #5 | 17x13 | 1.31 | $350\text{ s}$ | 13 次 | 600 | 700 |
-| **37** | 3 (Steel) | 12 | Original-Plus-Extra #89 | 17x13 | 1.31 | $352\text{ s}$ | 13 次 | 600 | 700 |
-| **38** | 3 (Steel) | 12 | Original-Plus-Extra #94 | 16x14 | 1.14 | $354\text{ s}$ | 13 次 | 600 | 700 |
-| **39** | 3 (Steel) | 12 | Original-Plus-Extra #54 | 16x15 | 1.07 | $356\text{ s}$ | 13 次 | 600 | 700 |
-| **40** | 3 (Steel) | 12 | Original-Plus-Extra #86 | 19x12 | 1.58 | $358\text{ s}$ | 13 次 | 600 | 700 |
-| **41** | 4 (Mega) | 13 | Sasquatch #6 | 15x12 | 1.25 | $375\text{ s}$ | 12 次 | 800 | 900 |
-| **42** | 4 (Mega) | 13 | Sasquatch #24 | 14x14 | 1.00 | $377\text{ s}$ | 12 次 | 800 | 900 |
-| **43** | 4 (Mega) | 14 | Sasquatch #42 | 19x17 | 1.12 | $394\text{ s}$ | 13 次 | 800 | 900 |
-| **44** | 4 (Mega) | 14 | Sasquatch #32 | 24x16 | 1.50 | $396\text{ s}$ | 13 次 | 800 | 900 |
-| **45** | 4 (Mega) | 15 | Sasquatch #48 | 23x17 | 1.35 | $413\text{ s}$ | 14 次 | 800 | 900 |
-| **46** | 4 (Mega) | 16 | Sasquatch #41 | 24x14 | 1.71 | $430\text{ s}$ | 14 次 | 800 | 900 |
-| **47** | 4 (Mega) | 17 | Sasquatch #28 | 21x13 | 1.61 | $447\text{ s}$ | 15 次 | 800 | 900 |
-| **48** | 4 (Mega) | 18 | Sasquatch #29 | 22x16 | 1.38 | $464\text{ s}$ | 16 次 | 800 | 900 |
-| **49** | 4 (Mega) | 19 | Sasquatch #25 | 18x14 | 1.29 | $481\text{ s}$ | 16 次 | 800 | 900 |
-| **50** | 4 (Mega) | 20 | Sasquatch #39 | 23x17 | 1.35 | $498\text{ s}$ | 16 次 | 800 | 900 |
+| **21** | 3 (Steel) | 6 | Original-Plus-Extra #18 | 16x14 | 1.14 | $250\text{ s}$ | 9 次 | 600 | 700 |
+| **22** | 3 (Steel) | 6 | Original-Plus-Extra #1 | 19x11 | 1.73 | $252\text{ s}$ | 9 次 | 600 | 700 |
+| **23** | 3 (Steel) | 8 | Original-Plus-Extra #42 | 11x11 | 1.00 | $284\text{ s}$ | 10 次 | 600 | 700 |
+| **24** | 3 (Steel) | 8 | Original-Plus-Extra #85 | 19x12 | 1.58 | $286\text{ s}$ | 10 次 | 600 | 700 |
+| **25** | 3 (Steel) | 9 | Original-Plus-Extra #48 | 19x11 | 1.73 | $303\text{ s}$ | 11 次 | 600 | 700 |
+| **26** | 3 (Steel) | 9 | Original-Plus-Extra #49 | 19x15 | 1.27 | $305\text{ s}$ | 11 次 | 600 | 700 |
+| **27** | 3 (Steel) | 10 | Original-Plus-Extra #6 | 12x11 | 1.09 | $322\text{ s}$ | 11 次 | 600 | 700 |
+| **28** | 3 (Steel) | 10 | Original-Plus-Extra #2 | 14x10 | 1.40 | $324\text{ s}$ | 12 次 | 600 | 700 |
+| **29** | 3 (Steel) | 10 | Original-Plus-Extra #84 | 14x13 | 1.08 | $326\text{ s}$ | 12 次 | 600 | 700 |
+| **30** | 3 (Steel) | 10 | Original-Plus-Extra #90 | 17x13 | 1.31 | $328\text{ s}$ | 12 次 | 600 | 700 |
+| **31** | 3 (Steel) | 10 | Original-Plus-Extra #93 | 17x10 | 1.70 | $330\text{ s}$ | 12 次 | 600 | 700 |
+| **32** | 3 (Steel) | 11 | Original-Plus-Extra #7 | 13x12 | 1.08 | $347\text{ s}$ | 13 次 | 600 | 700 |
+| **33** | 3 (Steel) | 11 | Original-Plus-Extra #19 | 19x13 | 1.46 | $349\text{ s}$ | 13 次 | 600 | 700 |
+| **34** | 3 (Steel) | 11 | Original-Plus-Extra #3 | 17x10 | 1.70 | $351\text{ s}$ | 13 次 | 600 | 700 |
+| **35** | 3 (Steel) | 12 | Original-Plus-Extra #91 | 16x12 | 1.33 | $368\text{ s}$ | 14 次 | 600 | 700 |
+| **36** | 3 (Steel) | 12 | Original-Plus-Extra #5 | 17x13 | 1.31 | $370\text{ s}$ | 14 次 | 600 | 700 |
+| **37** | 3 (Steel) | 12 | Original-Plus-Extra #89 | 17x13 | 1.31 | $372\text{ s}$ | 14 次 | 600 | 700 |
+| **38** | 3 (Steel) | 12 | Original-Plus-Extra #94 | 16x14 | 1.14 | $374\text{ s}$ | 14 次 | 600 | 700 |
+| **39** | 3 (Steel) | 12 | Original-Plus-Extra #54 | 16x15 | 1.07 | $376\text{ s}$ | 14 次 | 600 | 700 |
+| **40** | 3 (Steel) | 12 | Original-Plus-Extra #86 | 19x12 | 1.58 | $378\text{ s}$ | 14 次 | 600 | 700 |
+| **41** | 4 (Mega) | 13 | Sasquatch #6 | 15x12 | 1.25 | $395\text{ s}$ | 14 次 | 800 | 900 |
+| **42** | 4 (Mega) | 13 | Sasquatch #24 | 14x14 | 1.00 | $397\text{ s}$ | 14 次 | 800 | 900 |
+| **43** | 4 (Mega) | 14 | Sasquatch #42 | 19x17 | 1.12 | $414\text{ s}$ | 15 次 | 800 | 900 |
+| **44** | 4 (Mega) | 14 | Sasquatch #32 | 24x16 | 1.50 | $416\text{ s}$ | 15 次 | 800 | 900 |
+| **45** | 4 (Mega) | 15 | Sasquatch #48 | 23x17 | 1.35 | $433\text{ s}$ | 16 次 | 800 | 900 |
+| **46** | 4 (Mega) | 16 | Sasquatch #41 | 24x14 | 1.71 | $450\text{ s}$ | 16 次 | 800 | 900 |
+| **47** | 4 (Mega) | 17 | Sasquatch #28 | 21x13 | 1.61 | $467\text{ s}$ | 17 次 | 800 | 900 |
+| **48** | 4 (Mega) | 18 | Sasquatch #29 | 22x16 | 1.38 | $484\text{ s}$ | 18 次 | 800 | 900 |
+| **49** | 4 (Mega) | 19 | Sasquatch #25 | 18x14 | 1.29 | $501\text{ s}$ | 18 次 | 800 | 900 |
+| **50** | 4 (Mega) | 20 | Sasquatch #39 | 23x17 | 1.35 | $518\text{ s}$ | 18 次 | 800 | 900 |

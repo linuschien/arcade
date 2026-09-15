@@ -122,18 +122,18 @@
 
 - **AC1 (額度初始化與參數定義)**：
   關卡載入時計算該關可用總配額 $U_{\text{quota}}$：
-  $$U_{\text{quota}}(S, B, W) = \operatorname{clamp}\left( U_{\text{base}}(W) + \left\lfloor \frac{S - S_{\text{start}}(W)}{4} \right\rfloor + \lfloor B \cdot K_u(W) \rfloor, \quad 3, \quad 16 \right)$$
+  $$U_{\text{quota}}(S, B, W) = \min\left( U_{\max}(W), \; \left\lfloor U_{\text{base}}(W) + B \cdot K_u(W) + 0.15 \cdot (S - S_{\text{start}}(W)) \right\rfloor \right)$$
   初始化剩餘額度 $u_{\text{remaining}} \leftarrow U_{\text{quota}}$。
   
   **參數符號定義：**
   * $S \in [1, 50]$：當前關卡序號。
   * $W \in [1, 4]$：當前所屬主題世界代號。
   * $B$：當前關卡需歸位之目標箱子總數。
-  * $S_{\text{start}}(W)$：世界起始關卡序號（W1: 1, W2: 6, W3: 26, W4: 41）。
-  * $U_{\text{base}}(W)$：世界基準保底額度（W1: 2, W2: 4, W3: 6, W4: 6）。
-  * $K_u(W)$：單箱 Undo 加權權重（W1: 0.6, W2: 0.5, W3: 0.8, W4: 0.6）。
-  * $\lfloor \frac{S - S_{\text{start}}}{4} \rfloor$：世界內每深入推進 4 關額外 $+1$ 次。
-  * $\operatorname{clamp}(\cdot, 3, 16)$：限制單關額度最小 3 次、最大 16 次。
+  * $S_{\text{start}}(W)$：世界起始關卡序號（W1: 1, W2: 6, W3: 21, W4: 41）。
+  * $U_{\text{base}}(W)$：世界基準保底額度（W1: 2, W2: 4, W3: 6, W4: 8）。
+  * $K_u(W)$：單箱 Undo 加權係數（W1: 0.6, W2: 0.6, W3: 0.5, W4: 0.5）。
+  * $0.15 \cdot (S - S_{\text{start}}(W))$：世界內每深入推進之微幅補償。
+  * $U_{\max}(W)$：各世界配額上限（W1: 6, W2: 12, W3: 14, W4: 18）。
 
 - **AC2 (純走位不扣額度與推箱快照封裝)**：
   - 工人在通道內純走動位移時，不扣除 $u_{\text{remaining}}$，不入推箱歷史棧。
@@ -213,10 +213,10 @@
   * $S \in [1, 50]$：當前關卡序號。
   * $W \in [1, 4]$：當前所屬主題世界代號。
   * $B$：當前關卡需歸位之目標箱子總數。
-  * $S_{\text{start}}(W)$：世界起始關卡序號（W1: 1, W2: 6, W3: 26, W4: 41）。
-  * $T_{\text{base}}(W)$：世界第一關基準秒數（W1: 50s, W2: 100s, W3: 150s, W4: 180s）。
-  * $K_t(W)$：單箱時間加權權重（W1: 10s, W2: 15s, W3: 25s, W4: 20s）。
-  * $2 \cdot (S - S_{\text{start}})$：世界內每推進 1 關線性遞增 2 秒思考寬容度。
+  * $S_{\text{start}}(W)$：世界起始關卡序號（W1: 1, W2: 6, W3: 21, W4: 41）。
+  * $T_{\text{base}}(W)$：世界第一關基準秒數（W1: 50s, W2: 120s, W3: 160s, W4: 200s）。
+  * $K_t(W)$：單箱時間加權權重（W1: 10s, W2: 20s, W3: 15s, W4: 15s）。
+  * $2 \cdot (S - S_{\text{start}}(W))$：世界內每推進 1 關線性遞增 2 秒思考寬容度。
 
 - **AC2 (倒數計時推進)**：遊戲進行期間，$t_{\text{elapsed}}$ 每秒累加，左側 HUD 計時器與進度條即時更新。
 - **AC3 (超時鎖定與提示音)**：當 $t_{\text{elapsed}} \ge T_{\text{soft}}$ 瞬間：

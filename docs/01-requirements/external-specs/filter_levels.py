@@ -96,7 +96,7 @@ WORLD_SPECS = {
         "aspect_max": 1.75,
         "box_targets": {6: 2, 8: 2, 9: 2, 10: 5, 11: 3, 12: 6},
         "box_range": [6, 12],
-        "t_base": 140, "k_t": 15, "u_base": 5, "k_u": 0.5, "u_max": 14,
+        "t_base": 160, "k_t": 15, "u_base": 6, "k_u": 0.5, "u_max": 14,
         "p_base": 600, "p_perf": 700,
     },
     4: {
@@ -113,7 +113,7 @@ WORLD_SPECS = {
         "aspect_max": 1.75,
         "box_targets": {13: 2, 14: 2, 15: 1, 16: 1, 17: 1, 18: 1, 19: 1, 20: 1},
         "box_range": [13, 20],
-        "t_base": 180, "k_t": 15, "u_base": 6, "k_u": 0.5, "u_max": 16,
+        "t_base": 200, "k_t": 15, "u_base": 8, "k_u": 0.5, "u_max": 18,
         "p_base": 800, "p_perf": 900,
     },
 }
