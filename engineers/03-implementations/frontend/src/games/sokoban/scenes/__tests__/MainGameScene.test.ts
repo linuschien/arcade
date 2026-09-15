@@ -41,6 +41,9 @@ describe('Sokoban MainGameScene Unit Tests', () => {
       strokeRoundedRect: vi.fn().mockReturnThis(),
       strokeCircle: vi.fn().mockReturnThis(),
       setDepth: vi.fn().mockReturnThis(),
+      setPosition: vi.fn().mockReturnThis(),
+      setAlpha: vi.fn().mockReturnThis(),
+      setScale: vi.fn().mockReturnThis(),
       destroy: vi.fn(),
     };
 
@@ -49,6 +52,7 @@ describe('Sokoban MainGameScene Unit Tests', () => {
       setVisible: vi.fn().mockReturnThis(),
       setTexture: vi.fn().mockReturnThis(),
       setDisplaySize: vi.fn().mockReturnThis(),
+      setScale: vi.fn().mockReturnThis(),
       destroy: vi.fn(),
     };
 
@@ -92,6 +96,8 @@ describe('Sokoban MainGameScene Unit Tests', () => {
     (scene as any).events = mockEvents;
     (scene as any).tweens = {
       killAll: vi.fn(),
+      killTweensOf: vi.fn(),
+      add: vi.fn().mockReturnValue({ stop: vi.fn() }),
     };
     (scene as any).time = {
       removeAllEvents: vi.fn(),
@@ -134,6 +140,33 @@ describe('Sokoban MainGameScene Unit Tests', () => {
     scene.create();
     expect(() => scene.update(1000, 16.6)).not.toThrow();
     expect(() => (scene as any).handleInput(16.6)).not.toThrow();
+  });
+
+  it('should animate worker walking and pushing with tweens', () => {
+    scene.create();
+    (scene as any).state.startNewGame();
+    (scene as any).renderStageBoard();
+    (scene as any).tweens.add.mockClear();
+
+    // Simulate walking step
+    (scene as any).animateMove({
+      success: true,
+      isPush: false,
+      workerFrom: { col: 1, row: 1 },
+      workerTo: { col: 2, row: 1 },
+    });
+    expect((scene as any).tweens.add).toHaveBeenCalled();
+
+    // Simulate pushing step
+    (scene as any).animateMove({
+      success: true,
+      isPush: true,
+      workerFrom: { col: 2, row: 1 },
+      workerTo: { col: 3, row: 1 },
+      boxFrom: { col: 3, row: 1 },
+      boxTo: { col: 4, row: 1 },
+    });
+    expect((scene as any).tweens.add).toHaveBeenCalled();
   });
 });
 

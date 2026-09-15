@@ -15,6 +15,7 @@ import { ArcadeBridge } from '@/core/bridge/ArcadeBridge';
 import { SokobanGameState } from '../logic/SokobanGameState';
 import { Direction, GridPos, posKey } from '../logic/SokobanMaze';
 import { SokobanAudioService } from '../audio/SokobanAudioService';
+import { ActionResult } from '../logic/PushActionEngine';
 
 export class MainGameScene extends BaseArcadeScene {
   private state!: SokobanGameState;
@@ -72,6 +73,7 @@ export class MainGameScene extends BaseArcadeScene {
   private giveUpLockedUntilRelease: boolean = false;
 
   private currentWorkerFacing: 'down' | 'up' | 'left' | 'right' = 'down';
+  private workerWalkStep: number = 0;
   private titleMenuSelectedIndex: number = 0;
 
   private isActionJustPressed(action: ArcadeAction): boolean {
@@ -700,7 +702,7 @@ export class MainGameScene extends BaseArcadeScene {
               SokobanAudioService.playStep();
             }
 
-            this.syncBoardSprites();
+            this.animateMove(moveEvent.actionResult);
 
             if (moveEvent.stageCleared) {
               SokobanAudioService.playStageClear();
@@ -709,6 +711,14 @@ export class MainGameScene extends BaseArcadeScene {
               SokobanAudioService.playDeadlockWarn();
             } else if (moveEvent.deadlockReport.status === 'DEADLOCK_CRITICAL') {
               SokobanAudioService.playDeadlockWarn();
+            }
+          } else {
+            // Turning in place
+            if (this.workerSprite) {
+              this.workerSprite.setTexture(`sokoban:worker_${this.currentWorkerFacing}`);
+              if (typeof (this.workerSprite as any).setDisplaySize === 'function') {
+                this.workerSprite.setDisplaySize(this.tileSize, this.tileSize);
+              }
             }
           }
         }
@@ -720,19 +730,242 @@ export class MainGameScene extends BaseArcadeScene {
     }
   }
 
+  private animateMove(actionResult: ActionResult): void {
+    if (!this.workerSprite) return;
+
+    const fromWx = this.boardStartX + actionResult.workerFrom.col * this.tileSize + this.tileSize / 2;
+    const fromWy = this.boardStartY + actionResult.workerFrom.row * this.tileSize + this.tileSize / 2;
+    const toWx = this.boardStartX + actionResult.workerTo.col * this.tileSize + this.tileSize / 2;
+    const toWy = this.boardStartY + actionResult.workerTo.row * this.tileSize + this.tileSize / 2;
+
+    // Stop any running move tweens on worker
+    if (this.tweens?.killTweensOf) {
+      this.tweens.killTweensOf(this.workerSprite);
+    }
+    if (typeof (this.workerSprite as any).setDisplaySize === 'function') {
+      this.workerSprite.setDisplaySize(this.tileSize, this.tileSize);
+    }
+
+    if (actionResult.isPush && actionResult.boxFrom && actionResult.boxTo) {
+      // 1. Worker Push Pose & Forward Advance
+      this.workerSprite.setTexture(`sokoban:worker_${this.currentWorkerFacing}_push`);
+      if (typeof (this.workerSprite as any).setDisplaySize === 'function') {
+        this.workerSprite.setDisplaySize(this.tileSize, this.tileSize);
+      }
+      this.workerSprite.setPosition(fromWx, fromWy);
+
+      if (this.tweens?.add) {
+        this.tweens.add({
+          targets: this.workerSprite,
+          x: toWx,
+          y: toWy,
+          duration: 115,
+          ease: 'Cubic.easeOut',
+          onComplete: () => {
+            this.workerSprite.setPosition(toWx, toWy);
+            this.workerSprite.setTexture(`sokoban:worker_${this.currentWorkerFacing}`);
+            if (typeof (this.workerSprite as any).setDisplaySize === 'function') {
+              this.workerSprite.setDisplaySize(this.tileSize, this.tileSize);
+            }
+          },
+        });
+      } else {
+        this.workerSprite.setPosition(toWx, toWy);
+        this.workerSprite.setTexture(`sokoban:worker_${this.currentWorkerFacing}`);
+        if (typeof (this.workerSprite as any).setDisplaySize === 'function') {
+          this.workerSprite.setDisplaySize(this.tileSize, this.tileSize);
+        }
+      }
+
+      // 2. Box Slide & Push Physics (preserves exact tileSize without distortion)
+      const fromKey = posKey(actionResult.boxFrom.col, actionResult.boxFrom.row);
+      const toKey = posKey(actionResult.boxTo.col, actionResult.boxTo.row);
+      const boxSprite = this.boxSprites.get(fromKey);
+
+      const fromBx = this.boardStartX + actionResult.boxFrom.col * this.tileSize + this.tileSize / 2;
+      const fromBy = this.boardStartY + actionResult.boxFrom.row * this.tileSize + this.tileSize / 2;
+      const toBx = this.boardStartX + actionResult.boxTo.col * this.tileSize + this.tileSize / 2;
+      const toBy = this.boardStartY + actionResult.boxTo.row * this.tileSize + this.tileSize / 2;
+
+      if (boxSprite) {
+        this.boxSprites.delete(fromKey);
+        this.boxSprites.set(toKey, boxSprite);
+
+        if (this.tweens?.killTweensOf) {
+          this.tweens.killTweensOf(boxSprite);
+        }
+        boxSprite.setPosition(fromBx, fromBy);
+        if (typeof (boxSprite as any).setDisplaySize === 'function') {
+          boxSprite.setDisplaySize(this.tileSize, this.tileSize);
+        }
+
+        if (this.tweens?.add) {
+          this.tweens.add({
+            targets: boxSprite,
+            x: toBx,
+            y: toBy,
+            duration: 115,
+            ease: 'Cubic.easeOut',
+            onComplete: () => {
+              boxSprite.setPosition(toBx, toBy);
+              if (typeof (boxSprite as any).setDisplaySize === 'function') {
+                boxSprite.setDisplaySize(this.tileSize, this.tileSize);
+              }
+
+              // If placed on goal plate, change texture to gold & trigger celebration sparkles
+              const isGoal = this.state.maze.isGoal(actionResult.boxTo!.col, actionResult.boxTo!.row);
+              if (isGoal) {
+                boxSprite.setTexture('sokoban:crate_gold');
+                if (typeof (boxSprite as any).setDisplaySize === 'function') {
+                  boxSprite.setDisplaySize(this.tileSize, this.tileSize);
+                }
+                this.triggerGoalCelebration(toBx, toBy);
+              } else {
+                boxSprite.setTexture('sokoban:crate');
+                if (typeof (boxSprite as any).setDisplaySize === 'function') {
+                  boxSprite.setDisplaySize(this.tileSize, this.tileSize);
+                }
+              }
+            },
+          });
+        } else {
+          boxSprite.setPosition(toBx, toBy);
+          const isGoal = this.state.maze.isGoal(actionResult.boxTo!.col, actionResult.boxTo!.row);
+          boxSprite.setTexture(isGoal ? 'sokoban:crate_gold' : 'sokoban:crate');
+          if (typeof (boxSprite as any).setDisplaySize === 'function') {
+            boxSprite.setDisplaySize(this.tileSize, this.tileSize);
+          }
+        }
+      }
+
+      // 3. Contact dust puff
+      this.spawnDustEffect((fromWx + fromBx) / 2, (fromWy + fromBy) / 2);
+
+    } else {
+      // Pure walking step: alternate footstep frame
+      this.workerWalkStep = 1 - this.workerWalkStep;
+      const walkKey = `sokoban:worker_${this.currentWorkerFacing}_walk${this.workerWalkStep + 1}`;
+      this.workerSprite.setTexture(walkKey);
+      if (typeof (this.workerSprite as any).setDisplaySize === 'function') {
+        this.workerSprite.setDisplaySize(this.tileSize, this.tileSize);
+      }
+      this.workerSprite.setPosition(fromWx, fromWy);
+
+      if (this.tweens?.add) {
+        this.tweens.add({
+          targets: this.workerSprite,
+          x: toWx,
+          y: toWy,
+          duration: 95,
+          ease: 'Cubic.easeOut',
+          onComplete: () => {
+            this.workerSprite.setPosition(toWx, toWy);
+            this.workerSprite.setTexture(`sokoban:worker_${this.currentWorkerFacing}`);
+            if (typeof (this.workerSprite as any).setDisplaySize === 'function') {
+              this.workerSprite.setDisplaySize(this.tileSize, this.tileSize);
+            }
+          },
+        });
+      } else {
+        this.workerSprite.setPosition(toWx, toWy);
+        this.workerSprite.setTexture(`sokoban:worker_${this.currentWorkerFacing}`);
+        if (typeof (this.workerSprite as any).setDisplaySize === 'function') {
+          this.workerSprite.setDisplaySize(this.tileSize, this.tileSize);
+        }
+      }
+    }
+  }
+
+  private triggerGoalCelebration(x: number, y: number): void {
+    if (!this.tweens?.add) return;
+
+    // Burst 6 golden sparkle particles
+    const particleColors = [0xfef08a, 0xfacc15, 0x10b981, 0x34d399];
+    for (let i = 0; i < 6; i++) {
+      const p = this.add.graphics();
+      p.fillStyle(particleColors[i % particleColors.length], 0.9);
+      p.fillCircle(0, 0, 2.5);
+      if (typeof (p as any).setPosition === 'function') {
+        p.setPosition(x, y);
+      }
+      this.boardLayer.add(p);
+
+      const angle = (i * Math.PI * 2) / 6 + (Math.random() - 0.5) * 0.4;
+      const dist = this.tileSize * 0.5;
+      const targetX = x + Math.cos(angle) * dist;
+      const targetY = y + Math.sin(angle) * dist;
+
+      this.tweens.add({
+        targets: p,
+        x: targetX,
+        y: targetY,
+        alpha: 0,
+        scale: 0.2,
+        duration: 320,
+        ease: 'Cubic.easeOut',
+        onComplete: () => p.destroy(),
+      });
+    }
+  }
+
+  private spawnDustEffect(x: number, y: number): void {
+    if (!this.tweens?.add) return;
+
+    for (let i = 0; i < 4; i++) {
+      const p = this.add.graphics();
+      p.fillStyle(0x94a3b8, 0.45);
+      p.fillCircle(0, 0, 2);
+      if (typeof (p as any).setPosition === 'function') {
+        p.setPosition(x, y);
+      }
+      this.boardLayer.add(p);
+
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 6 + Math.random() * 8;
+      this.tweens.add({
+        targets: p,
+        x: x + Math.cos(angle) * dist,
+        y: y + Math.sin(angle) * dist,
+        alpha: 0,
+        scale: 0.2,
+        duration: 220,
+        ease: 'Sine.easeOut',
+        onComplete: () => p.destroy(),
+      });
+    }
+  }
+
   private syncBoardSprites(): void {
     const maze = this.state.maze;
     if (!maze) return;
+
+    // Cancel all running animations immediately for instant undo
+    if (this.tweens?.killTweensOf && this.workerSprite) {
+      this.tweens.killTweensOf(this.workerSprite);
+      if (typeof (this.workerSprite as any).setDisplaySize === 'function') {
+        this.workerSprite.setDisplaySize(this.tileSize, this.tileSize);
+      }
+    }
 
     // Update Worker Position & Texture
     const wPos = maze.getWorkerPos();
     const wx = this.boardStartX + wPos.col * this.tileSize + this.tileSize / 2;
     const wy = this.boardStartY + wPos.row * this.tileSize + this.tileSize / 2;
-    this.workerSprite.setPosition(wx, wy);
-    this.workerSprite.setTexture(`sokoban:worker_${this.currentWorkerFacing}`);
+    if (this.workerSprite) {
+      this.workerSprite.setPosition(wx, wy);
+      this.workerSprite.setTexture(`sokoban:worker_${this.currentWorkerFacing}`);
+      if (typeof (this.workerSprite as any).setDisplaySize === 'function') {
+        this.workerSprite.setDisplaySize(this.tileSize, this.tileSize);
+      }
+    }
 
     // Rebuild Box Sprites
-    this.boxSprites.forEach((sp) => sp.destroy());
+    this.boxSprites.forEach((sp) => {
+      if (this.tweens?.killTweensOf) {
+        this.tweens.killTweensOf(sp);
+      }
+      sp.destroy();
+    });
     this.boxSprites.clear();
 
     for (const boxPos of maze.getBoxPositions()) {

@@ -50,6 +50,8 @@ describe('Sokoban PreloadScene Unit Tests', () => {
 
     expect((scene as any).make.graphics).toHaveBeenCalled();
     expect(mockGfx.generateTexture).toHaveBeenCalledWith('sokoban:worker_down', 64, 64);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('sokoban:worker_down_walk1', 64, 64);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('sokoban:worker_down_push', 64, 64);
     expect(mockGfx.generateTexture).toHaveBeenCalledWith('sokoban:worker_up', 64, 64);
     expect(mockGfx.generateTexture).toHaveBeenCalledWith('sokoban:worker_left', 64, 64);
     expect(mockGfx.generateTexture).toHaveBeenCalledWith('sokoban:worker_right', 64, 64);

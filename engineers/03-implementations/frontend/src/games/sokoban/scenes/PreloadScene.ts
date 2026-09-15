@@ -23,52 +23,167 @@ export class PreloadScene extends Phaser.Scene {
   private createProceduralTextures(): void {
     const S = 64; // Base tile resolution
 
-    // 1. Worker Directions (Down, Up, Left, Right)
-    this.generateWorkerTexture('sokoban:worker_down', S, 'down');
-    this.generateWorkerTexture('sokoban:worker_up', S, 'up');
-    this.generateWorkerTexture('sokoban:worker_left', S, 'left');
-    this.generateWorkerTexture('sokoban:worker_right', S, 'right');
+    // 1. Worker Animations (Down, Up, Left, Right x Idle, Walk1, Walk2, Push)
+    const dirs: ('down' | 'up' | 'left' | 'right')[] = ['down', 'up', 'left', 'right'];
+    for (const dir of dirs) {
+      // Primary idle key (backward-compatible)
+      this.generateWorkerTexture(`sokoban:worker_${dir}`, S, dir, 'idle');
+      // Dedicated action frames
+      this.generateWorkerTexture(`sokoban:worker_${dir}_idle`, S, dir, 'idle');
+      this.generateWorkerTexture(`sokoban:worker_${dir}_walk1`, S, dir, 'walk1');
+      this.generateWorkerTexture(`sokoban:worker_${dir}_walk2`, S, dir, 'walk2');
+      this.generateWorkerTexture(`sokoban:worker_${dir}_push`, S, dir, 'push');
+    }
 
-    // 2. Pushable Wooden Crate
+    // 2. 3D Pushable Wooden Cargo Crate
     if (!this.textures.exists('sokoban:crate')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
-      // Crate body (rich timber)
+
+      // Drop shadow underneath (ground contact)
+      gfx.fillStyle(0x000000, 0.42);
+      gfx.fillRoundedRect(5, 7, S - 10, S - 10, 6);
+
+      // Main timber box body (warm rich cedar wood)
       gfx.fillStyle(0xb45309, 1);
-      gfx.fillRoundedRect(4, 4, S - 8, S - 8, 4);
+      gfx.fillRoundedRect(3, 3, S - 8, S - 8, 4);
 
-      // Inner plank border
-      gfx.lineStyle(2, 0x78350f, 1);
-      gfx.strokeRoundedRect(6, 6, S - 12, S - 12, 3);
+      // 3D Light & Shadow Bevels (2.5D perspective)
+      gfx.fillStyle(0xd97706, 0.9);
+      gfx.fillRect(3, 3, S - 8, 3);
+      gfx.fillRect(3, 3, 3, S - 8);
+      gfx.fillStyle(0x451a03, 0.95);
+      gfx.fillRect(3, S - 8, S - 8, 3);
+      gfx.fillRect(S - 8, 3, 3, S - 8);
 
-      // Diagonal cross planks
-      gfx.lineStyle(3, 0x92400e, 0.9);
-      gfx.lineBetween(10, 10, S - 10, S - 10);
-      gfx.lineBetween(S - 10, 10, 10, S - 10);
+      // Horizontal Wood Planks (3 distinct slats with dark grooved joints)
+      const slatH = Math.floor((S - 14) / 3);
+      const slatY1 = 7;
+      const slatY2 = slatY1 + slatH;
+      const slatY3 = slatY2 + slatH;
 
-      // Metallic corner rivets
-      gfx.fillStyle(0xfef3c7, 0.8);
-      gfx.fillRect(8, 8, 4, 4);
-      gfx.fillRect(S - 12, 8, 4, 4);
-      gfx.fillRect(8, S - 12, 4, 4);
-      gfx.fillRect(S - 12, S - 12, 4, 4);
+      // Dark joint seams
+      gfx.lineStyle(2, 0x451a03, 0.95);
+      gfx.lineBetween(6, slatY2, S - 8, slatY2);
+      gfx.lineBetween(6, slatY3, S - 8, slatY3);
+
+      // Subtle plank wood grain variance
+      gfx.fillStyle(0x92400e, 0.35);
+      gfx.fillRect(7, slatY1 + 2, S - 14, slatH - 4);
+      gfx.fillStyle(0xd97706, 0.25);
+      gfx.fillRect(7, slatY2 + 2, S - 14, slatH - 4);
+
+      // Diagonal timber cross bracing
+      gfx.lineStyle(5, 0x451a03, 0.45); // Brace drop shadow
+      gfx.lineBetween(11, 12, S - 11, S - 10);
+      gfx.lineStyle(4, 0x9a3412, 1); // Main wood brace
+      gfx.lineBetween(10, 10, S - 12, S - 12);
+      gfx.lineStyle(1, 0xd97706, 0.8); // Brace top highlight
+      gfx.lineBetween(10, 9, S - 13, S - 14);
+
+      // Inner wood frame border
+      gfx.lineStyle(2, 0x78350f, 0.9);
+      gfx.strokeRoundedRect(6, 6, S - 14, S - 14, 3);
+
+      // Stenciled Shipping Upward Arrows "⬆ ⬆" (THIS SIDE UP)
+      gfx.fillStyle(0x451a03, 0.85);
+      const a1x = S / 2 - 8;
+      const a2x = S / 2 + 8;
+      const ay = S / 2 - 2;
+      for (const ax of [a1x, a2x]) {
+        gfx.fillRect(ax - 1, ay - 2, 3, 7); // Stem
+        gfx.beginPath();
+        gfx.moveTo(ax, ay - 7);
+        gfx.lineTo(ax + 4, ay - 2);
+        gfx.lineTo(ax - 4, ay - 2);
+        gfx.closePath();
+        gfx.fillPath();
+      }
+
+      // Heavy-Duty Steel L-Shaped Corner Brackets (四角鋼鐵防撞包角)
+      const bracketSize = 13;
+      const bracketThickness = 4;
+      const steelColor = 0x334155;
+      const steelHighlight = 0x64748b;
+
+      // Top-Left L-bracket
+      gfx.fillStyle(steelColor, 1);
+      gfx.fillRect(4, 4, bracketSize, bracketThickness);
+      gfx.fillRect(4, 4, bracketThickness, bracketSize);
+      gfx.fillStyle(steelHighlight, 0.8);
+      gfx.fillRect(4, 4, bracketSize, 1);
+
+      // Top-Right L-bracket
+      gfx.fillStyle(steelColor, 1);
+      gfx.fillRect(S - 4 - bracketSize, 4, bracketSize, bracketThickness);
+      gfx.fillRect(S - 4 - bracketThickness, 4, bracketThickness, bracketSize);
+      gfx.fillStyle(steelHighlight, 0.8);
+      gfx.fillRect(S - 4 - bracketSize, 4, bracketSize, 1);
+
+      // Bottom-Left L-bracket
+      gfx.fillStyle(steelColor, 1);
+      gfx.fillRect(4, S - 4 - bracketThickness, bracketSize, bracketThickness);
+      gfx.fillRect(4, S - 4 - bracketSize, bracketThickness, bracketSize);
+
+      // Bottom-Right L-bracket
+      gfx.fillStyle(steelColor, 1);
+      gfx.fillRect(S - 4 - bracketSize, S - 4 - bracketThickness, bracketSize, bracketThickness);
+      gfx.fillRect(S - 4 - bracketThickness, S - 4 - bracketSize, bracketThickness, bracketSize);
+
+      // Metallic Shiny Corner Rivets (鉚釘)
+      const rivets = [
+        [7, 6], [6, 12],
+        [S - 8, 6], [S - 7, 12],
+        [7, S - 8], [6, S - 14],
+        [S - 8, S - 8], [S - 7, S - 14],
+      ];
+      for (const [rx, ry] of rivets) {
+        gfx.fillStyle(0x0f172a, 0.8);
+        gfx.fillCircle(rx, ry, 2.2);
+        gfx.fillStyle(0xe2e8f0, 1);
+        gfx.fillCircle(rx - 0.5, ry - 0.5, 1.4);
+      }
 
       gfx.generateTexture('sokoban:crate', S, S);
       gfx.destroy();
     }
 
-    // 3. Goal Placed Golden Crate (Luminous pulse & gold borders)
+    // 3. Goal Placed Golden Crate (Luminous vault core & polished brass borders)
     if (!this.textures.exists('sokoban:crate_gold')) {
       const gfx = this.make.graphics({ x: 0, y: 0 });
-      // Golden body
+
+      // Drop shadow
+      gfx.fillStyle(0x000000, 0.5);
+      gfx.fillRoundedRect(5, 7, S - 10, S - 10, 6);
+
+      // Polished Imperial Gold Body
+      gfx.fillStyle(0xd97706, 1);
+      gfx.fillRoundedRect(3, 3, S - 8, S - 8, 5);
       gfx.fillStyle(0xf59e0b, 1);
-      gfx.fillRoundedRect(4, 4, S - 8, S - 8, 4);
+      gfx.fillRoundedRect(5, 5, S - 12, S - 12, 4);
 
-      // Bright glowing border
-      gfx.lineStyle(3, 0xfef08a, 1);
-      gfx.strokeRoundedRect(5, 5, S - 10, S - 10, 3);
+      // 3D Gold Top Bevel Highlight
+      gfx.fillStyle(0xfef08a, 0.95);
+      gfx.fillRect(3, 3, S - 8, 3);
+      gfx.fillRect(3, 3, 3, S - 8);
+      gfx.fillStyle(0x78350f, 0.95);
+      gfx.fillRect(3, S - 8, S - 8, 3);
+      gfx.fillRect(S - 8, 3, 3, S - 8);
 
-      // Diamond center crest
-      gfx.fillStyle(0xfef9c3, 1);
+      // Radiant Gold Inset Frame
+      gfx.lineStyle(2, 0xfef08a, 0.9);
+      gfx.strokeRoundedRect(7, 7, S - 16, S - 16, 4);
+
+      // Center Emerald Diamond Crest Plate
+      gfx.fillStyle(0x78350f, 0.8);
+      gfx.beginPath();
+      gfx.moveTo(S / 2, 12);
+      gfx.lineTo(S - 12, S / 2);
+      gfx.lineTo(S / 2, S - 12);
+      gfx.lineTo(12, S / 2);
+      gfx.closePath();
+      gfx.fillPath();
+
+      gfx.fillStyle(0xfef08a, 1);
       gfx.beginPath();
       gfx.moveTo(S / 2, 14);
       gfx.lineTo(S - 14, S / 2);
@@ -77,9 +192,40 @@ export class PreloadScene extends Phaser.Scene {
       gfx.closePath();
       gfx.fillPath();
 
-      // Center emerald star dot
+      // Glowing Emerald Core Jewel
+      gfx.fillStyle(0x059669, 1);
+      gfx.fillCircle(S / 2, S / 2, 8);
       gfx.fillStyle(0x10b981, 1);
-      gfx.fillCircle(S / 2, S / 2, 5);
+      gfx.fillCircle(S / 2, S / 2, 6);
+      gfx.fillStyle(0x6ee7b7, 1);
+      gfx.fillCircle(S / 2 - 2, S / 2 - 2, 2.5);
+      gfx.fillStyle(0xffffff, 1);
+      gfx.fillCircle(S / 2 - 2, S / 2 - 2, 1.2);
+
+      // Corner Gold Brackets
+      const bSize = 13;
+      const bThick = 4;
+      gfx.fillStyle(0xfef08a, 1);
+      gfx.fillRect(4, 4, bSize, bThick);
+      gfx.fillRect(4, 4, bThick, bSize);
+      gfx.fillRect(S - 4 - bSize, 4, bSize, bThick);
+      gfx.fillRect(S - 4 - bThick, 4, bThick, bSize);
+      gfx.fillRect(4, S - 4 - bThick, bSize, bThick);
+      gfx.fillRect(4, S - 4 - bSize, bThick, bSize);
+      gfx.fillRect(S - 4 - bSize, S - 4 - bThick, bSize, bThick);
+      gfx.fillRect(S - 4 - bThick, S - 4 - bSize, bThick, bSize);
+
+      // Diamond Stud Rivets
+      const gRivets = [
+        [7, 6], [6, 12],
+        [S - 8, 6], [S - 7, 12],
+        [7, S - 8], [6, S - 14],
+        [S - 8, S - 8], [S - 7, S - 14],
+      ];
+      for (const [rx, ry] of gRivets) {
+        gfx.fillStyle(0xffffff, 1);
+        gfx.fillCircle(rx, ry, 1.5);
+      }
 
       gfx.generateTexture('sokoban:crate_gold', S, S);
       gfx.destroy();
@@ -151,47 +297,471 @@ export class PreloadScene extends Phaser.Scene {
     this.generateAmbientTexture('sokoban:ambient_mega', S_AMBIENT, 'mega_terminal');
   }
 
-  private generateWorkerTexture(key: string, S: number, dir: 'down' | 'up' | 'left' | 'right'): void {
+  private generateWorkerTexture(
+    key: string,
+    S: number,
+    dir: 'down' | 'up' | 'left' | 'right',
+    pose: 'idle' | 'walk1' | 'walk2' | 'push' = 'idle'
+  ): void {
     if (this.textures.exists(key)) return;
 
     const gfx = this.make.graphics({ x: 0, y: 0 });
     const cx = S / 2;
-    const cy = S / 2;
 
-    // Drop shadow
-    gfx.fillStyle(0x000000, 0.35);
-    gfx.fillEllipse(cx, cy + 18, 22, 10);
+    // Palette
+    const cBoot = 0x1e293b;
+    const cBootSole = 0x0f172a;
+    const cBootToe = 0x475569;
+    const cDenim = 0x1d4ed8;
+    const cDenimDark = 0x1e3a8a;
+    const cVest = 0xf97316; // Hi-Vis Safety Orange
+    const cReflect = 0xfacc15; // Reflective Neon Yellow
+    const cBelt = 0x78350f;
+    const cBuckle = 0xe2e8f0;
+    const cGlove = 0xf59e0b; // Tough Leather Glove
+    const cGloveCuff = 0xd97706;
+    const cSkin = 0xfde047;
+    const cSkinShadow = 0xfcd34d;
+    const cHelmet = 0xeab308; // Industrial Yellow Hardhat
+    const cHelmetRidge = 0xfacc15;
+    const cHelmetBrim = 0xca8a04;
+    const cLampHousing = 0x334155;
+    const cLampLens = 0x38bdf8;
 
-    // Body / Work Vest (Arcade Blue)
-    gfx.fillStyle(0x2563eb, 1);
-    gfx.fillRoundedRect(cx - 10, cy - 2, 20, 16, 3);
-
-    // Safety Reflective Belt
-    gfx.fillStyle(0xfacc15, 1);
-    gfx.fillRect(cx - 10, cy + 4, 20, 3);
-
-    // Head / Face
-    gfx.fillStyle(0xfde047, 1);
-    gfx.fillCircle(cx, cy - 9, 8);
-
-    // Safety Hardhat (Industrial Yellow)
-    gfx.fillStyle(0xeab308, 1);
-    gfx.fillRoundedRect(cx - 10, cy - 18, 20, 9, 4);
-    gfx.fillRect(cx - 12, cy - 11, 24, 2); // Helmet brim
-
-    // Directional facial / gaze features
-    gfx.fillStyle(0x1e293b, 1);
-    if (dir === 'down') {
-      gfx.fillRect(cx - 4, cy - 8, 2, 2);
-      gfx.fillRect(cx + 2, cy - 8, 2, 2);
-    } else if (dir === 'up') {
-      // Back of head / helmet
-      gfx.fillStyle(0xca8a04, 1);
-      gfx.fillCircle(cx, cy - 10, 7);
-    } else if (dir === 'left') {
-      gfx.fillRect(cx - 6, cy - 8, 2, 2);
+    // 1. Ground Drop Shadow
+    gfx.fillStyle(0x000000, 0.38);
+    if (dir === 'left') {
+      gfx.fillEllipse(cx - 2, 57, 30, 11);
     } else if (dir === 'right') {
-      gfx.fillRect(cx + 4, cy - 8, 2, 2);
+      gfx.fillEllipse(cx + 2, 57, 30, 11);
+    } else {
+      gfx.fillEllipse(cx, 57, 32, 11);
+    }
+
+    if (dir === 'down') {
+      // --- DOWN (Facing Player) ---
+      // A. Steel-Toed Boots
+      if (pose === 'walk1') {
+        // Left foot forward, right foot back
+        gfx.fillStyle(cBootSole, 1);
+        gfx.fillRoundedRect(cx - 13, 53, 11, 4, 1);
+        gfx.fillRoundedRect(cx + 3, 56, 10, 3, 1);
+        gfx.fillStyle(cBoot, 1);
+        gfx.fillRoundedRect(cx - 13, 47, 11, 7, 2);
+        gfx.fillRoundedRect(cx + 3, 51, 10, 6, 2);
+        gfx.fillStyle(cBootToe, 1);
+        gfx.fillRect(cx - 12, 52, 9, 2);
+        gfx.fillRect(cx + 4, 55, 8, 2);
+      } else if (pose === 'walk2') {
+        // Right foot forward, left foot back
+        gfx.fillStyle(cBootSole, 1);
+        gfx.fillRoundedRect(cx - 12, 56, 10, 3, 1);
+        gfx.fillRoundedRect(cx + 2, 53, 11, 4, 1);
+        gfx.fillStyle(cBoot, 1);
+        gfx.fillRoundedRect(cx - 12, 51, 10, 6, 2);
+        gfx.fillRoundedRect(cx + 2, 47, 11, 7, 2);
+        gfx.fillStyle(cBootToe, 1);
+        gfx.fillRect(cx - 11, 55, 8, 2);
+        gfx.fillRect(cx + 3, 52, 9, 2);
+      } else if (pose === 'push') {
+        // Wide braced pushing stance
+        gfx.fillStyle(cBootSole, 1);
+        gfx.fillRoundedRect(cx - 16, 54, 12, 4, 1);
+        gfx.fillRoundedRect(cx + 4, 54, 12, 4, 1);
+        gfx.fillStyle(cBoot, 1);
+        gfx.fillRoundedRect(cx - 16, 49, 12, 6, 2);
+        gfx.fillRoundedRect(cx + 4, 49, 12, 6, 2);
+        gfx.fillStyle(cBootToe, 1);
+        gfx.fillRect(cx - 15, 53, 10, 2);
+        gfx.fillRect(cx + 5, 53, 10, 2);
+      } else {
+        // Idle
+        gfx.fillStyle(cBootSole, 1);
+        gfx.fillRoundedRect(cx - 13, 55, 11, 3, 1);
+        gfx.fillRoundedRect(cx + 2, 55, 11, 3, 1);
+        gfx.fillStyle(cBoot, 1);
+        gfx.fillRoundedRect(cx - 13, 49, 11, 7, 2);
+        gfx.fillRoundedRect(cx + 2, 49, 11, 7, 2);
+        gfx.fillStyle(cBootToe, 1);
+        gfx.fillRect(cx - 12, 54, 9, 2);
+        gfx.fillRect(cx + 3, 54, 9, 2);
+      }
+
+      // B. Denim Overalls Legs
+      gfx.fillStyle(cDenimDark, 1);
+      gfx.fillRect(cx - 13, 38, 26, 12);
+      gfx.fillStyle(cDenim, 1);
+      const legW = pose === 'push' ? 10 : 9;
+      const legOff = pose === 'push' ? 14 : 12;
+      gfx.fillRect(cx - legOff, 38, legW, 11);
+      gfx.fillRect(cx + legOff - legW, 38, legW, 11);
+
+      // C. Torso & Hi-Vis Safety Vest
+      gfx.fillStyle(cDenimDark, 1);
+      gfx.fillRoundedRect(cx - 14, 23, 28, 17, 4);
+      // Safety Vest
+      gfx.fillStyle(cVest, 1);
+      gfx.fillRoundedRect(cx - 13, 23, 26, 14, 3);
+      // Reflective Stripes
+      gfx.fillStyle(cReflect, 1);
+      gfx.fillRect(cx - 8, 23, 3, 14);
+      gfx.fillRect(cx + 5, 23, 3, 14);
+      gfx.fillRect(cx - 13, 33, 26, 2.5);
+      // Utility Belt & Metal Buckle
+      gfx.fillStyle(cBelt, 1);
+      gfx.fillRect(cx - 14, 37, 28, 3.5);
+      gfx.fillStyle(cBuckle, 1);
+      gfx.fillRect(cx - 3, 36.5, 6, 4.5);
+
+      // D. Arms & Gloves
+      if (pose === 'push') {
+        // Both hands thrust downward-forward pressing into the crate
+        gfx.fillStyle(cDenimDark, 1);
+        gfx.fillRect(cx - 14, 28, 8, 12);
+        gfx.fillRect(cx + 6, 28, 8, 12);
+        gfx.fillStyle(cGloveCuff, 1);
+        gfx.fillRect(cx - 14, 39, 9, 3);
+        gfx.fillRect(cx + 5, 39, 9, 3);
+        gfx.fillStyle(cGlove, 1);
+        gfx.fillRoundedRect(cx - 14, 41, 10, 8, 3);
+        gfx.fillRoundedRect(cx + 4, 41, 10, 8, 3);
+        // Finger knuckles
+        gfx.fillStyle(0xd97706, 1);
+        gfx.fillRect(cx - 13, 47, 8, 2);
+        gfx.fillRect(cx + 5, 47, 8, 2);
+      } else if (pose === 'walk1') {
+        // Left arm forward (higher), right arm back (lower)
+        gfx.fillStyle(cDenimDark, 1);
+        gfx.fillRect(cx - 17, 24, 5, 10);
+        gfx.fillRect(cx + 12, 28, 5, 10);
+        gfx.fillStyle(cGlove, 1);
+        gfx.fillRoundedRect(cx - 18, 28, 6, 9, 2);
+        gfx.fillRoundedRect(cx + 12, 35, 6, 8, 2);
+      } else if (pose === 'walk2') {
+        // Right arm forward (higher), left arm back (lower)
+        gfx.fillStyle(cDenimDark, 1);
+        gfx.fillRect(cx - 17, 28, 5, 10);
+        gfx.fillRect(cx + 12, 24, 5, 10);
+        gfx.fillStyle(cGlove, 1);
+        gfx.fillRoundedRect(cx - 18, 35, 6, 8, 2);
+        gfx.fillRoundedRect(cx + 12, 28, 6, 9, 2);
+      } else {
+        // Idle: hands resting at sides
+        gfx.fillStyle(cDenimDark, 1);
+        gfx.fillRect(cx - 17, 25, 5, 10);
+        gfx.fillRect(cx + 12, 25, 5, 10);
+        gfx.fillStyle(cGlove, 1);
+        gfx.fillRoundedRect(cx - 18, 32, 6, 9, 2);
+        gfx.fillRoundedRect(cx + 12, 32, 6, 9, 2);
+      }
+
+      // E. Head & Face
+      gfx.fillStyle(cSkinShadow, 1);
+      gfx.fillRect(cx - 4, 21, 8, 4); // Neck
+      gfx.fillStyle(cSkin, 1);
+      gfx.fillCircle(cx, 16, 9);
+      // Ears
+      gfx.fillCircle(cx - 9, 16, 2.5);
+      gfx.fillCircle(cx + 9, 16, 2.5);
+      // Eyes with expressive arcade glint
+      gfx.fillStyle(0x0f172a, 1);
+      gfx.fillRect(cx - 6, 15, 3, 4);
+      gfx.fillRect(cx + 3, 15, 3, 4);
+      gfx.fillStyle(0xffffff, 1);
+      gfx.fillRect(cx - 6, 15, 1.2, 1.5);
+      gfx.fillRect(cx + 3, 15, 1.2, 1.5);
+      // In push: focused determination eyebrows
+      if (pose === 'push') {
+        gfx.fillStyle(0x78350f, 1);
+        gfx.fillRect(cx - 7, 13, 5, 1.5);
+        gfx.fillRect(cx + 2, 13, 5, 1.5);
+      }
+
+      // F. Yellow Industrial Hardhat
+      gfx.fillStyle(cHelmet, 1);
+      gfx.fillRoundedRect(cx - 12, 6, 24, 11, 5);
+      gfx.fillStyle(cHelmetRidge, 1);
+      gfx.fillRoundedRect(cx - 2.5, 4, 5, 12, 2);
+      gfx.fillStyle(cHelmetBrim, 1);
+      gfx.fillRect(cx - 14, 14, 28, 3.5);
+      // Miner Headlamp on helmet
+      gfx.fillStyle(cLampHousing, 1);
+      gfx.fillRoundedRect(cx - 4, 10, 8, 4.5, 1.5);
+      gfx.fillStyle(cLampLens, 1);
+      gfx.fillCircle(cx, 12, 2.5);
+      gfx.fillStyle(0xffffff, 1);
+      gfx.fillCircle(cx - 0.5, 11.5, 1);
+
+    } else if (dir === 'up') {
+      // --- UP (Facing Away / North) ---
+      // A. Boots (Heel view)
+      if (pose === 'walk1') {
+        gfx.fillStyle(cBootSole, 1);
+        gfx.fillRoundedRect(cx - 12, 54, 9, 3, 1);
+        gfx.fillRoundedRect(cx + 3, 51, 10, 4, 1);
+        gfx.fillStyle(cBoot, 1);
+        gfx.fillRoundedRect(cx - 12, 49, 9, 6, 2);
+        gfx.fillRoundedRect(cx + 3, 46, 10, 7, 2);
+      } else if (pose === 'walk2') {
+        gfx.fillStyle(cBootSole, 1);
+        gfx.fillRoundedRect(cx - 13, 51, 10, 4, 1);
+        gfx.fillRoundedRect(cx + 2, 54, 9, 3, 1);
+        gfx.fillStyle(cBoot, 1);
+        gfx.fillRoundedRect(cx - 13, 46, 10, 7, 2);
+        gfx.fillRoundedRect(cx + 2, 49, 9, 6, 2);
+      } else {
+        gfx.fillStyle(cBootSole, 1);
+        gfx.fillRoundedRect(cx - 12, 54, 10, 3, 1);
+        gfx.fillRoundedRect(cx + 2, 54, 10, 3, 1);
+        gfx.fillStyle(cBoot, 1);
+        gfx.fillRoundedRect(cx - 12, 48, 10, 7, 2);
+        gfx.fillRoundedRect(cx + 2, 48, 10, 7, 2);
+      }
+
+      // B. Denim Legs
+      gfx.fillStyle(cDenimDark, 1);
+      gfx.fillRect(cx - 13, 38, 26, 12);
+      gfx.fillStyle(cDenim, 1);
+      gfx.fillRect(cx - 11, 38, 9, 11);
+      gfx.fillRect(cx + 2, 38, 9, 11);
+      // Back pockets
+      gfx.fillStyle(cDenimDark, 1);
+      gfx.fillRect(cx - 10, 36, 6, 5);
+      gfx.fillRect(cx + 4, 36, 6, 5);
+
+      // C. Torso & Vest Back Harness
+      gfx.fillStyle(cDenimDark, 1);
+      gfx.fillRoundedRect(cx - 14, 23, 28, 17, 4);
+      gfx.fillStyle(cVest, 1);
+      gfx.fillRoundedRect(cx - 13, 23, 26, 14, 3);
+      // Reflective 'H' Cross harness
+      gfx.fillStyle(cReflect, 1);
+      gfx.fillRect(cx - 8, 23, 3, 14);
+      gfx.fillRect(cx + 5, 23, 3, 14);
+      gfx.fillRect(cx - 8, 28, 16, 3);
+      // Belt
+      gfx.fillStyle(cBelt, 1);
+      gfx.fillRect(cx - 14, 37, 28, 3.5);
+
+      // D. Arms & Hands
+      if (pose === 'push') {
+        // Both hands thrust UPWARD against the crate at the top
+        gfx.fillStyle(cDenimDark, 1);
+        gfx.fillRect(cx - 14, 14, 8, 14);
+        gfx.fillRect(cx + 6, 14, 8, 14);
+        gfx.fillStyle(cGloveCuff, 1);
+        gfx.fillRect(cx - 14, 12, 9, 3);
+        gfx.fillRect(cx + 5, 12, 9, 3);
+        gfx.fillStyle(cGlove, 1);
+        gfx.fillRoundedRect(cx - 14, 6, 10, 8, 3);
+        gfx.fillRoundedRect(cx + 4, 6, 10, 8, 3);
+      } else {
+        gfx.fillStyle(cDenimDark, 1);
+        gfx.fillRect(cx - 17, 25, 5, 10);
+        gfx.fillRect(cx + 12, 25, 5, 10);
+        gfx.fillStyle(cGlove, 1);
+        gfx.fillRoundedRect(cx - 18, 32, 6, 9, 2);
+        gfx.fillRoundedRect(cx + 12, 32, 6, 9, 2);
+      }
+
+      // E. Back of Head & Hardhat
+      gfx.fillStyle(cSkinShadow, 1);
+      gfx.fillRect(cx - 4, 21, 8, 4);
+      gfx.fillStyle(cHelmet, 1);
+      gfx.fillRoundedRect(cx - 12, 6, 24, 15, 6);
+      gfx.fillStyle(cHelmetRidge, 1);
+      gfx.fillRoundedRect(cx - 2.5, 4, 5, 16, 2);
+      gfx.fillStyle(cHelmetBrim, 1);
+      gfx.fillRect(cx - 13, 18, 26, 3);
+
+    } else if (dir === 'left') {
+      // --- LEFT (Profile Facing West) ---
+      const leanX = pose === 'push' ? -3 : 0;
+
+      // A. Boots
+      if (pose === 'push') {
+        // Back leg braced far right, front leg firmly planted left
+        gfx.fillStyle(cBootSole, 1);
+        gfx.fillRoundedRect(cx - 17, 54, 13, 4, 1);
+        gfx.fillRoundedRect(cx + 5, 55, 11, 3, 1);
+        gfx.fillStyle(cBoot, 1);
+        gfx.fillRoundedRect(cx - 17, 49, 13, 7, 2);
+        gfx.fillRoundedRect(cx + 5, 51, 11, 6, 2);
+        gfx.fillStyle(cBootToe, 1);
+        gfx.fillRect(cx - 17, 52, 4, 3);
+      } else if (pose === 'walk1') {
+        gfx.fillStyle(cBootSole, 1);
+        gfx.fillRoundedRect(cx - 14, 53, 12, 3, 1);
+        gfx.fillRoundedRect(cx + 2, 55, 10, 3, 1);
+        gfx.fillStyle(cBoot, 1);
+        gfx.fillRoundedRect(cx - 14, 48, 12, 6, 2);
+        gfx.fillRoundedRect(cx + 2, 51, 10, 6, 2);
+      } else if (pose === 'walk2') {
+        gfx.fillStyle(cBootSole, 1);
+        gfx.fillRoundedRect(cx - 8, 55, 10, 3, 1);
+        gfx.fillRoundedRect(cx - 2, 53, 12, 3, 1);
+        gfx.fillStyle(cBoot, 1);
+        gfx.fillRoundedRect(cx - 8, 51, 10, 6, 2);
+        gfx.fillRoundedRect(cx - 2, 48, 12, 6, 2);
+      } else {
+        gfx.fillStyle(cBootSole, 1);
+        gfx.fillRoundedRect(cx - 11, 54, 13, 3, 1);
+        gfx.fillStyle(cBoot, 1);
+        gfx.fillRoundedRect(cx - 11, 49, 13, 7, 2);
+        gfx.fillStyle(cBootToe, 1);
+        gfx.fillRect(cx - 11, 52, 4, 3);
+      }
+
+      // B. Denim Legs
+      gfx.fillStyle(cDenim, 1);
+      gfx.fillRect(cx - 11 + leanX, 38, 18, 12);
+
+      // C. Torso & Vest
+      gfx.fillStyle(cDenimDark, 1);
+      gfx.fillRoundedRect(cx - 12 + leanX, 23, 22, 17, 4);
+      gfx.fillStyle(cVest, 1);
+      gfx.fillRoundedRect(cx - 11 + leanX, 23, 20, 14, 3);
+      gfx.fillStyle(cReflect, 1);
+      gfx.fillRect(cx - 7 + leanX, 23, 3.5, 14);
+      gfx.fillRect(cx - 11 + leanX, 32, 20, 2.5);
+      // Belt
+      gfx.fillStyle(cBelt, 1);
+      gfx.fillRect(cx - 12 + leanX, 37, 22, 3.5);
+
+      // D. Hands & Pushing Arms
+      if (pose === 'push') {
+        // Both arms fully extended LEFT pressing flat against crate
+        gfx.fillStyle(cDenimDark, 1);
+        gfx.fillRect(cx - 18, 25, 16, 7);
+        gfx.fillRect(cx - 14, 29, 14, 7);
+        gfx.fillStyle(cGloveCuff, 1);
+        gfx.fillRect(cx - 20, 24, 3, 14);
+        gfx.fillStyle(cGlove, 1);
+        gfx.fillRoundedRect(cx - 25, 24, 7, 14, 2);
+      } else {
+        gfx.fillStyle(cDenimDark, 1);
+        gfx.fillRect(cx - 8, 25, 6, 11);
+        gfx.fillStyle(cGlove, 1);
+        gfx.fillRoundedRect(cx - 10, 33, 7, 8, 2);
+      }
+
+      // E. Head Profile
+      gfx.fillStyle(cSkin, 1);
+      gfx.fillCircle(cx - 3 + leanX, 16, 8.5);
+      // Focused Eye
+      gfx.fillStyle(0x0f172a, 1);
+      gfx.fillRect(cx - 9 + leanX, 15, 3, 4);
+      gfx.fillStyle(0xffffff, 1);
+      gfx.fillRect(cx - 9 + leanX, 15, 1.2, 1.5);
+      if (pose === 'push') {
+        gfx.fillStyle(0x78350f, 1);
+        gfx.fillRect(cx - 10 + leanX, 13, 5, 1.5);
+      }
+
+      // F. Hardhat & Lamp Profile
+      gfx.fillStyle(cHelmet, 1);
+      gfx.fillRoundedRect(cx - 12 + leanX, 6, 20, 11, 4);
+      gfx.fillStyle(cHelmetBrim, 1);
+      gfx.fillRect(cx - 15 + leanX, 14, 22, 3.5);
+      // Headlamp beaming left
+      gfx.fillStyle(cLampHousing, 1);
+      gfx.fillRect(cx - 16 + leanX, 10, 4, 5);
+      gfx.fillStyle(cLampLens, 1);
+      gfx.fillRect(cx - 17 + leanX, 10.5, 2, 4);
+
+    } else {
+      // --- RIGHT (Profile Facing East) ---
+      const leanX = pose === 'push' ? 3 : 0;
+
+      // A. Boots
+      if (pose === 'push') {
+        gfx.fillStyle(cBootSole, 1);
+        gfx.fillRoundedRect(cx - 16, 55, 11, 3, 1);
+        gfx.fillRoundedRect(cx + 4, 54, 13, 4, 1);
+        gfx.fillStyle(cBoot, 1);
+        gfx.fillRoundedRect(cx - 16, 51, 11, 6, 2);
+        gfx.fillRoundedRect(cx + 4, 49, 13, 7, 2);
+        gfx.fillStyle(cBootToe, 1);
+        gfx.fillRect(cx + 13, 52, 4, 3);
+      } else if (pose === 'walk1') {
+        gfx.fillStyle(cBootSole, 1);
+        gfx.fillRoundedRect(cx - 12, 55, 10, 3, 1);
+        gfx.fillRoundedRect(cx + 2, 53, 12, 3, 1);
+        gfx.fillStyle(cBoot, 1);
+        gfx.fillRoundedRect(cx - 12, 51, 10, 6, 2);
+        gfx.fillRoundedRect(cx + 2, 48, 12, 6, 2);
+      } else if (pose === 'walk2') {
+        gfx.fillStyle(cBootSole, 1);
+        gfx.fillRoundedRect(cx - 2, 53, 12, 3, 1);
+        gfx.fillRoundedRect(cx + 4, 55, 10, 3, 1);
+        gfx.fillStyle(cBoot, 1);
+        gfx.fillRoundedRect(cx - 2, 48, 12, 6, 2);
+        gfx.fillRoundedRect(cx + 4, 51, 10, 6, 2);
+      } else {
+        gfx.fillStyle(cBootSole, 1);
+        gfx.fillRoundedRect(cx - 2, 54, 13, 3, 1);
+        gfx.fillStyle(cBoot, 1);
+        gfx.fillRoundedRect(cx - 2, 49, 13, 7, 2);
+        gfx.fillStyle(cBootToe, 1);
+        gfx.fillRect(cx + 7, 52, 4, 3);
+      }
+
+      // B. Denim Legs
+      gfx.fillStyle(cDenim, 1);
+      gfx.fillRect(cx - 7 + leanX, 38, 18, 12);
+
+      // C. Torso & Vest
+      gfx.fillStyle(cDenimDark, 1);
+      gfx.fillRoundedRect(cx - 10 + leanX, 23, 22, 17, 4);
+      gfx.fillStyle(cVest, 1);
+      gfx.fillRoundedRect(cx - 9 + leanX, 23, 20, 14, 3);
+      gfx.fillStyle(cReflect, 1);
+      gfx.fillRect(cx + 3.5 + leanX, 23, 3.5, 14);
+      gfx.fillRect(cx - 9 + leanX, 32, 20, 2.5);
+      // Belt
+      gfx.fillStyle(cBelt, 1);
+      gfx.fillRect(cx - 10 + leanX, 37, 22, 3.5);
+
+      // D. Hands & Pushing Arms
+      if (pose === 'push') {
+        // Both arms fully extended RIGHT pressing flat against crate
+        gfx.fillStyle(cDenimDark, 1);
+        gfx.fillRect(cx + 2, 25, 16, 7);
+        gfx.fillRect(cx, 29, 14, 7);
+        gfx.fillStyle(cGloveCuff, 1);
+        gfx.fillRect(cx + 17, 24, 3, 14);
+        gfx.fillStyle(cGlove, 1);
+        gfx.fillRoundedRect(cx + 18, 24, 7, 14, 2);
+      } else {
+        gfx.fillStyle(cDenimDark, 1);
+        gfx.fillRect(cx + 2, 25, 6, 11);
+        gfx.fillStyle(cGlove, 1);
+        gfx.fillRoundedRect(cx + 3, 33, 7, 8, 2);
+      }
+
+      // E. Head Profile
+      gfx.fillStyle(cSkin, 1);
+      gfx.fillCircle(cx + 3 + leanX, 16, 8.5);
+      // Focused Eye
+      gfx.fillStyle(0x0f172a, 1);
+      gfx.fillRect(cx + 6 + leanX, 15, 3, 4);
+      gfx.fillStyle(0xffffff, 1);
+      gfx.fillRect(cx + 7.8 + leanX, 15, 1.2, 1.5);
+      if (pose === 'push') {
+        gfx.fillStyle(0x78350f, 1);
+        gfx.fillRect(cx + 5 + leanX, 13, 5, 1.5);
+      }
+
+      // F. Hardhat & Lamp Profile
+      gfx.fillStyle(cHelmet, 1);
+      gfx.fillRoundedRect(cx - 8 + leanX, 6, 20, 11, 4);
+      gfx.fillStyle(cHelmetBrim, 1);
+      gfx.fillRect(cx - 7 + leanX, 14, 22, 3.5);
+      // Headlamp beaming right
+      gfx.fillStyle(cLampHousing, 1);
+      gfx.fillRect(cx + 12 + leanX, 10, 4, 5);
+      gfx.fillStyle(cLampLens, 1);
+      gfx.fillRect(cx + 15 + leanX, 10.5, 2, 4);
     }
 
     gfx.generateTexture(key, S, S);
