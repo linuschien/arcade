@@ -57,6 +57,14 @@ export const mockGameCards: any[] = [
     description: 'Classic 1981 arcade racing maze game. Collect 10 flags, deploy smoke screens to spin out red chasers, and watch your fuel gauge!',
     totalPlayCount: 0,
   },
+  {
+    id: '43210987-10fe-dcba-9876-543210fedcba',
+    gameId: 'sokoban',
+    title: 'Sokoban 50 Selection',
+    coverArtUrl: '/assets/covers/sokoban.png',
+    description: 'Curated 50-stage warehouse box-pushing puzzle game across 4 diorama worlds. Features orthogonal corner deadlock alerts, push-granularity undo, and stage steganography scoring.',
+    totalPlayCount: 0,
+  },
 ];
 
 export const mockLeaderboardEntries: any[] = [
