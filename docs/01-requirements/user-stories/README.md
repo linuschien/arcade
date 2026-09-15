@@ -106,7 +106,7 @@
 | **US-07-11** | 兩位數關卡分數隱寫術 | 總分末兩位寫入最後成功通關關卡 | $\text{Score}_{\text{final}} = (\lfloor \text{RawScore}/100 \rfloor \times 100) + \operatorname{clamp}(\text{lastClearedStage}, 0, 50)$、無縫整合平台排行榜 |
 | **US-07-12** | 四大主題世界線性推進 | 5/20/15/10 關卡排布與篇章轉場 | World 1 木造貨棧 (1~5)、World 2 重工廠 (6~25)、World 3 賽博金庫 (26~40，紅警報/CRT/Zoom-in 轉場)、World 4 巨型碼頭 (41~50) |
 | **US-07-13** | 正方形與微橫幅幾何拓撲過濾 | 篩選長寬比與網格上限，固化靜態資料集 | 排除直幅圖（$1.00 \le W/H \le 1.45$）、World 1~4 網格長寬上限過濾、構建期固化 50 關靜態 JSON |
-| **US-07-14** | 平台事件契約整合、Web Audio 與生命週期 | 實作 IArcadeGame、輕音樂 BGM 與退出大廳 | 實作生命週期、純鍵盤映射 (免實體 ESC)、4 大世界專屬 Web Audio 輕音樂 BGM、Game Over 隱寫上報並銷毀退出大廳 |
+| **US-07-14** | 平台事件契約整合、Web Audio 與生命週期 | 實作 IArcadeGame、輕音樂 BGM 與退出大廳 | 實作 pause/resume 生命周期（支援平台 UI 暫停與分頁失焦自動暫停，鍵盤無實體 ESC 鍵）、4 大世界專屬 Web Audio 輕音樂 BGM、Game Over 隱寫上報並銷毀退出大廳 |
 
 ---
 

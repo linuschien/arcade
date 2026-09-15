@@ -363,24 +363,29 @@
 ### 驗收條件 (Acceptance Criteria)
 
 - **AC1 (介面實作)**：實作 `IArcadeGame` 介面標準生命週期方法（`init()`, `start()`, `pause()`, `resume()`, `destroyGame()`）。
-- **AC2 (事件廣播)**：
-  - 通過 `ArcadeBridge.emit('SCORE_UPDATED', rawScore)` 廣播即時分數。
-  - 通過 `ArcadeBridge.emit('LIVES_UPDATED', lives)` 廣播剩餘生命。
-  - 通過 `ArcadeBridge.emit('STAGE_CLEARED', stageInfo)` 廣播單關通關。
-  - 通過 `ArcadeBridge.emit('GAME_OVER', summary)` 拋出隱寫最終得分與攻克統計。
+- **AC2 (事件接收與廣播)**：
+  - 監聽接收：`START_GAME`, `PAUSE_REQUESTED`, `RESUME_REQUESTED`, `MUTE_TOGGLED`。
+  - 發布廣播：`SCORE_UPDATED`, `LIVES_UPDATED`, `STAGE_CLEARED`, `GAME_OVER`。
 - **AC3 (純鍵盤控制映射)**：
   - 方向鍵 `[↑↓←→]` 映射為移動。
   - `[Z]` 鍵映射為 Undo。
   - 長按 `[R]` 鍵滿 1.0 秒映射為棄局。
-  - 不設置實體 `[ESC]` 暫停鍵（純回合制益智，工人靜止即等同暫停）。
+  - 實體鍵盤**不映射 `[ESC]` 鍵**（解謎過程中不需玩家手動敲鍵盤暫停）。
   - 嚴格不擴展 Gamepad 額外按鍵，保持純鍵盤操作。
-- **AC4 (Game Over 退出流程)**：當 $\text{Lives} = 0$ 觸發 Game Over 時，系統上報隱寫分數，銷毀 Canvas 視窗，直接返回 Arcade Stadium 大廳，不提供原地投幣接關倒數。
-- **AC5 (程序化 Web Audio 輕音樂 BGM)**：
+- **AC4 (平台暫停機制與生命週期)**：
+  - 當外層 React Host Shell 點擊 UI 暫停按鈕，或瀏覽器分頁切換失焦（Window `onblur`）發送 `PAUSE_REQUESTED` 時：
+    - 系統觸發 `pause()`，立即凍結軟性計時器累加（$t_{\text{elapsed}}$ 停止計時）。
+    - 暫停當前世界 Web Audio 輕音樂（BGM）與音效。
+    - 鎖定鍵盤方向鍵、Z 鍵與 R 鍵輸入，中央視窗浮現半透明 `PAUSED` 遮罩。
+  - 當平台發送 `RESUME_REQUESTED` 或調用 `resume()` 時：
+    - 關閉暫停遮罩，恢復軟性計時器計時，恢復 BGM 播放，重新解鎖鍵盤輸入。
+- **AC5 (Game Over 退出流程)**：當 $\text{Lives} = 0$ 觸發 Game Over 時，系統上報隱寫分數，銷毀 Canvas 視窗，直接返回 Arcade Stadium 大廳，不提供原地投幣接關倒數。
+- **AC6 (程序化 Web Audio 輕音樂 BGM)**：
   為四大世界各配置專屬低干擾、輕節奏之合成器晶片背景音樂（BGM），營造專注長考氛圍：
   - `BGM_WORLD_1 (Cargo Warmth)`：木質溫暖打擊晶片音樂（World 1: Cargo Depot）。
   - `BGM_WORLD_2 (Steel Jazz)`：沉穩輕爵士晶片音樂（World 2: Steel Works）。
   - `BGM_WORLD_3 (Cyber Pulse)`：賽博低頻環境脈衝晶片音樂（World 3: Cyber Vault）。
   - `BGM_WORLD_4 (Terminal Vista)`：碼頭廣角大氣晶片管弦樂（World 4: Mega Terminal）。
   - 支援平台 `MUTE_TOGGLED` 一鍵靜音與音量控管。
-- **AC6 (程序化 Web Audio 音效 SFX)**：採用 Web Audio 即時合成全套音效（腳步聲、推箱聲、入洞鈴聲、Undo 音、死鎖警告、超時提示、1UP 號角、通關音樂），零外部音檔依賴。
+- **AC7 (程序化 Web Audio 音效 SFX)**：採用 Web Audio 即時合成全套音效（腳步聲、推箱聲、入洞鈴聲、Undo 音、死鎖警告、超時提示、1UP 號角、通關音樂），零外部音檔依賴。
 

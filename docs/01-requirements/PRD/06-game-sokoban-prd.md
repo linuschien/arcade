@@ -282,8 +282,15 @@
 
 * **介面實作**：`IArcadeGame`（`init()`, `start()`, `pause()`, `resume()`, `destroyGame()`）。
 * **雙向事件廣播 (`ArcadeBridge`)**：
-  * 接收：`START_GAME`, `MUTE_TOGGLED`。
+  * 接收：`START_GAME`, `PAUSE_REQUESTED`, `RESUME_REQUESTED`, `MUTE_TOGGLED`。
   * 廣播：`SCORE_UPDATED`, `LIVES_UPDATED`, `STAGE_CLEARED`, `GAME_OVER`。
+* **平台暫停機制與生命週期 (Pause & Resume Lifecycle)**：
+  * 雖然實體鍵盤不對應 `Escape` 鍵，但系統**完整實作平台層暫停生命週期**。
+  * 當外層 React Host Shell 點擊暫停按鈕、或分頁失焦（Window `onblur`）發送 `PAUSE_REQUESTED` 時：
+    * 系統調用 `pause()`，立即凍結軟性計時器累加（$t_{\text{elapsed}}$ 停止推進）。
+    * 暫停當前世界 Web Audio 輕音樂（BGM）與音效播放。
+    * 鎖定鍵盤輸入，畫面中央彈出半透明 `PAUSED` 暫停遮罩視窗。
+  * 當收到 `RESUME_REQUESTED` 時，調用 `resume()`，淡出遮罩、恢復計時器與背景音樂，解鎖輸入。
 * **Game Over 處理**：
   當 $\text{Lives} = 0$ 時，計算隱寫分數 $\text{Score}_{\text{final}}$，廣播 `GAME_OVER` 事件，隨後銷毀 Canvas 並退回 Arcade Stadium 大廳。
 * **程序化 Web Audio 輕音樂 (Four-World Ambient Chip BGM)**：
