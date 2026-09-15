@@ -137,6 +137,16 @@ export class PreloadScene extends Phaser.Scene {
     this.generateFloorTexture('sokoban:floor_cyber', S, 'cyber_vault', floorThemes.cyber_vault);
     this.generateFloorTexture('sokoban:floor_steel', S, 'steel_works', floorThemes.steel_works);
     this.generateFloorTexture('sokoban:floor_mega', S, 'mega_terminal', floorThemes.mega_terminal);
+
+    // 7. Ambient World Backdrops (Tiled over 880x660 arena to eliminate pitch-black voids)
+    const ambientThemes = ['cargo_depot', 'cyber_vault', 'steel_works', 'mega_terminal'];
+    for (const key of ambientThemes) {
+      this.generateAmbientTexture(`sokoban:ambient_${key}`, S, key);
+    }
+    this.generateAmbientTexture('sokoban:ambient_cargo', S, 'cargo_depot');
+    this.generateAmbientTexture('sokoban:ambient_cyber', S, 'cyber_vault');
+    this.generateAmbientTexture('sokoban:ambient_steel', S, 'steel_works');
+    this.generateAmbientTexture('sokoban:ambient_mega', S, 'mega_terminal');
   }
 
   private generateWorkerTexture(key: string, S: number, dir: 'down' | 'up' | 'left' | 'right'): void {
@@ -352,6 +362,115 @@ export class PreloadScene extends Phaser.Scene {
       gfx.fillRect(S - 5, S - 5, 3, 3);
       gfx.fillStyle(colors.grid, 0.6);
       gfx.fillCircle(S / 2, S / 2, 2);
+    }
+
+    gfx.generateTexture(key, S, S);
+    gfx.destroy();
+  }
+
+  private generateAmbientTexture(key: string, S: number, theme: string): void {
+    if (this.textures.exists(key)) return;
+    const gfx = this.make.graphics({ x: 0, y: 0 });
+
+    if (theme.includes('cargo')) {
+      // Dark seamless wooden warehouse floorboards
+      gfx.fillStyle(0x180f08, 1);
+      gfx.fillRect(0, 0, S, S);
+
+      // Plank blocks
+      const pw = S / 2;
+      const ph = S / 2;
+      gfx.fillStyle(0x23170e, 0.85);
+      gfx.fillRect(1, 1, pw - 2, ph - 2);
+      gfx.fillRect(pw + 1, ph + 1, pw - 2, ph - 2);
+      gfx.fillStyle(0x1d120a, 0.85);
+      gfx.fillRect(pw + 1, 1, pw - 2, ph - 2);
+      gfx.fillRect(1, ph + 1, pw - 2, ph - 2);
+
+      // Seams
+      gfx.lineStyle(1, 0x100905, 0.9);
+      gfx.lineBetween(0, ph, S, ph);
+      gfx.lineBetween(pw, 0, pw, S);
+
+      // Nail dots
+      gfx.fillStyle(0x452a15, 0.6);
+      gfx.fillRect(4, 4, 2, 2);
+      gfx.fillRect(pw - 6, 4, 2, 2);
+      gfx.fillRect(pw + 4, ph + 4, 2, 2);
+      gfx.fillRect(S - 6, ph + 4, 2, 2);
+    } else if (theme.includes('cyber')) {
+      // Cyber matrix motherboard / data bus
+      gfx.fillStyle(0x060b14, 1);
+      gfx.fillRect(0, 0, S, S);
+
+      // Circuit grid lines
+      gfx.lineStyle(1, 0x0c192d, 0.8);
+      gfx.strokeRect(0, 0, S, S);
+      gfx.lineBetween(S / 2, 0, S / 2, S);
+      gfx.lineBetween(0, S / 2, S, S / 2);
+
+      // Diagonal circuit traces
+      gfx.lineStyle(1, 0x0369a1, 0.45);
+      gfx.lineBetween(8, 0, 0, 8);
+      gfx.lineBetween(S, S - 8, S - 8, S);
+      gfx.lineBetween(S / 2, 16, S - 16, S / 2);
+
+      // Glowing micro node junctions
+      gfx.fillStyle(0x38bdf8, 0.6);
+      gfx.fillCircle(S / 2, S / 2, 2);
+      gfx.fillCircle(0, 0, 1.5);
+      gfx.fillCircle(S, 0, 1.5);
+      gfx.fillCircle(0, S, 1.5);
+      gfx.fillCircle(S, S, 1.5);
+    } else if (theme.includes('steel')) {
+      // Industrial cold-rolled steel diamond treadplate
+      gfx.fillStyle(0x101622, 1);
+      gfx.fillRect(0, 0, S, S);
+
+      // Steel panel border
+      gfx.lineStyle(1, 0x0a0f18, 0.8);
+      gfx.strokeRect(0, 0, S, S);
+
+      // Diamond treadplate pairs
+      gfx.fillStyle(0x273448, 0.8);
+      gfx.fillRect(10, 10, 8, 2);
+      gfx.fillRect(13, 7, 2, 8);
+      gfx.fillRect(S - 18, S - 18, 8, 2);
+      gfx.fillRect(S - 15, S - 21, 2, 8);
+      gfx.fillRect(S / 2 - 4, S / 2 - 1, 8, 2);
+      gfx.fillRect(S / 2 - 1, S / 2 - 4, 2, 8);
+
+      // Panel corner rivet dots
+      gfx.fillStyle(0x3b4d66, 0.5);
+      gfx.fillCircle(3, 3, 1.5);
+      gfx.fillCircle(S - 3, 3, 1.5);
+      gfx.fillCircle(3, S - 3, 1.5);
+      gfx.fillCircle(S - 3, S - 3, 1.5);
+    } else {
+      // Mega Terminal: Obsidian terrazzo with fine gold inlay
+      gfx.fillStyle(0x09090d, 1);
+      gfx.fillRect(0, 0, S, S);
+
+      // Inset dark terrazzo tiles
+      gfx.fillStyle(0x13131a, 0.85);
+      gfx.fillRect(2, 2, S / 2 - 3, S / 2 - 3);
+      gfx.fillRect(S / 2 + 1, 2, S / 2 - 3, S / 2 - 3);
+      gfx.fillRect(2, S / 2 + 1, S / 2 - 3, S / 2 - 3);
+      gfx.fillRect(S / 2 + 1, S / 2 + 1, S / 2 - 3, S / 2 - 3);
+
+      // Fine antique gold inlay grid
+      gfx.lineStyle(1, 0x52320c, 0.6);
+      gfx.strokeRect(0, 0, S, S);
+      gfx.lineBetween(S / 2, 0, S / 2, S);
+      gfx.lineBetween(0, S / 2, S, S / 2);
+
+      // Center gold emblem pip
+      gfx.fillStyle(0x784c15, 0.7);
+      gfx.fillCircle(S / 2, S / 2, 2);
+      gfx.fillRect(0, 0, 2, 2);
+      gfx.fillRect(S - 2, 0, 2, 2);
+      gfx.fillRect(0, S - 2, 2, 2);
+      gfx.fillRect(S - 2, S - 2, 2, 2);
     }
 
     gfx.generateTexture(key, S, S);

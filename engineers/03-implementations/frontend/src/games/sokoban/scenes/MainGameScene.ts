@@ -25,6 +25,8 @@ export class MainGameScene extends BaseArcadeScene {
   private boardStartY: number = 30;
 
   // Render Containers & Graphics
+  private ambientBackdrop!: Phaser.GameObjects.TileSprite;
+  private vignetteGfx!: Phaser.GameObjects.Graphics;
   private centerArenaGfx!: Phaser.GameObjects.Graphics;
   private boardLayer!: Phaser.GameObjects.Container;
   private tileSprites: Map<string, Phaser.GameObjects.Sprite> = new Map();
@@ -150,8 +152,58 @@ export class MainGameScene extends BaseArcadeScene {
   }
 
   private createCenterDiorama(): void {
+    // 1. Layer 0 Ambient Themed Backdrop (880x660 at x: 200, y: 30)
+    if (typeof (this.add as any).tileSprite === 'function') {
+      this.ambientBackdrop = (this.add as any).tileSprite(
+        200,
+        30,
+        880,
+        660,
+        'sokoban:ambient_cargo_depot'
+      );
+      this.ambientBackdrop.setOrigin(0, 0);
+      this.ambientBackdrop.setDepth(0);
+    }
+
+    // 2. Layer 1 Drop Shadow & Arena Plinth
     this.centerArenaGfx = this.add.graphics();
+    if (typeof (this.centerArenaGfx as any).setDepth === 'function') {
+      this.centerArenaGfx.setDepth(1);
+    }
+
+    // 3. Layer 2 Board Container
     this.boardLayer = this.add.container(0, 0);
+    if (typeof (this.boardLayer as any).setDepth === 'function') {
+      this.boardLayer.setDepth(2);
+    }
+
+    // 4. Layer 3 Vignette Frame (Optical edge blending)
+    this.vignetteGfx = this.add.graphics();
+    if (typeof (this.vignetteGfx as any).setDepth === 'function') {
+      this.vignetteGfx.setDepth(3);
+    }
+    this.drawVignetteFrame();
+  }
+
+  private drawVignetteFrame(): void {
+    this.vignetteGfx.clear();
+    // 1px inner border around the 880x660 central viewport
+    this.vignetteGfx.lineStyle(1, 0x334155, 0.4);
+    this.vignetteGfx.strokeRect(200, 30, 880, 660);
+
+    // Edge gradient shadow bands to blend arena smoothly with Left/Right HUDs
+    for (let i = 0; i < 16; i++) {
+      const alpha = (1 - i / 16) * 0.35;
+      this.vignetteGfx.fillStyle(0x020617, alpha);
+      this.vignetteGfx.fillRect(200 + i, 30, 1, 660);
+      this.vignetteGfx.fillRect(1080 - 1 - i, 30, 1, 660);
+    }
+    for (let i = 0; i < 16; i++) {
+      const alpha = (1 - i / 16) * 0.35;
+      this.vignetteGfx.fillStyle(0x020617, alpha);
+      this.vignetteGfx.fillRect(200, 30 + i, 880, 1);
+      this.vignetteGfx.fillRect(200, 690 - 1 - i, 880, 1);
+    }
   }
 
   private createRightHUD(): void {
@@ -329,13 +381,18 @@ export class MainGameScene extends BaseArcadeScene {
     const stageCfg = this.state.currentStageConfig;
     const themeKey = stageCfg.themeKey;
 
-    // Calculate adaptive tile scaling for 880x660 arena
-    const availableW = 840;
-    const availableH = 620;
+    // Update Layer 0 Ambient Backdrop to match active world
+    if (this.ambientBackdrop && typeof this.ambientBackdrop.setTexture === 'function') {
+      this.ambientBackdrop.setTexture(`sokoban:ambient_${themeKey}`);
+    }
+
+    // Calculate adaptive tile scaling for 880x660 arena (safe margin 820x600)
+    const availableW = 820;
+    const availableH = 600;
     this.tileSize = Math.min(
       Math.floor(availableW / maze.width),
       Math.floor(availableH / maze.height),
-      64,
+      96,
     );
     this.tileSize = Math.max(20, this.tileSize);
 
@@ -344,12 +401,34 @@ export class MainGameScene extends BaseArcadeScene {
     this.boardStartX = 200 + (880 - boardW) / 2;
     this.boardStartY = 30 + (660 - boardH) / 2;
 
-    // Draw diorama arena drop shadow & border
+    // Draw Layer 1 2.5D drop shadow & island plinth onto the ambient floor
     this.centerArenaGfx.clear();
-    this.centerArenaGfx.fillStyle(0x000000, 0.45);
-    this.centerArenaGfx.fillRoundedRect(this.boardStartX - 12, this.boardStartY - 12, boardW + 24, boardH + 24, 8);
-    this.centerArenaGfx.lineStyle(2, 0x334155, 0.6);
-    this.centerArenaGfx.strokeRoundedRect(this.boardStartX - 8, this.boardStartY - 8, boardW + 16, boardH + 16, 6);
+    // Deep 2.5D drop shadow under the maze island (+8px, +12px)
+    this.centerArenaGfx.fillStyle(0x000000, 0.65);
+    this.centerArenaGfx.fillRoundedRect(
+      this.boardStartX + 8,
+      this.boardStartY + 12,
+      boardW,
+      boardH,
+      10
+    );
+    // Diorama floating island plinth / base
+    this.centerArenaGfx.fillStyle(0x0b1120, 0.9);
+    this.centerArenaGfx.fillRoundedRect(
+      this.boardStartX - 4,
+      this.boardStartY - 4,
+      boardW + 8,
+      boardH + 8,
+      8
+    );
+    this.centerArenaGfx.lineStyle(2, 0x334155, 0.7);
+    this.centerArenaGfx.strokeRoundedRect(
+      this.boardStartX - 4,
+      this.boardStartY - 4,
+      boardW + 8,
+      boardH + 8,
+      8
+    );
 
     const floorTexture = `sokoban:floor_${themeKey}`;
     const wallTexture = `sokoban:wall_${themeKey}`;
@@ -783,5 +862,11 @@ export class MainGameScene extends BaseArcadeScene {
     SokobanAudioService.stopBGM();
     this.tweens.killAll();
     this.time.removeAllEvents();
+    if (this.ambientBackdrop && typeof this.ambientBackdrop.destroy === 'function') {
+      this.ambientBackdrop.destroy();
+    }
+    if (this.vignetteGfx && typeof this.vignetteGfx.destroy === 'function') {
+      this.vignetteGfx.destroy();
+    }
   }
 }

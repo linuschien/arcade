@@ -58,6 +58,8 @@ describe('Sokoban PreloadScene Unit Tests', () => {
     expect(mockGfx.generateTexture).toHaveBeenCalledWith('sokoban:goal', 64, 64);
     expect(mockGfx.generateTexture).toHaveBeenCalledWith('sokoban:wall_cargo', 64, 64);
     expect(mockGfx.generateTexture).toHaveBeenCalledWith('sokoban:floor_cargo', 64, 64);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('sokoban:ambient_cargo', 64, 64);
+    expect(mockGfx.generateTexture).toHaveBeenCalledWith('sokoban:ambient_cargo_depot', 64, 64);
   });
 
   it('should transition to sokoban:MainGameScene upon create', () => {

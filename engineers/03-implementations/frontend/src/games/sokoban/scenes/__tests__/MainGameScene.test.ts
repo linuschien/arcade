@@ -38,6 +38,7 @@ describe('Sokoban MainGameScene Unit Tests', () => {
       strokeRect: vi.fn().mockReturnThis(),
       strokeRoundedRect: vi.fn().mockReturnThis(),
       strokeCircle: vi.fn().mockReturnThis(),
+      setDepth: vi.fn().mockReturnThis(),
       destroy: vi.fn(),
     };
 
@@ -61,6 +62,7 @@ describe('Sokoban MainGameScene Unit Tests', () => {
       add: vi.fn().mockReturnThis(),
       setVisible: vi.fn().mockReturnThis(),
       removeAll: vi.fn().mockReturnThis(),
+      setDepth: vi.fn().mockReturnThis(),
       destroy: vi.fn(),
     };
 
@@ -70,11 +72,19 @@ describe('Sokoban MainGameScene Unit Tests', () => {
       emit: vi.fn(),
     };
 
+    const mockTileSprite = {
+      setOrigin: vi.fn().mockReturnThis(),
+      setDepth: vi.fn().mockReturnThis(),
+      setTexture: vi.fn().mockReturnThis(),
+      destroy: vi.fn(),
+    };
+
     (scene as any).add = {
       graphics: vi.fn().mockReturnValue(mockGraphics),
       sprite: vi.fn().mockReturnValue(mockSprite),
       text: vi.fn().mockReturnValue(mockText),
       container: vi.fn().mockReturnValue(mockContainer),
+      tileSprite: vi.fn().mockReturnValue(mockTileSprite),
     };
 
     (scene as any).events = mockEvents;
