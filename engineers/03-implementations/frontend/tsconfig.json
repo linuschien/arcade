@@ -20,10 +20,10 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
 
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"],
+      "@external-specs/*": ["../../../docs/01-requirements/external-specs/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../../../docs/01-requirements/external-specs/*.json"]
 }

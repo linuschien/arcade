@@ -23,6 +23,10 @@ vi.mock('../mahjong', () => ({
   createMahjongGame: vi.fn(() => mockGameInstance),
 }));
 
+vi.mock('../sokoban', () => ({
+  createSokobanGame: vi.fn(() => mockGameInstance),
+}));
+
 describe('Game Registry & Factory (Code-Splitting)', () => {
   let container: HTMLDivElement;
 
@@ -65,6 +69,13 @@ describe('Game Registry & Factory (Code-Splitting)', () => {
 
   it('asynchronously creates Mahjong game instance', async () => {
     const instance = await createGameInstance('mahjong', container);
+    expect(instance).toBe(mockGameInstance);
+    instance?.destroyGame();
+    expect(mockGameInstance.destroyGame).toHaveBeenCalled();
+  });
+
+  it('asynchronously creates Sokoban game instance', async () => {
+    const instance = await createGameInstance('sokoban', container);
     expect(instance).toBe(mockGameInstance);
     instance?.destroyGame();
     expect(mockGameInstance.destroyGame).toHaveBeenCalled();

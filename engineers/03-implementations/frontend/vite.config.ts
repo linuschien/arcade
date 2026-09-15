@@ -15,6 +15,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@external-specs': path.resolve(__dirname, '../../../docs/01-requirements/external-specs'),
     },
   },
   build: {
