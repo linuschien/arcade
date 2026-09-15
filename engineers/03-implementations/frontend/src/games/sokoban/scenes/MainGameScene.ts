@@ -71,6 +71,7 @@ export class MainGameScene extends BaseArcadeScene {
   }
 
   public create(): void {
+    this.initHighDpiCamera(1280);
     this.state = new SokobanGameState();
 
     // Setup base visual layers
@@ -363,7 +364,7 @@ export class MainGameScene extends BaseArcadeScene {
           const wall = this.add.sprite(x, y, wallTexture);
           wall.setDisplaySize(this.tileSize, this.tileSize);
           this.boardLayer.add(wall);
-        } else {
+        } else if (maze.isFloor(c, r)) {
           const floor = this.add.sprite(x, y, floorTexture);
           floor.setDisplaySize(this.tileSize, this.tileSize);
           this.boardLayer.add(floor);

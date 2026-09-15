@@ -104,17 +104,39 @@ export class PreloadScene extends Phaser.Scene {
       gfx.destroy();
     }
 
-    // 5. Themed Walls
-    this.generateWallTexture('sokoban:wall_cargo', S, 0x78350f, 0x451a03);
-    this.generateWallTexture('sokoban:wall_cyber', S, 0x0ea5e9, 0x032541);
-    this.generateWallTexture('sokoban:wall_steel', S, 0x64748b, 0x1e293b);
-    this.generateWallTexture('sokoban:wall_mega', S, 0x334155, 0x0f172a);
+    // 5. Themed Walls (Full theme keys & backward-compatible short aliases)
+    const wallThemes: Record<string, { face: number; highlight: number; shadow: number; accent: number }> = {
+      cargo_depot: { face: 0x9a3412, highlight: 0xfbbf24, shadow: 0x431407, accent: 0xd97706 },
+      cyber_vault: { face: 0x0369a1, highlight: 0x38bdf8, shadow: 0x082f49, accent: 0x67e8f9 },
+      steel_works: { face: 0x475569, highlight: 0xe2e8f0, shadow: 0x0f172a, accent: 0x94a3b8 },
+      mega_terminal: { face: 0x312e81, highlight: 0xfbbf24, shadow: 0x090514, accent: 0xa855f7 },
+    };
 
-    // 6. Themed Floors
-    this.generateFloorTexture('sokoban:floor_cargo', S, 0x24140b, 0x1a0e08);
-    this.generateFloorTexture('sokoban:floor_cyber', S, 0x0b1329, 0x060a17);
-    this.generateFloorTexture('sokoban:floor_steel', S, 0x161d2b, 0x0d121c);
-    this.generateFloorTexture('sokoban:floor_mega', S, 0x111827, 0x080d14);
+    for (const [key, t] of Object.entries(wallThemes)) {
+      this.generateWallTexture(`sokoban:wall_${key}`, S, key, t);
+    }
+    // Backward-compatible short aliases
+    this.generateWallTexture('sokoban:wall_cargo', S, 'cargo_depot', wallThemes.cargo_depot);
+    this.generateWallTexture('sokoban:wall_cyber', S, 'cyber_vault', wallThemes.cyber_vault);
+    this.generateWallTexture('sokoban:wall_steel', S, 'steel_works', wallThemes.steel_works);
+    this.generateWallTexture('sokoban:wall_mega', S, 'mega_terminal', wallThemes.mega_terminal);
+
+    // 6. Themed Floors (Full theme keys & backward-compatible short aliases)
+    const floorThemes: Record<string, { base: number; inner: number; grid: number; accent: number }> = {
+      cargo_depot: { base: 0x261911, inner: 0x322217, grid: 0x160d08, accent: 0x78350f },
+      cyber_vault: { base: 0x0a101f, inner: 0x0f172a, grid: 0x1e293b, accent: 0x0284c7 },
+      steel_works: { base: 0x161d2b, inner: 0x1e293b, grid: 0x0f172a, accent: 0x273549 },
+      mega_terminal: { base: 0x0e0e12, inner: 0x18181f, grid: 0x522d0c, accent: 0x713f12 },
+    };
+
+    for (const [key, t] of Object.entries(floorThemes)) {
+      this.generateFloorTexture(`sokoban:floor_${key}`, S, key, t);
+    }
+    // Backward-compatible short aliases
+    this.generateFloorTexture('sokoban:floor_cargo', S, 'cargo_depot', floorThemes.cargo_depot);
+    this.generateFloorTexture('sokoban:floor_cyber', S, 'cyber_vault', floorThemes.cyber_vault);
+    this.generateFloorTexture('sokoban:floor_steel', S, 'steel_works', floorThemes.steel_works);
+    this.generateFloorTexture('sokoban:floor_mega', S, 'mega_terminal', floorThemes.mega_terminal);
   }
 
   private generateWorkerTexture(key: string, S: number, dir: 'down' | 'up' | 'left' | 'right'): void {
@@ -164,46 +186,173 @@ export class PreloadScene extends Phaser.Scene {
     gfx.destroy();
   }
 
-  private generateWallTexture(key: string, S: number, accentColor: number, baseColor: number): void {
+  private generateWallTexture(
+    key: string,
+    S: number,
+    theme: string,
+    colors: { face: number; highlight: number; shadow: number; accent: number }
+  ): void {
     if (this.textures.exists(key)) return;
     const gfx = this.make.graphics({ x: 0, y: 0 });
 
-    // Base block
-    gfx.fillStyle(baseColor, 1);
+    // 1. Dark under-shadow base
+    gfx.fillStyle(colors.shadow, 1);
     gfx.fillRect(0, 0, S, S);
 
-    // 3D Bevel Top & Left
-    gfx.lineStyle(2, accentColor, 0.9);
-    gfx.strokeRect(1, 1, S - 2, S - 2);
+    // 2. Main 3D raised block face
+    gfx.fillStyle(colors.face, 1);
+    gfx.fillRect(2, 2, S - 4, S - 4);
 
-    // Dual block inner split
-    gfx.lineStyle(1, 0x000000, 0.6);
-    gfx.lineBetween(0, S / 2, S, S / 2);
-    gfx.lineBetween(S / 2, 0, S / 2, S / 2);
-    gfx.lineBetween(S / 4, S / 2, S / 4, S);
-    gfx.lineBetween((3 * S) / 4, S / 2, (3 * S) / 4, S);
+    // 3. Top & Left 3D Chamfer Bevel Highlight (2.5D lighting)
+    gfx.fillStyle(colors.highlight, 0.9);
+    gfx.fillRect(0, 0, S, 3);
+    gfx.fillRect(0, 0, 3, S);
+
+    // 4. Bottom & Right 3D Shadow Bevel
+    gfx.fillStyle(colors.shadow, 0.95);
+    gfx.fillRect(0, S - 3, S, 3);
+    gfx.fillRect(S - 3, 0, 3, S);
+
+    // 5. Distinct theme-specific architectural patterns
+    if (theme.includes('cargo')) {
+      // Running-bond brick masonry pattern
+      gfx.lineStyle(2, colors.shadow, 0.9);
+      gfx.lineBetween(2, S / 2, S - 2, S / 2);
+      gfx.lineBetween(S / 2, 2, S / 2, S / 2);
+      gfx.lineBetween(S / 4, S / 2, S / 4, S - 2);
+      gfx.lineBetween((3 * S) / 4, S / 2, (3 * S) / 4, S - 2);
+
+      // Warm mortar highlights
+      gfx.lineStyle(1, colors.accent, 0.5);
+      gfx.lineBetween(3, 4, S - 3, 4);
+      gfx.lineBetween(3, S / 2 + 2, S - 3, S / 2 + 2);
+    } else if (theme.includes('cyber')) {
+      // Inset glowing cyber conduit & circuit node
+      gfx.fillStyle(colors.shadow, 0.8);
+      gfx.fillRect(8, 8, S - 16, S - 16);
+      gfx.lineStyle(2, colors.highlight, 0.9);
+      gfx.strokeRect(8, 8, S - 16, S - 16);
+
+      // Center glowing core
+      gfx.fillStyle(colors.accent, 1);
+      gfx.fillCircle(S / 2, S / 2, 4);
+      gfx.lineStyle(1, colors.highlight, 0.8);
+      gfx.lineBetween(8, S / 2, S - 8, S / 2);
+      gfx.lineBetween(S / 2, 8, S / 2, S - 8);
+    } else if (theme.includes('steel')) {
+      // Reinforced steel plate with heavy rivets & cross girders
+      gfx.lineStyle(2, colors.shadow, 0.8);
+      gfx.strokeRect(6, 6, S - 12, S - 12);
+      gfx.lineBetween(8, 8, S - 8, S - 8);
+      gfx.lineBetween(S - 8, 8, 8, S - 8);
+
+      // 4 heavy steel corner rivets with specular glints
+      const rivetCoords = [
+        [7, 7],
+        [S - 7, 7],
+        [7, S - 7],
+        [S - 7, S - 7],
+      ];
+      for (const [rx, ry] of rivetCoords) {
+        gfx.fillStyle(0x1e293b, 1);
+        gfx.fillCircle(rx, ry, 3);
+        gfx.fillStyle(0xf8fafc, 0.9);
+        gfx.fillCircle(rx - 1, ry - 1, 1);
+      }
+    } else {
+      // Mega Terminal: Regal obsidian-gold vault barrier
+      gfx.fillStyle(colors.shadow, 0.85);
+      gfx.fillRect(6, 6, S - 12, S - 12);
+      gfx.lineStyle(2, colors.highlight, 1);
+      gfx.strokeRect(6, 6, S - 12, S - 12);
+
+      // Center gold vault lock crest
+      gfx.fillStyle(colors.highlight, 0.9);
+      gfx.beginPath();
+      gfx.moveTo(S / 2, 16);
+      gfx.lineTo(S - 16, S / 2);
+      gfx.lineTo(S / 2, S - 16);
+      gfx.lineTo(16, S / 2);
+      gfx.closePath();
+      gfx.fillPath();
+
+      gfx.fillStyle(colors.accent, 1);
+      gfx.fillCircle(S / 2, S / 2, 3);
+    }
 
     gfx.generateTexture(key, S, S);
     gfx.destroy();
   }
 
-  private generateFloorTexture(key: string, S: number, baseColor: number, gridColor: number): void {
+  private generateFloorTexture(
+    key: string,
+    S: number,
+    theme: string,
+    colors: { base: number; inner: number; grid: number; accent: number }
+  ): void {
     if (this.textures.exists(key)) return;
     const gfx = this.make.graphics({ x: 0, y: 0 });
 
-    gfx.fillStyle(baseColor, 1);
+    // 1. Base grid border
+    gfx.fillStyle(colors.base, 1);
     gfx.fillRect(0, 0, S, S);
 
-    // Grid contour
-    gfx.lineStyle(1, gridColor, 0.7);
+    // 2. Inner flat walkable face
+    gfx.fillStyle(colors.inner, 1);
+    gfx.fillRect(1, 1, S - 2, S - 2);
+
+    // 3. Grid contour
+    gfx.lineStyle(1, colors.grid, 0.8);
     gfx.strokeRect(0, 0, S, S);
 
-    // Corner rivets
-    gfx.fillStyle(gridColor, 0.4);
-    gfx.fillRect(2, 2, 2, 2);
-    gfx.fillRect(S - 4, 2, 2, 2);
-    gfx.fillRect(2, S - 4, 2, 2);
-    gfx.fillRect(S - 4, S - 4, 2, 2);
+    // 4. Distinct walkable floor details
+    if (theme.includes('cargo')) {
+      // Warehouse wooden floorboards
+      const plankW = Math.floor(S / 3);
+      gfx.lineStyle(1, colors.grid, 0.9);
+      gfx.lineBetween(plankW, 2, plankW, S - 2);
+      gfx.lineBetween(plankW * 2, 2, plankW * 2, S - 2);
+
+      // Plank nail dots
+      gfx.fillStyle(colors.accent, 0.6);
+      gfx.fillRect(plankW / 2, 3, 2, 2);
+      gfx.fillRect(plankW / 2, S - 5, 2, 2);
+      gfx.fillRect(plankW + plankW / 2, 3, 2, 2);
+      gfx.fillRect(plankW + plankW / 2, S - 5, 2, 2);
+      gfx.fillRect(plankW * 2 + plankW / 2, 3, 2, 2);
+      gfx.fillRect(plankW * 2 + plankW / 2, S - 5, 2, 2);
+    } else if (theme.includes('cyber')) {
+      // Cyber runway grid with subtle center crosshair
+      gfx.lineStyle(1, colors.accent, 0.35);
+      gfx.lineBetween(S / 2 - 6, S / 2, S / 2 + 6, S / 2);
+      gfx.lineBetween(S / 2, S / 2 - 6, S / 2, S / 2 + 6);
+      gfx.fillStyle(colors.accent, 0.5);
+      gfx.fillCircle(S / 2, S / 2, 2);
+    } else if (theme.includes('steel')) {
+      // Industrial diamond treadplate notches
+      gfx.fillStyle(colors.accent, 0.8);
+      gfx.fillRect(10, 10, 6, 2);
+      gfx.fillRect(S - 16, 10, 6, 2);
+      gfx.fillRect(10, S - 12, 6, 2);
+      gfx.fillRect(S - 16, S - 12, 6, 2);
+      gfx.fillRect(S / 2 - 3, S / 2 - 1, 6, 2);
+
+      // Corner flush screws
+      gfx.fillStyle(0x334155, 0.5);
+      gfx.fillCircle(3, 3, 1.5);
+      gfx.fillCircle(S - 3, 3, 1.5);
+      gfx.fillCircle(3, S - 3, 1.5);
+      gfx.fillCircle(S - 3, S - 3, 1.5);
+    } else {
+      // Mega terminal: Polished obsidian marble with gold corner accents
+      gfx.fillStyle(colors.accent, 0.5);
+      gfx.fillRect(2, 2, 3, 3);
+      gfx.fillRect(S - 5, 2, 3, 3);
+      gfx.fillRect(2, S - 5, 3, 3);
+      gfx.fillRect(S - 5, S - 5, 3, 3);
+      gfx.fillStyle(colors.grid, 0.6);
+      gfx.fillCircle(S / 2, S / 2, 2);
+    }
 
     gfx.generateTexture(key, S, S);
     gfx.destroy();

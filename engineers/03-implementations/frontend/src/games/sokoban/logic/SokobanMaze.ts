@@ -62,6 +62,7 @@ export class SokobanMaze {
   private goals: Set<string> = new Set();
   private boxes: Set<string> = new Set();
   private workerPos: GridPos = { col: 0, row: 0 };
+  private outsideVoid: Set<string> = new Set();
 
   constructor(mapLines: string[]) {
     this.height = mapLines.length;
@@ -100,10 +101,53 @@ export class SokobanMaze {
         }
       }
     }
+
+    this.computeOutsideVoid();
+  }
+
+  private computeOutsideVoid(): void {
+    const visited = new Set<string>(['-1,-1']);
+    const queue: GridPos[] = [{ col: -1, row: -1 }];
+
+    while (queue.length > 0) {
+      const curr = queue.shift()!;
+      for (const dir of [
+        { col: 0, row: -1 },
+        { col: 0, row: 1 },
+        { col: -1, row: 0 },
+        { col: 1, row: 0 },
+      ]) {
+        const nc = curr.col + dir.col;
+        const nr = curr.row + dir.row;
+        if (nc >= -1 && nc <= this.width && nr >= -1 && nr <= this.height) {
+          const key = posKey(nc, nr);
+          if (!visited.has(key)) {
+            visited.add(key);
+            if (!this.isWall(nc, nr)) {
+              queue.push({ col: nc, row: nr });
+              if (nc >= 0 && nc < this.width && nr >= 0 && nr < this.height) {
+                this.outsideVoid.add(key);
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   public isInBounds(col: number, row: number): boolean {
     return col >= 0 && col < this.width && row >= 0 && row < this.height;
+  }
+
+  public isOutside(col: number, row: number): boolean {
+    if (!this.isInBounds(col, row)) return true;
+    return this.outsideVoid.has(posKey(col, row));
+  }
+
+  public isFloor(col: number, row: number): boolean {
+    if (!this.isInBounds(col, row)) return false;
+    if (this.isWall(col, row)) return false;
+    return !this.outsideVoid.has(posKey(col, row));
   }
 
   public isWall(col: number, row: number): boolean {
@@ -197,6 +241,7 @@ export class SokobanMaze {
     cloned.goals = new Set(this.goals);
     cloned.boxes = new Set(this.boxes);
     cloned.workerPos = { ...this.workerPos };
+    cloned.outsideVoid = new Set(this.outsideVoid);
     return cloned;
   }
 }

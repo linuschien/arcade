@@ -68,5 +68,43 @@ describe('SokobanMaze Unit Tests', () => {
     expect(maze.hasBox(2, 1)).toBe(true);
     expect(cloned.getWorkerPos()).toEqual({ col: 4, row: 4 });
     expect(cloned.hasBox(3, 1)).toBe(true);
+    expect(cloned.isFloor(1, 1)).toBe(true);
+  });
+
+  it('should distinguish interior playable floor from exterior void', () => {
+    const paddedMap = [
+      '  ####',
+      '  #  #',
+      '###@ #',
+      '#  $.#',
+      '######',
+    ];
+    const maze = new SokobanMaze(paddedMap);
+
+    // Exterior void (top-left empty spaces outside walls)
+    expect(maze.isOutside(0, 0)).toBe(true);
+    expect(maze.isOutside(1, 0)).toBe(true);
+    expect(maze.isOutside(0, 1)).toBe(true);
+    expect(maze.isOutside(1, 1)).toBe(true);
+    expect(maze.isFloor(0, 0)).toBe(false);
+    expect(maze.isFloor(1, 0)).toBe(false);
+
+    // Walls
+    expect(maze.isWall(2, 0)).toBe(true);
+    expect(maze.isFloor(2, 0)).toBe(false);
+    expect(maze.isOutside(2, 0)).toBe(false);
+
+    // Interior floor / walkway
+    expect(maze.isFloor(3, 1)).toBe(true);
+    expect(maze.isOutside(3, 1)).toBe(false);
+    expect(maze.isFloor(3, 2)).toBe(true); // worker cell
+    expect(maze.isFloor(3, 3)).toBe(true); // box cell
+    expect(maze.isFloor(4, 3)).toBe(true); // goal cell
+
+    // Out of bounds checks
+    expect(maze.isOutside(-1, -1)).toBe(true);
+    expect(maze.isFloor(-1, -1)).toBe(false);
+    expect(maze.isOutside(10, 10)).toBe(true);
+    expect(maze.isFloor(10, 10)).toBe(false);
   });
 });
