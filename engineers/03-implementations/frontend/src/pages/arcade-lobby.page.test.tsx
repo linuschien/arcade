@@ -41,6 +41,10 @@ const store = createStateStore({
         totalPlayCount: 890,
       },
     ],
+    gameDropdownItems: [
+      { label: 'Tetris Classic', value: 'tetris' },
+      { label: 'Pac-Man Classic', value: 'pacman' },
+    ],
     top10Leaderboard: [
       ['1', 'alice@example.com', '98500', '2026-08-06'],
     ],
@@ -224,6 +228,21 @@ describe('ArcadeLobbyPage Unit Tests', () => {
 
     expect(executeBehavior).toHaveBeenCalledWith(
       expect.objectContaining({ ref: 'NextGame' })
+    );
+  });
+
+  it('Pattern 4: triggers executeBehavior on SelectGame when game is chosen from DropdownMenu', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const selectTrigger = await screen.findByRole('button', { name: /Select Arcade Game/i });
+    expect(selectTrigger).toBeInTheDocument();
+
+    await user.click(selectTrigger);
+    const menuItem = await screen.findByRole('menuitem', { name: /Pac-Man Classic/i });
+    await user.click(menuItem);
+
+    expect(executeBehavior).toHaveBeenCalledWith(
+      expect.objectContaining({ ref: 'SelectGame' })
     );
   });
 
@@ -549,5 +568,47 @@ describe('ArcadeLobbyPage Unit Tests', () => {
     await user.click(startBtn);
 
     expect(zeroStore.get('/modals/out-of-credits-dialog')).toBe(true);
+  });
+
+  it('updates active game card and title when SelectGame is dispatched with default handlers', async () => {
+    const customStore = createStateStore({
+      user: { email: 'linus@example.com', id: '550e8400' },
+      wallet: { dailyFreeCredit: 10, adminBonusCredit: 5, totalCredits: 15, id: 'a3b1' },
+      settings: { crtEnabled: false, masterMuted: false },
+      data: {
+        listGameCards: [
+          { gameId: 'tetris', title: 'Tetris Classic', coverArtUrl: '', description: 'Tetris desc', totalPlayCount: 100 },
+          { gameId: 'pacman', title: 'Pac-Man Classic', coverArtUrl: '', description: 'Pacman desc', totalPlayCount: 200 },
+        ],
+        gameDropdownItems: [
+          { label: 'Tetris Classic', value: 'tetris' },
+          { label: 'Pac-Man Classic', value: 'pacman' },
+        ],
+        top10Leaderboard: [],
+      },
+      activeGameId: 'tetris',
+      activeGameTitle: 'Tetris Classic',
+      modals: {},
+    });
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <ArcadeLobbyPage store={customStore} />
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByText('Tetris Classic')).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    const selectTrigger = screen.getByRole('button', { name: /Select Arcade Game/i });
+    await user.click(selectTrigger);
+    const pacmanItem = await screen.findByRole('menuitem', { name: /Pac-Man Classic/i });
+    await user.click(pacmanItem);
+
+    await waitFor(() => {
+      expect(customStore.get('/activeGameId')).toBe('pacman');
+      expect(customStore.get('/activeGameTitle')).toBe('Pac-Man Classic');
+    });
   });
 });

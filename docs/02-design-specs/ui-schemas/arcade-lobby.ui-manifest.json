@@ -98,11 +98,20 @@
         "children": [
           {
             "id": "carousel-heading",
-            "abstract_type": "Heading",
+            "abstract_type": "Selection",
+            "semantic_variant": "dropdown",
             "label": "Select Arcade Game",
+            "behavior_ref": "nielsen:control",
             "ux_hints": {
-              "principles": ["visual-hierarchy:size"]
-            }
+              "principles": ["fitts-law", "visual-hierarchy:size"]
+            },
+            "interactions": [
+              {
+                "on_event": "on_change",
+                "target_id": "game-card-grid",
+                "behavior_ref": "nielsen:control"
+              }
+            ]
           },
           {
             "id": "carousel-prev-trigger",

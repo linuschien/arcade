@@ -40,6 +40,7 @@ const defaultStore = createStateStore({
   },
   data: {
     listGameCards: [],
+    gameDropdownItems: [],
     top10Leaderboard: [],
   },
   activeGameId: '',
@@ -292,6 +293,11 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
   useEffect(() => {
     if (gameCardsData && gameCardsData.length > 0) {
       store.set('/data/listGameCards', gameCardsData);
+      const dropdownItems = gameCardsData.map((g: any) => ({
+        label: g.title,
+        value: g.gameId,
+      }));
+      store.set('/data/gameDropdownItems', dropdownItems);
       const currentId = store.get('/activeGameId') || gameCardsData[0].gameId;
       const currentCard = gameCardsData.find((g: any) => g.gameId === currentId) || gameCardsData[0];
       store.set('/activeGameId', currentCard.gameId);
@@ -381,6 +387,16 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
             store.set('/activeGameId', newGame.gameId);
             store.set('/activeGameTitle', newGame.title);
             setActiveGameId(newGame.gameId);
+          }
+          break;
+        }
+
+        case 'SelectGame': {
+          const selectedId = store.get('/activeGameId');
+          const targetGame = games.find((g: any) => g.gameId === selectedId);
+          if (targetGame) {
+            store.set('/activeGameTitle', targetGame.title);
+            setActiveGameId(targetGame.gameId);
           }
           break;
         }

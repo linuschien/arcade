@@ -137,12 +137,17 @@
       ]
     },
     "carousel-heading": {
-      "type": "Heading",
+      "type": "DropdownMenu",
       "props": {
         "id": "carousel-heading",
-        "text": "Select Arcade Game",
-        "level": "h2",
-        "className": "text-center font-bold text-xl text-white"
+        "label": "Select Arcade Game",
+        "items": { "$bindState": "/data/gameDropdownItems" },
+        "value": { "$bindState": "/activeGameId" }
+      },
+      "on": {
+        "select": [
+          { "action": "executeBehavior", "params": { "ref": "SelectGame", "id": "carousel-heading" } }
+        ]
       },
       "children": []
     },
