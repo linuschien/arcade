@@ -59,6 +59,7 @@ describe('Sokoban MainGameScene Unit Tests', () => {
     mockText = {
       setText: vi.fn().mockReturnThis(),
       setColor: vi.fn().mockReturnThis(),
+      setFontSize: vi.fn().mockReturnThis(),
       setOrigin: vi.fn().mockReturnThis(),
       setVisible: vi.fn().mockReturnThis(),
       destroy: vi.fn(),
@@ -221,6 +222,45 @@ describe('Sokoban MainGameScene Unit Tests', () => {
     expect(modalBodyText.setText).toHaveBeenCalledWith(
       expect.stringContaining('► NEW GAME (STAGE 01)\n  CONTINUE (STAGE 6)')
     );
+  });
+
+  it('should play deadlock warn sound and trigger red flash when undo is pressed with 0 quota', async () => {
+    scene.create();
+    const state = (scene as any).state;
+    state.startNewGame();
+    (scene as any).renderStageBoard();
+
+    // Force undo quota to 0
+    state.undoStack.reset(0);
+    expect(state.undoStack.getRemainingQuota()).toBe(0);
+
+    const { SokobanAudioService } = await import('../../audio/SokobanAudioService');
+    (SokobanAudioService.playDeadlockWarn as any).mockClear();
+
+    // Mock BUTTON_A press
+    vi.spyOn(scene as any, 'isActionJustPressed').mockReturnValue(true);
+    (scene as any).handleInput(16.6);
+
+    expect(SokobanAudioService.playDeadlockWarn).toHaveBeenCalled();
+    expect((scene as any).undoRefusalFlashTimerMs).toBe(400);
+
+    // Verify HUD reflects refusal flash
+    (scene as any).updateHUD();
+    expect((scene as any).undoCountText.setColor).toHaveBeenCalledWith('#ef4444');
+  });
+
+  it('should render 00:00 [TIME OUT] and red warning when timer reaches 0', () => {
+    scene.create();
+    const state = (scene as any).state;
+    state.startNewGame();
+    (scene as any).renderStageBoard();
+
+    // Force elapsedSeconds past tSoft
+    state.elapsedSeconds = state.currentStageConfig.tSoft + 5;
+    (scene as any).updateHUD();
+
+    expect((scene as any).timerText.setText).toHaveBeenCalledWith('00:00\n[TIME OUT]');
+    expect((scene as any).timerText.setFontSize).toHaveBeenCalledWith('18px');
   });
 });
 

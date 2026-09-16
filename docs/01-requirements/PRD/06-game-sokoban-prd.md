@@ -43,7 +43,7 @@
 ││                   │                                                │ [CONTROLS GUIDE]     ││
 ││ [UNDO QUOTA]      │                                                │ [↑↓←→] MOVE          ││
 ││ ● ● ● ○ ○         │                                                │ [Z]    UNDO          ││
-││ REMAINING: 3 / 5  │                                                │ [HOLD R]             ││
+││ REMAINING: 3 / 5  │                                                │ [X] (HOLD 1S)        ││
 ││                   │    Layer 3: 邊緣徑向暗角 (Vignette Mask)       │ GIVE UP (-1♥)        ││
 │└───────────────────┴────────────────────────────────────────────────┴──────────────────────┘│
 │                                                                     (Bottom Margin: 30 px)  │
@@ -86,7 +86,7 @@
   * **常駐純鍵盤按鍵指南**：
     * `[↑↓←→] MOVE`
     * `[Z] UNDO`
-    * `[HOLD R] GIVE UP (-1♥)`（紅色警示字體）。
+    * `[X] (HOLD 1S)` / `BUTTON_B` GIVE UP (-1♥)（紅色警示字體）。
 
 ---
 

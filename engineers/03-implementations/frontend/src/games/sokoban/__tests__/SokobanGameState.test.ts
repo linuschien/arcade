@@ -90,7 +90,7 @@ describe('SokobanGameState Unit Tests', () => {
     expect(nextEvent.timeoutTriggered).toBeUndefined();
   });
 
-  it('should deduct life and restart when holding [R] for 1.0 second', () => {
+  it('should deduct life and restart when holding [X] for 1.0 second', () => {
     state.startNewGame();
     expect(state.lives).toBe(3);
 

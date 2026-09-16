@@ -68,6 +68,7 @@ export class MainGameScene extends BaseArcadeScene {
 
   // Stage Clear In-Maze Celebration State
   private isCelebrationPlaying: boolean = false;
+  private undoRefusalFlashTimerMs: number = 0;
 
   // Input edge detection & Delayed Auto Shift (DAS)
   private prevActionDown: Map<ArcadeAction, boolean> = new Map();
@@ -174,7 +175,7 @@ export class MainGameScene extends BaseArcadeScene {
 
     this.undoCountText = this.add.text(100, 285, '', {
       fontFamily: 'monospace',
-      fontSize: '16px',
+      fontSize: '13px',
       fontStyle: 'bold',
       color: '#e2e8f0',
       align: 'center',
@@ -293,21 +294,25 @@ export class MainGameScene extends BaseArcadeScene {
     }).setOrigin(0.5);
 
     const keysInfo = [
-      '[ARROWS/WASD]',
-      'MOVE / PUSH',
-      '',
-      '[Z] KEY',
-      'UNDO MOVE',
-      '',
-      '[X] (HOLD 1S)',
-      'GIVE UP & RETRY',
+      { key: '[ARROWS/WASD]', desc: 'MOVE / PUSH', isWarn: false },
+      { key: '[Z] KEY', desc: 'UNDO MOVE', isWarn: false },
+      { key: '[X] (HOLD 1S)', desc: 'GIVE UP (-1♥)', isWarn: true },
     ];
 
-    keysInfo.forEach((line, idx) => {
-      this.add.text(1180, legendY + 25 + idx * 18, line, {
+    keysInfo.forEach((item, idx) => {
+      const groupY = legendY + 22 + idx * 36;
+      this.add.text(1180, groupY, item.key, {
         fontFamily: 'monospace',
-        fontSize: idx % 3 === 0 ? '12px' : '11px',
-        color: idx % 3 === 0 ? '#38bdf8' : '#94a3b8',
+        fontSize: '12px',
+        fontStyle: 'bold',
+        color: item.isWarn ? '#f87171' : '#38bdf8',
+        align: 'center',
+      }).setOrigin(0.5);
+
+      this.add.text(1180, groupY + 16, item.desc, {
+        fontFamily: 'monospace',
+        fontSize: '11px',
+        color: item.isWarn ? '#ef4444' : '#94a3b8',
         align: 'center',
       }).setOrigin(0.5);
     });
@@ -559,6 +564,10 @@ export class MainGameScene extends BaseArcadeScene {
   public update(_time: number, delta: number): void {
     if (!this.state) return;
 
+    if (this.undoRefusalFlashTimerMs > 0) {
+      this.undoRefusalFlashTimerMs = Math.max(0, this.undoRefusalFlashTimerMs - delta);
+    }
+
     // Handle universal tick
     const tickEvent = this.state.tick(delta);
     if (tickEvent.timeoutTriggered) {
@@ -663,6 +672,9 @@ export class MainGameScene extends BaseArcadeScene {
         if (undoRes.isUndo) {
           SokobanAudioService.playUndo();
           this.syncBoardSprites();
+        } else if (this.state.undoStack.getRemainingQuota() === 0) {
+          SokobanAudioService.playDeadlockWarn();
+          this.undoRefusalFlashTimerMs = 400;
         }
       }
 
@@ -1022,28 +1034,50 @@ export class MainGameScene extends BaseArcadeScene {
     this.worldBadgeText.setText(`[ W${worldSpec.worldId} ${worldSpec.worldName.toUpperCase()} ]`);
     this.stageTitleText.setText(`STAGE ${cfg.stage.toString().padStart(2, '0')} / 50`);
 
-    // Timer display
+    // Timer display & color transitions (PRD §2.3 & US-07-02 AC4)
     const remainingTime = Math.max(0, cfg.tSoft - Math.floor(this.state.elapsedSeconds));
     const mins = Math.floor(remainingTime / 60).toString().padStart(2, '0');
     const secs = (remainingTime % 60).toString().padStart(2, '0');
-    this.timerText.setText(`${mins}:${secs}`);
 
-    // Timer bar & colors (Unified color: CSS string for Text, Hex integer for Graphics)
+    let colorHex = '10b981';
+    if (remainingTime === 0) {
+      colorHex = 'ef4444';
+      const isBlinkBright = Math.floor((this.time?.now || Date.now()) / 250) % 2 === 0;
+      this.timerText.setColor(isBlinkBright ? '#ef4444' : '#7f1d1d');
+      if (typeof (this.timerText as any).setFontSize === 'function') {
+        (this.timerText as any).setFontSize('18px');
+      }
+      this.timerText.setText('00:00\n[TIME OUT]');
+    } else {
+      if (remainingTime <= 30) {
+        colorHex = 'facc15';
+      }
+      this.timerText.setColor(`#${colorHex}`);
+      if (typeof (this.timerText as any).setFontSize === 'function') {
+        (this.timerText as any).setFontSize('28px');
+      }
+      this.timerText.setText(`${mins}:${secs}`);
+    }
+
     const progress = Math.max(0, Math.min(remainingTime / cfg.tSoft, 1));
-    const colorHex = progress < 0.2 ? 'ef4444' : progress < 0.5 ? 'facc15' : '10b981';
-
-    this.timerText.setColor(`#${colorHex}`);
-
     this.timerBarGfx.clear();
     this.timerBarGfx.fillStyle(0x1e293b, 0.8);
     this.timerBarGfx.fillRoundedRect(20, 185, 160, 8, 3);
     this.timerBarGfx.fillStyle(parseInt(colorHex, 16), 1);
     this.timerBarGfx.fillRoundedRect(20, 185, 160 * progress, 8, 3);
 
-    // Undo Lamps
+    // Undo Lamps & Feedback (US-07-05 AC3 & US-07-02 AC5)
     const uMax = cfg.uQuota;
     const uRem = this.state.undoStack.getRemainingQuota();
-    this.undoCountText.setText(`${uRem} / ${uMax}`);
+    const isRefusalFlash = this.undoRefusalFlashTimerMs > 0;
+
+    if (isRefusalFlash) {
+      this.undoCountText.setColor('#ef4444');
+      this.undoCountText.setText(`REMAINING: 0 / ${uMax}`);
+    } else {
+      this.undoCountText.setColor('#e2e8f0');
+      this.undoCountText.setText(`REMAINING: ${uRem} / ${uMax}`);
+    }
 
     this.undoLampsGfx.clear();
     const dotsPerRow = 6;
@@ -1062,6 +1096,11 @@ export class MainGameScene extends BaseArcadeScene {
         this.undoLampsGfx.fillCircle(dx, dy, 5);
         this.undoLampsGfx.lineStyle(1, 0xbae6fd, 1);
         this.undoLampsGfx.strokeCircle(dx, dy, 5);
+      } else if (isRefusalFlash) {
+        this.undoLampsGfx.fillStyle(0xef4444, 0.9);
+        this.undoLampsGfx.fillCircle(dx, dy, 4);
+        this.undoLampsGfx.lineStyle(1, 0xf87171, 1);
+        this.undoLampsGfx.strokeCircle(dx, dy, 4);
       } else {
         this.undoLampsGfx.fillStyle(0x1e293b, 0.8);
         this.undoLampsGfx.fillCircle(dx, dy, 4);
