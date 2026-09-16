@@ -13,6 +13,46 @@ import { useSubmitHighScore } from '@/hooks/use-submitHighScore';
 import { ArcadeBridge, IArcadeGame } from '@/core/bridge/ArcadeBridge';
 import { createGameInstance } from '@/games';
 import { SoundEngine } from '@/core/audio/SoundEngine';
+import { Blocks, Ghost, Car, PackageCheck, Wrench, Dices, Gamepad2 } from 'lucide-react';
+
+export const renderGameDropdownLabel = (gameId: string, title: string) => {
+  let Icon: React.ComponentType<any> = Gamepad2;
+  let color = 'text-indigo-400';
+
+  switch (gameId) {
+    case 'tetris':
+      Icon = Blocks;
+      color = 'text-cyan-400';
+      break;
+    case 'pacman':
+      Icon = Ghost;
+      color = 'text-yellow-400';
+      break;
+    case 'rallyx':
+      Icon = Car;
+      color = 'text-red-400';
+      break;
+    case 'sokoban':
+      Icon = PackageCheck;
+      color = 'text-amber-400';
+      break;
+    case 'pipemania':
+      Icon = Wrench;
+      color = 'text-emerald-400';
+      break;
+    case 'mahjong':
+      Icon = Dices;
+      color = 'text-purple-400';
+      break;
+  }
+
+  return (
+    <span className="flex items-center gap-2">
+      <Icon className={`w-4 h-4 ${color} shrink-0`} />
+      <span>{title}</span>
+    </span>
+  );
+};
 
 export interface ArcadeLobbyPageProps {
   store?: any;
@@ -294,7 +334,7 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
     if (gameCardsData && gameCardsData.length > 0) {
       store.set('/data/listGameCards', gameCardsData);
       const dropdownItems = gameCardsData.map((g: any) => ({
-        label: g.title,
+        label: renderGameDropdownLabel(g.gameId, g.title),
         value: g.gameId,
       }));
       store.set('/data/gameDropdownItems', dropdownItems);
