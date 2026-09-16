@@ -100,6 +100,7 @@ describe('SokobanGameState Unit Tests', () => {
 
     const event = state.tick(500); // reaches 1.0s!
     expect(event.lifeLost).toBe(true);
+    expect(event.giveUpTriggered).toBe(true);
     expect(state.lives).toBe(2);
     expect(state.status).toBe('PLAYING');
   });

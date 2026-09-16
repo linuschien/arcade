@@ -573,6 +573,9 @@ export class MainGameScene extends BaseArcadeScene {
     if (tickEvent.timeoutTriggered) {
       SokobanAudioService.playTimeout();
     }
+    if (tickEvent.giveUpTriggered) {
+      SokobanAudioService.playDeadlockWarn();
+    }
     if (tickEvent.lifeLost) {
       this.giveUpLockedUntilRelease = true; // Prevent chained sacrifice on continuous hold
       if (this.state.status === 'GAME_OVER') {

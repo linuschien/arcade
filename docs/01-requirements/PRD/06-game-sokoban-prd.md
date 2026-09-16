@@ -139,6 +139,7 @@
     * 底部顯示副標題：`SACRIFICING 1 LIFE`。
   * 若玩家在 $1.0\text{s}$ 內鬆開按鍵，視窗瞬間淡出消失，棄局動作完全取消。
   * 若按住時間累計達滿 $1.0\text{s}$：
+    * 播放處決警示音（`SFX_DEADLOCK_WARN`，與死鎖無 Undo 處決一致）。
     * 立即扣除 1 條生命（$\text{Lives} \leftarrow \text{Lives} - 1$）。
     * 若 $\text{Lives} > 0$：關卡原地重置至初始狀態，$u_{\text{remaining}} \leftarrow U_{\text{quota}}$，$t_{\text{elapsed}} \leftarrow 0$。
     * 若 $\text{Lives} = 0$：觸發 Game Over 結算流程。

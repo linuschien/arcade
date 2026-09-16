@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MainGameScene } from '../MainGameScene';
+import { InputService } from '@/core/input/InputService';
 
 vi.mock('../../audio/SokobanAudioService', () => ({
   SokobanAudioService: {
@@ -261,6 +262,31 @@ describe('Sokoban MainGameScene Unit Tests', () => {
 
     expect((scene as any).timerText.setText).toHaveBeenCalledWith('00:00\n[TIME OUT]');
     expect((scene as any).timerText.setFontSize).toHaveBeenCalledWith('18px');
+  });
+
+  it('should play deadlock warn sound when hold-to-give-up completes (1.0s)', async () => {
+    scene.create();
+    const state = (scene as any).state;
+    state.startNewGame();
+    (scene as any).renderStageBoard();
+
+    const { SokobanAudioService } = await import('../../audio/SokobanAudioService');
+    (SokobanAudioService.playDeadlockWarn as any).mockClear();
+
+    // Mock holding BUTTON_B
+    vi.spyOn(InputService, 'isActionDown').mockReturnValue(true);
+
+    // Frame 1: registers hold input
+    scene.update(0, 16.6);
+    expect(SokobanAudioService.playDeadlockWarn).not.toHaveBeenCalled();
+
+    // Frame 2: holds for 500ms (not yet 1000ms)
+    scene.update(500, 500);
+    expect(SokobanAudioService.playDeadlockWarn).not.toHaveBeenCalled();
+
+    // Frame 3: holds for another 600ms (total > 1000ms -> give up executes!)
+    scene.update(1100, 600);
+    expect(SokobanAudioService.playDeadlockWarn).toHaveBeenCalled();
   });
 });
 

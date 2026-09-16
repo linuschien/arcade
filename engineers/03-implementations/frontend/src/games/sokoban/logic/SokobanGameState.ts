@@ -29,6 +29,7 @@ export interface GameStepEvent {
   scoreBreakdown?: StageScoreBreakdown;
   lifeLost?: boolean;
   lifeAwarded?: boolean;
+  giveUpTriggered?: boolean;
   timeoutTriggered?: boolean;
 }
 
@@ -273,6 +274,7 @@ export class SokobanGameState {
       if (this.giveUpHoldMs >= 1000) {
         this.isGivingUp = false;
         this.giveUpHoldMs = 0;
+        events.giveUpTriggered = true;
         this.deductLifeAndRestart(events);
       }
     }

@@ -191,6 +191,7 @@
 - **AC3 (中途鬆開取消)**：若玩家在 $1.0\text{ 秒}$ 內鬆開 `[X]` 鍵，浮動視窗立即消失，棄局動作完全取消。
 - **AC4 (按滿 1.0 秒處決)**：
   - 按住滿 $1.0\text{ 秒}$ 瞬間：
+    - 播放處決警示音（`SFX_DEADLOCK_WARN`，與死鎖無 Undo 處決一致）。
     - 扣除 1 條生命：$\text{Lives} \leftarrow \text{Lives} - 1$。
     - 若 $\text{Lives} > 0$：關卡重置至初始狀態，$u_{\text{remaining}} \leftarrow U_{\text{quota}}$，$t_{\text{elapsed}} \leftarrow 0$。
     - 若 $\text{Lives} = 0$：轉入 Game Over 結算。
