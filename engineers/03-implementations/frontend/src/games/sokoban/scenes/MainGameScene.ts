@@ -33,6 +33,7 @@ export class MainGameScene extends BaseArcadeScene {
   private tileSprites: Map<string, Phaser.GameObjects.Sprite> = new Map();
   private boxSprites: Map<string, Phaser.GameObjects.Sprite> = new Map();
   private workerSprite!: Phaser.GameObjects.Sprite;
+  private deadlockHighlightGfx!: Phaser.GameObjects.Graphics;
 
   // Left HUD
   private leftHudGfx!: Phaser.GameObjects.Graphics;
@@ -540,6 +541,13 @@ export class MainGameScene extends BaseArcadeScene {
     this.workerSprite = this.add.sprite(wx, wy, `sokoban:worker_${this.currentWorkerFacing}`);
     this.workerSprite.setDisplaySize(this.tileSize, this.tileSize);
     this.boardLayer.add(this.workerSprite);
+
+    // Layer 3.5 Deadlock In-Maze Highlight Gfx
+    this.deadlockHighlightGfx = this.add.graphics();
+    if (typeof (this.deadlockHighlightGfx as any).setDepth === 'function') {
+      this.deadlockHighlightGfx.setDepth(15);
+    }
+    this.boardLayer.add(this.deadlockHighlightGfx);
 
     // Play World BGM
     SokobanAudioService.playWorldBGM(themeKey);
@@ -1102,12 +1110,24 @@ export class MainGameScene extends BaseArcadeScene {
     this.extendBarGfx.fillStyle(0xa855f7, 1);
     this.extendBarGfx.fillRoundedRect(1100, 285, 160 * extendProgress, 8, 3);
 
-    // 3. Deadlock Alert Banner
+    // 3. Deadlock Alert Banner & In-Maze Box Highlighting
     const dlReport = this.state.getDeadlockReport();
+    if (this.deadlockHighlightGfx) {
+      this.deadlockHighlightGfx.clear();
+    }
+    // Reset tints on all box sprites
+    this.boxSprites.forEach((sp) => {
+      if (typeof (sp as any).clearTint === 'function') {
+        (sp as any).clearTint();
+      }
+    });
+
     if (dlReport && dlReport.isDeadlocked) {
       this.deadlockBannerContainer.setVisible(true);
       this.deadlockBannerBg.clear();
-      if (dlReport.status === 'DEADLOCK_WARNING') {
+      const isWarning = dlReport.status === 'DEADLOCK_WARNING';
+
+      if (isWarning) {
         this.deadlockBannerBg.fillStyle(0xd97706, 0.95);
         this.deadlockBannerBg.fillRoundedRect(-200, -18, 400, 36, 8);
         this.deadlockBannerBg.lineStyle(2, 0xfef08a, 1);
@@ -1119,6 +1139,34 @@ export class MainGameScene extends BaseArcadeScene {
         this.deadlockBannerBg.lineStyle(2, 0xfecaca, 1);
         this.deadlockBannerBg.strokeRoundedRect(-200, -18, 400, 36, 8);
         this.deadlockBannerText.setText('🚨 CRITICAL DEADLOCK! NO UNDO AVAILABLE');
+      }
+
+      // Render pulse glow / highlight border on each deadlocked box (strictly inset within tile cell)
+      if (this.deadlockHighlightGfx) {
+        const strokeColor = isWarning ? 0xfacc15 : 0xef4444;
+        const strokeWidth = Math.max(1.5, Math.min(2.5, this.tileSize * 0.05));
+        const inset = Math.ceil(strokeWidth / 2) + 1; // Inset so stroke never spills into adjacent cells or walls
+        const radius = Math.min(4, Math.max(2, Math.floor(this.tileSize * 0.1)));
+        this.deadlockHighlightGfx.lineStyle(strokeWidth, strokeColor, 0.95);
+        for (const boxPos of dlReport.deadlockedBoxes) {
+          const bx = this.boardStartX + boxPos.col * this.tileSize;
+          const by = this.boardStartY + boxPos.row * this.tileSize;
+          this.deadlockHighlightGfx.strokeRoundedRect(
+            bx + inset,
+            by + inset,
+            this.tileSize - inset * 2,
+            this.tileSize - inset * 2,
+            radius
+          );
+
+          // If critical without undos, tint box dark red
+          if (!isWarning) {
+            const sp = this.boxSprites.get(posKey(boxPos.col, boxPos.row));
+            if (sp && typeof (sp as any).setTint === 'function') {
+              (sp as any).setTint(0xff6666);
+            }
+          }
+        }
       }
     } else {
       this.deadlockBannerContainer.setVisible(false);

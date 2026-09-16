@@ -128,17 +128,17 @@
     * 警報橫幅升級為高頻紅色閃爍：`🚨 CRITICAL DEADLOCK! NO UNDO AVAILABLE`。
     * 系統延遲 $1.2\text{ 秒}$ 後全屏淡黑（Fade to Black），強制扣除 1 條生命（$\text{Lives} \leftarrow \text{Lives} - 1$）並重置關卡。若 $\text{Lives} = 0$ 則直接觸發 Game Over。
 
-### 3.3 長按 R 鍵主動棄局防誤觸 (Hold-to-Give-Up)
+### 3.3 長按 X 鍵主動棄局防誤觸 (Hold-to-Give-Up)
 
 * **設計意圖**：允許玩家在推錯或陷入非直角死局時主動重置，但透過長按時間鎖徹底防止按鍵誤觸造成的無謂扣命。
-* **互動流程**：
-  * 單擊鍵盤 `[R]` 鍵完全不觸發任何動作。
-  * 玩家按住 `[R]` 鍵時，中央棋盤中央即時彈出專屬警告浮動視窗（$320 \times 120\text{ px}$）：
-    * 視窗標題：`GIVING UP...`
-    * 動態進度條：隨按住時間（$0.0\text{ s} \to 1.0\text{ s}$）平滑填滿，顏色由金黃漸變為警示鮮紅。
-    * 底部警語：`SACRIFICING 1 LIFE`。
-  * 若在 $1.0\text{ 秒}$ 內鬆開按鍵，視窗瞬間消退，判定取消。
-  * 若按住滿 $1.0\text{ 秒}$：
+* **防誤觸防禦設計**：
+  * 單擊鍵盤 `[X]` 鍵（街機 `BUTTON_B`）完全不觸發任何動作。
+  * 玩家按住 `[X]` 鍵時，中央棋盤中央即時彈出專屬警告浮動視窗（$320 \times 120\text{ px}$）：
+    * 頂部顯示深黃色粗體警示字樣：`GIVING UP...`。
+    * 中間渲染一條長度 $240\text{ px}$、高 $10\text{ px}$ 之動態蓄力進度條（顏色由深黃平滑漸變為深紅）。
+    * 底部顯示副標題：`SACRIFICING 1 LIFE`。
+  * 若玩家在 $1.0\text{s}$ 內鬆開按鍵，視窗瞬間淡出消失，棄局動作完全取消。
+  * 若按住時間累計達滿 $1.0\text{s}$：
     * 立即扣除 1 條生命（$\text{Lives} \leftarrow \text{Lives} - 1$）。
     * 若 $\text{Lives} > 0$：關卡原地重置至初始狀態，$u_{\text{remaining}} \leftarrow U_{\text{quota}}$，$t_{\text{elapsed}} \leftarrow 0$。
     * 若 $\text{Lives} = 0$：觸發 Game Over 結算流程。
@@ -306,7 +306,7 @@
 | `ArrowLeft` | 向左移動 | 工人向左走 1 格；若有箱子則推動箱子 1 格 |
 | `ArrowRight` | 向右移動 | 工人向右走 1 格；若有箱子則推動箱子 1 格 |
 | `KeyZ` | 執行 Undo | 扣除 1 次配額，盤面瞬間還原至推箱前一刻 |
-| `KeyR` (長按 1.0s) | 主動棄局 | 彈出進度條視窗，按滿 1.0 秒扣除 1 命重置關卡 |
+| `KeyX` (長按 1.0s) / `BUTTON_B` | 主動棄局 | 彈出進度條視窗，按滿 1.0 秒扣除 1 命重置關卡 |
 
 ### 6.2 投幣與二擇一啟動流程 (Coin Insert & Binary Start Selector)
 
