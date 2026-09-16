@@ -96,49 +96,50 @@ class SokobanAudioServiceImpl {
       SoundEngine.playTone({
         type: 'triangle',
         frequency: note,
-        durationSeconds: 0.12,
-        volume: 0.04,
+        durationSeconds: 0.13,
+        volume: 0.075,
       });
 
       if (this.bgmStep % 4 === 0) {
         SoundEngine.playTone({
           type: 'sine',
           frequency: note / 2,
-          durationSeconds: 0.2,
-          volume: 0.06,
+          durationSeconds: 0.24,
+          volume: 0.10,
         });
       }
       this.bgmStep = (this.bgmStep + 1) % 16;
     }, 170);
   }
 
-  // World 2: Cyber Pulse (118 BPM -> ~127ms 16th note, D Minor techno synth pulse)
+  // World 2: Cyber Vault (Ambient Cyber Lounge, 68 BPM -> ~220ms, calm crystalline chime motif)
   private startCyberPulseLoop(): void {
-    const scale = [293.66, 349.23, 440.0, 587.33, 440.0, 349.23]; // D4, F4, A4, D5, A4, F4
+    const scale = [293.66, 392.00, 440.0, 523.25, 440.0, 392.00, 329.63, 293.66]; // D4, G4, A4, C5, A4, G4, E4, D4
     this.bgmTimer = setInterval(() => {
       if (!this.isBgmPlaying || SoundEngine.isMutedState()) return;
       const note = scale[this.bgmStep % scale.length];
 
       SoundEngine.playTone({
-        type: 'sawtooth',
+        type: 'sine',
         frequency: note,
-        durationSeconds: 0.08,
-        volume: 0.03,
+        durationSeconds: 0.18,
+        volume: 0.08,
       });
 
-      if (this.bgmStep % 2 === 0) {
+      // Deep warm sub-bass pulse on downbeat (every 4 steps)
+      if (this.bgmStep % 4 === 0) {
         SoundEngine.playTone({
-          type: 'square',
-          frequency: 146.83, // D3 bass
-          durationSeconds: 0.1,
-          volume: 0.05,
+          type: 'sine',
+          frequency: 73.42, // D2 deep sub-bass
+          durationSeconds: 0.35,
+          volume: 0.11,
         });
       }
       this.bgmStep = (this.bgmStep + 1) % 16;
-    }, 127);
+    }, 220);
   }
 
-  // World 3: Steel Works (102 BPM -> ~147ms 16th note, punchy F Blues groove)
+  // World 3: Steel Works (94 BPM -> ~160ms 16th note, punchy F Blues groove)
   private startSteelJazzLoop(): void {
     const scale = [349.23, 415.3, 466.16, 493.88, 523.25, 622.25]; // F4, Ab4, Bb4, B4, C5, Eb5
     this.bgmTimer = setInterval(() => {
@@ -148,23 +149,23 @@ class SokobanAudioServiceImpl {
       SoundEngine.playTone({
         type: 'square',
         frequency: note,
-        durationSeconds: 0.09,
-        volume: 0.035,
+        durationSeconds: 0.10,
+        volume: 0.07,
       });
 
       if (this.bgmStep % 4 === 0) {
         SoundEngine.playTone({
           type: 'triangle',
           frequency: 87.31, // F2 heavy bass
-          durationSeconds: 0.18,
-          volume: 0.07,
+          durationSeconds: 0.22,
+          volume: 0.11,
         });
       }
       this.bgmStep = (this.bgmStep + 1) % 16;
-    }, 147);
+    }, 160);
   }
 
-  // World 4: Terminal Vista (78 BPM -> ~192ms 16th note, atmospheric slow deep maritime pulse)
+  // World 4: Terminal Vista (75 BPM -> ~200ms 16th note, atmospheric slow deep maritime pulse)
   private startTerminalVistaLoop(): void {
     const scale = [220.0, 261.63, 329.63, 440.0]; // A3, C4, E4, A4
     this.bgmTimer = setInterval(() => {
@@ -174,20 +175,20 @@ class SokobanAudioServiceImpl {
       SoundEngine.playTone({
         type: 'sine',
         frequency: note,
-        durationSeconds: 0.22,
-        volume: 0.05,
+        durationSeconds: 0.24,
+        volume: 0.08,
       });
 
       if (this.bgmStep % 4 === 0) {
         SoundEngine.playTone({
           type: 'triangle',
           frequency: 55.0, // A1 sub-bass
-          durationSeconds: 0.35,
-          volume: 0.08,
+          durationSeconds: 0.38,
+          volume: 0.12,
         });
       }
       this.bgmStep = (this.bgmStep + 1) % 16;
-    }, 192);
+    }, 200);
   }
 
   // --- 8 Arcade SFX ---
@@ -198,7 +199,7 @@ class SokobanAudioServiceImpl {
       type: 'triangle',
       frequency: 180,
       durationSeconds: 0.03,
-      volume: 0.04,
+      volume: 0.06,
     });
   }
 
@@ -208,16 +209,16 @@ class SokobanAudioServiceImpl {
       type: 'square',
       frequency: 95,
       durationSeconds: 0.08,
-      volume: 0.08,
+      volume: 0.11,
     });
   }
 
   /** SFX_BOX_TARGET: Crisp harmonic bell chime upon box arriving on goal (~150ms) */
   public playBoxTarget(): void {
     SoundEngine.playSequence([
-      { freq: 523.25, delayMs: 0, durationSeconds: 0.08, type: 'sine', vol: 0.08 }, // C5
-      { freq: 659.25, delayMs: 60, durationSeconds: 0.12, type: 'sine', vol: 0.1 }, // E5
-      { freq: 1046.5, delayMs: 120, durationSeconds: 0.2, type: 'sine', vol: 0.12 }, // C6
+      { freq: 523.25, delayMs: 0, durationSeconds: 0.08, type: 'sine', vol: 0.10 }, // C5
+      { freq: 659.25, delayMs: 60, durationSeconds: 0.12, type: 'sine', vol: 0.12 }, // E5
+      { freq: 1046.5, delayMs: 120, durationSeconds: 0.2, type: 'sine', vol: 0.15 }, // C6
     ]);
   }
 
@@ -227,15 +228,15 @@ class SokobanAudioServiceImpl {
       type: 'sine',
       frequency: 440,
       durationSeconds: 0.09,
-      volume: 0.08,
+      volume: 0.10,
     });
   }
 
   /** SFX_DEADLOCK_WARN: Two-tone alert beacon (~200ms) */
   public playDeadlockWarn(): void {
     SoundEngine.playSequence([
-      { freq: 880.0, delayMs: 0, durationSeconds: 0.08, type: 'square', vol: 0.07 }, // A5
-      { freq: 659.25, delayMs: 100, durationSeconds: 0.12, type: 'square', vol: 0.09 }, // E5
+      { freq: 880.0, delayMs: 0, durationSeconds: 0.08, type: 'square', vol: 0.09 }, // A5
+      { freq: 659.25, delayMs: 100, durationSeconds: 0.12, type: 'square', vol: 0.12 }, // E5
     ]);
   }
 
@@ -245,27 +246,27 @@ class SokobanAudioServiceImpl {
       type: 'sawtooth',
       frequency: 110.0,
       durationSeconds: 0.3,
-      volume: 0.08,
+      volume: 0.12,
     });
   }
 
   /** SFX_EXTEND: 1UP 100,000 pts golden fanfare (~500ms) */
   public playExtend(): void {
     SoundEngine.playSequence([
-      { freq: 523.25, delayMs: 0, durationSeconds: 0.08, type: 'square', vol: 0.1 }, // C5
-      { freq: 659.25, delayMs: 90, durationSeconds: 0.08, type: 'square', vol: 0.1 }, // E5
-      { freq: 783.99, delayMs: 180, durationSeconds: 0.08, type: 'square', vol: 0.12 }, // G5
-      { freq: 1046.5, delayMs: 270, durationSeconds: 0.25, type: 'square', vol: 0.15 }, // C6
+      { freq: 523.25, delayMs: 0, durationSeconds: 0.08, type: 'square', vol: 0.12 }, // C5
+      { freq: 659.25, delayMs: 90, durationSeconds: 0.08, type: 'square', vol: 0.12 }, // E5
+      { freq: 783.99, delayMs: 180, durationSeconds: 0.08, type: 'square', vol: 0.14 }, // G5
+      { freq: 1046.5, delayMs: 270, durationSeconds: 0.25, type: 'square', vol: 0.18 }, // C6
     ]);
   }
 
   /** SFX_STAGE_CLEAR: Victorious level clear fanfare (~1.0s) */
   public playStageClear(): void {
     SoundEngine.playSequence([
-      { freq: 440.0, delayMs: 0, durationSeconds: 0.1, type: 'triangle', vol: 0.1 }, // A4
-      { freq: 554.37, delayMs: 100, durationSeconds: 0.1, type: 'triangle', vol: 0.1 }, // C#5
-      { freq: 659.25, delayMs: 200, durationSeconds: 0.12, type: 'triangle', vol: 0.12 }, // E5
-      { freq: 880.0, delayMs: 320, durationSeconds: 0.4, type: 'triangle', vol: 0.15 }, // A5
+      { freq: 440.0, delayMs: 0, durationSeconds: 0.1, type: 'triangle', vol: 0.12 }, // A4
+      { freq: 554.37, delayMs: 100, durationSeconds: 0.1, type: 'triangle', vol: 0.12 }, // C#5
+      { freq: 659.25, delayMs: 200, durationSeconds: 0.12, type: 'triangle', vol: 0.14 }, // E5
+      { freq: 880.0, delayMs: 320, durationSeconds: 0.4, type: 'triangle', vol: 0.18 }, // A5
     ]);
   }
 }
