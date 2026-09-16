@@ -101,6 +101,9 @@ export class SokobanScoreKeeper {
    * FinalScore = (floor(RawScore / 100) * 100) + clamp(lastClearedStage, 0, 50)
    */
   public getSteganographicScore(): number {
+    if (this.rawScore <= 0) {
+      return 0;
+    }
     const baseHundred = Math.floor(this.rawScore / 100) * 100;
     const stageCode = Math.max(0, Math.min(this.lastClearedStage, 50));
     return baseHundred + stageCode;

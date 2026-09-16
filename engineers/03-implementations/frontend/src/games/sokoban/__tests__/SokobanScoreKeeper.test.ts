@@ -58,6 +58,11 @@ describe('SokobanScoreKeeper Unit Tests', () => {
   });
 
   describe('PRD Section 4.4 Steganographic Cases', () => {
+    it('Case Zero: Died on Stage 1 with 0 points (lastClearedStage = 0, RawScore = 0) -> 0', () => {
+      const keeper = new SokobanScoreKeeper(0, 0);
+      expect(keeper.getSteganographicScore()).toBe(0);
+    });
+
     it('Case A: Died on Stage 1 (lastClearedStage = 0, RawScore = 800) -> 800', () => {
       const keeper = new SokobanScoreKeeper(800, 0);
       expect(keeper.getSteganographicScore()).toBe(800);
