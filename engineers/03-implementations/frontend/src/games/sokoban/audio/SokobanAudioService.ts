@@ -193,13 +193,14 @@ class SokobanAudioServiceImpl {
 
   // --- 8 Arcade SFX ---
 
-  /** SFX_STEP: Subtle footstep tap (~30ms) */
+  /** SFX_STEP: Crisp tactile footstep tap on warehouse floor (~45ms downward sweep) */
   public playStep(): void {
     SoundEngine.playTone({
       type: 'triangle',
-      frequency: 180,
-      durationSeconds: 0.03,
-      volume: 0.06,
+      frequency: 360,
+      targetFrequency: 160,
+      durationSeconds: 0.045,
+      volume: 0.10,
     });
   }
 

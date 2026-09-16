@@ -64,7 +64,7 @@ describe('SokobanAudioService Unit Tests', () => {
   it('should play all 8 arcade SFX with enhanced audible volume', () => {
     expect(() => SokobanAudioService.playStep()).not.toThrow();
     expect(SoundEngine.playTone).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'triangle', volume: 0.06 })
+      expect.objectContaining({ type: 'triangle', volume: 0.10 })
     );
 
     expect(() => SokobanAudioService.playPush()).not.toThrow();
