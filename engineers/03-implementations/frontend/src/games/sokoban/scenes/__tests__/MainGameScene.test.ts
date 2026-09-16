@@ -69,6 +69,8 @@ describe('Sokoban MainGameScene Unit Tests', () => {
       setVisible: vi.fn().mockReturnThis(),
       removeAll: vi.fn().mockReturnThis(),
       setDepth: vi.fn().mockReturnThis(),
+      setScale: vi.fn().mockReturnThis(),
+      setAlpha: vi.fn().mockReturnThis(),
       destroy: vi.fn(),
     };
 
@@ -101,6 +103,10 @@ describe('Sokoban MainGameScene Unit Tests', () => {
     };
     (scene as any).time = {
       removeAllEvents: vi.fn(),
+      delayedCall: vi.fn((_ms: number, cb: () => void) => {
+        cb();
+        return { remove: vi.fn() };
+      }),
     };
   });
 
@@ -166,6 +172,25 @@ describe('Sokoban MainGameScene Unit Tests', () => {
       boxFrom: { col: 3, row: 1 },
       boxTo: { col: 4, row: 1 },
     });
+    expect((scene as any).tweens.add).toHaveBeenCalled();
+  });
+
+  it('should trigger in-maze stage clear celebration on victory with unobscured worker animation', () => {
+    scene.create();
+    (scene as any).state.startNewGame();
+    (scene as any).renderStageBoard();
+
+    const breakdown = {
+      pBase: 1000,
+      pTime: 250,
+      pUndo: 100,
+      pPerf: 500,
+      isPerfect: true,
+      stageTotal: 1850,
+    };
+
+    expect(() => (scene as any).triggerStageClearCeremony(breakdown)).not.toThrow();
+    // Worker celebratory hop tween is triggered in-maze
     expect((scene as any).tweens.add).toHaveBeenCalled();
   });
 });

@@ -65,6 +65,9 @@ export class MainGameScene extends BaseArcadeScene {
   private modalBodyText!: Phaser.GameObjects.Text;
   private modalPromptText!: Phaser.GameObjects.Text;
 
+  // Stage Clear In-Maze Celebration State
+  private isCelebrationPlaying: boolean = false;
+
   // Input edge detection & Delayed Auto Shift (DAS)
   private prevActionDown: Map<ArcadeAction, boolean> = new Map();
   private readonly DAS_DELAY_MS: number = 260; // Initial delay before hold auto-repeat begins
@@ -389,6 +392,7 @@ export class MainGameScene extends BaseArcadeScene {
   }
 
   private showTitleMenu(): void {
+    this.isCelebrationPlaying = false;
     this.modalOverlayContainer.setVisible(true);
     this.modalBg.clear();
     // Backdrop dimmer to ensure high contrast over center arena
@@ -429,6 +433,7 @@ export class MainGameScene extends BaseArcadeScene {
   }
 
   private renderStageBoard(): void {
+    this.isCelebrationPlaying = false;
     // Clear previous board objects
     this.boardLayer.removeAll(true);
     this.tileSprites.clear();
@@ -607,6 +612,11 @@ export class MainGameScene extends BaseArcadeScene {
 
     // 2. Stage Clear Confirmation (Edge-triggered: cannot bleed into game)
     if (this.state.status === 'STAGE_CLEAR_FANFARE') {
+      if (this.isCelebrationPlaying) {
+        // Guard: consume input edges during ceremony so button presses do not skip the upcoming modal
+        this.isActionJustPressed(ArcadeAction.BUTTON_A);
+        return;
+      }
       const isAdvance = this.isActionJustPressed(ArcadeAction.BUTTON_A);
 
       if (isAdvance) {
@@ -704,8 +714,17 @@ export class MainGameScene extends BaseArcadeScene {
             this.animateMove(moveEvent.actionResult);
 
             if (moveEvent.stageCleared) {
-              SokobanAudioService.playStageClear();
-              this.showStageClear(moveEvent.scoreBreakdown!);
+              this.isCelebrationPlaying = true;
+              // Delay ceremony initiation until the final push animation lands (195ms)
+              // so the player clearly sees the final box slide into position, click into goal, and turn gold!
+              const arrivalDelayMs = moveEvent.actionResult.isPush ? 200 : 100;
+              if (this.time?.delayedCall) {
+                this.time.delayedCall(arrivalDelayMs, () => {
+                  this.triggerStageClearCeremony(moveEvent.scoreBreakdown!);
+                });
+              } else {
+                this.triggerStageClearCeremony(moveEvent.scoreBreakdown!);
+              }
             } else if (moveEvent.deadlockReport.status === 'DEADLOCK_WARNING') {
               SokobanAudioService.playDeadlockWarn();
             } else if (moveEvent.deadlockReport.status === 'DEADLOCK_CRITICAL') {
@@ -1123,8 +1142,171 @@ export class MainGameScene extends BaseArcadeScene {
     }
   }
 
+  private triggerStageClearCeremony(breakdown: any): void {
+    // 1. Duck BGM and play triumphant fanfare
+    SokobanAudioService.stopBGM();
+    SokobanAudioService.playStageClear();
+
+    // 2. Worker joyful victory hop: cleanly turn to face front (sokoban:worker_down)
+    if (this.workerSprite) {
+      if (this.tweens?.killTweensOf) {
+        this.tweens.killTweensOf(this.workerSprite);
+      }
+      this.currentWorkerFacing = 'down';
+      this.workerSprite.setTexture('sokoban:worker_down');
+      if (typeof (this.workerSprite as any).setDisplaySize === 'function') {
+        this.workerSprite.setDisplaySize(this.tileSize, this.tileSize);
+      }
+
+      const workerPos = this.state.maze.getWorkerPos();
+      const wx = this.boardStartX + workerPos.col * this.tileSize + this.tileSize / 2;
+      const wy = this.boardStartY + workerPos.row * this.tileSize + this.tileSize / 2;
+      this.workerSprite.setPosition(wx, wy);
+
+      if (this.tweens?.add) {
+        this.tweens.add({
+          targets: this.workerSprite,
+          y: wy - 16,
+          duration: 180,
+          yoyo: true,
+          repeat: 4,
+          ease: 'Quad.easeOut',
+          onComplete: () => {
+            if (this.workerSprite) {
+              this.workerSprite.setPosition(wx, wy);
+              this.workerSprite.setTexture('sokoban:worker_down');
+            }
+          },
+        });
+      }
+    }
+
+    // 3. Resonate all gold goal boxes across the maze at their actual coordinates!
+    for (const boxPos of this.state.maze.getBoxPositions()) {
+      const bx = this.boardStartX + boxPos.col * this.tileSize + this.tileSize / 2;
+      const by = this.boardStartY + boxPos.row * this.tileSize + this.tileSize / 2;
+      const key = posKey(boxPos.col, boxPos.row);
+      const boxSprite = this.boxSprites.get(key);
+      if (boxSprite) {
+        if (this.tweens?.killTweensOf) {
+          this.tweens.killTweensOf(boxSprite);
+        }
+        boxSprite.setPosition(bx, by);
+        boxSprite.setTexture('sokoban:crate_gold');
+        if (typeof (boxSprite as any).setDisplaySize === 'function') {
+          boxSprite.setDisplaySize(this.tileSize, this.tileSize);
+        }
+      }
+      this.triggerGoalCelebration(bx, by);
+    }
+
+    // Second shimmer wave on goal boxes at 800ms
+    if (this.time?.delayedCall) {
+      this.time.delayedCall(800, () => {
+        for (const boxPos of this.state.maze.getBoxPositions()) {
+          const bx = this.boardStartX + boxPos.col * this.tileSize + this.tileSize / 2;
+          const by = this.boardStartY + boxPos.row * this.tileSize + this.tileSize / 2;
+          this.triggerGoalCelebration(bx, by);
+        }
+      });
+    }
+
+    // 4. In-maze sandbox celebration fireworks (cascading dual waves across the maze arena)
+    const maze = this.state.maze;
+    const boardW = maze.width * this.tileSize;
+    const boardH = maze.height * this.tileSize;
+    this.spawnSandboxFireworks(this.boardStartX, this.boardStartY, boardW, boardH);
+
+    // 5. Allow player to savor the pristine completed maze and celebrating worker for ~2200ms
+    // Extended celebration duration so the player can fully enjoy the victory
+    if (this.time?.delayedCall) {
+      this.time.delayedCall(2200, () => {
+        this.isCelebrationPlaying = false;
+        // Present the score breakdown modal directly!
+        this.showStageClear(breakdown);
+      });
+    } else {
+      this.isCelebrationPlaying = false;
+      this.showStageClear(breakdown);
+    }
+  }
+
+  private spawnSandboxFireworks(boardStartX: number, boardStartY: number, boardW: number, boardH: number): void {
+    if (!this.tweens?.add) return;
+
+    const confettiColors = [
+      0xfacc15, // Golden yellow
+      0x10b981, // Emerald green
+      0x38bdf8, // Sky cyan
+      0xf43f5e, // Rose pink
+      0xa855f7, // Royal purple
+      0xffffff, // Sparkling white
+    ];
+
+    const launchBurstWave = (origins: { x: number; y: number }[], countPerBurst: number) => {
+      origins.forEach((origin, burstIdx) => {
+        for (let i = 0; i < countPerBurst; i++) {
+          const p = this.add.graphics();
+          const color = confettiColors[(i + burstIdx * 3) % confettiColors.length];
+          p.fillStyle(color, 0.95);
+
+          if (i % 2 === 0) {
+            p.fillCircle(0, 0, 3.5);
+          } else {
+            p.fillRect(-2.5, -2.5, 5, 5);
+          }
+
+          if (typeof (p as any).setPosition === 'function') {
+            p.setPosition(origin.x, origin.y);
+          }
+          this.boardLayer.add(p);
+
+          const angle = (i * Math.PI * 2) / countPerBurst + (Math.random() - 0.5) * 0.35;
+          const speed = 45 + Math.random() * 95;
+          const targetX = origin.x + Math.cos(angle) * speed;
+          const targetY = origin.y + Math.sin(angle) * speed * 0.8 + 28;
+
+          this.tweens.add({
+            targets: p,
+            x: targetX,
+            y: targetY,
+            alpha: 0,
+            scale: 0.2,
+            duration: 850 + Math.random() * 300,
+            ease: 'Cubic.easeOut',
+            onComplete: () => p.destroy(),
+          });
+        }
+      });
+    };
+
+    // Wave 1 (immediate): Upper-Left and Upper-Right flanks
+    launchBurstWave([
+      { x: boardStartX + boardW * 0.25, y: boardStartY + boardH * 0.20 },
+      { x: boardStartX + boardW * 0.75, y: boardStartY + boardH * 0.20 },
+    ], 14);
+
+    // Wave 2 (at 750ms): Center sky and outer flanks
+    if (this.time?.delayedCall) {
+      this.time.delayedCall(750, () => {
+        launchBurstWave([
+          { x: boardStartX + boardW * 0.50, y: boardStartY + boardH * 0.15 },
+          { x: boardStartX + boardW * 0.15, y: boardStartY + boardH * 0.35 },
+          { x: boardStartX + boardW * 0.85, y: boardStartY + boardH * 0.35 },
+        ], 10);
+      });
+    }
+  }
+
   private showStageClear(breakdown: any): void {
     this.modalOverlayContainer.setVisible(true);
+    if (typeof (this.modalOverlayContainer as any).setAlpha === 'function') {
+      this.modalOverlayContainer.setAlpha(0);
+    }
+    if (typeof (this.modalOverlayContainer as any).setScale === 'function') {
+      this.modalOverlayContainer.setScale(0.9);
+    }
+
     this.modalBg.clear();
     // Backdrop dimmer to ensure high contrast over board
     this.modalBg.fillStyle(0x000000, 0.65);
@@ -1148,10 +1330,34 @@ export class MainGameScene extends BaseArcadeScene {
     );
 
     this.modalPromptText.setText('PRESS [SPACE / BUTTON A] FOR NEXT STAGE');
+
+    if (this.tweens?.add) {
+      this.tweens.add({
+        targets: this.modalOverlayContainer,
+        alpha: 1.0,
+        scale: 1.0,
+        duration: 220,
+        ease: 'Back.easeOut',
+      });
+    } else {
+      if (typeof (this.modalOverlayContainer as any).setAlpha === 'function') {
+        this.modalOverlayContainer.setAlpha(1.0);
+      }
+      if (typeof (this.modalOverlayContainer as any).setScale === 'function') {
+        this.modalOverlayContainer.setScale(1.0);
+      }
+    }
   }
 
   private showGameOver(): void {
+    this.isCelebrationPlaying = false;
     this.modalOverlayContainer.setVisible(true);
+    if (typeof (this.modalOverlayContainer as any).setAlpha === 'function') {
+      this.modalOverlayContainer.setAlpha(1.0);
+    }
+    if (typeof (this.modalOverlayContainer as any).setScale === 'function') {
+      this.modalOverlayContainer.setScale(1.0);
+    }
     this.modalBg.clear();
     // Backdrop dimmer to ensure high contrast over board
     this.modalBg.fillStyle(0x000000, 0.65);
@@ -1186,7 +1392,14 @@ export class MainGameScene extends BaseArcadeScene {
   }
 
   private showVictory(): void {
+    this.isCelebrationPlaying = false;
     this.modalOverlayContainer.setVisible(true);
+    if (typeof (this.modalOverlayContainer as any).setAlpha === 'function') {
+      this.modalOverlayContainer.setAlpha(1.0);
+    }
+    if (typeof (this.modalOverlayContainer as any).setScale === 'function') {
+      this.modalOverlayContainer.setScale(1.0);
+    }
     this.modalBg.clear();
     // Backdrop dimmer to ensure high contrast over board
     this.modalBg.fillStyle(0x000000, 0.65);

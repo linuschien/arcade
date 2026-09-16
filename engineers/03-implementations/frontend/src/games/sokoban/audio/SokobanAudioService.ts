@@ -18,7 +18,7 @@ class SokobanAudioServiceImpl {
    * Start or switch background music according to world theme key.
    */
   public playWorldBGM(themeKey: WorldThemeKey): void {
-    if (this.isBgmPlaying && this.currentTheme === themeKey) {
+    if (this.isBgmPlaying && this.currentTheme === themeKey && this.bgmTimer) {
       return;
     }
 
