@@ -315,6 +315,7 @@
 3. 遊戲開局呈現二擇一選單（不設複雜選關矩陣與縮圖）：
    * **選項一**：`NEW GAME (STAGE 01)`（始終可選）。
    * **選項二**：`CONTINUE (STAGE [maxClearedStage + 1])`（僅當 $\text{maxClearedStage} > 0$ 時出現，上限為 Stage 50）。
+   * **智慧聚焦原則**：當 $\text{maxClearedStage} > 0$ 時，游標預設反白聚焦於「選項二 CONTINUE」，兼顧標準縱向版面認知與街機投幣快速接關體驗。
 4. 玩家確認選擇後進入遊戲：
    * 生命值重置為 $\text{Lives} \leftarrow 3$。
    * 純得分重置為 $\text{RawScore} \leftarrow 0$。

@@ -27,7 +27,9 @@
   - 初始生命值重置為 $\text{Lives} \leftarrow 3$。
   - 當前累積純得分重置為 $\text{RawScore} \leftarrow 0$。
   - 當局最高通關記錄重置為 $\text{lastClearedStage} \leftarrow 0$。
-- **AC4 (鍵盤操作)**：支援實體方向鍵 `[↑↓]` 切換選項，`[Enter]` 或 `[Space]` 鍵確認開局。
+- **AC4 (鍵盤操作與智慧聚焦)**：
+  - 支援實體方向鍵 `[↑↓]` 切換選項，`[Enter]` 或 `[Space]` 鍵確認開局。
+  - **游標智慧聚焦 (Plan B)**：當 `maxClearedStage > 0` 時，選單順序維持標準之 `NEW GAME`（第一項）與 `CONTINUE`（第二項），但游標預設智慧聚焦於第二項 `CONTINUE`，兼顧標準選單排版認知與街機快速投幣接關便利性。
 
 ---
 

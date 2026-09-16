@@ -407,7 +407,7 @@ export class MainGameScene extends BaseArcadeScene {
     this.modalTitleText.setText('SOKOBAN 50 SELECTION');
     this.modalTitleText.setColor('#facc15');
 
-    this.titleMenuSelectedIndex = 0;
+    this.titleMenuSelectedIndex = this.state.maxClearedStage > 0 ? 1 : 0;
     this.updateTitleMenuDisplay();
     this.modalPromptText.setText('[↑ / ↓] SELECT    [SPACE] CONFIRM');
   }
@@ -415,12 +415,12 @@ export class MainGameScene extends BaseArcadeScene {
   private updateTitleMenuDisplay(): void {
     const maxCleared = this.state.maxClearedStage;
     if (maxCleared > 0) {
-      const optContinue = (this.titleMenuSelectedIndex === 0 ? '► ' : '  ') + `CONTINUE (STAGE ${maxCleared + 1})`;
-      const optNewGame  = (this.titleMenuSelectedIndex === 1 ? '► ' : '  ') + 'NEW GAME (STAGE 01)';
+      const optNewGame  = (this.titleMenuSelectedIndex === 0 ? '► ' : '  ') + 'NEW GAME (STAGE 01)';
+      const optContinue = (this.titleMenuSelectedIndex === 1 ? '► ' : '  ') + `CONTINUE (STAGE ${maxCleared + 1})`;
       this.modalBodyText.setText(
         `SAVED PROGRESS: STAGE ${maxCleared} CLEARED\n\n` +
-        `${optContinue}\n` +
-        `${optNewGame}`
+        `${optNewGame}\n` +
+        `${optContinue}`
       );
     } else {
       this.titleMenuSelectedIndex = 0;
@@ -584,11 +584,11 @@ export class MainGameScene extends BaseArcadeScene {
       const isDown = this.isActionJustPressed(ArcadeAction.DOWN);
 
       if (maxCleared > 0) {
-        if (isUp) {
+        if (isUp && this.titleMenuSelectedIndex !== 0) {
           this.titleMenuSelectedIndex = 0;
           this.updateTitleMenuDisplay();
           SokobanAudioService.playStep();
-        } else if (isDown) {
+        } else if (isDown && this.titleMenuSelectedIndex !== 1) {
           this.titleMenuSelectedIndex = 1;
           this.updateTitleMenuDisplay();
           SokobanAudioService.playStep();
@@ -599,7 +599,7 @@ export class MainGameScene extends BaseArcadeScene {
       const isConfirm = this.isActionJustPressed(ArcadeAction.BUTTON_A);
 
       if (isConfirm) {
-        if (maxCleared > 0 && this.titleMenuSelectedIndex === 0) {
+        if (maxCleared > 0 && this.titleMenuSelectedIndex === 1) {
           this.state.continueGame();
         } else {
           this.state.startNewGame();

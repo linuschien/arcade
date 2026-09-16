@@ -197,5 +197,30 @@ describe('Sokoban MainGameScene Unit Tests', () => {
     expect((scene as any).tweens.add).toHaveBeenCalled();
     expect(SokobanAudioService.playExtend).toHaveBeenCalled();
   });
+
+  it('should format title menu with NEW GAME first and CONTINUE second, focusing CONTINUE when save exists (Plan B)', () => {
+    scene.create();
+    const state = (scene as any).state;
+    state.maxClearedStage = 5;
+
+    // Trigger title menu with save present
+    (scene as any).showTitleMenu();
+
+    // Default cursor should be on CONTINUE (index 1)
+    expect((scene as any).titleMenuSelectedIndex).toBe(1);
+
+    // Verify text formatting in modalBodyText
+    const modalBodyText = (scene as any).modalBodyText;
+    expect(modalBodyText.setText).toHaveBeenCalledWith(
+      expect.stringContaining('  NEW GAME (STAGE 01)\n► CONTINUE (STAGE 6)')
+    );
+
+    // Switch selection to NEW GAME (index 0)
+    (scene as any).titleMenuSelectedIndex = 0;
+    (scene as any).updateTitleMenuDisplay();
+    expect(modalBodyText.setText).toHaveBeenCalledWith(
+      expect.stringContaining('► NEW GAME (STAGE 01)\n  CONTINUE (STAGE 6)')
+    );
+  });
 });
 
