@@ -257,26 +257,28 @@
 
 ---
 
-## US-07-10：固定階梯獎命 (Fixed 100,000 Pts Extend)
+## US-07-10：雙軌獎命體系 (World Clear Bonus & 10,000 Pts Extend)
 
 **身份**： 街機玩家 (Arcade Player)
 
 > **As a** 玩家，  
-> **I want to** 純得分每累積跨越 100,000 分門檻時獲得 1 條額外生命 (1UP)，  
-> **So that** 優秀的推箱表現能直接轉化為後續高難度世界的容錯資本。
+> **I want to** 在成功攻克一個主題世界、或純得分每累積跨越 10,000 分門檻時獲得 1 條額外生命 (1UP)，  
+> **So that** 優秀的推箱表現與章節進度能直接轉化為後續高難度世界的容錯資本。
 
 ### 驗收條件 (Acceptance Criteria)
 
-- **AC1 (階梯判定觸發)**：
+- **AC1 (世界通關獎勵 World Clear Bonus)**：
+  當成功通關任一世界之終點關卡（Stage 05、Stage 20、Stage 40）時，於結算時無條件發放額外生命：$\text{Lives} \leftarrow \text{Lives} + 1$。
+- **AC2 (10,000 分階梯判定觸發)**：
   當結算後累計純得分滿足：
-  $$\left\lfloor \frac{\text{RawScore}_{\text{new}}}{100,000} \right\rfloor > \left\lfloor \frac{\text{RawScore}_{\text{old}}}{100,000} \right\rfloor$$
-- **AC2 (獎命反饋演出)**：
-  - 畫面中央彈出金色 `1UP!` 浮動字卡。
-  - 播放街機經典獎命音效（`SFX_EXTEND`）。
-  - 生命值加 1：$\text{Lives} \leftarrow \text{Lives} + 1$。
-- **AC3 (HUD 同步)**：
-  - 右側 HUD 工人頭像與數字更新。
-  - 10 萬分累積進度條重置並重新累計。
+  $$\left\lfloor \frac{\text{RawScore}_{\text{new}}}{10,000} \right\rfloor > \left\lfloor \frac{\text{RawScore}_{\text{old}}}{10,000} \right\rfloor$$
+  額外獎勵 1 條生命：$\text{Lives} \leftarrow \text{Lives} + 1$。兩軌獎勵可同關疊加。
+- **AC3 (純音效回饋與零冗餘動畫)**：
+  - 播放街機經典升調小號音效（`SFX_EXTEND`）。
+  - **不額外彈出文字或字卡動畫**，保持沙盤迷宮 100% 乾淨通透。
+- **AC4 (HUD 同步)**：
+  - 右側 HUD 工人頭像與數字即時點亮更新。
+  - 10K 累積進度條（`1UP PROGRESS (10K)`）依 10,000 分為週期累積更新。
 
 ---
 
@@ -298,7 +300,10 @@
   - **第 1 關未過陣亡**：$\text{lastClearedStage} = 0, \text{RawScore} = 800 \implies \mathbf{800}$（末兩位 `00`）。
   - **第 3 關陣亡**：通關第 1、2 關，$\text{lastClearedStage} = 2, \text{RawScore} = 3,200 \implies \mathbf{3,202}$（末兩位 `02`）。
   - **第 14 關陣亡**：通關至第 13 關，$\text{lastClearedStage} = 13, \text{RawScore} = 28,400 \implies \mathbf{28,413}$（末兩位 `13`）。
-  - **第 50 關通關 ALL CLEAR**：$\text{lastClearedStage} = 50, \text{RawScore} = 156,000 \implies \mathbf{156,050}$（末兩位 `50`）。
+  - **第 50 關通關 ALL CLEAR**：$\text{lastClearedStage} = 50, \text{RawScore} = 328,000 \implies \mathbf{328,050}$（末兩位 `50`）。
+- **AC4 (街機出廠預設排行榜不霸榜原則)**：
+  - 模擬經典街機出廠 ROM 預設榜單機制，分數區間設定為親民且易於攻克的 $1,101 \sim 16,808$（關卡分佈 Stage $01 \sim 08$），嚴禁霸榜。
+  - 玩家通關 World 1（累計約 $9,100$ 分，編碼為 `9,105`）即可榮登前 5 名；若攻克至 World 2 前中期（Stage 6～8）即可問鼎第 1 名。
 
 ---
 

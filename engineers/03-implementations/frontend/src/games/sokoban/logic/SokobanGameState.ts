@@ -11,6 +11,7 @@ import { UndoSnapshotStack } from './UndoSnapshotStack';
 import { DeadlockDetector, DeadlockReport } from './DeadlockDetector';
 import { SokobanScoreKeeper, StageScoreBreakdown } from './SokobanScoreKeeper';
 import { LevelCatalog, SokobanStageConfig } from './LevelCatalog';
+import { isWorldEndStage } from './SokobanLevelSpecs';
 
 export type GameStatus =
   | 'TITLE_MENU'
@@ -175,8 +176,15 @@ export class SokobanGameState {
         );
 
         events.scoreBreakdown = evalResult.breakdown;
-        if (evalResult.newExtends > 0) {
-          this.lives += evalResult.newExtends;
+
+        // Dual-Track 1UP Extend:
+        // 1. Score threshold (every 10,000 pts)
+        // 2. World Clear bonus (+1 life for completing World 1 (Stg 5), World 2 (Stg 20), World 3 (Stg 40))
+        const worldClearExtend = isWorldEndStage(this.currentStageNumber) ? 1 : 0;
+        const totalNewExtends = evalResult.newExtends + worldClearExtend;
+
+        if (totalNewExtends > 0) {
+          this.lives += totalNewExtends;
           events.lifeAwarded = true;
         }
 

@@ -46,15 +46,16 @@ describe('SokobanScoreKeeper Unit Tests', () => {
     expect(result.breakdown.isPerfect).toBe(false);
   });
 
-  it('should award 1UP life extend upon crossing 100,000 threshold', () => {
-    const scoreKeeper = new SokobanScoreKeeper(99000);
-    expect(scoreKeeper.getExtendProgress()).toBeCloseTo(0.99, 2);
+  it('should award 1UP life extend upon crossing 10,000 threshold', () => {
+    const scoreKeeper = new SokobanScoreKeeper(9000);
+    expect(scoreKeeper.getExtendProgress()).toBeCloseTo(0.9, 1);
 
-    // Add 2000 points -> 101,000 (crosses 100k)
-    // Stage 41 (W4, pBase=800)
-    const result = scoreKeeper.evaluateStageClear(41, 395, 300, 14, 10);
+    // Add 1400 points -> 10,400 (crosses 10k)
+    // Stage 1 (W1, pBase=200, pTime=700, pUndo=200, pPerf=300 = 1400)
+    const result = scoreKeeper.evaluateStageClear(1, 60, 25, 2, 2);
     expect(result.newExtends).toBe(1);
-    expect(scoreKeeper.getRawScore()).toBeGreaterThan(100000);
+    expect(scoreKeeper.getRawScore()).toBe(10400);
+    expect(scoreKeeper.getExtendProgress()).toBeCloseTo(0.04, 2);
   });
 
   describe('PRD Section 4.4 Steganographic Cases', () => {
@@ -78,9 +79,9 @@ describe('SokobanScoreKeeper Unit Tests', () => {
       expect(keeper.getSteganographicScore()).toBe(28413);
     });
 
-    it('Case D: Stage 50 ALL CLEAR (lastClearedStage = 50, RawScore = 156000) -> 156050', () => {
-      const keeper = new SokobanScoreKeeper(156000, 50);
-      expect(keeper.getSteganographicScore()).toBe(156050);
+    it('Case D: Stage 50 ALL CLEAR (lastClearedStage = 50, RawScore = 328000) -> 328050', () => {
+      const keeper = new SokobanScoreKeeper(328000, 50);
+      expect(keeper.getSteganographicScore()).toBe(328050);
     });
   });
 });

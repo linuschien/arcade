@@ -183,14 +183,19 @@
   $$\text{RawScore} \pmod{100} \equiv 0$$
 * **進度保存**：通關時更新當局通關紀錄 $\text{lastClearedStage} \leftarrow S$；若 $S > \text{maxClearedStage}$，寫入本機持久化儲存。
 
-### 4.3 固定階梯 1UP 獎命 (Fixed 100,000 Pts Extend)
+### 4.3 雙軌獎命體系 (World Clear Bonus & 10,000 Pts Extend)
 
-* **觸發條件**：累計純得分更新後滿足跨越 100,000 分階梯：
-  $$\left\lfloor \frac{\text{RawScore}_{\text{new}}}{100,000} \right\rfloor > \left\lfloor \frac{\text{RawScore}_{\text{old}}}{100,000} \right\rfloor$$
-* **獎勵反饋**：
-  * 畫面中央彈出金色 `1UP!` 浮動字卡，播放街機獎命音效（`SFX_EXTEND`）。
-  * 生命值加 1（$\text{Lives} \leftarrow \text{Lives} + 1$）。
-  * 右側 HUD 獎命進度條重置並重新累積下一個 10 萬分。
+* **第一軌：世界通關保底獎命（World Clear Bonus）**：
+  * 當成功攻克任一主題世界之終點關卡（World 1: Stage 05、World 2: Stage 20、World 3: Stage 40）時，於通關結算當下無條件獲得額外生命：
+    $$\text{Lives} \leftarrow \text{Lives} + 1$$
+  * 象徵進入新章節獲得工安物資補給，大幅提升後續高難度世界的探索信心與容錯率。
+* **第二軌：固定 10,000 分階梯循環獎命（Fixed 10,000 Pts Extend）**：
+  * 累計純得分更新後滿足跨越 10,000 分階梯：
+    $$\left\lfloor \frac{\text{RawScore}_{\text{new}}}{10,000} \right\rfloor > \left\lfloor \frac{\text{RawScore}_{\text{old}}}{10,000} \right\rfloor$$
+* **獎勵反饋與演出規範**：
+  * **純音訊回饋**：觸發獎命時播放經典街機升調小號音效（`SFX_EXTEND`）。
+  * **零冗餘動畫原則**：**不額外彈出對話框或大字卡動畫**，維持通關勝利慶典與迷宮浮島的 $100\%$ 純淨視覺。
+  * **HUD 即時更新**：右側 HUD 餘命圖示即時更新點亮；獎命進度條以 10,000 分為週期累積（標籤為 `1UP PROGRESS (10K)`）。
 
 ### 4.4 兩位數關卡分數隱寫術 (Steganographic Score Encoding)
 
@@ -202,7 +207,30 @@
   * **案例 A**：第 1 關未過陣亡（$\text{lastClearedStage} = 0, \text{RawScore} = 800$）$\to \mathbf{800}$。
   * **案例 B**：第 3 關陣亡（通關第 1、2 關，$\text{lastClearedStage} = 2, \text{RawScore} = 3,200$）$\to \mathbf{3,202}$。
   * **案例 C**：第 14 關陣亡（通關至第 13 關，$\text{lastClearedStage} = 13, \text{RawScore} = 28,400$）$\to \mathbf{28,413}$。
-  * **案例 D**：第 50 關通關 ALL CLEAR（$\text{lastClearedStage} = 50, \text{RawScore} = 156,000$）$\to \mathbf{156,050}$。
+  * **案例 D**：第 50 關通關 ALL CLEAR（$\text{lastClearedStage} = 50, \text{RawScore} = 328,000$）$\to \mathbf{328,050}$。
+
+### 4.5 街機出廠預設排行榜校準 (Arcade Factory Default Leaderboard Calibration)
+
+* **街機出廠哲學（非霸榜原則）**：
+  * 排行榜預設資料乃模擬經典街機剛出廠（Factory Default ROM）時寫入之基準分數，目的在於營造機台投幣歷史感，並作為玩家可攻克、易上榜之挑戰目標。
+  * **嚴禁預設霸榜**：預設分數不得設為極限通關分數（如 50 關全通 328,050 分），否則初入街機廳之玩家將喪失投幣爭取榮譽之激勵感。
+  * 平台各遊戲基準對照：俄羅斯方塊預設榜為 $1,200 \sim 12,500$ 分；小精靈為 $800 \sim 8,500$ 分。
+* **Sokoban 50 預設榜單分佈（$1,101 \sim 16,808$）**：
+  * 涵蓋關卡分佈：Stage $01 \sim 08$（World 1 延伸至 World 2 前中期）。
+  * 玩家通關 World 1 五關（累計純分約 $9,100$ 分，編碼後為 `9,105`）即可直接強勢空降榜單第 5 名；若攻克至 World 2 前中期（Stage 6～8）即有機會問鼎第 1 名，大幅契合街機投幣成就反饋。
+  * **預設 10 筆名冊與隱寫校驗表**：
+    | 名次 (Rank) | 預設玩家 (Email / Alias) | 顯示分數 (Score) | 純分數 (RawScore) | 通關關卡 (Stage) | 隱寫驗證 |
+    |---|---|---|---|---|---|
+    | 1 | `arcade.veteran@arcade.com` | **16,808** | 16,800 | Stage 08 | $16800 + 8 = 16808$ |
+    | 2 | `cyber.runner@arcade.com` | **14,207** | 14,200 | Stage 07 | $14200 + 7 = 14207$ |
+    | 3 | `grid.master@arcade.com` | **11,806** | 11,800 | Stage 06 | $11800 + 6 = 11806$ |
+    | 4 | `depot.champ@arcade.com` | **9,605** | 9,600 | Stage 05 | $9600 + 5 = 9605$ |
+    | 5 | `box.pusher@arcade.com` | **7,804** | 7,800 | Stage 04 | $7800 + 4 = 7804$ |
+    | 6 | `forklift.driver@arcade.com` | **5,903** | 5,900 | Stage 03 | $5900 + 3 = 5903$ |
+    | 7 | `warehouse.intern@arcade.com` | **4,202** | 4,200 | Stage 02 | $4200 + 2 = 4202$ |
+    | 8 | `undo.saver@arcade.com` | **2,802** | 2,800 | Stage 02 | $2800 + 2 = 2802$ |
+    | 9 | `puzzle.novice@arcade.com` | **1,701** | 1,700 | Stage 01 | $1700 + 1 = 1701$ |
+    | 10 | `rookie.pusher@arcade.com` | **1,101** | 1,100 | Stage 01 | $1100 + 1 = 1101$ |
 
 ---
 

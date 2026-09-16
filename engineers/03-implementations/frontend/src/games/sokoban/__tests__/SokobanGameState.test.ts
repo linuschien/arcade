@@ -4,7 +4,7 @@
  * deadlock countdowns, life deduction, and stage clearance.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SokobanGameState } from '../logic/SokobanGameState';
 import { Direction } from '../logic/SokobanMaze';
 
@@ -168,4 +168,58 @@ describe('SokobanGameState Unit Tests', () => {
     expect(event.lifeLost).toBe(true);
     expect(state.lives).toBe(2);
   });
+
+  describe('Dual-Track 1UP Extend Tests', () => {
+    it('should award 1UP when completing a World (Stage 5 World 1 Clear)', () => {
+      state.startNewGame();
+      state.loadStage(5);
+      state.status = 'PLAYING';
+      expect(state.lives).toBe(3);
+
+      // Spy on isCompleted to simulate winning stage 5
+      vi.spyOn(state.maze, 'isCompleted').mockReturnValue(true);
+
+      // Walk right (or any valid direction) to trigger completion
+      const event = state.stepMove(Direction.RIGHT);
+      expect(event.stageCleared).toBe(true);
+      expect(event.lifeAwarded).toBe(true);
+      expect(state.lives).toBe(4); // +1 from World 1 clear!
+    });
+
+    it('should award 1UP when crossing 10,000 score threshold on a non-world-end stage', () => {
+      state.startNewGame();
+      // Pre-seed score keeper to 9,500
+      (state.scoreKeeper as any).rawScore = 9500;
+      (state.scoreKeeper as any).extendThresholdsCrossed = 0;
+      state.loadStage(1); // Stage 1 is not a world end stage
+      state.status = 'PLAYING';
+      expect(state.lives).toBe(3);
+
+      // Clear stage 1: box push right onto goal gives >1000 pts -> crosses 10,000!
+      const event = state.stepMove(Direction.RIGHT);
+      expect(event.stageCleared).toBe(true);
+      expect(event.lifeAwarded).toBe(true);
+      expect(state.lives).toBe(4); // +1 from 10K score milestone!
+      expect(state.scoreKeeper.getRawScore()).toBeGreaterThan(10000);
+    });
+
+    it('should stack 2UP (+2 lives) when clearing World 1 (Stage 5) and simultaneously crossing 10,000 score', () => {
+      state.startNewGame();
+      // Pre-seed score keeper to 9,500
+      (state.scoreKeeper as any).rawScore = 9500;
+      (state.scoreKeeper as any).extendThresholdsCrossed = 0;
+      state.loadStage(5);
+      state.status = 'PLAYING';
+      expect(state.lives).toBe(3);
+
+      vi.spyOn(state.maze, 'isCompleted').mockReturnValue(true);
+
+      const event = state.stepMove(Direction.RIGHT);
+      expect(event.stageCleared).toBe(true);
+      expect(event.lifeAwarded).toBe(true);
+      // 1UP from World 1 clear + 1UP from 10K milestone = +2 lives!
+      expect(state.lives).toBe(5);
+    });
+  });
 });
+

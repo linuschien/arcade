@@ -175,7 +175,7 @@ describe('Sokoban MainGameScene Unit Tests', () => {
     expect((scene as any).tweens.add).toHaveBeenCalled();
   });
 
-  it('should trigger in-maze stage clear celebration on victory with unobscured worker animation', () => {
+  it('should trigger in-maze stage clear celebration on victory with unobscured worker animation and playExtend when lifeAwarded is true', async () => {
     scene.create();
     (scene as any).state.startNewGame();
     (scene as any).renderStageBoard();
@@ -189,9 +189,13 @@ describe('Sokoban MainGameScene Unit Tests', () => {
       stageTotal: 1850,
     };
 
-    expect(() => (scene as any).triggerStageClearCeremony(breakdown)).not.toThrow();
+    const { SokobanAudioService } = await import('../../audio/SokobanAudioService');
+    (SokobanAudioService.playExtend as any).mockClear();
+
+    expect(() => (scene as any).triggerStageClearCeremony(breakdown, true)).not.toThrow();
     // Worker celebratory hop tween is triggered in-maze
     expect((scene as any).tweens.add).toHaveBeenCalled();
+    expect(SokobanAudioService.playExtend).toHaveBeenCalled();
   });
 });
 

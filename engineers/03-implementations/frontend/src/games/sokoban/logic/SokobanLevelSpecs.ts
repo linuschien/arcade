@@ -125,3 +125,12 @@ export function calculatePerfBonus(stageNumber: number): number {
   return getWorldSpecForStage(stageNumber).pPerf;
 }
 
+/**
+ * Checks whether the given stage number completes a themed world (World 1: 5, World 2: 20, World 3: 40).
+ * World 4 ends at 50 (which triggers ALL CLEAR).
+ */
+export function isWorldEndStage(stageNumber: number): boolean {
+  return stageNumber === 5 || stageNumber === 20 || stageNumber === 40;
+}
+
+

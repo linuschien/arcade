@@ -274,7 +274,7 @@ export class MainGameScene extends BaseArcadeScene {
     }).setOrigin(0.5);
 
     // 1UP Extend Header
-    this.extendLabelText = this.add.text(1180, 260, '1UP PROGRESS (100K)', {
+    this.extendLabelText = this.add.text(1180, 260, '1UP PROGRESS (10K)', {
       fontFamily: 'monospace',
       fontSize: '12px',
       color: '#a855f7',
@@ -720,10 +720,10 @@ export class MainGameScene extends BaseArcadeScene {
               const arrivalDelayMs = moveEvent.actionResult.isPush ? 200 : 100;
               if (this.time?.delayedCall) {
                 this.time.delayedCall(arrivalDelayMs, () => {
-                  this.triggerStageClearCeremony(moveEvent.scoreBreakdown!);
+                  this.triggerStageClearCeremony(moveEvent.scoreBreakdown!, moveEvent.lifeAwarded);
                 });
               } else {
-                this.triggerStageClearCeremony(moveEvent.scoreBreakdown!);
+                this.triggerStageClearCeremony(moveEvent.scoreBreakdown!, moveEvent.lifeAwarded);
               }
             } else if (moveEvent.deadlockReport.status === 'DEADLOCK_WARNING') {
               SokobanAudioService.playDeadlockWarn();
@@ -1142,10 +1142,21 @@ export class MainGameScene extends BaseArcadeScene {
     }
   }
 
-  private triggerStageClearCeremony(breakdown: any): void {
+  private triggerStageClearCeremony(breakdown: any, lifeAwarded?: boolean): void {
     // 1. Duck BGM and play triumphant fanfare
     SokobanAudioService.stopBGM();
     SokobanAudioService.playStageClear();
+
+    // 1B. If 1UP was awarded, play extend fanfare right as Wave 2 fireworks launch (750ms)
+    if (lifeAwarded) {
+      if (this.time?.delayedCall) {
+        this.time.delayedCall(750, () => {
+          SokobanAudioService.playExtend();
+        });
+      } else {
+        SokobanAudioService.playExtend();
+      }
+    }
 
     // 2. Worker joyful victory hop: cleanly turn to face front (sokoban:worker_down)
     if (this.workerSprite) {

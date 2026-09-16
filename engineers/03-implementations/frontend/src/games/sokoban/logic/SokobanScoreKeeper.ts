@@ -1,10 +1,12 @@
 /**
  * SokobanScoreKeeper.ts
  * Manages stage clear evaluation, modulo 100 anti-pressing integrity,
- * 100,000 points 1UP threshold tracking, and two-digit stage score steganography.
+ * 10,000 points 1UP threshold tracking, and two-digit stage score steganography.
  */
 
 import { getWorldSpecForStage } from './SokobanLevelSpecs';
+
+export const SCORE_EXTEND_INTERVAL = 10000;
 
 export interface StageScoreBreakdown {
   pBase: number;
@@ -23,7 +25,7 @@ export class SokobanScoreKeeper {
   constructor(initialScore: number = 0, initialClearedStage: number = 0) {
     this.rawScore = initialScore;
     this.lastClearedStage = initialClearedStage;
-    this.extendThresholdsCrossed = Math.floor(this.rawScore / 100000);
+    this.extendThresholdsCrossed = Math.floor(this.rawScore / SCORE_EXTEND_INTERVAL);
   }
 
   /**
@@ -63,8 +65,8 @@ export class SokobanScoreKeeper {
     this.rawScore += stageTotal;
     this.lastClearedStage = Math.max(this.lastClearedStage, stageNumber);
 
-    // 1UP Extend Check: floor(Score_new / 100,000) > floor(Score_old / 100,000)
-    const currentExtends = Math.floor(this.rawScore / 100000);
+    // 1UP Extend Check: floor(Score_new / 10,000) > floor(Score_old / 10,000)
+    const currentExtends = Math.floor(this.rawScore / SCORE_EXTEND_INTERVAL);
     const newExtends = Math.max(0, currentExtends - this.extendThresholdsCrossed);
     this.extendThresholdsCrossed = currentExtends;
 
@@ -90,10 +92,10 @@ export class SokobanScoreKeeper {
   }
 
   /**
-   * Progress towards next 100,000 points 1UP threshold (0.0 to 1.0).
+   * Progress towards next 10,000 points 1UP threshold (0.0 to 1.0).
    */
   public getExtendProgress(): number {
-    return (this.rawScore % 100000) / 100000;
+    return (this.rawScore % SCORE_EXTEND_INTERVAL) / SCORE_EXTEND_INTERVAL;
   }
 
   /**
