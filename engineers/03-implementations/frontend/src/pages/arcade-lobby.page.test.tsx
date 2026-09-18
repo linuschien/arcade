@@ -611,4 +611,40 @@ describe('ArcadeLobbyPage Unit Tests', () => {
       expect(customStore.get('/activeGameTitle')).toBe('Pac-Man Classic');
     });
   });
+
+  it('updates store /game/rendererMode when RENDERER_DETECTED event is emitted', async () => {
+    const customStore = createStateStore({
+      user: { email: 'player@example.com', id: 'p1', isAdmin: false },
+      wallet: { totalCredits: 10 },
+      game: { isPlaying: true, isLobbyVisible: false, rendererMode: 'WebGL' },
+      activeGameId: 'pacman',
+      activeGameTitle: 'Pac-Man Classic',
+      settings: { crtEnabled: false, masterMuted: false, audioEnabled: true },
+      data: { listGameCards: [], gameDropdownItems: [], top10Leaderboard: [] },
+      modals: {},
+    });
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <ArcadeLobbyPage store={customStore} />
+      </QueryClientProvider>
+    );
+
+    expect(customStore.get('/game/rendererMode')).toBe('WebGL');
+
+    // Emit RENDERER_DETECTED with Canvas
+    ArcadeBridge.emit('RENDERER_DETECTED', { mode: 'Canvas' });
+
+    await waitFor(() => {
+      expect(customStore.get('/game/rendererMode')).toBe('Canvas');
+    });
+
+    // Emit RENDERER_DETECTED with WebGL
+    ArcadeBridge.emit('RENDERER_DETECTED', { mode: 'WebGL' });
+
+    await waitFor(() => {
+      expect(customStore.get('/game/rendererMode')).toBe('WebGL');
+    });
+  });
 });

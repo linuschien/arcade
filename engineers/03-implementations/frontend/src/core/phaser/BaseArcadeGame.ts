@@ -5,7 +5,7 @@
  */
 
 import Phaser from 'phaser';
-import { IArcadeGame, ArcadeBridge } from '@/core/bridge/ArcadeBridge';
+import { IArcadeGame, ArcadeBridge, RendererDetectedPayload } from '@/core/bridge/ArcadeBridge';
 import { SoundEngine } from '@/core/audio/SoundEngine';
 import { BaseArcadeScene } from './BaseArcadeScene';
 import './init-high-dpi';
@@ -87,6 +87,13 @@ export abstract class BaseArcadeGame implements IArcadeGame {
       callbacks: {
         preBoot: (game: Phaser.Game) => {
           (game as any)._arcadeDpr = dpr;
+        },
+        postBoot: (game: Phaser.Game) => {
+          const isWebGL = game.renderer?.type === Phaser.WEBGL;
+          const payload: RendererDetectedPayload = {
+            mode: isWebGL ? 'WebGL' : 'Canvas',
+          };
+          ArcadeBridge.emit('RENDERER_DETECTED', payload);
         },
       },
     };

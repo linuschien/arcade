@@ -33,12 +33,17 @@ export interface IArcadeGame {
   destroyGame(): void;
 }
 
+export interface RendererDetectedPayload {
+  mode: 'WebGL' | 'Canvas';
+}
+
 export type ArcadeEvent =
   | 'COIN_INSERTED'
   | 'PAUSE_REQUESTED'
   | 'RESUME_REQUESTED'
   | 'GAME_OVER'
-  | 'SCORE_UPDATED';
+  | 'SCORE_UPDATED'
+  | 'RENDERER_DETECTED';
 
 export type EventCallback<T = unknown> = (data: T) => void;
 

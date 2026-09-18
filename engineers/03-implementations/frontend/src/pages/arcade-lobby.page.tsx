@@ -10,7 +10,7 @@ import { useDeductCredit } from '@/hooks/use-deductCredit';
 import { useGrantAdminCredit } from '@/hooks/use-grantAdminCredit';
 import { useListPlayers } from '@/hooks/use-listPlayers';
 import { useSubmitHighScore } from '@/hooks/use-submitHighScore';
-import { ArcadeBridge, IArcadeGame } from '@/core/bridge/ArcadeBridge';
+import { ArcadeBridge, IArcadeGame, RendererDetectedPayload } from '@/core/bridge/ArcadeBridge';
 import { createGameInstance } from '@/games';
 import { SoundEngine } from '@/core/audio/SoundEngine';
 import { Blocks, Ghost, Car, PackageCheck, Wrench, Dices, Gamepad2 } from 'lucide-react';
@@ -96,6 +96,7 @@ const defaultStore = createStateStore({
   game: {
     isPlaying: false,
     isLobbyVisible: true,
+    rendererMode: 'WebGL',
   },
 });
 
@@ -180,6 +181,18 @@ export default function ArcadeLobbyPage({ store: propStore, handlers: propHandle
       }
     }
   }, [isPauseModalOpen, isPlaying]);
+
+  // Listen for Phaser RENDERER_DETECTED event to update renderer mode in store
+  useEffect(() => {
+    const unsub = ArcadeBridge.on<RendererDetectedPayload>('RENDERER_DETECTED', (data) => {
+      if (data?.mode) {
+        store.set('/game/rendererMode', data.mode);
+      }
+    });
+    return () => {
+      unsub();
+    };
+  }, [store]);
 
   // Dynamic Control Bar Width Alignment: Tracks active game canvas width exactly
   useEffect(() => {

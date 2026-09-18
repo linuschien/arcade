@@ -5,12 +5,15 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BaseArcadeGame, calculateDynamicResolution } from '../BaseArcadeGame';
+import { ArcadeBridge } from '@/core/bridge/ArcadeBridge';
 import Phaser from 'phaser';
 
 vi.mock('phaser', () => {
   return {
     default: {
       AUTO: 'AUTO',
+      CANVAS: 1,
+      WEBGL: 2,
       Game: vi.fn().mockImplementation((config) => ({
         config,
         scene: {
@@ -238,5 +241,40 @@ describe('BaseArcadeGame Unit Tests', () => {
     testGame.destroyGame();
     expect(mockGame.destroy).toHaveBeenCalledWith(true);
     expect(testGame.getGame()).toBeNull();
+  });
+
+  it('should emit RENDERER_DETECTED event with WebGL or Canvas in postBoot callback', () => {
+    let capturedConfig: any = null;
+    vi.mocked(Phaser.Game).mockImplementationOnce((config: any) => {
+      capturedConfig = config;
+      return {} as any;
+    });
+
+    const emitSpy = vi.spyOn(ArcadeBridge, 'emit');
+
+    new ConcreteTestGame({
+      parentContainerId: 'test-container',
+      baseWidth: 640,
+      baseHeight: 480,
+      scene: [],
+    });
+
+    expect(capturedConfig.callbacks.postBoot).toBeDefined();
+
+    // Test WebGL mode
+    const mockWebGLGame: any = {
+      renderer: { type: Phaser.WEBGL },
+    };
+    capturedConfig.callbacks.postBoot(mockWebGLGame);
+    expect(emitSpy).toHaveBeenCalledWith('RENDERER_DETECTED', { mode: 'WebGL' });
+
+    // Test Canvas mode
+    const mockCanvasGame: any = {
+      renderer: { type: Phaser.CANVAS },
+    };
+    capturedConfig.callbacks.postBoot(mockCanvasGame);
+    expect(emitSpy).toHaveBeenCalledWith('RENDERER_DETECTED', { mode: 'Canvas' });
+
+    emitSpy.mockRestore();
   });
 });
