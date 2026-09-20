@@ -255,7 +255,7 @@ export class PreloadScene extends Phaser.Scene {
       cargo_depot: { face: 0x9a3412, highlight: 0xfbbf24, shadow: 0x431407, accent: 0xd97706 },
       cyber_vault: { face: 0x0369a1, highlight: 0x38bdf8, shadow: 0x082f49, accent: 0x67e8f9 },
       steel_works: { face: 0x475569, highlight: 0xe2e8f0, shadow: 0x0f172a, accent: 0x94a3b8 },
-      mega_terminal: { face: 0x312e81, highlight: 0xfbbf24, shadow: 0x090514, accent: 0xa855f7 },
+      mega_terminal: { face: 0x181825, highlight: 0x6366f1, shadow: 0x090912, accent: 0x38bdf8 },
     };
 
     for (const [key, t] of Object.entries(wallThemes)) {
@@ -272,7 +272,7 @@ export class PreloadScene extends Phaser.Scene {
       cargo_depot: { base: 0x261911, inner: 0x322217, grid: 0x160d08, accent: 0x78350f },
       cyber_vault: { base: 0x0a101f, inner: 0x0f172a, grid: 0x1e293b, accent: 0x0284c7 },
       steel_works: { base: 0x161d2b, inner: 0x1e293b, grid: 0x0f172a, accent: 0x273549 },
-      mega_terminal: { base: 0x0e0e12, inner: 0x18181f, grid: 0x522d0c, accent: 0x713f12 },
+      mega_terminal: { base: 0x181c2b, inner: 0x24283b, grid: 0x121522, accent: 0x94a3b8 },
     };
 
     for (const [key, t] of Object.entries(floorThemes)) {
@@ -842,24 +842,67 @@ export class PreloadScene extends Phaser.Scene {
         gfx.fillCircle(rx - 1, ry - 1, 1);
       }
     } else {
-      // Mega Terminal: Regal obsidian-gold vault barrier
-      gfx.fillStyle(colors.shadow, 0.85);
-      gfx.fillRect(6, 6, S - 12, S - 12);
-      gfx.lineStyle(2, colors.highlight, 1);
-      gfx.strokeRect(6, 6, S - 12, S - 12);
+      // Mega Terminal: High-Tech Concourse Bulkhead (大型太空航站高科技隔艙壁)
+      // Monolithic aerospace wall with dual structural pylons, recessed blast louvers, and cyan guide light:
 
-      // Center gold vault lock crest
-      gfx.fillStyle(colors.highlight, 0.9);
-      gfx.beginPath();
-      gfx.moveTo(S / 2, 16);
-      gfx.lineTo(S - 16, S / 2);
-      gfx.lineTo(S / 2, S - 16);
-      gfx.lineTo(16, S / 2);
-      gfx.closePath();
-      gfx.fillPath();
+      // 1. Central Inset Machinery & Blast Louver Bay (中央深色精密通風格柵槽)
+      const bayX = 11;
+      const bayW = S - 22;
+      gfx.fillStyle(colors.shadow, 0.95);
+      gfx.fillRect(bayX, 6, bayW, S - 12);
 
-      gfx.fillStyle(colors.accent, 1);
-      gfx.fillCircle(S / 2, S / 2, 3);
+      // Horizontal precision blast louvers (航太通風/防爆導流葉片)
+      for (let y = 12; y <= S - 14; y += 6) {
+        // Deep shadow slit
+        gfx.fillStyle(colors.shadow, 1);
+        gfx.fillRect(bayX + 2, y, bayW - 4, 3);
+        // Beveled metallic louver slat
+        gfx.fillStyle(colors.face, 1);
+        gfx.fillRect(bayX + 2, y, bayW - 4, 2);
+        gfx.fillStyle(colors.highlight, 0.4);
+        gfx.fillRect(bayX + 2, y, bayW - 4, 1);
+      }
+
+      // 2. Central Cyan Terminal Status Guide Lightstrip (中央青色終端導引光條)
+      gfx.fillStyle(colors.shadow, 1);
+      gfx.fillRect(bayX + 2, S / 2 - 2, bayW - 4, 4);
+      gfx.fillStyle(colors.accent, 0.95);
+      gfx.fillRect(bayX + 4, S / 2 - 1, bayW - 8, 2);
+      gfx.fillStyle(0xffffff, 1);
+      gfx.fillRect(S / 2 - 2, S / 2 - 1, 4, 2);
+
+      // 3. Dual Vertical Structural Pylons (左右兩側立體加固承重柱)
+      // Left Pylon
+      gfx.fillStyle(colors.face, 1);
+      gfx.fillRect(4, 4, 7, S - 8);
+      gfx.fillStyle(colors.highlight, 0.7);
+      gfx.fillRect(4, 4, 2, S - 8);
+      gfx.fillStyle(colors.shadow, 0.8);
+      gfx.fillRect(9, 4, 2, S - 8);
+
+      // Right Pylon
+      gfx.fillStyle(colors.face, 1);
+      gfx.fillRect(S - 11, 4, 7, S - 8);
+      gfx.fillStyle(colors.highlight, 0.7);
+      gfx.fillRect(S - 11, 4, 2, S - 8);
+      gfx.fillStyle(colors.shadow, 0.8);
+      gfx.fillRect(S - 6, 4, 2, S - 8);
+
+      // 4. Heavy Structural Pylon Anchor Bolts (立柱重型固定錨栓)
+      const anchorBolts = [
+        [7, 8],
+        [7, S - 9],
+        [S - 8, 8],
+        [S - 8, S - 9],
+      ];
+      for (const [bx, by] of anchorBolts) {
+        gfx.fillStyle(colors.shadow, 1);
+        gfx.fillCircle(bx, by, 2.2);
+        gfx.fillStyle(colors.accent, 0.85);
+        gfx.fillCircle(bx, by, 1.4);
+        gfx.fillStyle(0xffffff, 0.9);
+        gfx.fillCircle(bx - 0.5, by - 0.5, 0.7);
+      }
     }
 
     gfx.generateTexture(key, S, S);
@@ -926,14 +969,31 @@ export class PreloadScene extends Phaser.Scene {
       gfx.fillCircle(3, S - 3, 1.5);
       gfx.fillCircle(S - 3, S - 3, 1.5);
     } else {
-      // Mega terminal: Polished obsidian marble with gold corner accents
-      gfx.fillStyle(colors.accent, 0.5);
-      gfx.fillRect(2, 2, 3, 3);
-      gfx.fillRect(S - 5, 2, 3, 3);
-      gfx.fillRect(2, S - 5, 3, 3);
-      gfx.fillRect(S - 5, S - 5, 3, 3);
-      gfx.fillStyle(colors.grid, 0.6);
-      gfx.fillCircle(S / 2, S / 2, 2);
+      // Mega Terminal: High-Tech Concourse Slate Floor with 4 Stainless Steel Corner Screws
+      gfx.lineStyle(1, colors.grid, 0.7);
+      gfx.lineBetween(S / 2, 2, S / 2, S - 2);
+      gfx.lineBetween(2, S / 2, S - 2, S / 2);
+
+      gfx.fillStyle(colors.grid, 0.8);
+      gfx.fillCircle(S / 2, S / 2, 2.5);
+
+      const screwCoords = [
+        [6, 6],
+        [S - 6, 6],
+        [6, S - 6],
+        [S - 6, S - 6],
+      ];
+      for (const [sx, sy] of screwCoords) {
+        // Dark recessed socket hole
+        gfx.fillStyle(colors.grid, 1);
+        gfx.fillCircle(sx, sy, 3.0);
+        // Polished stainless steel screw head (Slate-400 silver)
+        gfx.fillStyle(colors.accent, 1);
+        gfx.fillCircle(sx, sy, 2.0);
+        // Specular white glint highlight
+        gfx.fillStyle(0xffffff, 0.95);
+        gfx.fillCircle(sx - 0.7, sy - 0.7, 0.9);
+      }
     }
 
     gfx.generateTexture(key, S, S);

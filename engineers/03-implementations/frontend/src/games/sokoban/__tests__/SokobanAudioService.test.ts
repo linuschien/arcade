@@ -61,6 +61,25 @@ describe('SokobanAudioService Unit Tests', () => {
     );
   });
 
+  it('should synthesize calm industrial focus BGM for World 3 (steel_works) with 200ms pacing and gentle triangle/sine waves', () => {
+    SokobanAudioService.playWorldBGM('steel_works');
+    vi.advanceTimersByTime(200);
+
+    expect(SoundEngine.playTone).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'triangle',
+        volume: 0.06,
+      })
+    );
+    expect(SoundEngine.playTone).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'sine',
+        frequency: 87.31,
+        volume: 0.09,
+      })
+    );
+  });
+
   it('should play all 8 arcade SFX with enhanced audible volume', () => {
     expect(() => SokobanAudioService.playStep()).not.toThrow();
     expect(SoundEngine.playTone).toHaveBeenCalledWith(

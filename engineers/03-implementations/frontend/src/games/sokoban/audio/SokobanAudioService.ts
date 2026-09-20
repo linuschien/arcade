@@ -139,30 +139,44 @@ class SokobanAudioServiceImpl {
     }, 220);
   }
 
-  // World 3: Steel Works (94 BPM -> ~160ms 16th note, punchy F Blues groove)
+  // World 3: Steel Works (Industrial Ambient Focus Groove, ~200ms step interval, mellow triangle/sine contemplative melody with rests)
   private startSteelJazzLoop(): void {
-    const scale = [349.23, 415.3, 466.16, 493.88, 523.25, 622.25]; // F4, Ab4, Bb4, B4, C5, Eb5
+    // F Minor Pentatonic / Atmospheric steel resonance (F3, C4, Eb4, F4, Ab4, C5)
+    // 16-step sequence with rests: notes trigger only on melody steps [0, 3, 6, 8, 11, 14]
+    const melodyMap: Record<number, number> = {
+      0: 349.23,  // F4
+      3: 261.63,  // C4
+      6: 311.13,  // Eb4
+      8: 349.23,  // F4
+      11: 415.30, // Ab4
+      14: 261.63, // C4
+    };
+
     this.bgmTimer = setInterval(() => {
       if (!this.isBgmPlaying || SoundEngine.isMutedState()) return;
-      const note = scale[this.bgmStep % scale.length];
 
-      SoundEngine.playTone({
-        type: 'square',
-        frequency: note,
-        durationSeconds: 0.10,
-        volume: 0.07,
-      });
-
-      if (this.bgmStep % 4 === 0) {
+      const note = melodyMap[this.bgmStep];
+      if (note) {
         SoundEngine.playTone({
           type: 'triangle',
-          frequency: 87.31, // F2 heavy bass
+          frequency: note,
           durationSeconds: 0.22,
-          volume: 0.11,
+          volume: 0.06,
         });
       }
+
+      // Deep, soothing industrial sub-bass pulse on downbeats (step 0 and 8)
+      if (this.bgmStep === 0 || this.bgmStep === 8) {
+        SoundEngine.playTone({
+          type: 'sine',
+          frequency: 87.31, // F2 warm foundation bass
+          durationSeconds: 0.45,
+          volume: 0.09,
+        });
+      }
+
       this.bgmStep = (this.bgmStep + 1) % 16;
-    }, 160);
+    }, 200);
   }
 
   // World 4: Terminal Vista (75 BPM -> ~200ms 16th note, atmospheric slow deep maritime pulse)
