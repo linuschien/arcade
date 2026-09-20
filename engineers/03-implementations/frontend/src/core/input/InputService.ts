@@ -56,6 +56,7 @@ class InputServiceImpl {
     Enter: ArcadeAction.BUTTON_A,
     NumpadEnter: ArcadeAction.BUTTON_A,
     KeyJ: ArcadeAction.BUTTON_A,
+    j: ArcadeAction.BUTTON_A,
     KeyZ: ArcadeAction.BUTTON_A,
     z: ArcadeAction.BUTTON_A,
 
@@ -70,6 +71,7 @@ class InputServiceImpl {
     c: ArcadeAction.BUTTON_C,
     ShiftLeft: ArcadeAction.BUTTON_C,
     ShiftRight: ArcadeAction.BUTTON_C,
+    Shift: ArcadeAction.BUTTON_C,
 
     // Mode / Auxiliary Button (Button D)
     KeyM: ArcadeAction.BUTTON_D,
