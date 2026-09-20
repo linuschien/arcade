@@ -458,9 +458,13 @@ export class MainGameScene extends BaseArcadeScene {
     }
 
     // 5. Draw NEXT Queue Preview
+    const nextX = 600;
     const nextQueue = this.board.getNextQueue();
     nextQueue.forEach((type, idx) => {
-      this.drawMiniPiece(type, 620, 80 + idx * 90);
+      const matrix = TETROMINOES[type].matrices[0];
+      const pieceW = matrix[0].length * 20;
+      const startX = nextX + Math.floor((140 - pieceW) / 2);
+      this.drawMiniPiece(type, startX, 85 + idx * 90);
     });
   }
 
