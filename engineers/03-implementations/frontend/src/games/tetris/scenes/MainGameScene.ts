@@ -39,6 +39,7 @@ export class MainGameScene extends BaseArcadeScene {
   private levelText!: Phaser.GameObjects.Text;
   private linesText!: Phaser.GameObjects.Text;
   private modeText!: Phaser.GameObjects.Text;
+  private holdKeyText!: Phaser.GameObjects.Text;
   private gameOverText!: Phaser.GameObjects.Text;
 
   private startTimeSeconds: number = 0;
@@ -91,21 +92,25 @@ export class MainGameScene extends BaseArcadeScene {
     const holdX = 60;
     const holdY = 40;
     this.gridGraphics.strokeRect(holdX, holdY, 140, 140);
-    this.add.text(holdX + 45, holdY + 10, 'HOLD', {
+    this.add.text(holdX + 70, holdY + 10, 'HOLD', {
       fontSize: '18px',
       color: '#94a3b8',
       fontStyle: 'bold',
-    });
+    }).setOrigin(0.5, 0);
+    this.holdKeyText = this.add.text(holdX + 70, holdY + 32, '(Press C / Shift)', {
+      fontSize: '11px',
+      color: '#64748b',
+    }).setOrigin(0.5, 0);
 
     // 3. Draw NEXT Preview Box (Right Side)
     const nextX = 600;
     const nextY = 40;
     this.gridGraphics.strokeRect(nextX, nextY, 140, 340);
-    this.add.text(nextX + 45, nextY + 10, 'NEXT', {
+    this.add.text(nextX + 70, nextY + 10, 'NEXT', {
       fontSize: '18px',
       color: '#94a3b8',
       fontStyle: 'bold',
-    });
+    }).setOrigin(0.5, 0);
 
     // Mode Text Indicator (Left Side below Hold)
     this.add.text(60, 200, 'MODE (Press M)', { fontSize: '12px', color: '#64748b' });
@@ -217,6 +222,8 @@ export class MainGameScene extends BaseArcadeScene {
         : { enableHold: false, enableGhost: false, nextPreviewCount: 1 };
       this.board.reset(newConfig);
       this.modeText.setText(this.isModernMode ? 'MODERN' : 'CLASSIC 1989');
+      this.holdKeyText.setText(this.isModernMode ? '(Press C / Shift)' : '(Classic: Off)');
+      this.holdKeyText.setColor(this.isModernMode ? '#64748b' : '#ef4444');
       this.lockTimerAccumulator = 0;
     }
 
@@ -444,7 +451,10 @@ export class MainGameScene extends BaseArcadeScene {
     // 4. Draw Hold Piece Preview
     const holdPiece = this.board.getHoldPiece();
     if (holdPiece) {
-      this.drawMiniPiece(holdPiece, 80, 80);
+      const matrix = TETROMINOES[holdPiece].matrices[0];
+      const pieceW = matrix[0].length * 20;
+      const startX = 60 + Math.floor((140 - pieceW) / 2);
+      this.drawMiniPiece(holdPiece, startX, 95);
     }
 
     // 5. Draw NEXT Queue Preview
