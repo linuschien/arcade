@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/Java-25-orange.svg" alt="Java 25" />
   <img src="https://img.shields.io/badge/Spring%20Boot-4.0.7-brightgreen.svg" alt="Spring Boot 4.0.7" />
   <img src="https://img.shields.io/badge/Spring-WebFlux%20%26%20GraphQL-6DB33F.svg" alt="WebFlux and GraphQL" />
-  <img src="https://img.shields.io/badge/React-18.3-61DAFB.svg" alt="React 18" />
+  <img src="https://img.shields.io/badge/React-19.3-61DAFB.svg" alt="React 19" />
   <img src="https://img.shields.io/badge/Phaser-4.2-E25555.svg" alt="Phaser 4" />
   <img src="https://img.shields.io/badge/TypeScript-5.3-3178C6.svg" alt="TypeScript" />
   <img src="https://img.shields.io/badge/TailwindCSS-4.3-38B2AC.svg" alt="Tailwind CSS" />
@@ -17,7 +17,7 @@
 
 **Arcade Stadium** 是一個基於現代 Web 技術打造的模組化、極致沉浸式 HTML5 大型電玩合輯平台。平台結合響應式街機大廳、熱插拔遊戲引擎、六角架構（Hexagonal Architecture）後端與 CQRS 讀寫分離設計，致力於在瀏覽器中重現經典街機娛樂的純粹體驗。
 
-平台採用全非同步反應式技術棧（Spring WebFlux + R2DBC + GraphQL），前端以 React 18 宿主外殼結合 Phaser 4 遊戲畫布，透過標準化事件總線 `ArcadeBridge` 與統一輸入轉換服務 `InputService`，達成前端大廳與各款獨立子遊戲之間的完全解耦。
+平台採用全非同步反應式技術棧（Spring WebFlux + R2DBC + GraphQL），前端以 React 19 宿主外殼結合 Phaser 4 遊戲畫布，透過標準化事件總線 `ArcadeBridge` 與統一輸入轉換服務 `InputService`，達成前端大廳與各款獨立子遊戲之間的完全解耦。
 
 ---
 
@@ -33,16 +33,23 @@
 - **單局即投即玩**：點擊「START (1 Coin)」直接自錢包扣除 1 枚代幣啟動遊戲，支援樂觀鎖（Optimistic Locking）防併發超扣，中途離場不留殘幣。
 
 ### 3. 🎮 跨裝置控制系統 (Multi-Device InputService)
-- **鍵盤控制**：`WASD` / 方向鍵移動，`Space`/`Enter`/`J`/`Z` 動作按鈕，`C` 鍵投幣，`ESC`/`P` 暫停。
-- **實體手把 / 街機搖桿**：透過 W3C Gamepad API 自動辨識 USB 與藍牙控制器（如 Xbox、PlayStation、街機大搖台）。
-- **行動裝置虛擬按鈕**：於手機/平板裝置自動渲染虛擬十字鍵 (D-Pad) 與動作觸控鈕。
+- **鍵盤與街機鍵位映射**：
+  - **方向移動**：`WASD` / 方向鍵（支援轉向緩衝佇列與平滑導航）。
+  - **主要動作 (Button A)**：`Space` / `Enter` / `J` / `Z`（俄羅斯方塊硬降、小精靈、水管工人擺管、麻將出牌、小旋風煙幕防禦、倉庫番推箱）。
+  - **次要動作 (Button B)**：`X` / `F`（街機倉庫番長按 1.0 秒防誤觸棄局重置）。
+  - **輔助功能 (Button C)**：`C` / `Shift`（俄羅斯方塊 Hold 暫存）。
+  - **模式切換 (Button D)**：`M`（俄羅斯方塊經典/現代樣式切換）。
+  - **暫停與功能鍵**：`ESC` / `P`（遊戲暫停與喚起選單）。
+- **實體手把 / 街機搖桿**：透過 W3C Gamepad API 自動輪詢 USB 與藍牙控制器（支援 Xbox、PlayStation 與街機大搖台），標準化對齊 4 鍵與方向輸入。
+- **行動裝置虛擬按鈕**：於手機/平板觸控裝置自動適配渲染虛擬十字鍵 (D-Pad) 與動作觸控鈕。
 
 ### 4. ⚡ 解耦遊戲橋接架構 (ArcadeBridge & Lifecycle)
-- **標準化生命週期**：透過 `IArcadeGame` 介面規範 `init()`, `start()`, `pause()`, `resume()`, `destroyGame()`。
-- **零記憶體洩漏**：離開遊戲回到大廳時，自動銷毀 Canvas 並完整釋放 WebGL Texture 與 WebAudio 音訊快取。
+- **標準化生命週期**：透過 `IArcadeGame` 介面嚴格規範 `onPause()`, `onResume()`, `destroyGame()`。
+- **動態渲染管線感知 (Renderer Detection)**：底層透過 `RENDERER_DETECTED` 事件即時感知 Phaser 渲染管線（WebGL 或 Canvas），並在大廳 `GameIdBadge` 標籤動態呈現實體渲染模式。
+- **零記憶體洩漏**：離開遊戲回到大廳時，自動銷毀 Canvas 實例並完整釋放 WebGL Texture 紋理與 WebAudio 音效快取。
 
 ### 5. 🏆 獨立前十名排行榜 (Per-Game Top 10 Leaderboards)
-- **遊戲獨立記分**：每款子遊戲（`game_id`）具備專屬歷史 Top 10 榜單。
+- **遊戲獨立記分**：全系列 6 款子遊戲（`tetris`, `pacman`, `pipemania`, `mahjong`, `rallyx`, `sokoban`）皆具備專屬歷史 Top 10 榜單。
 - **同分排序仲裁**：同分時依照玩家 Email 字母順序（A-Z ASC）排序。
 
 ### 6. 📺 復古沉浸視覺與音效 (CRT Shader & Global Sound Engine)
@@ -55,10 +62,12 @@
 
 | 遊戲名稱 | 類型 | 核心玩法與規格特色 |
 | :--- | :--- | :--- |
-| **俄羅斯方塊<br>(Tetris Classic)** | 益智方塊 | • 嚴格遵循 SRS (Super Rotation System) 旋轉與 5 點 Wall Kick 判定<br>• 7-Bag 公平發牌袋演算法<br>• 具備 NEXT 預覽、Hold 暫存區與 Ghost 影子方塊（支援經典/現代模式）<br>• Level 1~15 平緩加速下落曲線與 Hard/Soft Drop 即時計分 |
+| **俄羅斯方塊<br>(Tetris Classic)** | 益智方塊 | • 嚴格遵循 SRS (Super Rotation System) 旋轉與 5 點 Wall Kick 判定<br>• 7-Bag 公平發牌袋演算法<br>• 居中顯示之 NEXT 隊列預覽、Hold 暫存區與 Ghost 影子方塊（支援經典/現代模式切換）<br>• Level 1~15 平緩加速下落曲線與 Hard/Soft Drop 即時計分 |
 | **小精靈<br>(Pac-Man Classic)** | 迷宮動作 | • 經典 28×36 Tile 迷宮網格與轉向輸入緩衝 (Direction Buffer)<br>• 4 隻個性化幽靈 AI（Blinky 直追、Pinky 伏擊、Inky 雙倍向量包抄、Clyde 游移）<br>• Scatter / Chase 定時循環狀態機<br>• 能量豆（Power Pellet）驚恐反吞模式與連續吃鬼倍數計分（200→400→800→1600）<br>• 兩階段水果獎勵生成（櫻桃至鑰匙） |
-| **水管工人<br>(Pipe Mania Classic)** | 路徑規劃 | • 10×7 網格與鍵盤/搖桿游標操作，13 種水管元件（標準、單向、水庫緩衝、十字交叉）<br>• 5 格 FIFO 發牌佇列，支援水流前覆蓋替換扣分機制<br>• 0%~100% 平滑連續水流推進遮罩動畫<br>• BFS/DFS 地圖 100% 保證可解性自動驗收與開口防死路約束<br>• 3 支扳手生命制、50,000 分獎勵加命與 Fast Forward 手動加速雙倍計分 |
+| **水管工人<br>(Pipe Mania Classic)** | 路徑規劃 | • 10×7 網格與鍵盤/搖桿游標操作，13 種水管元件（標準、單向、水庫緩衝、十字交叉獨立通道）<br>• 5 格 FIFO 發牌佇列，支援水流前覆蓋替換扣分機制<br>• 0%~100% 平滑連續水流推進遮罩動畫<br>• BFS/DFS 地圖 100% 保證可解性自動驗收與開口防死路約束<br>• 3 支扳手生命制、50,000 分獎勵加命與 Fast Forward 手動加速雙倍計分 |
 | **台灣16張麻將<br>(Taiwanese Mahjong)** | 棋牌競技 | • 完整 144 張牌庫、多輪自動補花流程與牌牆理牌動畫<br>• 16 張（5 面子 + 1 眼，$17+K$ 張）法定胡牌驗證，杜絕詐胡<br>• 支援嚦咕嚦咕（八對半）、八仙過海、七搶一等經典特殊大役<br>• 吃、碰、大明槓/暗槓/加槓、聽牌與過水防呆動作選單<br>• 500 底 / 200 台台數互斥結算引擎與向聽數（Shanten）防守 AI 電腦對手<br>• 標準四圈一將流轉、東南西北抓位擲骰與連莊拉莊計分 |
+| **新小旋風<br>(New Rally-X Classic)** | 迷宮賽車 | • 4 套經典母迷宮（Vortex、Garden、Elevated、Ruins）與 16 關難度推進<br>• $480 \times 480$ 正方形視窗（4.5 格緊湊前瞻視野）鏡頭鎖定滾動，搭配右側專屬雷達 HUD 掌握全局敵我與旗幟<br>• 永不停歇定速巡航、90 度轉向緩衝、直角/T字路口順時針優先自動轉彎、死巷 180 度自動掉頭與主動原地調頭甩尾<br>• 1,000 點動態燃油與煙幕彈防禦（扣 30 油量釋放 3 團尾流煙幕，使紅車打滑 Spin-Out 2.0 秒）<br>• 燃油耗盡 50% 強制降速蜂鳴警報<br>• 10 面旗幟搜集（含 S 雙倍旗與 L 補油旗）、挑戰關卡（紅車休眠）與 20,000 / 80,000 分 1UP 獎命<br>• Web Audio 程序化即時合成 130 BPM 輕快旋律與 8-bit 音效 |
+| **街機倉庫番<br>(Sokoban 50 Selection)** | 空間益智 | • 專為 16:9 街機寬螢幕（$1280 \times 720$）打造之三欄式沙盤渲染管線（左右各 200px 雙翼 HUD + 中央 880px 4:3 核心棋盤）<br>• 四大世界主題底圖（貨棧、工廠、賽博金庫、巨型碼頭）與 2.5D 外牆投影/邊緣暗角遮罩<br>• 精選 50 關無死黑邊幾何關卡，支援 NEW GAME 與 CONTINUE 進度記憶<br>• 推箱粒度 Undo（走廊移動不扣額，按 `[Z]` 瞬間還原至推箱前一刻）與正交直角死鎖警報（Corner Deadlock Alert）<br>• 長按 `[X]` 鍵滿 1.0 秒防誤觸主動棄局重置關卡<br>• 長考保護軟性計時器（超時僅扣除時間獎勵，不猝死中斷）<br>• 通關四合一防刷分結算（$\text{RawScore} \pmod{100} \equiv 0$）與每 100,000 分階梯 1UP 獎命<br>• 兩位數關卡分數隱寫術（總分末兩位隱寫最後通關關卡），無縫整合平台 Top 10 排行榜<br>• 四大世界專屬 Web Audio 輕音樂旋律 |
 
 ---
 
@@ -68,11 +77,11 @@
 
 ```mermaid
 flowchart TB
-    subgraph Client["前端應用 (React 18 + Phaser 4)"]
+    subgraph Client["前端應用 (React 19 + Phaser 4)"]
         Shell["React Host Shell (大廳 UI)"]
         Bridge["ArcadeBridge (事件總線)"]
         Input["InputService (輸入適配器)"]
-        GameCanvas["Phaser 4 Game Canvas (子遊戲)"]
+        GameCanvas["Phaser 4 Game Canvas (6款子遊戲)"]
         Shell <--> Bridge
         Bridge <--> GameCanvas
         Input --> Shell
@@ -122,8 +131,8 @@ flowchart TB
 arcade/
 ├── docs/                                  # 規格與架構設計文件
 │   ├── 01-requirements/                   # 需求規格與 PRD
-│   │   ├── PRD/                           # 各模組 PRD (平台、Tetris、Pacman、PipeMania、Mahjong)
-│   │   ├── user-stories/                  # 使用者故事 (US-01 ~ US-05)
+│   │   ├── PRD/                           # 各模組 PRD (平台、Tetris、Pacman、PipeMania、Mahjong、RallyX、Sokoban)
+│   │   ├── user-stories/                  # 使用者故事 (US-01 ~ US-07)
 │   │   └── glossary.md                    # 領域術語表 (Domain Glossary)
 │   └── 02-design-specs/                   # 設計規範與契約
 │       ├── api-contracts/                 # OpenAPI 3.2 契約規格 (openapi.yaml)
@@ -141,14 +150,14 @@ arcade/
 │   │   │   ├── application/service/       # Application Services (Use Cases)
 │   │   │   └── domain/                    # Entities, Value Objects, DTOs & Exceptions
 │   │   ├── src/main/resources/
-│   │   │   ├── db/migration/              # Flyway 資料庫遷移檔 (V1 ~ V4)
+│   │   │   ├── db/migration/              # Flyway 資料庫遷移檔 (V1 ~ V6)
 │   │   │   ├── graphql/schema.graphqls    # GraphQL Schema 定義
 │   │   │   └── application.yml            # 應用程式設定檔
 │   │   └── pom.xml
-│   ├── frontend/                          # 前端大廳與遊戲實作 (React 18 + Phaser 4 + TS)
+│   ├── frontend/                          # 前端大廳與遊戲實作 (React 19 + Phaser 4 + TS)
 │   │   ├── src/
 │   │   │   ├── core/                      # 核心模組 (ArcadeBridge, InputService, SoundEngine)
-│   │   │   ├── games/                     # 子遊戲實作 (tetris, pacman, pipemania, mahjong)
+│   │   │   ├── games/                     # 子遊戲實作 (tetris, pacman, pipemania, mahjong, rallyx, sokoban)
 │   │   │   ├── hooks/                     # TanStack Query 資料查詢 Hooks
 │   │   │   ├── json-render/               # SDD UI 組件與大廳渲染器
 │   │   │   └── pages/                     # 大廳頁面與入口
@@ -260,6 +269,11 @@ query GetLobbyCatalog {
     score
     submittedAt
   }
+  sokobanTop10: getTop10Leaderboard(gameId: "sokoban") {
+    playerEmail
+    score
+    submittedAt
+  }
 }
 
 # 查詢玩家帳號與錢包代幣餘額
@@ -293,7 +307,7 @@ cd engineers/03-implementations/backend
 mvn verify
 ```
 
-- **BDD Gherkin 規格**：收錄於 `docs/02-design-specs/behavior-specs/`，涵蓋錢包扣幣、防呆胡牌、小精靈 AI 等行為驗證。
+- **BDD Gherkin 規格**：收錄於 `docs/02-design-specs/behavior-specs/`，涵蓋錢包扣幣、防呆胡牌、小精靈 AI、小旋風賽車動力學、倉庫番死鎖判定等行為驗證。
 - **測試工具鏈**：Vitest、React Testing Library、Mock Service Worker (MSW)、Spring Reactor Test (`StepVerifier`)、Spring GraphQL Tester、Jacoco。
 
 ---
